@@ -33,7 +33,7 @@ library(GaRPackg)
 
 library(tidyselect)
 
-library(ggplot2)
+library(tidyverse)
 
 library(cowplot)
 
@@ -59,7 +59,28 @@ raw_df = full_join(osnat_list$osnat_df, michael_list$michael_df,
 ```
 
 
-```{r Set_parameters}
+```{r Import_BoI_forecast_data}
+
+df_forecast = read.csv(paste0("C:\\Users\\Misha\\Documents\\Data\\BOI\\DSGE",
+                              "\\DSGE and staff forecasts.csv"),
+                       stringsAsFactors = FALSE)
+
+names(df_forecast)[1] = "Date"
+
+df_forecast = df_forecast  %>% 
+  mutate(Date = as.Date(Date, format = "%m/%d/%Y")) %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  filter_at(.vars = vars(-Date),.vars_predicate = any_vars(!is.na(.))) %>% 
+  rename_at(.vars = vars(-Date),.funs = list(~gsub("bi.staff_fct_","",.))) %>% 
+  rename_at(.vars = vars(-Date),.funs = list(~gsub("_08","",.))) %>%
+  rename_at(.vars = vars(-Date),.funs = list(~gsub("\\.Q$","",.)))
+
+
+
+```
+
+
+```{r Set_partitions}
 
 partitions = list(Dom_Real = list("Ind_Prod_Israel",
                                   "GDP_F","C_FP","G_NDEFIMP_FP","INV_FP",
@@ -94,6 +115,30 @@ partitions = list(Dom_Real = list("Ind_Prod_Israel",
                   Returns = list("TA125_Close","Avg_House_Price_index"),
                   Credit = list("Credit_to_non_fin_sector"))
 
+
+
+```
+
+
+```{r Modify_partitions}
+
+partitions$Risk = partitions[c("Spread","National_Security",
+                                      "Volatility")] %>% 
+  setNames(NULL) %>% 
+  unlist() %>% 
+  as.list()
+
+partitions = partitions[!names(partitions) %in% c("Spread",
+                                                 "National_Security",
+                                                 "Volatility")]
+
+partitions$Fin_Cycle = partitions[c("Returns","Credit")] %>% 
+  setNames(NULL) %>% 
+  unlist() %>% 
+  as.list()
+
+partitions = partitions[!names(partitions) %in% c("Returns","Credit")]
+
 ```
 
 
@@ -111,6 +156,10 @@ vars_to_rates = c("Ind_Prod_advanced","Ind_Prod_Israel",
                   "Avg_House_Price_index","Credit_to_non_fin_sector",
                   "IMP_OECD")
 
+df = raw_df %>% 
+  select(-GDP_F, -GDP_no_tax,-GDP_season_adj) %>% 
+  rename(GDP_F = GDP_no_startup)
+
 
 # Normalize CA by GDP
 
@@ -118,10 +167,11 @@ df = raw_df %>%
   mutate(CA = CA / GDP_F)
 
 
-# Transform variables to rates of change
+# Transform variables to rates of change YoY
 
 df = df %>% 
-  mutate_at(vars(vars_to_rates),.funs = list(~c(NA,diff(log(.)))))
+  mutate_at(vars(vars_to_rates),
+            .funs = list(~./lag(.,4)-1))
 
 
 # # Detrend using HP filter
@@ -145,8 +195,7 @@ df = df %>%
   mutate(rate_euro = rate_euro - EU_10) %>%
   mutate(rate_japan = rate_japan - JPN_10) %>%
   mutate(rate_uk = rate_uk - UK_10) %>%
-  select(-contains("10"))
-
+  select(-ends_with("10"))
 
 ```
 
@@ -156,7 +205,8 @@ df = df %>%
 drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
                 "Term_spread","Sovereigh_spread",
                 "Interbank_spread","LT_real_rate_change",
-                "TA125_Close","Indus_prod_ind","ILS_EURO")
+                "TA125_Close","Indus_prod_ind","ILS_EURO",
+                "breakeven_inflation_5_10_fwd")
 
 df = df %>% 
   select(-drop_series)
@@ -224,25 +274,26 @@ reg_df = lapply(names(pca_list), function(temp_name){
               mutate(GDP_F_4 = lead(GDP_F,4)),
             by = "Date")
 
-# Add back one dimesions variables
+# Add back variables in case there are partitions with one variable
+
+if(length(partitions) > length(pca_list)){
+
+one_dim_vars = partitions[sapply(partitions, length) == 1] %>% 
+  unlist() %>% 
+  setNames(NULL)
+
 
 reg_df = reg_df %>% 
   left_join(df %>% 
-  select(Date, Tourists, Credit_to_non_fin_sector) %>% 
-  mutate_at(vars(-Date), .funs = list(~scale(.))),
+  select(Date, one_dim_vars) %>% 
+  mutate_at(vars(-Date), .funs = list(~as.numeric(scale(.)))),
   by = "Date")
 
-
-reg_df = reg_df %>% 
-  select(-Date)
-
+}
 tau_vec = c(0.1,0.25,0.5,0.75,0.9)
 
 quant_reg_list = rq(formula = formula(GDP_F_1~.),tau = tau_vec,
-              data = reg_df %>% select(-GDP_F, -GDP_F_4))
-
-# quant_reg_list_4 = rq(formula = formula(GDP_F_4~.),tau = tau_vec,
-#               data = reg_df)
+              data = reg_df %>% select(-Date, -GDP_F, -GDP_F_4))
 
 
 sum_quant_reg = summary(quant_reg_list)
@@ -299,6 +350,52 @@ for(temp_name in names(sum_quant_reg)){
 
 ```
 
+
+\subsection{Comparing prediction accuracy}
+
+In this section we'll compare the quantile regression predictions to BoI staff forecast. There are two types of comparison: 
+
+\begin{itemize}
+  \item
+  Fixed prediction - the prediction is based on a coefficients estimated using
+  the entire sample (that is simply the fitted values of the qunatile regression).
+  \item
+  Rolling prediction - the prediction is based on a coefficients estimated using
+  the subset sample that is increased at each step.
+
+\end{itemize}
+
+
+```{r prediction}
+
+df_fixed_pred = cbind(reg_df$Date,
+                      as.data.frame(quant_reg_list$fitted.values)) %>% 
+  setNames(c("Date", paste("tau",tau_vec, "Q_1", sep = "_"))) %>% 
+  mutate_at(.vars = vars(-Date),.funs = list(~ . * 100)) %>% 
+  left_join(df_forecast %>% 
+              select(Date,ends_with("Q_1")),
+            by = "Date") %>% 
+  filter_at(vars(-"Date", -starts_with("tau")), any_vars(!is.na(.)))
+
+```
+
+
+```{r plot_prediction}
+
+ggplot(df_fixed_pred, aes(x = Date, y = tau_0.5_Q_1 - shiputit_Q_1)) + 
+  geom_line() + 
+  scale_x_yearqtr(n = 10, format = "%YQ%q") + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "Percent", title = paste0("Difference between prediction",
+                                             " (tau = 0.5) \n and staff forecast",
+                                             " (shiputit)")) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+\section{PCA results}
 
 ```{r plot_pca, fig.height=8}
 
@@ -534,8 +631,7 @@ ggplot(raw_df %>%
 
 	\node (glob-indust) [Item Style,  below =  \myvdist cm of vix] {Global \\ Industrial \\ Production};
 
-	\node (non-energy-cmdty) [Item Style,  below =  \myvdist cm of glob-indust,
-	fill = gray!40] {Commodity \\ (less energy)};
+	\node (non-energy-cmdty) [Item Style,  below =  \myvdist cm of glob-indust] {Commodity \\ (less energy)};
 
 	\node (brent) [Item Style,  below =  \myvdist cm of non-energy-cmdty] {Brent};
 
