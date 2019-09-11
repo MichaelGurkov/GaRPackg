@@ -61,7 +61,7 @@ pca_reduction = function(data, time_index = TRUE,
 
     temp_pca = prcomp(pca_df, scale. = scale)
 
-    return(data.frame(Date = as.character(time_index),
+    return(data.frame(Date = as.Date(time_index),
                       PCA = temp_pca$x[,1:n_comps]))
 
   } else {
@@ -190,5 +190,111 @@ interpolate = function(data_vec, direction = "forward"){
   }
 
   return(out_vec)
+
+}
+
+
+#' This function gets the time index for non missing
+#' data for each variable in the data set and returns a list
+#' of unique time indices
+#'
+#' @title Get list of unique time indices of non missing data
+#'
+#' @param df dataframe
+#'
+get.time.indices.list = function(df){
+
+  time_index_name = grep("[Dd]ate", names(df), value = TRUE)
+
+  if(!length(time_index_name) == 1){
+    stop("Couldn't identify time index name")
+  }
+
+
+  indices_list = lapply(names(df)[!names(df) == time_index_name],
+                      function(temp_name){
+                        df[[time_index_name]][!is.na(df[[temp_name]])]
+                        })
+
+  indices_list = indices_list[!duplicated(indices_list)]
+
+  return(indices_list)
+
+
+}
+
+
+#' This function creates a chained index partition
+#'
+#'@import dplyr
+
+chain_index = function(df, method = "PCA"){
+
+  Date_varname = grep("[Dd]ate", names(df), value = TRUE)
+
+  # Interpolate df
+
+  df = df %>%
+    mutate_at(.vars = vars(-Date_varname), interpolate)
+
+  # Get list range
+
+  time_indices_list = get.time.indices.list(df)
+
+  # Get reduced diff series
+
+  reduced_list = lapply(time_indices_list,function(temp_ind){
+
+    temp_df = df %>%
+      filter(!!sym(Date_varname) %in% temp_ind) %>%
+      select_if(~sum(is.na(.)) == 0)
+
+    temp_agg_series = temp_df %>%
+      pca_reduction() %>%
+      mutate(!!sym(Date_varname) := as.Date(!!sym(Date_varname))) %>%
+      mutate(PCA = scale(PCA)) %>%
+      mutate(PCA = c(diff(PCA),NA)) %>%
+      slice(-nrow(.))
+
+    return(list(agg_series = temp_agg_series,
+                num_vars = ncol(temp_df)))
+
+
+
+
+                        })
+
+  num_vars_vec = sapply(reduced_list,
+                        function(temp_list){temp_list$num_vars})
+
+  reduced_list = reduced_list[order(num_vars_vec,
+                                    decreasing = TRUE)]
+
+  # Append incremental series
+
+  diff_df = reduced_list[[1]]$agg_series
+
+  for (i in 2:length(reduced_list)){
+
+    target_df = reduced_list[[i]]$agg_series
+
+    temp_Date_varname = grep("[Dd]ate", names(target_df),
+                             value = TRUE)
+
+    target_ind = (!target_df[[temp_Date_varname]] %in%
+                    diff_df[[temp_Date_varname]])
+
+    diff_df = rbind.data.frame(diff_df, target_df[target_ind,])
+
+  }
+
+  # Return cumsum result
+
+  chain_df = diff_df %>%
+    arrange(desc(Date)) %>%
+    mutate(PCA = cumsum(PCA)) %>%
+    arrange(Date)
+
+  return(chain_df)
 
 }
