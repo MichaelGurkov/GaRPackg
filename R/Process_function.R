@@ -20,9 +20,18 @@ detrend.HP = function(data, HP_gamma = NULL){
 
 
 #' This function reduces dimension based on pca method
+#' The function takes a data matrix and retuns the first n_comps
+#' components of PCA transformation. If the data matrix has a
+#' time index the results is aligned along the index
+#'
+#' @title PCA reduction
 #'
 #'
 #' @param data dataframe
+#'
+#' @param time_index (optional) time index of the data
+#'
+#' @param n_comps (optional) number of PCA components to return
 #'
 #' @import prcomp
 #'
