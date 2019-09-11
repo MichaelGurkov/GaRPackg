@@ -251,7 +251,6 @@ chain_index = function(df, method = "PCA"){
 
     temp_agg_series = temp_df %>%
       pca_reduction() %>%
-      mutate(!!sym(Date_varname) := as.Date(!!sym(Date_varname))) %>%
       mutate(PCA = scale(PCA)) %>%
       mutate(PCA = c(diff(PCA),NA)) %>%
       slice(-nrow(.))
