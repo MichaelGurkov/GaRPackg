@@ -232,11 +232,6 @@ chain_index = function(df, method = "PCA"){
 
   Date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
-  # Interpolate df
-
-  df = df %>%
-    mutate_at(.vars = vars(-Date_varname), interpolate)
-
   # Get list range
 
   time_indices_list = get.time.indices.list(df)
@@ -251,11 +246,14 @@ chain_index = function(df, method = "PCA"){
 
     temp_agg_series = temp_df %>%
       pca_reduction() %>%
-      mutate(PCA = scale(PCA)) %>%
+      mutate(PCA = scale(PCA))
+
+
+    temp_diff_series = temp_agg_series %>%
       mutate(PCA = c(diff(PCA),NA)) %>%
       slice(-nrow(.))
 
-    return(list(agg_series = temp_agg_series,
+    return(list(agg_series = temp_diff_series,
                 num_vars = ncol(temp_df)))
 
 
@@ -284,6 +282,7 @@ chain_index = function(df, method = "PCA"){
                     diff_df[[temp_Date_varname]])
 
     diff_df = rbind.data.frame(diff_df, target_df[target_ind,])
+
 
   }
 
