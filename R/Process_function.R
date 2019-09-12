@@ -286,6 +286,9 @@ chain_index = function(df, method = "PCA"){
 
   }
 
+  diff_df = diff_df %>%
+    arrange(Date)
+
   # Return cumsum result
 
   chain_df = diff_df %>%
