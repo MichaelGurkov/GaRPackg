@@ -1,0 +1,109 @@
+---
+output:
+  rmarkdown::pdf_document:
+    latex_engine: xelatex
+    includes:
+            in_header: C:\\Users\\Misha\\Documents\GaR\\GaR-preamble.tex
+
+vignette: >
+  %\VignetteIndexEntry{GaR analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF_8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
+  comment = "#>"
+)
+```
+
+
+```{r setup}
+
+devtools::load_all()
+
+library(GaRPackg)
+```
+
+
+```{r load_libraries}
+
+library(zoo)
+
+library(tidyselect)
+
+library(ggplot2)
+
+library(cowplot)
+
+library(mFilter)
+
+library(quantreg)
+
+library(rlang)
+
+```
+
+
+```{r Set_parameters}
+
+partitions = list(domestic_macro = list('real_gdp_yoy',
+                                        'industrial_prod_yoy','pmi',
+                                        "cyclical_composite_yoy"),
+                  domestic_fci = list('term_spread', 'corporate_spread',
+                                      'interbank_spread','sovereign_spread',
+                                      'securities_ba_spread',
+                                      'equity_returns_qoq', 'policy_rate',
+                                      'cpi_inflation', 
+                                      'implied_yield_cpi_bond_yoy',
+                                      'inflation_expectations',
+                                      'fx_returns_qoq', 'fx_ba_spread',
+                                      'equity_implied_vol'),
+                  leverage = list('private_credit_gdp', 'loan_deposits_ratio',
+                                  'tier1_rwa', 'npl_ratio', 'share_fx_loans',
+                                  'nfc_debt_equity',
+                                  'derivatives_assets_capital',
+                                  'liquid_assets_st_liabilities',
+                                  'net_fx_positions_capital'),
+                  external = list('reer_yoy', 'ca_gdp', 'trade_gdp',
+                                  'dom_investment_gdp'),
+                  world_macro = list('world_real_gdp_yoy',
+                                     'world_indus_prod_yoy'),
+                  world_fci = list('vix', 'nasdaq_vol', 'nasdaq_returns_qoq',
+                                   'oil_future_qoq','us_reer_eme_yoy'))
+
+
+pls_target_list = list(domestic_macro = list("real_gdp_yoy", "pmi"),
+                   domestic_fci = list("term_spread", "corporate_spread"),
+                   leverage = list("private_credit_gdp"),
+                   world_macro = list("world_real_gdp_yoy"),
+                   world_fci = list("vix", "nasdaq_returns_qoq"))
+
+```
+
+
+```{r Import_data}
+
+df = read.csv(paste0("C:\\Users\\Misha\\Documents\\GaR Python\\Israel",
+                     " GaR\\Data\\Final\\final_data_israel.csv"),
+              stringsAsFactors = FALSE) %>% 
+  mutate(date = as.Date(date)) %>% 
+  filter(date >= as.Date("1996-01-01") & date <= as.Date("2019-06-01")) %>% 
+  mutate_all(interpolate)
+
+```
+
+
+```{r get_pca_partitons}
+
+partitions_df = lapply(partitions,function(temp_part){
+  df %>% 
+    select(unlist(temp_part), date) %>% 
+    chain_index()})
+
+names(partitions_df) = names(partitions)
+                        
+
+```
+
