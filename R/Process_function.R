@@ -299,3 +299,83 @@ chain_index = function(df, method = "PCA"){
   return(chain_df)
 
 }
+
+
+
+
+#' This function calculates the compound annualized growth rate
+#'
+#' @param df dataframe  - time indexed variable
+#'
+#' @param horizon the horizon of the change period
+#'
+#' @param freq time frequency of the data
+#'
+#' @param forward determines whether the calculation is forward
+#' (meaning that at each time point the change is between lead
+#'  and current point) or backward (at each time point the change
+#'  is between current point and its lag) looking.
+#'
+
+calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
+
+  date_varname = grep("[Dd]ate",names(df),value = TRUE)
+
+  if(!length(date_varname) == 1){
+    stop("Couldn't identify time index variable")
+  }
+
+
+  if(forward){
+
+    ret_df = df %>%
+      mutate_at(vars(-date_varname),
+                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
+
+  } else{
+
+    ret_df = df %>%
+      mutate_at(vars(-date_varname),
+                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
+
+
+  }
+
+
+  ret_df = ret_df %>%
+    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+
+  return(ret_df)
+
+}
+
+
+#'This function creates a data set for quantile regression
+#'
+#'@param partitions_df data frame with explanatory variables
+#'
+#'@param dep_var_df data frame with time indexed depended variable
+#'
+#'@param horizon forecasting horizon
+#'
+#'@param transform_to_rate parameter that defines whether to transform
+#'the depended variable to growth rate
+#'
+#'
+make.quant.reg.df = function(partitions_df, dep_var_df,
+                             horizon, transform_to_rate = TRUE){
+
+  if(transform_to_rate){
+
+    dep_var_df = calculate.CAGR(dep_var_df,
+                                horizon = horizon)
+
+  }
+
+  reg_df = dep_var_df %>%
+    inner_join(partitions_df) %>%
+    filter(complete.cases(.))
+
+  return(reg_df)
+
+}
