@@ -33,7 +33,6 @@ detrend.HP = function(data, HP_gamma = NULL){
 #'
 #' @param n_comps (optional) number of PCA components to return
 #'
-#' @import prcomp
 #'
 pca_reduction = function(data, time_index = TRUE,
                          scale = TRUE, n_comps = 1){

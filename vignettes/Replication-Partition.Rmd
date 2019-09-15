@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r setup}
+```{r init_setup}
 
 devtools::load_all()
 
@@ -89,8 +89,7 @@ df = read.csv(paste0("C:\\Users\\Misha\\Documents\\GaR Python\\Israel",
                      " GaR\\Data\\Final\\final_data_israel.csv"),
               stringsAsFactors = FALSE) %>% 
   mutate(date = as.Date(date)) %>% 
-  filter(date >= as.Date("1996-01-01") & date <= as.Date("2019-06-01")) %>% 
-  mutate_all(interpolate)
+  filter(date >= as.Date("1996-01-01") & date <= as.Date("2019-06-01"))
 
 ```
 
@@ -100,10 +99,83 @@ df = read.csv(paste0("C:\\Users\\Misha\\Documents\\GaR Python\\Israel",
 partitions_df = lapply(partitions,function(temp_part){
   df %>% 
     select(unlist(temp_part), date) %>% 
-    chain_index()})
+    mutate_all(interpolate) %>% 
+    chain_index()}) %>% 
+  reduce(full_join, by = "Date") %>% 
+  setNames(c("Date", names(partitions)))
 
-names(partitions_df) = names(partitions)
-                        
+
+partitions_df = left_join(df %>% 
+                            select(date, real_gdp_nis_y),
+                          partitions_df, by = c("date" = "Date"))
+                
+
+```
+
+
+```{r get_quantile_regressions}
+
+reg_df = make.quant.reg.df(partitions_df = partitions_df %>% 
+                             select(-real_gdp_nis_y),
+                           dep_var_df = partitions_df %>% 
+                             select(date, real_gdp_nis_y) %>% 
+                             rename("GDP_growth" = real_gdp_nis_y),
+                           horizon = 1)
+
+qreg_list = rq(formula = formula("GDP_growth~."),
+               tau = c(0.05,0.25,0.5,0.75,0.95),
+               data = as.data.frame(scale(reg_df %>% 
+                                            select(-date))))
+
+
+```
+
+
+```{r plot_quantile_coeffs}
+
+coef_table = lapply(suppressWarnings(summary(qreg_list)),
+                    function(temp_list){
+                      
+                      temp_df = as.data.frame(temp_list$coefficients)
+                      
+                      temp_df$tau = temp_list$tau
+                      
+                      temp_df$Name = rownames(temp_df)
+                      
+                      rownames(temp_df) = NULL
+                      
+                      return(temp_df)
+                      
+                    }) %>% 
+  bind_rows() %>% 
+  rename(Coeff = coefficients, Low = `lower bd`,
+         High = `upper bd`, Tau = tau) %>% 
+  mutate(Tau = as.character(Tau)) %>% 
+  mutate(Name = gsub("(Intercept)","Intercept",Name, fixed = TRUE)) %>% 
+  mutate(Significant = ifelse(High <= 0 | Low >= 0,TRUE, FALSE))
+
+
+ggplot(coef_table %>% 
+  mutate(Name = gsub(pattern = "estic",replacement = "",
+                     x = Name, fixed = TRUE)) %>%
+  mutate(Name = factor(Name,
+                       levels = c("dom_macro","dom_fci",
+                                  "leverage","external",
+                                  "world_macro","world_fci",
+                                  "Intercept"))) %>% 
+    filter(!Name == "Intercept"),
+       aes(x = Tau, y = Coeff, fill = Significant)) + 
+  geom_bar(stat = "identity", width = 0.2, position = "dodge") + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_wrap(~Name,scales = "free_y") +
+  labs(x = "", y = "", title = "Quantile regression coefficients") + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.4),
+        axis.text.x = element_text(angle = 90),
+        axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+        legend.position = "bottom")
+  
+  
 
 ```
 
