@@ -249,7 +249,7 @@ chain_index = function(df, method = "PCA"){
 
 
     temp_diff_series = temp_agg_series %>%
-      mutate(PCA = c(diff(PCA),NA)) %>%
+      mutate(PCA = PCA - lead(PCA)) %>%
       slice(-nrow(.))
 
     return(list(agg_series = temp_diff_series,
