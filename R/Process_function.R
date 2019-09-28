@@ -77,15 +77,16 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 #'
 #' @param data dataframe
 #'
-#' @param time_index (optional) time index of the data
+#' @param has_time_index boolean indicator of time index of the data
 #'
 #' @param n_comps (optional) number of PCA components to return
 #'
 #'
-pca_reduction = function(data, time_index = TRUE,
-                         scale = TRUE, n_comps = 1){
+pca_reduction = function(data, has_time_index = TRUE,
+                         scale = TRUE, n_comps = 1,
+                         sign_align_params = NULL){
 
-  if(time_index){
+  if(has_time_index){
 
     date_varname = grep("^[Dd]ate$",names(data), value = TRUE)
 
@@ -108,16 +109,47 @@ pca_reduction = function(data, time_index = TRUE,
 
     temp_pca = prcomp(pca_df, scale. = scale)
 
-    temp_df = data.frame(Date = as.Date(time_index),
-                         PCA = temp_pca$x[,1:n_comps])
-
-    return(temp_df)
-
   } else {
 
     temp_pca = prcomp(data, scale. = scale)
 
-    temp_df = data.frame(PCA = temp_pca$x[,1:n_comps])
+  }
+
+    # Align PCA, if length == 2 then the second parameter is the direction
+    # boolean indicator.
+
+    if(!is.null(sign_align_params)){
+
+      if(length(sign_align_params) == 2){
+
+        temp_pca = align.pca(pca_obj = temp_pca,
+                             var_name = sign_align_params[[1]],
+                             positive_direction = sign_align_params[[2]])
+      } else {
+
+        temp_pca = align.pca(pca_obj = temp_pca,
+                             var_name = sign_align_params[[1]])
+
+
+
+      }
+
+
+
+    }
+
+
+    if(has_time_index){
+
+      temp_df = data.frame(Date = as.Date(time_index),
+                           PCA = temp_pca$x[,1:n_comps])
+
+    } else {
+
+
+      temp_df = data.frame(PCA = temp_pca$x[,1:n_comps])
+
+      }
 
     return(temp_df)
 
@@ -125,9 +157,6 @@ pca_reduction = function(data, time_index = TRUE,
   }
 
 
-
-
-}
 
 
 #' This function identifies consequitive NA sequences
@@ -279,7 +308,7 @@ get.time.indices.list = function(df){
 #'
 #'@import dplyr
 
-chain_index = function(df, method = "PCA"){
+chain_index = function(df, method = "PCA", ...){
 
   Date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -296,7 +325,7 @@ chain_index = function(df, method = "PCA"){
       select_if(~sum(is.na(.)) == 0)
 
     temp_agg_series = temp_df %>%
-      pca_reduction() %>%
+      pca_reduction(...) %>%
       mutate(PCA = scale(PCA))
 
 
