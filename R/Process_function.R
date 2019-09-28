@@ -19,10 +19,58 @@ detrend.HP = function(data, HP_gamma = NULL){
 }
 
 
+#' Aligns the sign of PCA components
+#'
+#' @description  This function aligns the PCA components with respect to chosen variable.
+#'
+#' @details PCA assigns arbitrary sign to coefficients (loadings).
+#' This function aligns the PCA components according to given increase
+#' direction of the chosen original variable. The default direction is positive
+#'
+#' @param pca_obj PCA object
+#'
+#' @param var_name string or numeric index. The name of the original
+#' variable or it's column index in the data matrix
+#'
+#' @param positive_direction a boolean indicator of the direction of the
+#' original variable influence
+#'
+#'  @return PCA object with aligned PCA matrix
+#'  (x component of the PCA object list). The loadings are left unchaged.
+
+
+align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
+
+  if(grepl("[0-9]",var_name)){
+
+    sign_vec = sign(pca_obj[["rotation"]][var_name,])
+
+  } else {
+
+    sign_vec = sign(pca_obj[["rotation"]][
+      rownames(pca_obj[["rotation"]]) == var_name,])
+
+  }
+
+
+  if(!positive_direction){sign_vec = sign_vec * (-1)}
+
+  pca_obj$x = sapply(1:ncol(pca_obj$x),function(temp_ind){
+    pca_obj$x[,temp_ind] * sign_vec[temp_ind]})
+
+  return(pca_obj)
+
+
+
+
+
+}
+
+
 #' This function reduces dimension based on pca method
-#' The function takes a data matrix and retuns the first n_comps
+#' The function takes a data matrix and returns the first n_comps
 #' components of PCA transformation. If the data matrix has a
-#' time index the results is aligned along the index
+#' time index the result is aligned along the index
 #'
 #' @title PCA reduction
 #'
@@ -60,14 +108,18 @@ pca_reduction = function(data, time_index = TRUE,
 
     temp_pca = prcomp(pca_df, scale. = scale)
 
-    return(data.frame(Date = as.Date(time_index),
-                      PCA = temp_pca$x[,1:n_comps]))
+    temp_df = data.frame(Date = as.Date(time_index),
+                         PCA = temp_pca$x[,1:n_comps])
+
+    return(temp_df)
 
   } else {
 
     temp_pca = prcomp(data, scale. = scale)
 
-    return(data.frame(PCA = temp_pca$x[,1:n_comps]))
+    temp_df = data.frame(PCA = temp_pca$x[,1:n_comps])
+
+    return(temp_df)
 
 
   }
@@ -255,9 +307,6 @@ chain_index = function(df, method = "PCA"){
     return(list(agg_series = temp_diff_series,
                 num_vars = ncol(temp_df)))
 
-
-
-
                         })
 
   num_vars_vec = sapply(reduced_list,
@@ -298,8 +347,6 @@ chain_index = function(df, method = "PCA"){
   return(chain_df)
 
 }
-
-
 
 
 #' This function calculates the compound annualized growth rate
@@ -376,5 +423,43 @@ make.quant.reg.df = function(partitions_df, dep_var_df,
     filter(complete.cases(.))
 
   return(reg_df)
+
+}
+
+
+
+#' This function extracts the coefficients from quantile regression
+#'
+#' @param qreg_object quantile regression object
+#'
+#'
+extract.qreg.coeff.table = function(qreg_obj){
+
+  coef_table = lapply(suppressWarnings(summary(qreg_obj)),
+                      function(temp_list){
+
+                        temp_df = as.data.frame(temp_list$coefficients)
+
+                        temp_df$tau = temp_list$tau
+
+                        temp_df$Name = rownames(temp_df)
+
+                        rownames(temp_df) = NULL
+
+                        return(temp_df)
+
+                      }) %>%
+    bind_rows() %>%
+    rename(Coeff = coefficients, Low = `lower bd`,
+           High = `upper bd`, Tau = tau) %>%
+    mutate(Tau = as.character(Tau)) %>%
+    mutate(Name = gsub("(Intercept)","Intercept",Name, fixed = TRUE)) %>%
+    mutate(Significant = ifelse(High <= 0 | Low >= 0,TRUE, FALSE))
+
+  return(coef_table)
+
+
+
+
 
 }
