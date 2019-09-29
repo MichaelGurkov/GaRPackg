@@ -41,7 +41,18 @@ detrend.HP = function(data, HP_gamma = NULL){
 
 align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 
-  if(grepl("[0-9]",var_name)){
+
+  if(length(var_name) > 1){
+
+    sign_vec = sapply(as.data.frame(pca_obj$x), function(temp_col){
+
+      return(sign(cor(x = temp_col, y = var_name,
+                      use = "pairwise.complete.obs")))
+
+    })
+
+
+  } else if(grepl("[0-9]",var_name)){
 
     sign_vec = sign(pca_obj[["rotation"]][var_name,])
 
@@ -49,6 +60,14 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 
     sign_vec = sign(pca_obj[["rotation"]][
       rownames(pca_obj[["rotation"]]) == var_name,])
+
+  }
+
+  if(length(sign_vec) == 0){
+
+    message("align.pca: Aligning coefficient missing")
+
+    return(pca_obj)
 
   }
 
@@ -115,20 +134,36 @@ pca_reduction = function(data, has_time_index = TRUE,
 
   }
 
-    # Align PCA, if length == 2 then the second parameter is the direction
+      # Align PCA, if length == 2 then the second parameter is the direction
     # boolean indicator.
 
     if(!is.null(sign_align_params)){
 
+      temp_var_name = sign_align_params[[1]]
+
+      if(ncol(temp_var_name) == 2){
+
+        date_temp_var_name = grep("^[Dd]ate$",names(temp_var_name),
+                                  value = TRUE)
+
+        temp_var_name = temp_var_name %>%
+          filter(!!sym(date_temp_var_name) %in% time_index) %>%
+          select(-date_temp_var_name) %>%
+          unlist()
+
+
+
+      }
+
       if(length(sign_align_params) == 2){
 
         temp_pca = align.pca(pca_obj = temp_pca,
-                             var_name = sign_align_params[[1]],
+                             var_name = temp_var_name,
                              positive_direction = sign_align_params[[2]])
       } else {
 
         temp_pca = align.pca(pca_obj = temp_pca,
-                             var_name = sign_align_params[[1]])
+                             var_name = temp_var_name)
 
 
 
@@ -155,8 +190,6 @@ pca_reduction = function(data, has_time_index = TRUE,
 
 
   }
-
-
 
 
 #' This function identifies consequitive NA sequences
@@ -327,6 +360,9 @@ chain_index = function(df, method = "PCA", ...){
     temp_agg_series = temp_df %>%
       pca_reduction(...) %>%
       mutate(PCA = scale(PCA))
+
+    # debugging
+    # if(sum(is.na(temp_agg_series$PCA)) > 0){browser()}
 
 
     temp_diff_series = temp_agg_series %>%
