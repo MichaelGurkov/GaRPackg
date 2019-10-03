@@ -1,0 +1,255 @@
+\begin{tikzpicture}[scale=0.5, transform shape]
+
+
+% Main categories
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \def\hp{1}
+
+\def\myvdist{0.5}
+
+\node (real) [Header Style,  draw=black] {Dom Real};
+
+\node (prices) [Header Style, draw=black,
+                left = \hp cm of real] {DomPrices};
+
+\node (rates) [Header Style, draw=black,
+               left = \hp cm of prices] {Rates};
+
+\node (external) [Header Style, draw=black,
+                  left = \hp cm of rates] {External};
+
+\node (global) [Header Style, draw=black,
+                left = \hp cm of external] {Global};
+
+\node (labor) [Header Style, draw=black,
+               left = \hp cm of global] {Labor};
+
+\node (security) [Header Style, draw=black, align = center,
+                  left = \hp cm of labor] {National \\ Security};
+
+\node (spreads) [Header Style, draw=black,
+                 left = \hp cm of security] {Spreads};
+
+\node (volatility) [Header Style, draw=black,
+                    left = \hp cm of spreads] {Volatility};
+
+\node (returns) [Header Style, draw=black,
+                 left = \hp cm of volatility] {Returns};
+
+\node (fin-agg) [Header Style, draw=black,
+                 left = \hp cm of returns] {Credit};
+
+
+% Domestic real branch
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node (indus) [Item Style,  below =  \myvdist cm of real] {Industrial \\ production};
+
+\node (gdp) [Item Style, below = \myvdist cm of indus] {GDP};
+
+\node (consump) [Item Style,  below =  \myvdist cm of gdp] {Consumption};
+
+\node (govern) [Item Style, below =  \myvdist cm of consump] {G};
+
+\node (inv) [Item Style, below =  \myvdist cm of govern] {Investment};
+
+\node (invent) [Item Style, below =  \myvdist cm of inv] {Inventory};
+
+\node (export) [Item Style, below =  \myvdist cm of invent] {Export};
+
+\node (import) [Item Style, below =  \myvdist cm of export] {Import};
+
+\node (startup) [Item Style,  below =  \myvdist cm of import, fill = gray!40] {Startup};
+
+
+% Domestic Prices branch
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\node (infexp-1) [Item Style,  below =  \myvdist cm of prices] {Inflation \\
+  expectation\\ short};
+
+\node (infexp-2) [Item Style,  below =  \myvdist cm of infexp-1] {Inflation \\
+  expectation \\ medium};
+
+\node (infexp-3) [Item Style,  below =  \myvdist cm of infexp-2, fill = gray!40] {Inflation \\
+  expectation \\ long};
+
+\node (cpi-adj) [Item Style,  below =  \myvdist cm of infexp-3] {CPI \\ (adjusted)};
+
+\node (cpiFH-adj) [Item Style,  below =  \myvdist cm of cpi-adj] {CPI-FH \\ (adjusted)};
+
+\node (cpiF-adj) [Item Style,  below =  \myvdist cm of cpiFH-adj] {CPI-F \\ (adjusted)};
+
+\node (cpiH-adj) [Item Style,  below =  \myvdist cm of cpiF-adj] {CPI-H \\ (adjusted)};
+
+\node (cpi) [Item Style,  below =  \myvdist cm of cpiH-adj] {CPI};
+
+\node (cpiH) [Item Style,  below =  \myvdist cm of cpi] {CPI-H};
+
+\node (cpiF) [Item Style,  below =  \myvdist cm of cpiH] {CPI-F};
+
+\node (export-price) [Item Style,  below =  \myvdist cm of cpiF] {Export Prices};
+
+% Rates branch
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node (boi-rate) [Item Style,  below =  \myvdist cm of rates] {BOI rate};
+
+\node (real-rate1) [Item Style,  below =  \myvdist cm of boi-rate] {Real rate 1Y};
+
+\node (forward23) [Item Style,  below =  \myvdist cm of real-rate1] {Forward 2-3};
+
+\node (forward510) [Item Style,  below =  \myvdist cm of forward23,
+                    fill = gray!40] {Forward 5-10};
+
+% External branch
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \node (ca) [Item Style,  below =  \myvdist cm of external] {Current Account};
+
+\node (fdi-us) [Item Style,  below =  \myvdist cm of ca,
+                fill = gray!40] {FDI linkages\\ (with US)};
+
+\node (bank-us) [Item Style,  below =  \myvdist cm of fdi-us,
+                 fill = gray!40] {Banking linkages\\ (with US)};
+
+\node (trade-us) [Item Style,  below =  \myvdist cm of bank-us,
+                  fill = gray!40] {Trade linkages\\ (with US)};
+
+\node (trade-open) [Item Style,  below =  \myvdist cm of trade-us,
+                    fill = gray!40] {Trade openess};
+
+\node (fin-open) [Item Style,  below =  \myvdist cm of trade-open,
+                  fill = gray!40] {Financial openess};
+
+\node (ca-open) [Item Style,  below =  \myvdist cm of fin-open,
+                 fill = gray!40] {CA openess};
+
+\node (fx-flex) [Item Style,  below =  \myvdist cm of ca-open,
+                 fill = gray!40] {FX flexibility};
+
+\node (ils-usd) [Item Style,  below =  \myvdist cm of fx-flex] {ILS-USD};
+
+\node (ils-yen) [Item Style,  below =  \myvdist cm of ils-usd] {ILS-Yen};
+
+\node (ils-gbp) [Item Style,  below =  \myvdist cm of ils-yen] {ILS-GPB};
+
+\node (ils-euro) [Item Style,  below =  \myvdist cm of ils-gbp,
+                  fill = gray!40] {ILS-EURO};
+
+% Global Branch
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node (vix) [Item Style,  below =  \myvdist cm of global] {VIX};
+
+\node (glob-indust) [Item Style,  below =  \myvdist cm of vix] {Global \\ Industrial \\ Production};
+
+\node (non-energy-cmdty) [Item Style,  below =  \myvdist cm of glob-indust] {Commodity \\ (less energy)};
+
+\node (brent) [Item Style,  below =  \myvdist cm of non-energy-cmdty] {Brent};
+
+\node (gdp-world) [Item Style,  below =  \myvdist cm of brent] {GDP  \\
+  (US, Euro, Japan, UK)};
+
+\node (imp-oecd) [Item Style,  below =  \myvdist cm of gdp-world] {IMP  \\
+  (OECD)};
+
+\node (cpi-world) [Item Style,  below =  \myvdist cm of imp-oecd] {Inflation
+  \\ (US, Euro, Japan, UK)};
+
+\node (i-world) [Item Style,  below =  \myvdist cm of cpi-world] {Interest
+  \\ (US, Euro, Japan, UK)};
+
+\node (rate-10) [Item Style,  below =  \myvdist cm of i-world,
+                 fill = gray!40] {10 year yield \\ (US, Euro, Japan, UK, Germany)};
+
+\node (rate-5) [Item Style,  below =  \myvdist cm of rate-10] {5 year yield
+  \\ (US, Euro, Japan, UK, Germany)};
+
+
+
+% Labor branch
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \node (labor-pop) [Item Style,  below =  \myvdist cm of labor] {Labor pop};
+
+\node (wage) [Item Style,  below =  \myvdist cm of labor-pop] {Wage};
+
+\node (emp) [Item Style,  below =  \myvdist cm of wage] {Employment};
+
+\node (unemp) [Item Style,  below =  \myvdist cm of emp] {Unemployment \\ rate};
+
+\node (labor-force) [Item Style,  below =  \myvdist cm of unemp] {Labor force};
+
+\node (vac) [Item Style,  below =  \myvdist cm of labor-force,
+             fill = gray!40] {Vacancies rate};
+
+% Security branch
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \node (tourists) [Item Style,  below =  \myvdist cm of security] {Tourists};
+
+
+% Spreads
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node (BA-spread) [Item Style,  below =  \myvdist cm of spreads] {Bid-Ask
+  spread \\ (ILS-USD)};
+
+\node (inter-spread) [Item Style,  below =  \myvdist cm of BA-spread,
+                      fill = gray!40] {Interbank spread};
+
+\node (sigma-ytm-lt) [Item Style,  below =  \myvdist cm of inter-spread,
+                      fill = red!30] {Yield Volatility \\ (long term bonds)};
+
+\node (sigma-ytm-st) [Item Style,  below =  \myvdist cm of sigma-ytm-lt,
+                      fill = red!30] {Yield Volatility \\ (short term bonds)};
+
+\node (sov-spread) [Item Style,  below =  \myvdist cm of sigma-ytm-st,
+                    fill = gray!40] {Sovereign spread};
+
+\node (corp-real-spread) [Item Style,  below =  \myvdist cm of sov-spread] {Corporate spread \\ (real)};
+
+\node (corp-nominal-spread) [Item Style,  below =  \myvdist cm of corp-real-spread,
+                             fill = gray!40] {Corporate spread \\ (nominal)};
+
+\node (term-spread) [Item Style,  below =  \myvdist cm of corp-nominal-spread,
+                     fill = gray!40] {Term spread};
+
+\node (hui-hebel) [Item Style,  below =  \myvdist cm of term-spread,
+                   fill = gray!40] {Market	depth \\ (Hui-Hebel ratio)};
+
+% Volatility branch
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \node (fx-vol) [Item Style,  below =  \myvdist cm of volatility,
+                  fill = gray!40] {FX volatility \\ (realized)};
+
+\node (imp-fx-vol) [Item Style,  below =  \myvdist cm of fx-vol] {FX volatility \\ (implied)};
+
+\node (eq-vol) [Item Style,  below =  \myvdist cm of imp-fx-vol,
+                fill = gray!40] {Equity volatility \\ (realized)};
+
+\node (imp-eq-vol) [Item Style,  below =  \myvdist cm of eq-vol] {Equity volatility \\ (implied)};
+
+
+% Returns
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \node (house-ret) [Item Style,  below =  \myvdist cm of returns] {House price returns};
+
+\node (eq-ret) [Item Style, below = 1cm of house-ret,
+                fill = gray!40] {Equity returns};
+
+% Fin aggregates (credit) branch
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\node (credit) [Item Style,  below =  \myvdist cm of fin-agg] {Credit growth};
+
+
+\end{tikzpicture}

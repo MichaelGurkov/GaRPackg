@@ -1,0 +1,48 @@
+
+```{r plot_pca_variance}
+
+pca_variance = lapply(names(pca_list), function(temp_name){
+
+  data.frame(Name = temp_name,
+             Variance = round(pca_list[[temp_name]]$pca$sdev[1] ^ 2 /
+                                sum(pca_list[[temp_name]]$pca$sdev ^ 2),3), stringsAsFactors = FALSE)
+
+
+
+}) %>%
+  bind_rows()
+
+ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) + 
+  geom_bar(stat = "identity", width = 0.6) + 
+  labs(title = "Variance explained \n (by first PCA component)",
+       x = "", y = "") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r plot_pca_loadings}
+
+invisible(sapply(names(pca_list), function(name){
+  
+  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
+                  Val = pca_list[[name]]$pca$rotation[,1]),
+       aes(x = reorder(Name, Val), y = Val)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(x = "", y = "", title = paste(name, "PCA loadings",
+                                      "\n (first component)")) +
+  coord_flip() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+  
+  print(bar_plot)
+
+  
+}))
+
+
+```
+

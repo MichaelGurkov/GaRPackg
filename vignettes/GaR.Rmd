@@ -26,6 +26,8 @@ knitr::opts_chunk$set(
 devtools::load_all()
 
 library(GaRPackg)
+
+setwd("C:\\Users\\Misha\\Documents\\GaRPackg\\vignettes")
 ```
 
 
@@ -160,6 +162,9 @@ df = raw_df %>%
   select(-GDP_F, -GDP_no_tax,-GDP_season_adj) %>% 
   rename(GDP_F = GDP_no_startup)
 
+df = df %>% 
+  mutate_at(.vars = vars(unlist(partitions$Dom_Real),CA),
+            .funs = list(~c(rep(NA,3),rollsum(.,4))))
 
 # Normalize CA by GDP
 
@@ -172,13 +177,6 @@ df = raw_df %>%
 df = df %>% 
   mutate_at(vars(vars_to_rates),
             .funs = list(~./lag(.,4)-1))
-
-
-# # Detrend using HP filter
-# 
-# df = df %>%
-#   mutate_at(.vars = vars(contains("fwd"),ends_with("_5"),ends_with("_10")),
-#             .funs = list(~detrend.HP(.)))
 
 
 # Calculate difference
@@ -200,7 +198,7 @@ df = df %>%
 ```
 
 
-```{r drop_suspicious_series}
+```{r drop_short_series}
 
 drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
                 "Term_spread","Sovereigh_spread",
@@ -232,6 +230,24 @@ pca_list = lapply(partitions[sapply(partitions, length) > 1],
   return(ret_list)
   
 })
+
+
+partitions_df = lapply(names(pca_list), function(temp_name){
+  
+  temp_df = data.frame(Date = pca_list[[temp_name]]$date_index,
+                       PCA = pca_list[[temp_name]]$pca$x[,1],
+                       stringsAsFactors = FALSE)
+  
+  names(temp_df) = c("Date",temp_name)
+  
+  return(temp_df)
+  
+  
+  
+  
+}) %>% 
+  reduce(full_join, by = "Date") %>% 
+  arrange(Date)
 
 # Normalize sign pca
 
@@ -305,50 +321,11 @@ names(sum_quant_reg) = paste("tau",tau_vec, sep = "=")
 
 \section{Quantile regression results}
 
-```{r plot_quantreq_rho}
-
-ggplot(data_frame(Tau = as.character(quant_reg_list$tau),
-                  Rho = quant_reg_list$rho),
-       aes(x = Tau, y = Rho)) + 
-  geom_bar(stat = "identity", width = 0.3) + 
-  labs(y = "", title = "Goodness of fit (Rho) of quantile regression") + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
+```{r plot_quantile_reg}
 
 ```
 
 
-```{r plot_quant_reg}
-
-for(temp_name in names(sum_quant_reg)){
-  
-  temp_df = sum_quant_reg[[temp_name]]$coefficients %>% 
-  as.data.frame() %>% 
-  mutate(Name = rownames(.)) %>% 
-  setNames(c("Coef","Low","Up","Name")) %>% 
-  mutate(Significant = (Low > 0 | Up < 0))
-  
-  temp_plot = ggplot(temp_df,
-  aes(x = Name, y = Coef)) + 
-  geom_point(aes(color = Significant), size = 3) + 
-  scale_color_manual(values = c("FALSE" = "darkgray", "TRUE" = "blue")) + 
-  geom_errorbar(aes(ymin = Low, ymax = Up), width = 0.4) + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
-  labs(x = "",y = "",
-       title = paste("GDP forecast coefficients",
-                     paste0("(1Q ahead, ",temp_name,")"),
-                     sep = "\n")) + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.text.x = element_text(size = 6, angle = 30, vjust = 0.5),
-        legend.position = "none")
-  
-  
-  print(temp_plot)
-  
-}
-
-```
 
 
 \subsection{Comparing prediction accuracy}
@@ -366,7 +343,7 @@ In this section we'll compare the quantile regression predictions to BoI staff f
 \end{itemize}
 
 
-```{r prediction}
+```{r prediction, eval=FALSE}
 
 df_fixed_pred = cbind(reg_df$Date,
                       as.data.frame(quant_reg_list$fitted.values)) %>% 
@@ -380,7 +357,7 @@ df_fixed_pred = cbind(reg_df$Date,
 ```
 
 
-```{r plot_prediction}
+```{r plot_prediction, eval=FALSE}
 
 ggplot(df_fixed_pred, aes(x = Date, y = tau_0.5_Q_1 - shiputit_Q_1)) + 
   geom_line() + 
@@ -397,52 +374,21 @@ ggplot(df_fixed_pred, aes(x = Date, y = tau_0.5_Q_1 - shiputit_Q_1)) +
 
 \section{PCA results}
 
-```{r plot_pca, fig.height=8}
-
-for(name in names(pca_list)){
-  
-if(length(pca_list[[name]]$pca$rotation[,1]) == 1){next}
-  
-my_title = paste0(name ,"\n",
-                   round(pca_list[[name]]$pca$sdev[1] ^ 2 /
-      sum(pca_list[[name]]$pca$sdev ^ 2),3) * 100,
-    "% Variance explained")
-  
-  
-bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
-                  Val = pca_list[[name]]$pca$rotation[,1]),
-       aes(x = reorder(Name, Val), y = Val)) +
-  geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = my_title) +
-  coord_flip() +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-line_plot = ggplot(data.frame(ind = seq_along(pca_list[[name]]$pca$x[,1]),
-                  Val = pca_list[[name]]$pca$x[,1]),
-       aes(x = ind, y = Val)) + 
-  geom_line() + 
-  labs(x = "", y = "", title = "") + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
-
-plot_legend = get_legend(bar_plot )
-
-plot_row = plot_grid(bar_plot, line_plot,nrow = 2)
-
-print(plot_grid(plot_legend ,plot_row,
-                rel_heights = c(0.05,1), ncol = 1))
-
-
-}
-
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
 
 
 ```
 
 
 \section {Appendix}
+
+\subsection{Data transformation}
+
+<!-- The data is reported with quarterly frequency, the following transformation are performed : -->
+
+Dom_Real partition and CA (quarterly frequency) are transformed with rolling (4 quarter window) sum.
+
+
 
 \subsection{Data structure}
 
@@ -455,7 +401,7 @@ cat(paste('-', drop_series), sep = '\n')
 ``` 
 
 
-```{r plot_data_structure, fig.height=7}
+```{r plot_data_structure, fig.height=8}
 
 ggplot(raw_df %>%
   mutate_at(.vars = vars(-Date),
@@ -480,258 +426,7 @@ ggplot(raw_df %>%
 ```
 
 
-\begin{tikzpicture}[scale=0.5, transform shape]
+```{r child="GaR-Variables-Desc-Chart.Rmd"}
 
+```
 
-	% Main categories
-
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\def\hp{1}
-
-	\def\myvdist{0.5}
-
-	\node (real) [Header Style,  draw=black] {Dom Real};
-
-	\node (prices) [Header Style, draw=black,
-	 left = \hp cm of real] {DomPrices};
-
-	\node (rates) [Header Style, draw=black,
-	 left = \hp cm of prices] {Rates};
-
-	\node (external) [Header Style, draw=black,
-	 left = \hp cm of rates] {External};
-
-	\node (global) [Header Style, draw=black,
-	 left = \hp cm of external] {Global};
-
-	\node (labor) [Header Style, draw=black,
-	 left = \hp cm of global] {Labor};
-
-	\node (security) [Header Style, draw=black, align = center,
-	 left = \hp cm of labor] {National \\ Security};
-
-	\node (spreads) [Header Style, draw=black,
-	 left = \hp cm of security] {Spreads};
-
-	\node (volatility) [Header Style, draw=black,
-	 left = \hp cm of spreads] {Volatility};
-
-	\node (returns) [Header Style, draw=black,
-	 left = \hp cm of volatility] {Returns};
-
-	\node (fin-agg) [Header Style, draw=black,
-	 left = \hp cm of returns] {Credit};
-
-
-	% Domestic real branch
-
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (indus) [Item Style,  below =  \myvdist cm of real] {Industrial \\ production};
-
-	\node (gdp) [Item Style, below = \myvdist cm of indus] {GDP};
-
-	\node (consump) [Item Style,  below =  \myvdist cm of gdp] {Consumption};
-
-	\node (govern) [Item Style, below =  \myvdist cm of consump] {G};
-
-	\node (inv) [Item Style, below =  \myvdist cm of govern] {Investment};
-
-	\node (invent) [Item Style, below =  \myvdist cm of inv] {Inventory};
-
-	\node (export) [Item Style, below =  \myvdist cm of invent] {Export};
-
-	\node (import) [Item Style, below =  \myvdist cm of export] {Import};
-
-	\node (startup) [Item Style,  below =  \myvdist cm of import, fill = gray!40] {Startup};
-
-
-	% Domestic Prices branch
-
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\node (infexp-1) [Item Style,  below =  \myvdist cm of prices] {Inflation \\
-		 expectation\\ short};
-
-	\node (infexp-2) [Item Style,  below =  \myvdist cm of infexp-1] {Inflation \\
-		expectation \\ medium};
-
-	\node (infexp-3) [Item Style,  below =  \myvdist cm of infexp-2, fill = gray!40] {Inflation \\
-		expectation \\ long};
-
-	\node (cpi-adj) [Item Style,  below =  \myvdist cm of infexp-3] {CPI \\ (adjusted)};
-
-	\node (cpiFH-adj) [Item Style,  below =  \myvdist cm of cpi-adj] {CPI-FH \\ (adjusted)};
-
-	\node (cpiF-adj) [Item Style,  below =  \myvdist cm of cpiFH-adj] {CPI-F \\ (adjusted)};
-
-	\node (cpiH-adj) [Item Style,  below =  \myvdist cm of cpiF-adj] {CPI-H \\ (adjusted)};
-
-	\node (cpi) [Item Style,  below =  \myvdist cm of cpiH-adj] {CPI};
-
-	\node (cpiH) [Item Style,  below =  \myvdist cm of cpi] {CPI-H};
-
-	\node (cpiF) [Item Style,  below =  \myvdist cm of cpiH] {CPI-F};
-
-	\node (export-price) [Item Style,  below =  \myvdist cm of cpiF] {Export Prices};
-
-	% Rates branch
-
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (boi-rate) [Item Style,  below =  \myvdist cm of rates] {BOI rate};
-
-	\node (real-rate1) [Item Style,  below =  \myvdist cm of boi-rate] {Real rate 1Y};
-
-	\node (forward23) [Item Style,  below =  \myvdist cm of real-rate1] {Forward 2-3};
-
-	\node (forward510) [Item Style,  below =  \myvdist cm of forward23,
-	fill = gray!40] {Forward 5-10};
-
-	% External branch
-
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\node (ca) [Item Style,  below =  \myvdist cm of external] {Current Account};
-
-	\node (fdi-us) [Item Style,  below =  \myvdist cm of ca,
-	fill = gray!40] {FDI linkages\\ (with US)};
-
-	\node (bank-us) [Item Style,  below =  \myvdist cm of fdi-us,
-	fill = gray!40] {Banking linkages\\ (with US)};
-
-	\node (trade-us) [Item Style,  below =  \myvdist cm of bank-us,
-	fill = gray!40] {Trade linkages\\ (with US)};
-
-	\node (trade-open) [Item Style,  below =  \myvdist cm of trade-us,
-	fill = gray!40] {Trade openess};
-
-	\node (fin-open) [Item Style,  below =  \myvdist cm of trade-open,
-	fill = gray!40] {Financial openess};
-
-	\node (ca-open) [Item Style,  below =  \myvdist cm of fin-open,
-	fill = gray!40] {CA openess};
-
-	\node (fx-flex) [Item Style,  below =  \myvdist cm of ca-open,
-	fill = gray!40] {FX flexibility};
-
-	\node (ils-usd) [Item Style,  below =  \myvdist cm of fx-flex] {ILS-USD};
-
-	\node (ils-yen) [Item Style,  below =  \myvdist cm of ils-usd] {ILS-Yen};
-
-	\node (ils-gbp) [Item Style,  below =  \myvdist cm of ils-yen] {ILS-GPB};
-
-	\node (ils-euro) [Item Style,  below =  \myvdist cm of ils-gbp,
-	fill = gray!40] {ILS-EURO};
-
-	% Global Branch
-
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (vix) [Item Style,  below =  \myvdist cm of global] {VIX};
-
-	\node (glob-indust) [Item Style,  below =  \myvdist cm of vix] {Global \\ Industrial \\ Production};
-
-	\node (non-energy-cmdty) [Item Style,  below =  \myvdist cm of glob-indust] {Commodity \\ (less energy)};
-
-	\node (brent) [Item Style,  below =  \myvdist cm of non-energy-cmdty] {Brent};
-
-	\node (gdp-world) [Item Style,  below =  \myvdist cm of brent] {GDP  \\
-	(US, Euro, Japan, UK)};
-
-	\node (imp-oecd) [Item Style,  below =  \myvdist cm of gdp-world] {IMP  \\
-	(OECD)};
-
-	\node (cpi-world) [Item Style,  below =  \myvdist cm of imp-oecd] {Inflation
-	\\ (US, Euro, Japan, UK)};
-
-	\node (i-world) [Item Style,  below =  \myvdist cm of cpi-world] {Interest
-	\\ (US, Euro, Japan, UK)};
-
-	\node (rate-10) [Item Style,  below =  \myvdist cm of i-world,
-	fill = gray!40] {10 year yield \\ (US, Euro, Japan, UK, Germany)};
-
-	\node (rate-5) [Item Style,  below =  \myvdist cm of rate-10] {5 year yield
-	\\ (US, Euro, Japan, UK, Germany)};
-
-
-
-	% Labor branch
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (labor-pop) [Item Style,  below =  \myvdist cm of labor] {Labor pop};
-
-	\node (wage) [Item Style,  below =  \myvdist cm of labor-pop] {Wage};
-
-	\node (emp) [Item Style,  below =  \myvdist cm of wage] {Employment};
-
-	\node (unemp) [Item Style,  below =  \myvdist cm of emp] {Unemployment \\ rate};
-
-	\node (labor-force) [Item Style,  below =  \myvdist cm of unemp] {Labor force};
-
-	\node (vac) [Item Style,  below =  \myvdist cm of labor-force,
-	fill = gray!40] {Vacancies rate};
-
-	% Security branch
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (tourists) [Item Style,  below =  \myvdist cm of security] {Tourists};
-
-
-	% Spreads
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (BA-spread) [Item Style,  below =  \myvdist cm of spreads] {Bid-Ask
-	spread \\ (ILS-USD)};
-
-	\node (inter-spread) [Item Style,  below =  \myvdist cm of BA-spread,
-	fill = gray!40] {Interbank spread};
-
-	\node (sigma-ytm-lt) [Item Style,  below =  \myvdist cm of inter-spread,
-	fill = red!30] {Yield Volatility \\ (long term bonds)};
-
-	\node (sigma-ytm-st) [Item Style,  below =  \myvdist cm of sigma-ytm-lt,
-	fill = red!30] {Yield Volatility \\ (short term bonds)};
-
-	\node (sov-spread) [Item Style,  below =  \myvdist cm of sigma-ytm-st,
-	fill = gray!40] {Sovereign spread};
-
-	\node (corp-real-spread) [Item Style,  below =  \myvdist cm of sov-spread] {Corporate spread \\ (real)};
-
-	\node (corp-nominal-spread) [Item Style,  below =  \myvdist cm of corp-real-spread,
-	fill = gray!40] {Corporate spread \\ (nominal)};
-
-	\node (term-spread) [Item Style,  below =  \myvdist cm of corp-nominal-spread,
-	fill = gray!40] {Term spread};
-
-	\node (hui-hebel) [Item Style,  below =  \myvdist cm of term-spread,
-	fill = gray!40] {Market	depth \\ (Hui-Hebel ratio)};
-
-	% Volatility branch
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (fx-vol) [Item Style,  below =  \myvdist cm of volatility,
-	fill = gray!40] {FX volatility \\ (realized)};
-
-	\node (imp-fx-vol) [Item Style,  below =  \myvdist cm of fx-vol] {FX volatility \\ (implied)};
-
-	\node (eq-vol) [Item Style,  below =  \myvdist cm of imp-fx-vol,
-	fill = gray!40] {Equity volatility \\ (realized)};
-
-	\node (imp-eq-vol) [Item Style,  below =  \myvdist cm of eq-vol] {Equity volatility \\ (implied)};
-
-
-	% Returns
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (house-ret) [Item Style,  below =  \myvdist cm of returns] {House price returns};
-
-	\node (eq-ret) [Item Style, below = 1cm of house-ret,
-	fill = gray!40] {Equity returns};
-
-	% Fin aggregates (credit) branch
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-	\node (credit) [Item Style,  below =  \myvdist cm of fin-agg] {Credit growth};
-
-
-\end{tikzpicture}

@@ -1,0 +1,46 @@
+
+```{r plot_quantreq_rho}
+
+ggplot(data_frame(Tau = as.character(quant_reg_list$tau),
+                  Rho = quant_reg_list$rho),
+       aes(x = Tau, y = Rho)) + 
+  geom_bar(stat = "identity", width = 0.3) + 
+  labs(y = "", title = "Goodness of fit (Rho) of quantile regression") + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r plot_quant_reg}
+
+for(temp_name in names(sum_quant_reg)){
+  
+  temp_df = sum_quant_reg[[temp_name]]$coefficients %>% 
+  as.data.frame() %>% 
+  mutate(Name = rownames(.)) %>% 
+  setNames(c("Coef","Low","Up","Name")) %>% 
+  mutate(Significant = (Low > 0 | Up < 0))
+  
+  temp_plot = ggplot(temp_df,
+  aes(x = Name, y = Coef)) + 
+  geom_point(aes(color = Significant), size = 3) + 
+  scale_color_manual(values = c("FALSE" = "darkgray", "TRUE" = "blue")) + 
+  geom_errorbar(aes(ymin = Low, ymax = Up), width = 0.4) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
+  labs(x = "",y = "",
+       title = paste("GDP forecast coefficients",
+                     paste0("(1Q ahead, ",temp_name,")"),
+                     sep = "\n")) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(size = 6, angle = 30, vjust = 0.5),
+        legend.position = "none")
+  
+  
+  print(temp_plot)
+  
+}
+
+```
+
