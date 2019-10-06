@@ -1,0 +1,48 @@
+\subsection{Data transformation}
+
+<!-- The data is reported with quarterly frequency, the following transformation are performed : -->
+
+Dom_Real partition and CA (quarterly frequency) are transformed with rolling (4 quarter window) sum.
+
+
+
+\subsection{Data structure}
+
+The following series were dropped because of short length
+
+```{r results='asis'} 
+
+cat(paste('-', drop_series), sep = '\n') 
+
+``` 
+
+
+```{r plot_data_structure, fig.height=8}
+
+ggplot(raw_df %>%
+  mutate_at(.vars = vars(-Date),
+            .funs = list(~is.na(.))) %>%
+  gather(key = Indicator, value = Missing, -Date) %>% 
+    mutate(Missing = as.factor(Missing)) %>% 
+    group_by(Indicator) %>% 
+    mutate(Miss_count = sum(Missing == TRUE)) %>% 
+    ungroup(),
+  aes(x = Date, y = reorder(Indicator, Miss_count),color = Missing)) + 
+  geom_point(size = 0.6) + 
+  scale_color_manual(values = c("FALSE" = "lightgray",
+                                "TRUE" = "magenta")) +
+  scale_x_yearqtr(format = "%YQ%q",n = 25) + 
+  labs(x = "",y = "", title = "Missing data structure") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, vjust = 0.5),
+        axis.text.y = element_text(size = 4),
+        plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r child="GaR-Variables-Desc-Chart.Rmd"}
+
+```
+

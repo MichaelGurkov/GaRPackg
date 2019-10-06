@@ -33,13 +33,11 @@ setwd("C:\\Users\\Misha\\Documents\\GaRPackg\\vignettes")
 
 ```{r load_libraries}
 
+library(gghighlight)
+
 library(tidyselect)
 
 library(tidyverse)
-
-library(cowplot)
-
-library(mFilter)
 
 library(quantreg)
 
@@ -82,19 +80,29 @@ df_forecast = df_forecast  %>%
 ```
 
 
+```{r Set_parameters}
+
+quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
+
+horizon_list = list(1,4,8,12)
+
+
+```
+
+
 ```{r Set_partitions}
 
-partitions = list(Dom_Real = list("Ind_Prod_Israel",
-                                  "GDP_F","C_FP","G_NDEFIMP_FP","INV_FP",
+partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
+                                  "C_FP","G_NDEFIMP_FP","INV_FP",
                                   "INV_NI_FP","EXP_ND_FP","IMP_ND_FP",
                                   "STARTUP_FP"),
-                  Dom_Prices = list("breakeven_inflation_1Y",
+                  Dom_Prices = list("CPI","breakeven_inflation_1Y",
                                     "breakeven_inflation_2_3_fwd",
                                     "breakeven_inflation_5_10_fwd",
                                     "CPI_season_adj",
                                     "CPI_no_house_fruits_season_adj",
                                     "CPI_no_house_season_adj",
-                                    "CPI","CPI_no_house","CPI_no_fruits"),
+                                    "CPI_no_house","CPI_no_fruits"),
                   Rates = list("BOI_rate","Telbor_1Y","real_rate_1",
                                "real_rate_2_3_fwd","real_rate_5_10_fwd"),
                   External = list("CA","ILS_USD","ILS_EURO",
@@ -110,12 +118,14 @@ partitions = list(Dom_Real = list("Ind_Prod_Israel",
                   Labor = list("Labor_pop","Wage","EMP","Unemp_rate",
                                "Labor_force","Vacancies_Rate"),
                   National_Security = list("Tourists"),
-                  Spread = list("ILS_USD_spread_pct","Interbank_spread",
-                                "Sovereigh_spread","Spread_CPI_corp",
+                  Spread = list("Spread_CPI_corp",
+                                "ILS_USD_spread_pct","Interbank_spread",
+                                "Sovereigh_spread",
                                 "Term_spread"),
                   Volatility = list("ILS_USD_impl_vol","TA_35_impl_vol"),
-                  Returns = list("TA125_Close","Avg_House_Price_index"),
-                  Credit = list("Credit_to_non_fin_sector"))
+                  Returns = list("TA125_Close"),
+                  Credit = list("Credit_to_non_fin_sector",
+                                "Avg_House_Price_index"))
 
 
 
@@ -134,12 +144,12 @@ partitions = partitions[!names(partitions) %in% c("Spread",
                                                  "National_Security",
                                                  "Volatility")]
 
-partitions$Fin_Cycle = partitions[c("Returns","Credit")] %>% 
+partitions$Fin_Cycle = partitions[c("Credit","Returns")] %>% 
   setNames(NULL) %>% 
   unlist() %>% 
   as.list()
 
-partitions = partitions[!names(partitions) %in% c("Returns","Credit")]
+partitions = partitions[!names(partitions) %in% c("Credit","Returns")]
 
 ```
 
@@ -224,15 +234,20 @@ pca_list = lapply(partitions[sapply(partitions, length) > 1],
   
   ret_list = list(pca = part_df %>%
                     select(-Date) %>% 
-                    prcomp(.,center = TRUE,scale. = TRUE),
+                    prcomp(.,center = TRUE,scale. = TRUE) %>% 
+                    align.pca(1),
                   date_index = part_df$Date)
   
   return(ret_list)
   
 })
 
+```
 
-partitions_df = lapply(names(pca_list), function(temp_name){
+
+```{r get_quantile_regressions}
+
+reg_df = lapply(names(pca_list), function(temp_name){
   
   temp_df = data.frame(Date = pca_list[[temp_name]]$date_index,
                        PCA = pca_list[[temp_name]]$pca$x[,1],
@@ -246,187 +261,67 @@ partitions_df = lapply(names(pca_list), function(temp_name){
   
   
 }) %>% 
-  reduce(full_join, by = "Date") %>% 
-  arrange(Date)
+  reduce(inner_join, by = "Date") %>% 
+  arrange(Date)%>% 
+  inner_join(df %>% 
+              select(Date, GDP_F), by = "Date")
 
-# Normalize sign pca
+for(temp_horizon in unlist(horizon_list)){
+  
+  temp_var = paste("GDP_growth",temp_horizon,sep = "_")
+  
+  reg_df = reg_df %>% 
+    mutate(!!sym(temp_var) := lead(GDP_F,temp_horizon))
 
-pca_list$Dom_Real$pca$rotation = pca_list$Dom_Real$pca$rotation *
-  sign(pca_list$Dom_Real$pca$rotation["GDP_F",1])
-
-pca_list$Dom_Prices$pca$rotation = pca_list$Dom_Prices$pca$rotation *
-  sign(pca_list$Dom_Prices$pca$rotation["CPI",1])
-
-pca_list$Rates$pca$rotation = pca_list$Rates$pca$rotation *
-  sign(pca_list$Rates$pca$rotation["BOI_rate",1])
-
-pca_list$Global$pca$rotation = pca_list$Global$pca$rotation *
-  sign(pca_list$Global$pca$rotation["gdp_us",1])
-
-pca_list$Labor$pca$rotation = pca_list$Labor$pca$rotation *
-  sign(pca_list$Labor$pca$rotation["Unemp_rate",1]) * (-1)
+}
 
 
+qregs_results = lapply(horizon_list, function(temp_horizon){
+
+  dep_var = paste0("GDP_growth_", temp_horizon)
+  
+  qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
+               tau = quantile_vec,
+               data = reg_df %>% 
+                 select(-Date) %>% 
+                 select(names(.)[!grepl("GDP",names(.))], dep_var))  
+  
+  return(qreg_list)
+  
+  
+})
+
+names(qregs_results) = horizon_list
 
 ```
 
+\section{PCA results}
 
-```{r quantile_reg}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
 
-reg_df = lapply(names(pca_list), function(temp_name){
-  
-  df = data.frame(Date = as.yearqtr(pca_list[[temp_name]][["date_index"]]),
-             Temp_Var = pca_list[[temp_name]][["pca"]][["x"]][,1]) %>% 
-    rename(!!quo_name(temp_name) := Temp_Var)
-  
-  return(df)
-  
-
-}) %>% 
-  reduce(inner_join, by = "Date") %>% 
-  left_join(df %>%
-              select(GDP_F, Date) %>%
-              mutate(GDP_F_1 = lead(GDP_F,1)) %>% 
-              mutate(GDP_F_4 = lead(GDP_F,4)),
-            by = "Date")
-
-# Add back variables in case there are partitions with one variable
-
-if(length(partitions) > length(pca_list)){
-
-one_dim_vars = partitions[sapply(partitions, length) == 1] %>% 
-  unlist() %>% 
-  setNames(NULL)
-
-
-reg_df = reg_df %>% 
-  left_join(df %>% 
-  select(Date, one_dim_vars) %>% 
-  mutate_at(vars(-Date), .funs = list(~as.numeric(scale(.)))),
-  by = "Date")
-
-}
-tau_vec = c(0.1,0.25,0.5,0.75,0.9)
-
-quant_reg_list = rq(formula = formula(GDP_F_1~.),tau = tau_vec,
-              data = reg_df %>% select(-Date, -GDP_F, -GDP_F_4))
-
-
-sum_quant_reg = summary(quant_reg_list)
-
-names(sum_quant_reg) = paste("tau",tau_vec, sep = "=")
 
 ```
 
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
+\section{Prediction}
 
-
-\subsection{Comparing prediction accuracy}
-
-In this section we'll compare the quantile regression predictions to BoI staff forecast. There are two types of comparison: 
-
-\begin{itemize}
-  \item
-  Fixed prediction - the prediction is based on a coefficients estimated using
-  the entire sample (that is simply the fitted values of the qunatile regression).
-  \item
-  Rolling prediction - the prediction is based on a coefficients estimated using
-  the subset sample that is increased at each step.
-
-\end{itemize}
-
-
-```{r prediction, eval=FALSE}
-
-df_fixed_pred = cbind(reg_df$Date,
-                      as.data.frame(quant_reg_list$fitted.values)) %>% 
-  setNames(c("Date", paste("tau",tau_vec, "Q_1", sep = "_"))) %>% 
-  mutate_at(.vars = vars(-Date),.funs = list(~ . * 100)) %>% 
-  left_join(df_forecast %>% 
-              select(Date,ends_with("Q_1")),
-            by = "Date") %>% 
-  filter_at(vars(-"Date", -starts_with("tau")), any_vars(!is.na(.)))
+```{r , child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 
 
-```{r plot_prediction, eval=FALSE}
-
-ggplot(df_fixed_pred, aes(x = Date, y = tau_0.5_Q_1 - shiputit_Q_1)) + 
-  geom_line() + 
-  scale_x_yearqtr(n = 10, format = "%YQ%q") + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "", y = "Percent", title = paste0("Difference between prediction",
-                                             " (tau = 0.5) \n and staff forecast",
-                                             " (shiputit)")) + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-```
-
-
-\section{PCA results}
-
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
-
-
-```
 
 
 \section {Appendix}
 
-\subsection{Data transformation}
-
-<!-- The data is reported with quarterly frequency, the following transformation are performed : -->
-
-Dom_Real partition and CA (quarterly frequency) are transformed with rolling (4 quarter window) sum.
-
-
-
-\subsection{Data structure}
-
-The following series were dropped because of short length
-
-```{r results='asis'} 
-
-cat(paste('-', drop_series), sep = '\n') 
-
-``` 
-
-
-```{r plot_data_structure, fig.height=8}
-
-ggplot(raw_df %>%
-  mutate_at(.vars = vars(-Date),
-            .funs = list(~is.na(.))) %>%
-  gather(key = Indicator, value = Missing, -Date) %>% 
-    mutate(Missing = as.factor(Missing)) %>% 
-    group_by(Indicator) %>% 
-    mutate(Miss_count = sum(Missing == TRUE)) %>% 
-    ungroup(),
-  aes(x = Date, y = reorder(Indicator, Miss_count),color = Missing)) + 
-  geom_point(size = 0.6) + 
-  scale_color_manual(values = c("FALSE" = "lightgray",
-                                "TRUE" = "magenta")) +
-  scale_x_yearqtr(format = "%YQ%q",n = 25) + 
-  labs(x = "",y = "", title = "Missing data structure") + 
-  theme_bw() + 
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(angle = 45, vjust = 0.5),
-        axis.text.y = element_text(size = 4),
-        plot.title = element_text(hjust = 0.5))
-
-```
-
-
-```{r child="GaR-Variables-Desc-Chart.Rmd"}
+```{r child="GaR-Appendix.Rmd", eval=FALSE}
 
 ```
 

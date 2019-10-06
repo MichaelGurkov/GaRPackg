@@ -1,0 +1,53 @@
+<!-- In this section we'll compare the quantile regression predictions to BoI staff forecast. There are two types of comparison:  -->
+
+<!-- \begin{itemize} -->
+<!--   \item -->
+<!--   Fixed prediction - the prediction is based on a coefficients estimated using -->
+<!--   the entire sample (that is simply the fitted values of the qunatile regression). -->
+<!--   \item -->
+<!--   Rolling prediction - the prediction is based on a coefficients estimated using -->
+<!--   the subset sample that is increased at each step. -->
+
+<!-- \end{itemize} -->
+
+
+```{r get_prediction_list}
+
+pred_list = lapply(qregs_results, function(temp_reg){
+  
+  temp_reg$fitted.values %>%
+    as.data.frame() %>% 
+    setNames(quantile_vec) %>% 
+    mutate(Date = reg_df$Date[1:nrow(.)]) %>% 
+    gather(key = Quantile,value = GDP_pred, -Date)
+
+})
+
+```
+
+
+```{r plot_prediction}
+
+invisible(sapply(names(pred_list), function(temp_name){
+  
+  temp_plot = ggplot(pred_list[[temp_name]],
+                     aes(x = Date, y = GDP_pred, fill = Quantile)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  # gghighlight(Quantile %in% c("0.05","0.5"),use_group_by = FALSE,
+  #             use_direct_label = FALSE) + 
+  scale_x_yearqtr() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = paste0("GDP predicted growth rates (YoY)", "\n (",temp_name,
+                      " quarters ahead)"), y = "", x = "") + 
+  theme_bw() +
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+  
+  print(temp_plot)
+
+}))
+
+
+
+
+```
+
