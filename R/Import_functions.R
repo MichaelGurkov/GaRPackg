@@ -444,7 +444,11 @@ import.gdp_without_startup_tax = function(
   gdp_without_startup_tax = read.csv(filepath,
                           skip = 48, stringsAsFactors = FALSE) %>%
     setNames(c("Date","GDP_season_adj","GDP_no_startup","GDP_no_tax")) %>%
-    mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y"))
+    mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y")) %>%
+    mutate_at(.vars = vars(-Date),.funs = list(~gsub(pattern = ",",
+                                                    replacement = "",
+                                                    x = .))) %>%
+    mutate_at(.vars = vars(-Date),.funs = list(~as.numeric(.)))
 
 
   return(gdp_without_startup_tax)

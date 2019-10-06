@@ -35,7 +35,7 @@ detrend.HP = function(data, HP_gamma = NULL){
 #' @param positive_direction a boolean indicator of the direction of the
 #' original variable influence
 #'
-#'  @return PCA object with aligned PCA matrix
+#' @return PCA object with aligned PCA matrix
 #'  (x component of the PCA object list). The loadings are left unchaged.
 
 
