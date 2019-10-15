@@ -384,17 +384,23 @@ chain_index = function(df, method = "PCA", ...){
 
   diff_df = reduced_list[[1]]$agg_series
 
-  for (i in 2:length(reduced_list)){
+  if(length(reduced_list) > 1){
 
-    target_df = reduced_list[[i]]$agg_series
+    for (i in 2:length(reduced_list)){
 
-    temp_Date_varname = grep("[Dd]ate", names(target_df),
-                             value = TRUE)
+      target_df = reduced_list[[i]]$agg_series
 
-    target_ind = (!target_df[[temp_Date_varname]] %in%
-                    diff_df[[temp_Date_varname]])
+      temp_Date_varname = grep("[Dd]ate", names(target_df),
+                               value = TRUE)
 
-    diff_df = rbind.data.frame(diff_df, target_df[target_ind,])
+      target_ind = (!target_df[[temp_Date_varname]] %in%
+                      diff_df[[temp_Date_varname]])
+
+      diff_df = rbind.data.frame(diff_df, target_df[target_ind,])
+
+
+    }
+
 
 
   }
@@ -528,3 +534,6 @@ extract.qreg.coeff.table = function(qreg_obj){
 
 
 }
+
+
+
