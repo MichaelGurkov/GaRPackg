@@ -525,7 +525,9 @@ extract.qreg.coeff.table = function(qreg_obj){
            High = `upper bd`, Tau = tau) %>%
     mutate(Tau = as.character(Tau)) %>%
     mutate(Name = gsub("(Intercept)","Intercept",Name, fixed = TRUE)) %>%
-    mutate(Significant = ifelse(High <= 0 | Low >= 0,TRUE, FALSE))
+    mutate(Significant = factor(ifelse(High <= 0 | Low >= 0,"Significant",
+                                       "Non Significant"),
+                                levels = c("Significant","Non Significant")))
 
   return(coef_table)
 
