@@ -21,6 +21,8 @@ detrend.HP = function(data, HP_gamma = NULL){
 
 #' Aligns the sign of PCA components
 #'
+#' @importFrom stats cor
+#'
 #' @description  This function aligns the PCA components with respect to chosen variable.
 #'
 #' @details PCA assigns arbitrary sign to coefficients (loadings).
@@ -76,6 +78,9 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 
   pca_obj$x = sapply(1:ncol(pca_obj$x),function(temp_ind){
     pca_obj$x[,temp_ind] * sign_vec[temp_ind]})
+
+  pca_obj$rotation = sapply(1:ncol(pca_obj$rotation),function(temp_ind){
+    pca_obj$rotation[,temp_ind] * sign_vec[temp_ind]})
 
   return(pca_obj)
 
@@ -256,6 +261,8 @@ identify.endpoints.NA = function(data_vec){
 #' @param data_vec
 #'
 #' @import zoo
+#'
+#' @export
 #'
 interpolate = function(data_vec, direction = "forward"){
 
@@ -469,6 +476,8 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
 #'This function creates a data set for quantile regression
 #'
+#'@importFrom stats complete.cases
+#'
 #'@param partitions_df data frame with explanatory variables
 #'
 #'@param dep_var_df data frame with time indexed depended variable
@@ -500,6 +509,8 @@ make.quant.reg.df = function(partitions_df, dep_var_df,
 
 
 #' This function extracts the coefficients from quantile regression
+#'
+#'
 #'
 #' @param qreg_object quantile regression object
 #'
