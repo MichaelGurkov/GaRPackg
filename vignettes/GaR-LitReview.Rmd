@@ -1,0 +1,6 @@
+@Alessandri2019 divide the explanatory variables to two broad categories: real activity which is represented by GDP (or IP or Itacoin) and financial activity.
+The financial activity is represented both by composite index such as FCI and simpler indices such as spreads (for example sovereign spread). It seems that
+real activity has an important autoregressive component, including lags of real
+activity variable significantly diminishes that explanatory power of financial
+variables. Another important finding is the contribution of credit gap, this contribution generally rises over the forecasting horizon
+(positive contribution at one to two years ahead).

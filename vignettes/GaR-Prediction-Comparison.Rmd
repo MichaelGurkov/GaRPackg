@@ -1,3 +1,193 @@
+
+```{r load_prediction_libraries}
+
+library(stargazer)
+
+```
+
+
+```{r GaR_forecast}
+
+gar_forecast = get.gar.forecast(gar_obj = results[[1]],
+                        win_len = 30,
+                        quantile_vec = parameters_list$quantile_vec,
+                        out_of_sample_step = 1)
+
+```
+
+
+```{r actual_values}
+
+gar_actual_df = results[[1]]$reg_df %>% 
+  select(Date, starts_with("GDP_growth")) %>% 
+  rename_at(.vars = vars(starts_with("GDP_growth")),
+            .funs = list(~str_replace(string = .,pattern = "GDP_growth_",
+                                     replacement = ""))) %>% 
+  gather(key = Horizon,value = GaR_actual,-Date)
+
+```
+
+
+```{r naive_forecast}
+
+naive_forecast_df = results[[1]]$reg_df %>% 
+  select(Date,GDP_F) %>% 
+  mutate(Naive_Next_Q = c(rep(NA,3),rollmean(GDP_F,4))) %>% 
+  mutate(Naive_Next_Q = lag(Naive_Next_Q))
+
+```
+
+
+```{r staff_forecast}
+
+boi_forecast_df = read.csv(paste0("C:\\Users\\Misha\\Documents\\Data",
+                                  "\\BOI\\DSGE",
+                                  "\\DSGE and staff forecasts.csv"),
+                           stringsAsFactors = FALSE) %>% 
+  rename(Date = 1)  %>% 
+  mutate(Date = as.Date(Date, format = "%m/%d/%Y")) %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  filter_at(.vars = vars(-Date),.vars_predicate = any_vars(!is.na(.))) %>% 
+  rename_at(.vars = vars(-Date),.funs = list(~gsub("bi.staff_fct_","",.))) %>% 
+  rename_at(.vars = vars(-Date),.funs = list(~gsub("_08","",.))) %>%
+  rename_at(.vars = vars(-Date),.funs = list(~gsub("\\.Q$","",.))) %>% 
+  gather(key = Category, value = BOI_forecast, -Date) %>% 
+  separate(Category,into = c("Category","Horizon"),sep = "_",
+           extra = "merge") %>% 
+  mutate(Horizon = gsub(pattern = "exg_",replacement = "",
+                         x = Horizon, fixed = TRUE)) %>% 
+  filter(grepl(pattern = "Q",x = Horizon)) %>% 
+  mutate(Horizon = gsub(pattern = "Q_",replacement = "",x = Horizon,
+                        fixed = TRUE)) %>% 
+  mutate(BOI_forecast = BOI_forecast * 0.01)
+
+
+
+```
+
+
+\subsection{Comparison to actual GDP}
+
+We take the predicted YoY GDP growth rates and compare them with actual
+GDP YoY growth rates. That basicaly means looking at the residual
+(difference between actual and predicted) values of the qunatile regression. The accuracy measures for different time horizons are summarized in table
+\ref{forecast_accuracy}
+
+
+```{r forecast_error}
+
+error_df = list(gar_forecast %>% 
+                  filter(Quantile == "0.50",
+                         Forecast_Status == "In Sample") %>% 
+                  select(Date, Horizon, GaR_forecast) %>% 
+                  inner_join(gar_actual_df, by = c("Date","Horizon")) %>% 
+                  mutate(Forecast_Error = GaR_actual - GaR_forecast) %>% 
+                  select(Date,Horizon,Forecast_Error) %>% 
+                  mutate(Indicator = "In sample"),
+                gar_forecast %>% 
+                  filter(Quantile == "0.50",
+                         Forecast_Status == "Out of Sample") %>% 
+                  select(Date, Horizon, GaR_forecast) %>% 
+                  inner_join(gar_actual_df, by = c("Date","Horizon")) %>% 
+                  filter(complete.cases(.)) %>% 
+                  mutate(Forecast_Error = GaR_actual - GaR_forecast) %>% 
+                  select(Date,Horizon,Forecast_Error) %>%
+                  mutate(Indicator = "Out of sample"),
+                naive_forecast_df %>% 
+                  select(Date, Naive_Next_Q) %>% 
+                  inner_join(gar_actual_df %>% 
+                               filter(Horizon ==1) %>% 
+                               select(Date,Horizon, GaR_actual),
+                             by = "Date") %>% 
+                  filter(complete.cases(.)) %>% 
+                  mutate(Forecast_Error = GaR_actual - Naive_Next_Q) %>% 
+                  select(Date,Horizon,Forecast_Error) %>%
+                  mutate(Indicator = "Naive_Forecast"),
+                boi_forecast_df %>% 
+                  filter(Category == "shiputit") %>% 
+                  select(Date, Horizon, BOI_forecast) %>% 
+                  inner_join(gar_actual_df, by = c("Date","Horizon")) %>% 
+                  filter(complete.cases(.)) %>% 
+                  mutate(Forecast_Error = GaR_actual - BOI_forecast) %>% 
+                  select(Date,Horizon,Forecast_Error) %>%
+                  mutate(Indicator = "BoI_forecast")) %>%  
+  bind_rows()
+
+error_df = error_df %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"),
+                          labels = c("1","8","12"))) %>% 
+  mutate(Indicator = factor(Indicator,
+                            levels = c("BoI_forecast","Naive_Forecast",
+                                       "In sample","Out of sample"),
+                            labels = c("BoI_forecast","Naive_Forecast",
+                                       "In sample","Out of sample")))
+
+
+```
+
+
+
+
+```{r plot_errors}
+
+ggplot(error_df, aes(x = Date, y = Forecast_Error, color = Horizon)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(y = "", x = "", title = "Forecast Errors") + 
+  scale_x_yearqtr() +
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5)) + 
+  facet_wrap(~Indicator,nrow = 2,ncol = 2)
+
+
+```
+
+
+```{r calculate_accuracy_table}
+
+forecast_accuracy_table = error_df %>% 
+  group_by(Indicator, Horizon) %>% 
+  summarise(RMSE = sqrt(mean(Forecast_Error ^ 2)) * 100,
+            MAD = mean(abs(Forecast_Error)) * 100) %>% 
+  mutate_if(.predicate = is.numeric,.funs = list(~round(.,3)))
+
+
+
+```
+
+
+```{r output_accuracy_table, results='asis'}
+
+stargazer(forecast_accuracy_table %>% 
+            ungroup() %>% 
+            mutate(Indicator = as.character(Indicator)) %>% 
+            mutate(Horizon = as.character(Horizon)),
+          summary = FALSE, header = FALSE,
+          label = "forecast_accuracy",
+          title = "Forecast accuracy")
+
+```
+
+
+```{r plot_accuracy_table, eval=FALSE}
+
+ggplot(forecast_accuracy_table, aes(x = Horizon, y = MAD,
+                                    fill = Indicator)) + 
+  geom_bar(stat = "identity",position = "dodge", width = 0.5) + 
+  scale_fill_manual(values = c("red","blue","black","gray")) + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+```
+
+
+
+\subsection{Naive forecast comparison}
+
+
+
+
+
 <!-- In this section we'll compare the quantile regression predictions to BoI staff forecast. There are two types of comparison:  -->
 
 <!-- \begin{itemize} -->
@@ -11,43 +201,29 @@
 <!-- \end{itemize} -->
 
 
-```{r get_prediction_list}
+```{r merge_data, eval=FALSE}
 
-pred_list = lapply(qregs_results, function(temp_reg){
-  
-  temp_reg$fitted.values %>%
-    as.data.frame() %>% 
-    setNames(quantile_vec) %>% 
-    mutate(Date = reg_df$Date[1:nrow(.)]) %>% 
-    gather(key = Quantile,value = GDP_pred, -Date)
-
-})
+forecast_df = list(boi_forecast_df,
+                   gar_forecast_df %>% 
+                     filter(Quantile == 0.5) %>% 
+                     select(Date, Horizon, GaR_forecast)) %>% 
+  reduce(inner_join, by = c("Date","Horizon")) %>% 
+  mutate(GaR_forecast = GaR_forecast * 100) %>% 
+  mutate(Diff = GaR_forecast - BOI_forecast)
 
 ```
 
 
-```{r plot_prediction}
+```{r plot, eval=FALSE}
 
-invisible(sapply(names(pred_list), function(temp_name){
-  
-  temp_plot = ggplot(pred_list[[temp_name]],
-                     aes(x = Date, y = GDP_pred, fill = Quantile)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  # gghighlight(Quantile %in% c("0.05","0.5"),use_group_by = FALSE,
-  #             use_direct_label = FALSE) + 
-  scale_x_yearqtr() +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  labs(title = paste0("GDP predicted growth rates (YoY)", "\n (",temp_name,
-                      " quarters ahead)"), y = "", x = "") + 
-  theme_bw() +
+ggplot(forecast_df %>% 
+         filter(!is.na(Diff)),
+       aes(x = Date, y = Diff, color = Horizon)) + 
+  geom_line() + 
+  scale_x_yearqtr() + 
+  labs(title = "Difference between BOI and GaR forecasts") + 
+  theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-  
-  print(temp_plot)
-
-}))
-
-
-
 
 ```
 

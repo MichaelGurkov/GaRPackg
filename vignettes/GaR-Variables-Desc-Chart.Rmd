@@ -91,7 +91,8 @@
 
 \node (cpiF) [Item Style,  below =  \myvdist cm of cpiH] {CPI-F};
 
-\node (export-price) [Item Style,  below =  \myvdist cm of cpiF] {Export Prices};
+\node (export-price) [Item Style,  below =  \myvdist cm of cpiF,
+fill = gray!40] {Export Prices};
 
 % Rates branch
 
@@ -104,7 +105,7 @@
 \node (forward23) [Item Style,  below =  \myvdist cm of real-rate1] {Forward 2-3};
 
 \node (forward510) [Item Style,  below =  \myvdist cm of forward23,
-                    fill = gray!40] {Forward 5-10};
+fill = gray!40] {Forward 5-10};
 
 % External branch
 
@@ -165,8 +166,7 @@
 \node (i-world) [Item Style,  below =  \myvdist cm of cpi-world] {Interest
   \\ (US, Euro, Japan, UK)};
 
-\node (rate-10) [Item Style,  below =  \myvdist cm of i-world,
-                 fill = gray!40] {10 year yield \\ (US, Euro, Japan, UK, Germany)};
+\node (rate-10) [Item Style,  below =  \myvdist cm of i-world] {10 year yield \\ (US, Euro, Japan, UK, Germany)};
 
 \node (rate-5) [Item Style,  below =  \myvdist cm of rate-10] {5 year yield
   \\ (US, Euro, Japan, UK, Germany)};
@@ -205,10 +205,10 @@
                       fill = gray!40] {Interbank spread};
 
 \node (sigma-ytm-lt) [Item Style,  below =  \myvdist cm of inter-spread,
-                      fill = red!30] {Yield Volatility \\ (long term bonds)};
+                      fill = gray!40] {Yield Volatility \\ (long term bonds)};
 
 \node (sigma-ytm-st) [Item Style,  below =  \myvdist cm of sigma-ytm-lt,
-                      fill = red!30] {Yield Volatility \\ (short term bonds)};
+                      fill = gray!40] {Yield Volatility \\ (short term bonds)};
 
 \node (sov-spread) [Item Style,  below =  \myvdist cm of sigma-ytm-st,
                     fill = gray!40] {Sovereign spread};

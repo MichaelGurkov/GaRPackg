@@ -1,0 +1,29 @@
+---
+title: "Chaining index method"
+author: "Michael Gurkov"
+date: "September 12, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+This short vignette describes the chaining index method employed in the GaR package. The method is used to deal (both) with missing variables and dimension reduction. The starting points is a (time indexed) data frame with several variables that have missing observations. The final product is a data vector that summarises the data to one dimension.
+
+The following steps are implemented:
+
+\begin{enumerate}
+  \item
+  For each variable identify a time index of available observations.
+  Get a unique list of those time indices
+  \item
+  For each time index filter the data frame for variables with non missing
+  observations only. Get the first PCA component of the data (while keeping
+  tabs of the number of variables used to calculate the component). Calculate
+  the difference series of the first component.
+  \item
+  Apppend all the resulting series to one series by order of number of
+  variables adding each time just the incremental (missing time index) data 
+
+\end{enumerate}

@@ -1,0 +1,585 @@
+---
+title: "Growth at Risk model"
+institute: "Bank of Israel \\newline Research Department, Finance Division"
+author: "Michael Gurkov"
+# date: "August 15, 2018"
+classoption: t
+output:
+  beamer_presentation:
+    keep_tex: true
+    includes:
+      in_header: GaRPreamblePresentation.tex
+    latex_engine: xelatex
+vignette: >
+  %\VignetteIndexEntry{GlobalFinCycle-Presentation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
+  comment = "#>"
+)
+```
+
+
+```{r init_setup}
+
+devtools::load_all()
+
+library(GaRPackg)
+
+setwd("C:\\Users\\Misha\\Documents\\GaRPackg\\vignettes")
+```
+
+
+```{r load_libraries}
+
+library(xts)
+
+library(tidyselect)
+
+library(ggplot2)
+
+library(cowplot)
+
+library(mFilter)
+
+library(quantreg)
+
+library(rlang)
+
+```
+
+
+<!-- Import data -->
+
+```{r, child="Replication-Partition-ImportData.Rmd"}
+
+```
+
+
+<!-- Calculate partitons -->
+
+```{r child="Replication-Partition-RunPartitions.Rmd",cache = TRUE}
+
+```
+
+
+<!-- Run quantile regressions -->
+
+
+```{r child="Replication-Partition-RunQuantileRegs.Rmd",cache = TRUE}
+
+```
+
+
+<!-- Plotting -->
+
+```{r make_plotlist}
+
+plots_list = lapply(names(qregs_results$chained),
+                 function(temp_horizon){
+  
+  coef_table = extract.qreg.coeff.table(qregs_results$chained[[temp_horizon]])
+  
+  plot = ggplot(coef_table %>% 
+  mutate(Name = recode(Name,domestic_macro = "Domestic Macro",
+                       domestic_fci = "Domestic FCI",
+                       leverage = "Leverage",
+                       external = "External",
+                       world_macro = "World Macro",
+                       world_fci = "World FCI")) %>%
+                filter(!Name == "Intercept"),
+              aes(x = Tau, y = Coeff, fill = Significant)) + 
+  scale_fill_manual(values = c("Significant" = "blue",
+                               "Non Significant" =  "lightblue"),
+                    labels = c("Significant at 10% level",
+                               "Non Significant")) + 
+  geom_bar(stat = "identity", width = 0.2, position = "dodge") + 
+  ylim(-1,1) + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_wrap(~Name) +
+  labs(x = "Quantile", y = "Regression coefficient",
+       title = paste0("Quantile regression coefficients \n (",
+                      temp_horizon, " quarters ahead)"), fill = "") + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.4),
+        legend.position = "none", strip.text.x = element_text(size = 12))
+
+  return(plot)
+  
+  
+})
+
+names(plots_list) = names(qregs_results$chained)
+
+
+```
+
+
+```{r run sim_quant}
+
+set.seed(456)
+
+x = rnorm(500)
+
+y = 8 * x + rnorm(500,sd = 30)
+
+sim_df = data.frame(x,y)
+
+sim_reg = rq(formula = "y~x",tau = c(0.95,0.5,0.05),data = sim_df)
+
+```
+
+# GaR model
+
+\begin{block}
+	
+	\centering
+	
+	Growth at Risk model estimates the relationship between the distribution of future growth and current financial and economic variables.
+	
+\end{block}
+
+
+\vspace{2em}
+
+
+\begin{itemize}
+	\setlength\itemsep{2em}
+	\item
+	Initially developed at the Fed, “Vulnerable Growth”
+	(Adrian et al., AER 2019).
+	\item
+	Operationalized for IMF work (cf. IMF WP 2019)
+\end{itemize}
+
+
+
+# Methodology - Outline
+
+\vspace{2em}
+
+\begin{enumerate}
+	\setlength\itemsep{3em}
+	\item
+	Group (30) economic and financial variables to 6 categories (partitions)
+	\item
+	Summarise (collapse) each partition
+	\begin{itemize}
+		\item
+		Extract the first PCA component of each partition
+	\end{itemize}
+	\item
+	Regress the distribution of future GDP on partitions from step 2
+	\begin{itemize}
+		\item
+		Separate regression for each \hyperlink{quantreg}{quantile}
+		of the future GDP 
+	\end{itemize}
+\end{enumerate}
+
+
+
+# Methodology - Categories (Partitions)
+
+\label{partitions}
+
+\vspace{1em}
+
+Group (30) economic and financial variables to 6 categories (partitions)
+
+\vspace{2em}
+
+\begin{columns}[onlytextwidth,t]
+    \begin{column}{0.5\textwidth}
+    	\centering
+        \textbf{Domestic variables}
+        \vspace{1em}
+            \begin{itemize}
+            \setlength\itemsep{1em}
+            \item
+            \hyperlink{Dom Macro}{Domestic Macro}
+            \item
+            \hyperlink{Dom FCI}{Domestic Financial Conditions Index}
+            \item
+            \hyperlink{Leverage}{Domestic Leverage}
+            \end{itemize}
+    \end{column}
+
+  \begin{column}{0.5\textwidth}
+    	\centering
+        \textbf{External variables}
+        \vspace{1em}
+        \begin{itemize}
+            \setlength\itemsep{1em}
+            \item
+            \hyperlink{World Macro}{World Macro}
+            \item
+            \hyperlink{World FCI}{World Financial Conditions Index}
+            \item
+            \hyperlink{External}{World External conditions}
+        \end{itemize}
+  \end{column}
+
+\end{columns}
+
+
+
+# Methodology - Quantile regression
+
+\label{method-quantreg}
+
+	Regress the distribution of future GDP on partitions from previous steps
+	
+  \vspace{-1em}
+	
+\begin{itemize}
+		\item
+		Separate regression for each \hyperlink{quantreg}{quantile}
+		of the future GDP 
+\end{itemize}
+
+	\begin{block}
+		
+		\begin{align*}
+		GDP_{t+1}^{\hspace{2pt} quantile} =& \beta_{1} Dom Macro_{t} + \beta_{2} Dom FCI_{t} + \beta_{3} Dom Leverage_{t} + \\
+		& \beta_{4} World Macro_{t}  + \beta_{5} World FCI_{t} + \beta_{6} World External_{t}
+		\end{align*}
+		
+	\end{block}
+
+
+
+
+# Future (1 quarter ahead) growth transmisson (50th percentile) 
+
+```{r make_plots}
+
+coef_table = extract.qreg.coeff.table(qregs_results$chained$`1`) %>% 
+  mutate(Name = recode(Name,domestic_macro = "Dom Macro",
+                       domestic_fci = "Dom FCI",
+                       leverage = "Leverage",
+                       external = "External",
+                       world_macro = "World Macro",
+                       world_fci = "World FCI"))
+
+dist_plot = ggplot(coef_table %>% 
+                     filter(Name == "Dom FCI"),
+                   aes(x = Tau, y = Coeff, fill = (Tau == "0.5"))) + 
+  scale_fill_manual(values = c("gray","black")) + 
+  geom_bar(stat = "identity", width = 0.2, position = "dodge") + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(x = "Quantile", y = "Regression coefficient",
+       title = "Domestic FCI across scenarios") + 
+  theme_bw() + 
+  ylim(-0.4,0.6) + 
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 10))
+
+factors_plot = ggplot(coef_table %>% 
+                        filter(Tau == "0.5") %>% 
+                        filter(!Name == "Intercept"),
+                   aes(x = Name, y = Coeff, fill = (Name == "Dom FCI"))) + 
+  scale_fill_manual(values = c("gray","black")) + 
+  geom_bar(stat = "identity", width = 0.2, position = "dodge") + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(x = "", y = "",
+       title = "Partitions transmission") + 
+  theme_bw() + 
+  ylim(-0.4,0.6) + 
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 10),
+        axis.text.x = element_text(size = 9, face = "bold"))
+
+empty_plot = ggplot(coef_table %>% 
+                     filter(Name == "Dom FCI"),
+                   aes(x = Tau, y = Coeff, fill = (Tau == "0.5"))) + 
+  scale_fill_manual(values = c("gray","black")) + 
+  # geom_bar(stat = "identity", width = 0.2, position = "dodge") + 
+  # geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(x = "", y = "",
+       title = "") +
+  theme_void() + 
+  ylim(-0.4,0.6) + 
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 10))
+
+```
+
+
+```{r plot_macro_empty,out.width = '105%',out.height = '115%'}
+
+
+plot_grid(empty_plot,factors_plot, ncol = 2)
+
+
+```
+
+
+# Future (1 quarter ahead) growth transmisson (50th percentile) 
+
+
+```{r plot_macro,out.width = '105%',out.height = '115%'}
+
+
+plot_grid(dist_plot,factors_plot, ncol = 2)
+
+
+```
+
+
+
+# Short vs Medium Term (Quantile regression coefficients)
+
+```{r plot_panel,out.width = '105%',out.height = '118%'}
+
+# title_1q = paste0("Short-Term Quantile Regression Coefficients",
+#                " \n (1 Quarter Ahead)")
+# 
+# title_8q = paste0("Medium-Term Quantile Regression Coefficients",
+#                " \n (8 Quarter Ahead)")
+
+p_row = plot_grid(plotlist = list(
+  plots_list$`1` + labs(title = "Short-Term (1 quarter ahead)") + 
+    theme(plot.title = element_text(hjust = 0.5,size = 18),
+          axis.title = element_text(size = 10),
+          axis.text = element_text(size = 9)),
+  plots_list$`8` + labs(title = "Medium-Term (8 quarter ahead)") + 
+    theme(plot.title = element_text(hjust = 0.5,size = 18),
+          axis.title = element_text(size = 10),
+          axis.text = element_text(size = 9))))
+
+legend_row = get_legend(plots_list$`1` + theme(legend.position="bottom"))
+
+plot_grid(p_row, legend_row ,ncol = 1, rel_heights = c(1, .2))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Summary
+\vspace{1em}
+
+\begin{itemize}
+  \setlength\itemsep{3em}
+  \item
+  Dominant short term factors are domestic macroeconomic and financial conditions 
+  \item
+  Dominant medium term factors are external (trade) and financial 
+  (both global and domestic) conditions
+  \item
+  Realization of global risk can result in tightening of financial conditions and
+  supress future growth
+\end{itemize}
+# Appendix
+
+
+
+
+
+# Quantile regression
+
+\label{quantreg}
+
+\vspace{-1em}
+
+\begin{itemize}
+  \item
+  Allows estimation of the distribution of data (\hyperlink{method-quantreg}{quantiles}) rather that
+  just mean of data. 
+  \item
+  Scenario analysis : 
+    \begin{itemize}
+      \item
+      5th percentile - \textcolor{red}{"pessimistic"} scenario
+      \item
+      95th percentile - \textcolor{green}{"optimistic"} scenario
+    \end{itemize}
+
+\end{itemize}
+
+```{r plot_sim_quant, fig.height=5}
+
+ggplot(sim_df, aes(x = x, y = y)) + 
+  geom_point() + 
+  geom_abline(slope = sim_reg$coefficients[2,],
+              intercept = sim_reg$coefficients[1,],
+              color = c("green","black","red")) + 
+  labs(title = "Quantile regression example (simulated data)") + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+  
+
+
+
+
+
+# Domestic Macro
+
+\label{Dom Macro}
+
+\begin{itemize}
+	\item
+	GDP
+	\item
+	Industrial Production
+	\item
+	PMI
+	\item
+	Cyclical Composite
+\end{itemize}
+
+\hyperlink{partitions}{\beamerbutton{back}}
+
+
+# Domestic Financial Conditions Index
+
+\label{Dom FCI}
+
+\begin{columns}[onlytextwidth,t]
+	\begin{column}{0.5\textwidth}
+    \begin{itemize}
+  		\item
+  		Term spread
+  		\item
+  		Corporate spread
+  		\item
+  		Interbank spread
+  		\item
+  		Sovereign spread
+  		\item
+  		Securities Bid-Ask spread
+  		\item
+  		Equity returns
+  		\item
+    		CPI inflation
+    		\item
+    		Implied (CPI linked) bonds yield
+		\end{itemize}
+		\end{column}
+		
+		\begin{column}{0.5\textwidth}
+  		\begin{itemize}
+    		\item
+    		Policy rate
+    		\item
+    		Inflation expectations
+    		\item
+    		FX returns
+    		\item
+    		FX Bid-Ask spread
+    		\item
+    		Implied equity volatility
+    \end{itemize}
+  \end{column}
+
+\end{columns}
+
+\hyperlink{partitions}{\beamerbutton{back}}
+
+
+# Domestic Leverage
+
+\label{Leverage}
+
+\begin{itemize}
+		\item
+		Private credit to GDP
+		\item
+		Loan to deposits ratio
+		\item
+		Tier 1 risk weighted assets
+		\item
+		Non performing loans ratio
+		\item
+		FX loans share
+		\item
+		Debt to equity (non financial corporations)
+		\item
+		Derivatives assets capital
+		\item
+		Liquid assets to short term liabilities
+		\item
+		FX positions (net) capital
+\end{itemize}
+
+\hyperlink{partitions}{\beamerbutton{back}}
+
+
+
+# World Macro
+
+\label{World Macro}
+
+\begin{itemize}
+		\item
+		World GDP
+		\item
+		World Industrial production
+\end{itemize}
+
+
+\hyperlink{partitions}{\beamerbutton{back}}
+
+
+# World Financial Conditions Index
+
+\label{World FCI}
+
+\begin{itemize}
+		\item
+		VIX
+		\item
+		NASDAQ returns
+		\item
+		Oil futures
+		\item
+		US real effective exchange rate
+\end{itemize}
+
+\hyperlink{partitions}{\beamerbutton{back}}
+
+
+
+# World External Conditions
+
+\label{External}
+
+\begin{itemize}
+		\item
+		Current account to GDP
+		\item
+		Real effective exchange rate
+		\item
+		Trade to GDP
+		\item
+		Domestic investment to GDP
+\end{itemize}
+
+\hyperlink{partitions}{\beamerbutton{back}}
+
+
+

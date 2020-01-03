@@ -1,0 +1,44 @@
+---
+title: "Financial Conditions and Growth at Risk in Israel"
+author: "Michael Gurkov"
+date: "December 12, 2019"
+output: pdf_document
+bibliography: C:\\Users\\Misha\\Documents\\References\\GaR.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+\section{Introduction}
+
+\section{Methodology}
+
+We follow the methodology in @Adrian2019.
+
+\section{Data}
+
+We partition the data according to the following categories:
+
+\begin{itemize}
+  \item
+  Domestic Real
+  \item
+  Domestic Prices
+  \item
+  Rates
+  \item
+  External conditions
+  \item
+  Global conditions
+  \item
+  Labor market
+  \item
+  Risk indicators
+  \item
+  Financial cycle
+\end{itemize}
+
+
+\section{Bibliography}
+

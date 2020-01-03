@@ -24,6 +24,8 @@ knitr::opts_chunk$set(
 devtools::load_all()
 
 library(GaRPackg)
+
+# setwd("C:\\Users\\Misha\\Documents\\GaRPackg\\vignettes")
 ```
 
 
@@ -46,210 +48,74 @@ library(rlang)
 ```
 
 
-```{r Set_parameters}
+<!-- Import data -->
 
-partitions = list(domestic_macro = list('real_gdp_yoy',
-                                        'industrial_prod_yoy','pmi',
-                                        "cyclical_composite_yoy"),
-                  domestic_fci = list('term_spread', 'corporate_spread',
-                                      'interbank_spread','sovereign_spread',
-                                      'securities_ba_spread',
-                                      'equity_returns_qoq', 'policy_rate',
-                                      'cpi_inflation', 
-                                      'implied_yield_cpi_bond_yoy',
-                                      'inflation_expectations',
-                                      'fx_returns_qoq', 'fx_ba_spread',
-                                      'equity_implied_vol'),
-                  leverage = list('private_credit_gdp', 'loan_deposits_ratio',
-                                  'tier1_rwa', 'npl_ratio', 'share_fx_loans',
-                                  'nfc_debt_equity',
-                                  'derivatives_assets_capital',
-                                  'liquid_assets_st_liabilities',
-                                  'net_fx_positions_capital'),
-                  external = list('ca_gdp','reer_yoy', 'trade_gdp',
-                                  'dom_investment_gdp'),
-                  world_macro = list('world_real_gdp_yoy',
-                                     'world_indus_prod_yoy'),
-                  world_fci = list('vix','nasdaq_returns_qoq', 'nasdaq_vol',
-                                   'oil_future_qoq','us_reer_eme_yoy'))
-
-
-pls_target_list = list(domestic_macro = list("real_gdp_yoy", "pmi"),
-                   domestic_fci = list("term_spread", "corporate_spread"),
-                   leverage = list("private_credit_gdp"),
-                   world_macro = list("world_real_gdp_yoy"),
-                   world_fci = list("vix", "nasdaq_returns_qoq"))
-
-
-horizon_list = c(1,4,8,12)
-
-qregs_results = list()
-
-partitions_df = list()
+```{r, child="Replication-Partition-ImportData.Rmd"}
 
 ```
 
-
-```{r Import_data}
-
-df = read.csv(paste0("C:\\Users\\Misha\\Documents\\GaR Python\\Israel",
-                     " GaR\\Data\\Final\\final_data_israel.csv"),
-              stringsAsFactors = FALSE) %>% 
-  mutate(date = as.Date(date)) %>% 
-  filter(date >= as.Date("1996-01-01") & date <= as.Date("2019-06-01"))
-
-```
 
 <!-- Calculate partitons -->
 
-```{r get_chained_pca_partitons}
-
-df_interpolated = df %>% 
-  mutate_at(vars(-date), interpolate)
-
-partitions_df$chained = lapply(partitions,function(temp_part){
-    df_interpolated %>% 
-    select(unlist(temp_part), date) %>% 
-    chain_index(sign_align_params = list(
-      df_interpolated[,c("date",temp_part[[1]])]))}) %>%
-  reduce(full_join, by = "Date") %>% 
-  setNames(c("Date", names(partitions)))
-
-
-partitions_df$chained = left_join(df %>% 
-                            select(date, real_gdp_nis_y),
-                          partitions_df$chained, by = c("date" = "Date"))
-                
-
-```
-
-
-```{r get_complete_pca_partitons, eval=FALSE}
-
-partitions_df$complete = lapply(partitions,function(temp_part){
-    df_interpolated %>% 
-    select(unlist(temp_part), date) %>% 
-    filter(complete.cases(.)) %>% 
-    pca_reduction(sign_align_params = list(
-      df_interpolated[,c("date",temp_part[[1]])]))}) %>%
-  reduce(full_join, by = "Date") %>% 
-  setNames(c("Date", names(partitions)))
-
-
-partitions_df$complete = left_join(df %>% 
-                            select(date, real_gdp_nis_y),
-                          partitions_df$complete, by = c("date" = "Date"))
-                
+```{r child="Replication-Partition-RunPartitions.Rmd"}
 
 ```
 
 
 <!-- Run quantile regressions -->
 
-```{r get_chained_quantile_regressions}
 
-qregs_results$chained = lapply(horizon_list, function(temp_horizon){
-
-  reg_df = make.quant.reg.df(partitions_df = partitions_df$chained %>% 
-                             select(-real_gdp_nis_y),
-                           dep_var_df = partitions_df$chained %>% 
-                             select(date, real_gdp_nis_y) %>% 
-                             rename("GDP_growth" = real_gdp_nis_y),
-                           horizon = temp_horizon)
-  
-  
-  qreg_list = rq(formula = formula("GDP_growth~."),
-               tau = c(0.05,0.25,0.5,0.75,0.95),
-               data = as.data.frame(scale(reg_df %>% 
-                                            select(-date))))  
-  
-  return(qreg_list)
-  
-  
-})
-
-names(qregs_results$chained) = horizon_list
-
+```{r child="Replication-Partition-RunQuantileRegs.Rmd"}
 
 ```
 
-
-```{r get_complete_quantile_regressions, eval=FALSE}
-
-qregs_results$complete = lapply(horizon_list, function(temp_horizon){
-
-  reg_df = make.quant.reg.df(partitions_df = partitions_df$complete %>% 
-                             select(-real_gdp_nis_y),
-                           dep_var_df = partitions_df$complete %>% 
-                             select(date, real_gdp_nis_y) %>% 
-                             rename("GDP_growth" = real_gdp_nis_y),
-                           horizon = temp_horizon)
-  
-  
-  qreg_list = rq(formula = formula("GDP_growth~."),
-               tau = c(0.05,0.25,0.5,0.75,0.95),
-               data = as.data.frame(scale(reg_df %>% 
-                                            select(-date))))  
-  
-  return(qreg_list)
-  
-  
-})
-
-names(qregs_results$complete) = horizon_list
-
-
-```
 
 
 <!-- Plot results -->
 
 \section{Chained quantile regressions}
 
-```{r plot_chained_quantile_coeffs}
+```{r make_plotlist__chained_quantile_coeffs}
 
-invisible(sapply(names(qregs_results$chained), function(temp_horizon){
+plots_list = lapply(names(qregs_results$chained),
+                 function(temp_horizon){
   
   coef_table = extract.qreg.coeff.table(qregs_results$chained[[temp_horizon]])
   
   plot = ggplot(coef_table %>% 
-  mutate(Name = gsub(pattern = "estic",replacement = "",
-                     x = Name, fixed = TRUE)) %>%
-  mutate(Name = factor(Name,
-                       levels = c("dom_macro","dom_fci",
-                                  "leverage","external",
-                                  "world_macro","world_fci",
-                                  "Intercept"))) %>% 
-    filter(!Name == "Intercept"),
-       aes(x = Tau, y = Coeff, fill = Significant)) + 
+                mutate(Name = gsub(pattern = "estic",replacement = "",
+                                   x = Name, fixed = TRUE)) %>%
+                mutate(Name = factor(Name,
+                                     levels = c("אאא","dom_fci",
+                                                "leverage","external",
+                                                "world_macro","world_fci",
+                                                "Intercept"))) %>% 
+                filter(!Name == "Intercept"),
+              aes(x = Tau, y = Coeff, fill = Significant)) + 
+  scale_fill_manual(values = c("Significant" = "blue",
+                               "Non Significant" =  "lightblue")) + 
   geom_bar(stat = "identity", width = 0.2, position = "dodge") + 
   geom_hline(yintercept = 0, linetype = "dashed") + 
-  guides(fill = guide_legend(override.aes = list(shape = 22))) + 
   facet_wrap(~Name) +
   labs(x = "Quantile", y = "",
        title = paste0("Quantile regression coefficients \n (",
-                                     temp_horizon, " quarters ahead)")) + 
+                      temp_horizon, " quarters ahead)"), fill = "") + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.4),
-        # axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-        legend.position = "bottom")
-  
-  print(plot)
-  
-  
-}))
+        legend.position = "none")
 
-
-
-
-
+  return(plot)
   
   
+})
+
+names(plots_list) = names(qregs_results$chained)
+
 
 ```
 
 
-```{r plot_factor_contribution}
+```{r plot_factor_contribution, eval = FALSE}
 
 coef_mat = qregs_results$chained$`1`$coefficients %>% 
   as.data.frame(.) %>% 
@@ -258,8 +124,8 @@ coef_mat = qregs_results$chained$`1`$coefficients %>%
 
 
 ggplot(coef_mat %>% 
-         select(Name, `0.50`) %>% 
-         filter(!Name == "Intercept"), aes(x = Name, y = `0.50`)) + 
+         select(Name, `0.05`) %>% 
+         filter(!Name == "Intercept"), aes(x = Name, y = `0.05`)) + 
   geom_bar(stat = "identity") + 
   theme_bw()
 
@@ -267,9 +133,60 @@ ggplot(coef_mat %>%
 ```
 
 
+```{r plot_5_percentile}
+
+temp_df = data.frame(Category = c("Near Term", "Medium Term"),
+           GaR = c(tail(qregs_results$chained$`1`$fitted.values[,1],1),
+                   tail(qregs_results$chained$`8`$fitted.values[,1],1)))
+
+# ggplot(temp_df,
+#        aes(x = factor(Category, levels = c("Near Term", "Medium Term")),
+#            y = GaR, group = 1)) + 
+#   geom_line() + 
+#   geom_point() + 
+#   labs(x = "", y = "GDP (YoY) forecast",
+#        title = paste0("Near and Medium term Risk",
+#                                       "\n (5th percentile GaR)")) + 
+#   theme_bw() + 
+#   theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
+
+
+ggplot(temp_df,
+       aes(x = factor(Category, levels = c("Near Term", "Medium Term")),
+           y = GaR, group = 1)) + 
+  geom_bar(stat = "identity", width = 0.25, fill = "orangered") + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(x = "", y = "GDP (YoY) forecast",
+       title = paste0("Near and Medium term Risk",
+                                      "\n (5th percentile GaR)")) + 
+  theme_bw() + 
+  theme(panel.grid = element_blank(), plot.title = element_text(hjust = 0.5))
+
+
+
+```
+
+
+```{r plot_panel}
+
+title_1q = paste0("Short-Term Quantile Regression Coefficients",
+               " \n (1-Quarter Ahead)")
+
+title_8q = paste0("Medium-Term Quantile Regression Coefficients",
+               " \n (8-Quarter Ahead)")
+
+p_row = plot_grid(plotlist = list(plots_list$`1` + labs(title = title_1q),
+                                  plots_list$`8` + labs(title = title_8q)))
+
+legend_row = get_legend(plots_list$`1` + theme(legend.position="bottom"))
+
+plot_grid(p_row, legend_row ,ncol = 1, rel_heights = c(1, .2))
+
+```
+
+
 
 \section{Complete quantile regressions}
-
 
 ```{r plot_complete_quantile_coeffs, eval=FALSE}
 
@@ -361,5 +278,4 @@ ggplot(temp %>%
 
 
 ```
-
 

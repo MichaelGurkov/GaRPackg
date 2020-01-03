@@ -1,5 +1,5 @@
 
-```{r plot_quantreq_rho, fig.height=8}
+```{r plot_quantreq_rho, fig.height=8, eval=FALSE}
 
 rho_data = lapply(qregs_results, function(temp_qreg){temp_qreg$rho}) %>% 
   bind_rows() %>% 
@@ -16,51 +16,35 @@ ggplot(data = rho_data, aes(x = Quantile, y = Rho)) +
 ```
 
 
-```{r plot_quant_reg, fig.height=8}
+```{r plot_quant_reg_long_series_1, fig.height=8}
 
-coeff_data = suppressWarnings(lapply(names(qregs_results),
-                                     function(temp_name){
-  
-  temp_summary_list = summary(qregs_results[[temp_name]])
-  
-  coeff_data = lapply(temp_summary_list, function(temp_summary){
-    
-    temp_df = data.frame(Tau = as.character(temp_summary$tau),
-                         temp_summary$coefficients[-1,])
-    
-    temp_df$Name = rownames(temp_df)
-    
-    return(temp_df)
-    
-    
-  }) %>% 
-    bind_rows()
-  
-  coeff_data$Horizon = temp_name
-  
-  return(coeff_data)
-  
-})) %>% 
-  bind_rows() %>% 
-  setNames(str_to_title(names(.))) %>% 
-  mutate(Significant = (0 >= Upper.bd | 0 <= Lower.bd))
+plot.qreg.coeffs(results[[1]]$quantile_reg[1])
 
-for (temp_horizon in unlist(horizon_list)) {
-  
-  temp_plot = ggplot(coeff_data %>% 
-         filter(Horizon == temp_horizon), aes(x = Tau, y = Coefficients,
-                                   fill = Significant)) + 
-    geom_bar(stat = "identity", width = 0.25) + 
-    geom_hline(yintercept = 0, linetype = "dashed") + 
-    labs(title = paste(temp_horizon, "quarters ahead")) + 
-    theme_bw() + 
-    theme(legend.position = "bottom",
-          plot.title = element_text(hjust = 0.5)) + 
-    facet_wrap(~Name)
-  
-  print(temp_plot)
-  
-}
+```
+
+
+
+```{r plot_quant_reg_long_series_2, fig.height=8}
+
+plot.qreg.coeffs(results[[1]]$quantile_reg[2])
+
+```
+
+
+
+```{r plot_quant_reg_long_series_3, fig.height=8}
+
+plot.qreg.coeffs(results[[1]]$quantile_reg[3])
+
+```
+
+
+
+<!-- \newpage -->
+
+```{r plot_quant_reg, fig.height=8, eval=FALSE}
+
+plot.qreg.coeffs(results$interpolated$quantile_reg)
   
 
 ```

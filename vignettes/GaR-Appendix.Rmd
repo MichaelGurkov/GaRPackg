@@ -1,25 +1,35 @@
-\subsection{Data transformation}
 
-<!-- The data is reported with quarterly frequency, the following transformation are performed : -->
+\subsection{Data}
 
-Dom_Real partition and CA (quarterly frequency) are transformed with rolling (4 quarter window) sum.
+Our data includes `r ncol(raw_data$raw_df)` variables
+(at quarterly frequency) for
+`r paste(range(raw_data$raw_df$Date), collapse = "-")` period.
 
+The following transformations were performed:
+
+\begin{enumerate}
+  \item
+  Dom Real partition variables and CA are transformed with rolling
+  (4 quarter window) sum.
+  \item
+  CA in normalized by GDP
+  \item
+  Selected variables(real activity, prices, credit, etc) are transformed
+  to YoY rates of change.
+  \item
+  Selected rates variables are transformed to spreads by subtracting the
+  benchmark (long term) rate.
+
+
+\end{enumerate}
 
 
 \subsection{Data structure}
 
-The following series were dropped because of short length
+```{r plot_data_structure, fig.height=8, eval=FALSE}
 
-```{r results='asis'} 
-
-cat(paste('-', drop_series), sep = '\n') 
-
-``` 
-
-
-```{r plot_data_structure, fig.height=8}
-
-ggplot(raw_df %>%
+ggplot(raw_data$raw_df
+       %>%
   mutate_at(.vars = vars(-Date),
             .funs = list(~is.na(.))) %>%
   gather(key = Indicator, value = Missing, -Date) %>% 
@@ -40,6 +50,15 @@ ggplot(raw_df %>%
         plot.title = element_text(hjust = 0.5))
 
 ```
+
+
+The following series were dropped because of short length
+
+```{r drop_series_list, results='asis'} 
+
+cat(paste('-', parameters_list$drop_series), sep = '\n') 
+
+``` 
 
 
 ```{r child="GaR-Variables-Desc-Chart.Rmd"}

@@ -1,5 +1,13 @@
 
-```{r plot_pca_variance}
+```{r set_pca_list}
+
+pca_list = results[[1]]$pca
+
+```
+
+
+```{r plot_pca_variance, eval=FALSE}
+
 
 pca_variance = lapply(names(pca_list), function(temp_name){
 
@@ -23,26 +31,44 @@ ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) +
 ```
 
 
-```{r plot_pca_loadings}
+```{r plot_pca_loadings, fig.height=9}
 
-invisible(sapply(names(pca_list), function(name){
+pca_plots = lapply(names(pca_list), function(name){
   
   bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = paste(name, "PCA loadings",
-                                      "\n (first component)")) +
+  labs(x = "", y = "", title = name) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
   
-  
-  print(bar_plot)
 
-  
-}))
+})
 
+plot_grid(plotlist = pca_plots, nrow = 4,ncol = 2)
+
+```
+
+
+```{r plot_partiton_timeseries, fig.height=9}
+
+
+pca_timeseries_plots = lapply(names(pca_list), function(name){
+  
+  ggplot(data.frame(x = pca_list[[name]]$date_index,
+                  y = pca_list[[name]]$pca$x[,1]), aes(x = x, y = y)) + 
+    geom_line() + 
+    labs(title = name, x = "", y = "") + 
+    scale_x_yearqtr() + 
+    theme_bw() + 
+    theme(plot.title = element_text(hjust = 0.5))
+
+  })
+
+
+plot_grid(plotlist = pca_timeseries_plots, nrow = 4,ncol = 2)
 
 ```
 
