@@ -1,6 +1,13 @@
-@Alessandri2019 divide the explanatory variables to two broad categories: real activity which is represented by GDP (or IP or Itacoin) and financial activity.
-The financial activity is represented both by composite index such as FCI and simpler indices such as spreads (for example sovereign spread). It seems that
-real activity has an important autoregressive component, including lags of real
-activity variable significantly diminishes that explanatory power of financial
-variables. Another important finding is the contribution of credit gap, this contribution generally rises over the forecasting horizon
-(positive contribution at one to two years ahead).
+@Alessandri2019 use the GaR framework to study the relationship between
+financial conditions and economic activity in Italy. The authors findings
+confirm the known result that this relationship is more pronounced for the left
+tail of the growth distribution. However the authors do not find evidence of the
+"volatility paradox", the association between financial conditions and economic
+growth is negative across all the time horizons. From methodological point the
+article divides the explanatory variables to two broad categories: 
+real activity which is represented by GDP (or IP or Itacoin) and
+financial activity. The financial activity is represented both by composite
+index such as FCI and simpler indices such as spreads
+(for example sovereign spread).  Another important finding is the contribution of credit gap, this contribution generally rises over the forecasting horizon
+(positive contribution at one to two years ahead). The authors conclude that the
+forecast are quite volatile and the use of the model is challenging.
