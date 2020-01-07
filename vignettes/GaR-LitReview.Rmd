@@ -11,3 +11,8 @@ index such as FCI and simpler indices such as spreads
 (for example sovereign spread).  Another important finding is the contribution of credit gap, this contribution generally rises over the forecasting horizon
 (positive contribution at one to two years ahead). The authors conclude that the
 forecast are quite volatile and the use of the model is challenging.
+
+@Aikman2019 perform a panel study of 16 advanced countries for 1980-2017 period.
+The authors do not find evidence of "volatility paradox".Namely they find that 
+the tightening in financial conditions depress growth in the near term 
+(up to one year horizon) but has no effect at longer horizons.
