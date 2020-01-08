@@ -22,4 +22,4 @@ early warnings literature that finds that these variables predict financial
 (banking) crises. The authors suggest that if the "volatility paradox"
 operates through loose financial conditions that support credit and house price
 increase and thus curb economic growth then direct inclusion of these variables
-in the regression eliminates the paradox
+in the regression eliminates the paradox.
