@@ -15,4 +15,11 @@ forecast are quite volatile and the use of the model is challenging.
 @Aikman2019 perform a panel study of 16 advanced countries for 1980-2017 period.
 The authors do not find evidence of "volatility paradox".Namely they find that 
 the tightening in financial conditions depress growth in the near term 
-(up to one year horizon) but has no effect at longer horizons.
+(up to one year horizon) but has no effect at longer horizons. A more detailed
+analysis reveleas that "excessive" credit, house price growth and current account
+deficit has detremintal effect at 3 year horizon. This finding is in line with
+early warnings literature that finds that these variables predict financial
+(banking) crises. The authors suggest that if the "volatility paradox"
+operates through loose financial conditions that support credit and house price
+increase and thus curb economic growth then direct inclusion of these variables
+in the regression eliminates the paradox
