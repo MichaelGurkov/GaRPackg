@@ -161,8 +161,7 @@ vars_to_rates = c("Ind_Prod_advanced","Ind_Prod_Israel",
                   "IMP_OECD")
 
 df = raw_data$raw_df %>% 
-  select(-GDP_F, -GDP_no_tax,-GDP_season_adj) %>% 
-  rename(GDP_F = GDP_no_startup)
+  select(Date,GDP_F,GDP_real, Credit_to_non_fin_sector,CA,HousePrice_Index)
 
 # df = df %>% 
 #   mutate_at(.vars = vars(unlist(partitions$Dom_Real),CA),
