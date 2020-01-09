@@ -4,8 +4,8 @@ output:
   rmarkdown::pdf_document:
     latex_engine: xelatex
     number_sections: true
-    includes:
-            in_header: C:\\Users\\Misha\\Documents\GaR\\GaR-preamble.tex
+    # includes:
+    #         in_header: C:\\Users\\Misha\\Documents\GaR\\GaR-preamble.tex
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -252,7 +252,7 @@ results$long_series = run.GaR.analysis(partitions_list = partitions,
 
 \section{Prediction}
 
-```{r , child="GaR-Prediction-Comparison.Rmd"}
+```{r , child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 
