@@ -84,7 +84,13 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 
 
 df = raw_data$raw_df %>% 
-  select(GDP_F, GDP_real) 
+  select(Date,GDP_F, GDP_real, CA, Credit_to_non_fin_sector,
+         HousePrice_Index) %>%
+  rename(Credit = Credit_to_non_fin_sector, House = HousePrice_Index) %>% 
+  mutate_at(.vars = vars(Credit,CA),
+            .funs = list(GDP = ~. / GDP_F)) %>% 
+  mutate_at(.vars = vars(House, GDP_real, Credit_GDP),
+            .funs = list(ret = ~. / lag(.,12) - 1))
 
 
 
@@ -94,19 +100,72 @@ df = raw_data$raw_df %>%
 ```
 
 
-```{r Analysis}
+```{r plot_GDP_density}
 
-results$long_series = run.GaR.analysis(partitions_list = partitions,
-                               vars_df = data_list$long_series_df,
-                               horizon_list = parameters_list$horizon_list,
-                               quantile_vec = parameters_list$quantile_vec)
+ggplot(df %>% 
+  select(Date, GDP_real_ret) %>% 
+  filter(complete.cases(.)), aes(GDP_real_ret * 100)) + 
+  geom_density() + 
+  labs(title = "Unconditional density of cumulative GDP growth", y = "",
+       x = "GDP 3 year growth (%)") + 
+  theme_bw() + 
+  theme(axis.text.y = element_blank(), plot.title = element_text(hjust = 0.5))
 
-# results$interpolated = run.GaR.analysis(partitions_list = partitions,
-#                                vars_df = data_list$interpolated_df,
-#                                horizon_list = parameters_list$horizon_list,
-#                                quantile_vec = parameters_list$quantile_vec)
+```
 
 
+```{r quantile_reg}
+
+qreq_list = lapply(parameters_list$horizon_list, function(temp_horizon){
+  
+  reg_df = df %>% 
+  select(GDP_real, Credit_GDP_ret,House_ret, CA_GDP) %>% 
+  mutate(GDP_real = log(GDP_real)) %>% 
+  mutate(GDP_real = (lead(GDP_real,temp_horizon) - GDP_real) * 4 / 12) %>% 
+  mutate(GDP_Lag = lag(GDP_real)) %>% 
+  filter(complete.cases(.)) %>% 
+  mutate_all(.funs = list(~scale(.)))
+    
+
+qreq = rq(formula("GDP_real ~ Credit_GDP_ret + House_ret + CA_GDP
+                  + lag(GDP_real,1)"),
+          tau = parameters_list$quantile_vec,data = reg_df)
+
+return(qreq)
+  
+  
+})
+
+names(qreq_list) = parameters_list$horizon_list
+
+
+coeffs_data = lapply(names(qreq_list), function(temp_name){
+  
+  temp_df = qreq_list[[temp_name]]$coefficients %>% 
+    as.data.frame()
+  
+  temp_df %>% 
+    rename_all(.funs = list(~str_remove(.,pattern = "tau= "))) %>% 
+    mutate(Variable = rownames(.)) %>% 
+    gather(key = Tau,value = GaR, -Variable) %>% 
+    mutate(Horizon = temp_name)
+  
+  
+}) %>% 
+  bind_rows()
+
+```
+
+
+```{r plot_coeffs}
+
+ggplot(coeffs_data %>% 
+         filter(Tau == 0.05) %>% 
+         filter(!Variable == "(Intercept)"), aes(x = Variable, y = GaR)) + 
+  geom_col() + 
+  facet_wrap(~Horizon,scales = "free") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90))
 
 ```
 
