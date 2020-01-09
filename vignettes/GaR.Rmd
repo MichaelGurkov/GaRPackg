@@ -84,26 +84,10 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 
 
 df = raw_data$raw_df %>% 
-  select(-GDP_F, -GDP_no_tax,-GDP_season_adj) %>% 
-  rename(GDP_F = GDP_no_startup)
+  select(GDP_F, GDP_real) 
 
 
-```
 
-
-```{r make_data_list}
-
-data_list = list()
-
-data_list$complete_cases_df = df %>%
-  filter(complete.cases(.))
-
-data_list$long_series_df = df %>% 
-  select(-!!(parameters_list$drop_series))
-
-
-data_list$interpolated_df = df %>%
-  mutate_at(.vars = vars(-Date), interpolate)
 
 
 
