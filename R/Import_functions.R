@@ -1,6 +1,35 @@
-###############################################################################
-########################## XLS format import ##################################
-###############################################################################
+#' This function returns the path to Data folder
+#'
+
+#' @title Returns Data folder path
+#'
+#' @import stringr
+#'
+#' @return string with path to Data folder
+
+get.data.folder.path = function(){
+
+  temp_user = list.dirs(path = "C:\\Users",recursive = FALSE)
+
+  temp_user = gsub(pattern = "C:\\Users/",replacement = "" ,
+                   x = temp_user,fixed = TRUE)
+
+  temp_user = temp_user[!temp_user %in% c("All Users","Default",
+                                         "Default User","Public" )]
+
+  data_path = paste0("C:\\Users\\", temp_user,"\\Documents\\Data")
+
+  if (dir.exists(data_path)){
+
+    return(data_path)
+
+  } else {
+
+    return(NA)
+
+    }
+
+}
 
 
 
@@ -12,10 +41,17 @@
 #'
 #' @import zoo
 
-import.iip.data = function(filepath = paste0("C:\\Users\\Misha\\Documents",
-                                             "\\Data\\BOI\\iipsh_past_h.xls")){
+import.iip.data = function(filepath = NULL){
 
-  years = 2004:2018
+
+  # Default path for Data folder
+
+
+  if(is.null(filepath)){filepath = paste0(get.data.folder.path(),
+  "\\BOI\\iipsh_past_h.xls")}
+
+
+   years = 2004:2018
 
   assets = lapply(years, function(temp_year){
 
@@ -61,8 +97,14 @@ import.iip.data = function(filepath = paste0("C:\\Users\\Misha\\Documents",
 #'
 
 import.inflation_sa = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\inflation_sa.xlsx")){
+  filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){filepath = paste0(get.data.folder.path(),
+                                          "\\BOI\\DSGE\\inflation_sa.xlsx")}
+
+
 inflation_sa = read_xlsx(path = filepath,
                          sheet = 1,skip = 4,
                          col_names = c("Date",
@@ -86,8 +128,13 @@ return(inflation_sa)
 #'
 
 import.inputs_foreign = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\inputs_foreign.xlsx")){
+  filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){filepath = paste0(get.data.folder.path(),
+                                          "\\BOI\\DSGE\\inputs_foreign.xlsx")}
+
 
   inputs_foreign = read_xlsx( path = filepath,
     sheet = 1,skip = 4,col_names = c("Date","I_WORLD","GDP_WORLD",
@@ -111,8 +158,13 @@ import.inputs_foreign = function(
 #'
 
 import.Inputs_labor = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\Inputs_labor.xlsx")){
+  filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){filepath = paste0(get.data.folder.path(),
+                                          "\\BOI\\DSGE\\Inputs_labor.xlsx")}
+
 
   Inputs_labor = read_xlsx(path = filepath,
     sheet = 1,skip = 5,col_names = c("Date", "Wage","Labor_pop",
@@ -135,11 +187,17 @@ import.Inputs_labor = function(
 #'
 
 import.monetary_variables = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\monetary variables.xlsx")){
+  filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\monetary variables.xlsx")}
+
 
   monetary_variables = read_xlsx(
-    path = paste0("C:\\Users\\Misha\\Documents\\Data",
+    path = paste0(get.data.folder.path(),
                   "\\BOI\\DSGE\\monetary variables.xlsx"),
     sheet = 1,skip = 1,col_names = c("Date","BOI_rate","Forward_10",
                                      "CPI_no_fruits","CPI_no_house",
@@ -162,8 +220,14 @@ import.monetary_variables = function(
 #'
 
 import.Inputs_fw_row = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\Inputs_fw_row.xlsx")){
+  filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\Inputs_fw_row.xlsx")}
+
 
   Inputs_fw_row = read_xlsx(path = filepath,
                             skip = 6,
@@ -193,9 +257,14 @@ import.Inputs_fw_row = function(
 #' @import dplyr
 #'
 
-import.commodities = function(filepath = paste0("C:\\Users\\Misha\\Documents",
-                                                "\\Data\\BOI\\DSGE",
-                                                "\\commodities.csv")){
+import.commodities = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\commodities.csv")}
+
 
 commodities = read.csv(file = filepath, skip = 10,
                        col.names = c("Date","Commodity",
@@ -217,9 +286,14 @@ return(commodities)
 #' @import dplyr
 #'
 
-import.tourists = function(filepath = paste0("C:\\Users\\Misha\\Documents",
-                                                "\\Data",
-                                                "\\BOI\\DSGE\\tourists.csv")){
+import.tourists = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\tourists.csv")}
+
 
   tourists = read.csv(file = filepath,
                       skip = 8,
@@ -242,9 +316,14 @@ import.tourists = function(filepath = paste0("C:\\Users\\Misha\\Documents",
 #'
 
 
-import.Inputs_CurrentAccount = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\Inputs_CurrentAccount.csv")){
+import.Inputs_CurrentAccount = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\Inputs_CurrentAccount.csv")}
+
 
   Inputs_CurrentAccount = read.csv(file = filepath,
                                    skip = 3,col.names = c("Date","CA"),
@@ -267,9 +346,14 @@ import.Inputs_CurrentAccount = function(
 #'
 
 
-import.Inputs_financial = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\Inputs_financial.csv")){
+import.Inputs_financial = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\Inputs_financial.csv")}
+
 
   Inputs_financial = read.csv(file = filepath,
                               skip = 5, stringsAsFactors = FALSE,
@@ -294,9 +378,14 @@ import.Inputs_financial = function(
 #'
 
 
-import.Inputs_NA_SA = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data\\BOI\\DSGE",
-                    "\\Inputs_NA_SA.csv")){
+import.Inputs_NA_SA = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\Inputs_NA_SA.csv")}
+
 
   Inputs_NA_SA = read.csv(filepath, stringsAsFactors = FALSE)
 
@@ -322,10 +411,15 @@ import.Inputs_NA_SA = function(
 #'
 
 
-import.rates_breakeven_inflation = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\",
-                    "Data\\BOI\\DSGE\\rates and ",
-                    "breakeven inflation.csv")){
+import.rates_breakeven_inflation = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\rates and ",
+                      "breakeven inflation.csv")}
+
 
   rates_breakeven_inflation = read.csv(filepath,
                                        skip = 8, stringsAsFactors = FALSE) %>%
@@ -340,14 +434,6 @@ import.rates_breakeven_inflation = function(
 }
 
 
-rates_breakeven_inflation = read.csv(paste0("C:\\Users\\Misha\\Documents\\",
-                                            "Data\\BOI\\DSGE\\rates and ",
-                                            "breakeven inflation.csv"),
-                                     skip = 8, stringsAsFactors = FALSE) %>%
-  rename(Date = Name) %>%
-  mutate(Date = as.yearqtr(Date, format = "%m/%d/%Y")) %>%
-  mutate_at(.vars = vars(-Date),.funs = list(~as.numeric(gsub(",","",.))))
-
 
 
 #' This function imports global economic data from global_gdp file
@@ -358,10 +444,14 @@ rates_breakeven_inflation = read.csv(paste0("C:\\Users\\Misha\\Documents\\",
 #'
 
 
-import.global_gdp = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\",
-                    "Data\\BOI\\DSGE\\",
-                    "global gdp.csv")){
+import.global_gdp = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\global gdp.csv")}
+
 
   global_gdp = read.csv(filepath,
                         skip = 9, stringsAsFactors = FALSE) %>%
@@ -385,9 +475,15 @@ import.global_gdp = function(
 
 
 import.global_inflation = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\",
-                             "Data\\BOI\\DSGE\\",
-                             "global inflation.csv")){
+  filepath = NULL){
+
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\global inflation.csv")}
+
 
   global_inflation = read.csv(filepath,
                               skip = 9, stringsAsFactors = FALSE) %>%
@@ -414,9 +510,16 @@ import.global_inflation = function(
 #'
 
 
-import.real_rate_1Y = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\real rate 1Y.csv")){
+import.real_rate_1Y = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\",
+                      "real rate 1Y.csv")}
+
+
 
   real_rate_1Y = read.csv(filepath,
                               skip = 8, stringsAsFactors = FALSE) %>%
@@ -438,8 +541,16 @@ import.real_rate_1Y = function(
 
 
 import.gdp_without_startup_tax = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data\\BOI\\DSGE\\",
-                    "GDP without startup or import tax.csv")){
+  filepath = NULL){
+
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\",
+                      "GDP without startup or import tax.csv")}
+
 
   gdp_without_startup_tax = read.csv(filepath,
                           skip = 48, stringsAsFactors = FALSE) %>%
@@ -545,9 +656,16 @@ import.osnat.data = function(){
 #' @import zoo
 #'
 
-import.michael.data = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\GaR Python\\",
-                    "Israel GaR\\Data\\Raw\\raw_GaR_data.csv")){
+import.michael.data = function(filepath = NULL){
+
+
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\raw_GaR_data.csv")}
+
 
   raw_GaR_data = read.csv(filepath) %>%
     rename(Date = date) %>%
@@ -573,9 +691,16 @@ import.michael.data = function(
 #'
 #' @import zoo
 
-import.indus.prod.data = function(filepath = paste0("C:\\Users\\Misha\\Documents\\",
-                                                    "Data\\BOI\\DSGE\\",
-                                                    "Industrial production.csv")){
+import.indus.prod.data = function(filepath = NULL){
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\",
+                      "Industrial production.csv")}
+
+
 
   Industrial_production = read.csv(file = filepath, skip = 10,
                                    stringsAsFactors = FALSE,
@@ -596,8 +721,17 @@ import.indus.prod.data = function(filepath = paste0("C:\\Users\\Misha\\Documents
 
 
 import.vix = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data",
-                    "\\BOI\\DSGE\\VIX.csv")){
+  filepath = NULL){
+
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\VIX.csv")}
+
+
+
   VIX = read.csv(file = filepath,skip = 10,col.names = c("Date","VIX"),
                  stringsAsFactors = FALSE) %>%
     mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y"))
@@ -616,8 +750,18 @@ import.vix = function(
 
 
 import.global.monetary.rates = function(
-  filepath = paste0("C:\\Users\\Misha\\Documents\\Data\\BOI\\",
-                    "DSGE\\global monetary rates.csv")){
+  filepath = NULL){
+
+
+  # Default path for Data folder
+
+  if(is.null(filepath)){
+    filepath = paste0(get.data.folder.path(),
+                      "\\BOI\\DSGE\\global monetary rates.csv")}
+
+
+
+
   global_monetary_rates = read.csv(file = filepath,skip = 9,
                                    col.names = c("Date","rate_euro",
                                                  "rate_us","rate_uk",
