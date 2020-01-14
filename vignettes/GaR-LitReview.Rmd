@@ -1,25 +1,52 @@
-@Alessandri2019 use the GaR framework to study the relationship between
-financial conditions and economic activity in Italy. The authors findings
-confirm the known result that this relationship is more pronounced for the left
-tail of the growth distribution. However the authors do not find evidence of the
-"volatility paradox", the association between financial conditions and economic
-growth is negative across all the time horizons. From methodological point the
-article divides the explanatory variables to two broad categories: 
-real activity which is represented by GDP (or IP or Itacoin) and
-financial activity. The financial activity is represented both by composite
-index such as FCI and simpler indices such as spreads
-(for example sovereign spread).  Another important finding is the contribution of credit gap, this contribution generally rises over the forecasting horizon
-(positive contribution at one to two years ahead). The authors conclude that the
-forecast are quite volatile and the use of the model is challenging.
+The Growth at Risk framework relates to a strand of literature that study the
+relationship between financial conditions and economic activity. Two main
+stylized facts of this literature are the "volatility paradox" and the
+"risk asymmetry". The "volatility paradox" is a phenomenon where accommodating
+financial conditions stimulate growth in the short term but depress growth in
+the long term due to realization of accumulated risks. The "risk asymmetry"
+refers to the fact the left tail of the forecasted growth distribution 
+(the depressed growth scenarios) is quite volatile relative to the right
+tail of the distribution meaning that the downside growth risk is much more
+severe than upside risk.
+
+
+@Alessandri2019 apply the GaR framework to the Italian economy. The authors find that this
+relationship is more pronounced for the left tail of the growth distribution and
+thus confirm the "risk asymmetry" finding. The authors however do not find
+supporting evidence of the "volatility paradox", according to their results the
+association between financial conditions and economic growth is negative across
+all the time horizons. From methodological point the article divides the 
+explanatory variables to two broad categories: real activity which is 
+represented by GDP (or IP or Itacoin) and financial activity. Financial 
+activity is represented both by composite index such as FCI and simpler indices
+such as spreads (for example sovereign spread). Another important finding is
+the contribution of credit gap, this contribution generally rises over the
+forecasting horizon (positive contribution at one to two years ahead). The
+authors conclude that the forecast are quite volatile and the use of the model
+is challenging.
 
 @Aikman2019 perform a panel study of 16 advanced countries for 1980-2017 period.
-The authors do not find evidence of "volatility paradox".Namely they find that 
-the tightening in financial conditions depress growth in the near term 
-(up to one year horizon) but has no effect at longer horizons. A more detailed
-analysis reveleas that "excessive" credit, house price growth and current account
-deficit has detremintal effect at 3 year horizon. This finding is in line with
-early warnings literature that finds that these variables predict financial
-(banking) crises. The authors suggest that if the "volatility paradox"
-operates through loose financial conditions that support credit and house price
-increase and thus curb economic growth then direct inclusion of these variables
-in the regression eliminates the paradox.
+Their analysis reveals that "excessive" credit, house price growth and
+current account deficit has detrimental effect at 3 year horizon. This finding
+ is in line with early warnings literature that finds that these variables
+predict financial (banking) crises. As for financial conditions, the finding is
+that tightening in financial conditions depress growth in the near term
+(up to one year horizon) but has no effect at longer horizons. The authors 
+suggest that if the "volatility paradox" operates through loose financial 
+conditions that support credit and house price increase and thus curb economic
+growth then direct inclusion of these variables in the regression eliminates
+the paradox.
+
+@Chen2019 estimate the ability of financial variables to forecast 
+macroeconomic variables using panel data . The authors find that in a univariate regression
+credit growth has significant explanatory power at short term (1 quarter and 4
+quarter horizon). Once house price and stock price are included the four-quarter
+association becomes insignificant. The authors compare forecasting accuracy of
+panel coefficient vs individual country regressions and find that panel
+regression perform better out of sample
+(the result is the other way around in sample). Corporate bond yield curbs
+future growth both at one and four quarter horizon. The authors find that the
+forecast of the model outperform the forecast published by IMF in World 
+Economic Outlook. Another important finding is that using a factor model (instead
+of simle regression) by collapsing the financial variables into one factor using
+PCA imporoves forecast accuracy.
