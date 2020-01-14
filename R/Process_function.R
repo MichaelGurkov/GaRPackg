@@ -548,5 +548,3 @@ extract.qreg.coeff.table = function(qreg_obj){
 
 }
 
-
-

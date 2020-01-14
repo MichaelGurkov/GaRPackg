@@ -4,8 +4,8 @@ output:
   rmarkdown::pdf_document:
     latex_engine: xelatex
     number_sections: true
-    includes:
-            in_header: C:\\Users\\Misha\\Documents\GaR\\GaR-preamble.tex
+    # includes:
+    #         in_header: C:\\Users\\Misha\\Documents\GaR\\GaR-preamble.tex
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -32,17 +32,12 @@ library(GaRPackg)
 
 ```{r load_libraries}
 
-library(cowplot)
-
-library(gghighlight)
-
 library(tidyselect)
 
 library(tidyverse)
 
 library(quantreg)
 
-library(rlang)
 
 ```
 
@@ -83,18 +78,46 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 ```{r Process_data}
 
 
-df = raw_data$raw_df %>% 
-  select(Date,GDP_F, GDP_real, CA, Credit_to_non_fin_sector,
-         HousePrice_Index) %>%
-  rename(Credit = Credit_to_non_fin_sector, House = HousePrice_Index) %>% 
-  mutate_at(.vars = vars(Credit,CA),
-            .funs = list(GDP = ~. / GDP_F)) %>% 
-  mutate_at(.vars = vars(House, GDP_real, Credit_GDP),
-            .funs = list(ret = ~. / lag(.,12) - 1))
+credit = raw_data$raw_df %>% 
+  select(Date,Credit_to_non_fin_sector) %>% 
+  mutate(Credit = Credit_to_non_fin_sector /
+           lag(Credit_to_non_fin_sector,12) - 1) %>% 
+  select(Date, Credit) %>% 
+  filter(complete.cases(.))
+
+
+house = raw_data$raw_df %>% 
+  select(Date,HousePrice_Index) %>% 
+  mutate(House = HousePrice_Index / lag(HousePrice_Index,12) - 1) %>% 
+  select(Date, House) %>% 
+  filter(complete.cases(.))
+
+ca = raw_data$raw_df %>% 
+  select(Date,CA, GDP_F) %>% 
+  mutate(CA_GDP = CA / GDP_F) %>% 
+  filter(complete.cases(.))
+
+inflation = raw_data$raw_df %>% 
+  select(Date,CPI) %>% 
+  mutate(Inflation = CPI / lag(CPI,4) - 1) %>% 
+  select(Date,Inflation) %>% 
+  filter(complete.cases(.))
+
+
+rate = raw_data$raw_df %>% 
+  select(Date,BOI_rate) %>% 
+  mutate(rate = BOI_rate - lag(BOI_rate,4)) %>% 
+  select(Date,rate) %>% 
+  filter(complete.cases(.))
 
 
 
 
+x_df = list(credit, house, ca, inflation, rate) %>% 
+  reduce(inner_join, by = "Date") %>% 
+  mutate_at(.vars = vars(-Date),.funs = list(scale))
+
+rm(credit, house, ca, inflation, rate)
 
 
 ```
@@ -102,9 +125,11 @@ df = raw_data$raw_df %>%
 
 ```{r plot_GDP_density}
 
-ggplot(df %>% 
-  select(Date, GDP_real_ret) %>% 
-  filter(complete.cases(.)), aes(GDP_real_ret * 100)) + 
+ggplot(raw_data$raw_df %>% 
+  select(Date, GDP_real) %>% 
+    mutate(GDP_real = log(GDP_real)) %>% 
+    mutate(GDP_growth = (lead(GDP_real, 12) - GDP_real) * 4 /12) %>% 
+    select(Date, GDP_growth), aes(x = GDP_growth)) + 
   geom_density() + 
   labs(title = "Unconditional density of cumulative GDP growth", y = "",
        x = "GDP 3 year growth (%)") + 
@@ -118,17 +143,19 @@ ggplot(df %>%
 
 qreq_list = lapply(parameters_list$horizon_list, function(temp_horizon){
   
-  reg_df = df %>% 
-  select(GDP_real, Credit_GDP_ret,House_ret, CA_GDP) %>% 
-  mutate(GDP_real = log(GDP_real)) %>% 
-  mutate(GDP_real = (lead(GDP_real,temp_horizon) - GDP_real) * 4 / 12) %>% 
-  mutate(GDP_Lag = lag(GDP_real)) %>% 
-  filter(complete.cases(.)) %>% 
-  mutate_all(.funs = list(~scale(.)))
+  gdp_growth = raw_data$raw_df %>% 
+    select(Date, GDP_real) %>% 
+    mutate(GDP_real = log(GDP_real)) %>% 
+    mutate(GDP_growth = (lead(GDP_real, temp_horizon) - GDP_real) * 4 /
+             temp_horizon) %>% 
+    select(Date, GDP_growth) %>% 
+    filter(complete.cases(.))
+  
+ reg_df = inner_join(gdp_growth, x_df, by = "Date")
     
 
-qreq = rq(formula("GDP_real ~ Credit_GDP_ret + House_ret + CA_GDP
-                  + lag(GDP_real,1)"),
+qreq = rq(formula("GDP_growth ~ Credit + House + CA_GDP + Inflation + rate
+                  + lag(GDP_growth,1)"),
           tau = parameters_list$quantile_vec,data = reg_df)
 
 return(qreq)
@@ -161,7 +188,7 @@ coeffs_data = lapply(names(qreq_list), function(temp_name){
 
 ggplot(coeffs_data %>% 
          filter(Tau == 0.05) %>% 
-         filter(!Variable == "(Intercept)"), aes(x = Variable, y = GaR)) + 
+         filter(Variable %in% c("Credit", "House", "CA_GDP")), aes(x = Variable, y = GaR)) + 
   geom_col() + 
   facet_wrap(~Horizon,scales = "free") + 
   theme_bw() + 
