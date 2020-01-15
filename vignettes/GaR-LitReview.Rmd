@@ -65,3 +65,8 @@ tail coefficients are negative. In the long term (3 year horizon) the
 coefficients are negative across the entire distribution. This is supporting
 evidence of the "volatility paradox" but only for the left tail of the growth
 distribution. 
+
+@Bespalova2019 use the GaR framework for the Dominican Republic which is a small
+open economy characterized by capital account and financial market openness.
+The authors data spans the period 1996-2018. There are 32 expalanatory variables
+which are grouped into 5 partitions. 
