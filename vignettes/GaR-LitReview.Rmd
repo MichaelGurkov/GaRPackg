@@ -20,10 +20,9 @@ explanatory variables to two broad categories: real activity which is
 represented by GDP (or IP or Itacoin) and financial activity. Financial 
 activity is represented both by composite index such as FCI and simpler indices
 such as spreads (for example sovereign spread). Another important finding is
-the contribution of credit gap, this contribution generally rises over the
-forecasting horizon (positive contribution at one to two years ahead). The
-authors conclude that the forecast are quite volatile and the use of the model
-is challenging.
+the positive contribution (at one to two years ahead) of credit gap that
+increases over the forecasting horizon . The authors also note that the
+forecast are quite volatile and the use of the model is challenging.
 
 @Aikman2019 perform a panel study of 16 advanced countries for 1980-2017 period.
 Their analysis reveals that "excessive" credit, house price growth and
@@ -38,12 +37,12 @@ growth then direct inclusion of these variables in the regression eliminates
 the paradox.
 
 @Chen2019 estimate the ability of financial variables to forecast 
-macroeconomic variables using panel data . The authors find that in a univariate regression
-credit growth has significant explanatory power at short term (1 quarter and 4
-quarter horizon). Once house price and stock price are included the four-quarter
-association becomes insignificant. The authors compare forecasting accuracy of
-panel coefficient vs individual country regressions and find that panel
-regression perform better out of sample
+macroeconomic variables using panel data . The authors find that in a univariate
+regression, credit growth has significant positive contribution at the short term
+(1 quarter and 4 quarter horizon). Once house price and stock price are included
+the four-quarter association becomes insignificant. The authors compare
+forecasting accuracy of panel coefficient vs individual country regressions and
+find that panel regression perform better out of sample
 (the result is the other way around in sample). Corporate bond yield curbs
 future growth both at one and four quarter horizon. The authors find that the
 forecast of the model outperform the forecast published by IMF in World 
@@ -60,8 +59,9 @@ values are used instead. The authors divide the 11 explanatory variables to 6
 partitions. The partitions mainly reflect the usual categories:
 Global vs Domestic and Real vs Financial. In the short term (1 year ahead) the
 credit growth (represented by bank credit to GDP) exhibits 
-"reverse risk asymmetry" - the left tail coefficients are positive while right
-tail coefficients are negative. In the long term (3 year horizon) the
+"reverse risk asymmetry" - the left tail coefficients are positive (and smaller
+in size) while right tail coefficients are negative (and larger in absolute
+value). In the long term (3 year horizon) the
 coefficients are negative across the entire distribution. This is supporting
 evidence of the "volatility paradox" but only for the left tail of the growth
 distribution. 
