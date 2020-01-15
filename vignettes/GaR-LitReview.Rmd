@@ -48,5 +48,20 @@ regression perform better out of sample
 future growth both at one and four quarter horizon. The authors find that the
 forecast of the model outperform the forecast published by IMF in World 
 Economic Outlook. Another important finding is that using a factor model (instead
-of simle regression) by collapsing the financial variables into one factor using
-PCA imporoves forecast accuracy.
+of simple regression) by collapsing the financial variables into one factor using
+PCA improves forecast accuracy.
+
+
+Growth at risk framework was also implemented in the developing countries.
+@Komatsuzaki2019 apply this methodology to the Eastern Caribbean Currency Union
+(ECCU). Unfortunately their sample is quite limited: the estimation period is
+2001-2017 and for some countries actual GDP growth is not available and estimated
+values are used instead. The authors divide the 11 explanatory variables to 6
+partitions. The partitions mainly reflect the usual categories:
+Global vs Domestic and Real vs Financial. In the short term (1 year ahead) the
+credit growth (represented by bank credit to GDP) exhibits 
+"reverse risk asymmetry" - the left tail coefficients are positive while right
+tail coefficients are negative. In the long term (3 year horizon) the
+coefficients are negative across the entire distribution. This is supporting
+evidence of the "volatility paradox" but only for the left tail of the growth
+distribution. 
