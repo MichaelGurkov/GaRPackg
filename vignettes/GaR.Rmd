@@ -129,22 +129,41 @@ partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
 
 ```{r Modify_partitions}
 
-partitions$Risk = partitions[c("Spread","National_Security",
+baseline_partitions = partitions
+
+baseline_partitions$Risk = baseline_partitions[c("Spread","National_Security",
                                       "Volatility")] %>% 
   setNames(NULL) %>% 
   unlist() %>% 
   as.list()
 
-partitions = partitions[!names(partitions) %in% c("Spread",
-                                                 "National_Security",
-                                                 "Volatility")]
+baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
+                                            c("Spread",
+                                              "National_Security",
+                                              "Volatility")]
 
-partitions$Fin_Cycle = partitions[c("Credit","Returns")] %>% 
+baseline_partitions$Fin_Cycle = baseline_partitions[c("Credit","Returns")] %>% 
   setNames(NULL) %>% 
   unlist() %>% 
   as.list()
 
-partitions = partitions[!names(partitions) %in% c("Credit","Returns")]
+baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
+                                            c("Credit","Returns")]
+
+
+###############################################################################
+
+# michael_partitions = partitions
+# 
+# michael_partitions$Rates = michael_partitions[c("Spread","Rates")] %>% 
+#   setNames(NULL) %>% 
+#   unlist() %>% 
+#   as.list()
+# 
+# michael_partitions = michael_partitions[!names(michael_partitions) == "Spread"]
+
+
+
 
 
 
@@ -170,7 +189,7 @@ df = raw_data$raw_df %>%
   rename(GDP_F = GDP_no_startup)
 
 # df = df %>% 
-#   mutate_at(.vars = vars(unlist(partitions$Dom_Real),CA),
+#   mutate_at(.vars = vars(unlist(baseline_partitions$Dom_Real),CA),
 #             .funs = list(~c(rep(NA,3),rollsum(.,4))))
 
 # Normalize CA by GDP
@@ -226,12 +245,12 @@ data_list$interpolated_df = df %>%
 
 ```{r Analysis, eval=FALSE}
 
-results$long_series = run.GaR.analysis(partitions_list = partitions,
+results$long_series = run.GaR.analysis(partitions_list = baseline_partitions,
                                vars_df = data_list$long_series_df,
                                horizon_list = parameters_list$horizon_list,
                                quantile_vec = parameters_list$quantile_vec)
 
-# results$interpolated = run.GaR.analysis(partitions_list = partitions,
+# results$interpolated = run.GaR.analysis(partitions_list = baseline_partitions,
 #                                vars_df = data_list$interpolated_df,
 #                                horizon_list = parameters_list$horizon_list,
 #                                quantile_vec = parameters_list$quantile_vec)
