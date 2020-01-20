@@ -11,30 +11,46 @@ severe than upside risk.
 
 
 @Alessandri2019 apply the GaR framework to the Italian economy.
-The authors find that the left tail of the growth distribution is more pronounced
-and thus confirm the "risk asymmetry" finding. The authors however do not find
-supporting evidence of the "volatility paradox", according to their results the
-association between financial conditions and economic growth is negative across
-all the time horizons. From methodological perspective the article divides the 
-explanatory variables to two broad categories: real activity which is 
-represented by GDP (or IP or Itacoin) and financial activity. Financial 
-activity is represented both by composite index such as FCI and simpler indices
-such as spreads (for example sovereign spread). Another important finding is
-the positive contribution (at one to two years ahead) of credit gap that
-increases over the forecasting horizon . The authors also note that the
-forecast are quite volatile and the use of the model is challenging.
+The authors find that the downside risk (left tail of the growth distribution)
+is more pronounced relative to upside risk and thus confirm the "risk asymmetry"
+finding. The authors however do not find supporting evidence of the "volatility
+paradox", according to their results the association between financial
+conditions and economic growth is negative across all the time horizons. 
+The sample period is approximately\footnote{Different indicators span different
+time periods} 1990Q3-2018Q4 and includes two major crises events : the Global
+Financial Crisis and the Sovereign Debt Crisis. The authors note that some of
+the results are influenced by the crises periods. From methodological perspective
+the article divides the explanatory variables to two broad categories: 
+real activity which is represented by GDP (or IP or Itacoin) and financial
+activity. Financial activity is represented both by composite index such as FCI
+and simpler indices such as spreads (for example sovereign spread). Another
+important finding is the positive contribution (at one to two years ahead) of
+credit gap that increases over the forecasting horizon . The authors also note
+that the forecast are quite volatile and the use of the model is challenging.
 
-@Aikman2019 perform a panel study of 16 advanced countries for 1980-2017 period.
-Their analysis reveals that "excessive" credit, house price growth and
-current account deficit has detrimental effect at 3 year horizon. This finding
- is in line with early warnings literature that finds that these variables
-predict financial (banking) crises. As for financial conditions, the finding is
-that tightening in financial conditions depress growth in the near term
-(up to one year horizon) but has no effect at longer horizons. The authors 
-suggest that if the "volatility paradox" operates through loose financial 
+@Aikman2018 use the GaR framework to identify risk to the UK financial
+stability. The researches introduce 29 financial risk inicators and group them
+to three categories: private nonfinancial sector leverage, asset valuations
+in financial and property markets and credit terms and conditions.
+
+@Aikman2019 perform a panel study of 16 advanced countries\footnote{These 
+countries are: Australia, Belgium, Canada, Denmark, Finland, France, Germany, 
+Ireland, Italy, Netherlands, Norway, Spain, Sweden, Switzerland, the United 
+Kingdom and the United States} for 1980-2017 period. The authors concentrate
+on medium term (3 year horizon) as being the most relevant from macro-prudential
+policy perspective. The analysis reveals that at medium term "excessive" credit
+growth, house price growth and current account deficit have detrimental effect
+on GDP growth (credit and current account's coefficients are negative across all 
+horizons).This finding is in line with early warnings literature that finds that
+these variables predict financial (banking) crises. As for financial conditions,
+the finding is that tightening in financial conditions depress growth in the 
+near term (up to one year horizon) but has no effect at longer horizons. The 
+authors suggest that if the "volatility paradox" operates through loose financial 
 conditions that support credit and house price increase and thus curb economic
 growth then direct inclusion of these variables in the regression eliminates
-the paradox.
+the effect of financial conditions. The analysis produces limited evidence of
+"risk asymmetry", only credit's coefficient is larger in magnitude at the 5th
+percentile.
 
 @Chen2019 estimate the ability of financial variables to forecast 
 macroeconomic variables using panel data . The authors find that in a univariate
@@ -68,5 +84,5 @@ distribution.
 
 @Bespalova2019 use the GaR framework for the Dominican Republic which is a small
 open economy characterized by capital account and financial market openness.
-The authors data spans the period 1996-2018. There are 32 expalanatory variables
+The authors data spans the period 1996-2018. There are 32 explanatory variables
 which are grouped into 5 partitions. 
