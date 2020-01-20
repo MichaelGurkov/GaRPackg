@@ -248,8 +248,6 @@ results$long_series = run.GaR.analysis(partitions_list = partitions,
 ```
 
 
-
-
 \section{PCA results}
 
 ```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}

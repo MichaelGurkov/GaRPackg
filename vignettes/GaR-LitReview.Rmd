@@ -10,12 +10,12 @@ tail of the distribution meaning that the downside growth risk is much more
 severe than upside risk.
 
 
-@Alessandri2019 apply the GaR framework to the Italian economy. The authors find that this
-relationship is more pronounced for the left tail of the growth distribution and
-thus confirm the "risk asymmetry" finding. The authors however do not find
+@Alessandri2019 apply the GaR framework to the Italian economy.
+The authors find that the left tail of the growth distribution is more pronounced
+and thus confirm the "risk asymmetry" finding. The authors however do not find
 supporting evidence of the "volatility paradox", according to their results the
 association between financial conditions and economic growth is negative across
-all the time horizons. From methodological point the article divides the 
+all the time horizons. From methodological perspective the article divides the 
 explanatory variables to two broad categories: real activity which is 
 represented by GDP (or IP or Itacoin) and financial activity. Financial 
 activity is represented both by composite index such as FCI and simpler indices
