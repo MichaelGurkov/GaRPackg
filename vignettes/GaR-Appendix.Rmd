@@ -1,4 +1,16 @@
 
+\subsection{Variable choice}
+
+Credit is an important variable, used extensively in the literature. The
+transfomation ranges from credit gap (deviation from long term trend) such as
+in @Alessandri2019 to credit to GDP ratio such as in @Aikman2019.
+
+Financial conditions is represented either by a dedicated index (FCI) or by some
+aggregation of term spreads, interbank spreads, corporate spreads, sovereign
+spreads, long-term interest rates, policy rates, equity returns and equity
+volatility as in [@Aikman2019]
+
+
 \subsection{Data}
 
 Our data includes `r ncol(raw_data$raw_df)` variables
