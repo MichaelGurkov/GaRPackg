@@ -151,7 +151,7 @@ baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
                                             c("Credit","Returns")]
 
 
-###############################################################################
+##############################################################################
 
 # michael_partitions = partitions
 # 
@@ -170,7 +170,7 @@ baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
 ```
 
 
-```{r Process_data, eval=FALSE}
+```{r Process_data}
 
 vars_to_rates = c("Ind_Prod_advanced","Ind_Prod_Israel",
                   "GDP_F","C_FP","G_NDEFIMP_FP","INV_FP",
@@ -224,7 +224,7 @@ df = df %>%
 ```
 
 
-```{r make_data_list, eval=FALSE}
+```{r make_data_list}
 
 data_list = list()
 
@@ -243,7 +243,7 @@ data_list$interpolated_df = df %>%
 ```
 
 
-```{r Analysis, eval=FALSE}
+```{r Analysis}
 
 results$long_series = run.GaR.analysis(partitions_list = baseline_partitions,
                                vars_df = data_list$long_series_df,
@@ -277,7 +277,14 @@ results$long_series = run.GaR.analysis(partitions_list = baseline_partitions,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+
+```
+
+
+\section{GaR timeseries}
+
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 
