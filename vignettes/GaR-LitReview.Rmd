@@ -28,10 +28,14 @@ important finding is the positive contribution (at one to two years ahead) of
 credit gap that increases over the forecasting horizon . The authors also note
 that the forecast are quite volatile and the use of the model is challenging.
 
-@Aikman2018 use the GaR framework to identify risk to the UK financial
+@Aikman2018 use the GaR framework to identify risks to the UK financial
 stability. The researches introduce 29 financial risk inicators and group them
-to three categories: private nonfinancial sector leverage, asset valuations
-in financial and property markets and credit terms and conditions.
+to three categories: private nonfinancial sector leverage, asset valuations and
+new credit terms and conditions. The results suggest that private sector
+leverage (represented mainly by smoothed credit to gdp) increase downside risk
+for future growth but only at short term horizon (1-4 quarters ahead). Asset 
+valuation exhibit "volatility paradox" - short term (1 quarter) positive 
+association become negative at long term (12 quarters).
 
 @Aikman2019 perform a panel study of 16 advanced countries\footnote{These 
 countries are: Australia, Belgium, Canada, Denmark, Finland, France, Germany, 
