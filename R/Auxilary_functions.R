@@ -88,8 +88,9 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
 }
 
-#'This is a convinience functions that plots the coefficients of
-#'quantile regression
+
+#' This is a convinience functions that plots the coefficients of
+#' quantile regression
 #'
 #'@param quantile_reg
 #'
@@ -153,8 +154,21 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE){
 
 }
 
-
+#' Calculate rolling window predictions
+#'
 #' This function calculates the rolling regression predictions
+#' for quantile regression
+#'
+#' @param reg_df dataframe
+#'
+#' @param win_len rolling window length
+#'
+#' @param quantile_vec vector of required quantiles
+#'
+#' @param out_of_sample_step forecasting horizon (default is next period)
+#'
+#' @param mod_formula model formula (default is regress the first variable
+#' on everything else)
 #'
 rolling.qreq = function(reg_df, win_len, quantile_vec,
                             out_of_sample_step = 1,
@@ -198,6 +212,96 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 
 
   return(temp_res)
+
+
+}
+
+
+#' Calculate forecasts for GaR object
+#'
+#' This is a convenient function that calculates in sample and out of sample
+#' forecast
+#'
+get.gar.forecast = function(gar_obj, win_len, quantile_vec,
+                            out_of_sample_step = 1){
+
+  #Calculate actual values
+
+  actual_df = gar_obj$reg_df %>%
+    select(Date, starts_with("GDP_growth")) %>%
+    rename_at(.vars = vars(starts_with("GDP_growth")),
+              .funs = list(~str_replace(string = .,pattern = "GDP_growth_",
+                                        replacement = ""))) %>%
+    gather(key = Horizon,value = GaR_actual,-Date) %>%
+    mutate(Quantile = "0.50")
+
+
+
+  # Calculate in sample forecast
+
+  forecast_in_sample = lapply(names(gar_obj$quantile_reg),
+                              function(temp_name){
+
+                                    temp_reg = gar_obj$quantile_reg[[temp_name]]
+
+                                    col_names = gar_obj$quantile_reg[[1]] %>%
+                                      coefficients() %>%
+                                      colnames() %>%
+                                      gsub(pattern = "tau= ",replacement = "")
+
+                                    temp_reg$fitted.values %>%
+                                      as.data.frame() %>%
+                                      setNames(col_names) %>%
+                                      mutate(Date = gar_obj$reg_df$Date[1:nrow(.)]) %>%
+                                      gather(key = Quantile,value = GaR_forecast, -Date) %>%
+                                      mutate(Horizon = temp_name)
+
+                                  }) %>%
+    bind_rows() %>%
+    mutate(Date = as.yearqtr(Date)) %>%
+    mutate(Forecast_Status = "In Sample") %>%
+    left_join(actual_df, by = c("Date","Horizon","Quantile"))
+
+  # Calculate out of sample forecast
+
+  forecast_out_of_sample = lapply(parameters_list$horizon_list,
+                                      function(temp_horizon){
+
+                                        temp_var = paste("GDP_growth",temp_horizon,sep = "_")
+
+                                        temp_roll = rolling.qreq(reg_df = gar_obj$reg_df  %>%
+                                                                   select(names(.)[!grepl("GDP",names(.))],
+                                                                          temp_var),
+                                                                 win_len = win_len,
+                                                                 quantile_vec = quantile_vec,
+                                                                 mod_formula = paste0(temp_var," ~ ."),
+                                                                 out_of_sample_step = out_of_sample_step)
+
+                                        temp_roll = temp_roll %>%
+                                          mutate(Horizon = as.character(temp_horizon))
+
+                                        temp_roll = temp_roll %>%
+                                          filter(complete.cases(.))
+
+                                        return(temp_roll)
+
+                                      }) %>%
+    bind_rows() %>%
+    mutate(Date = as.yearqtr(Date)) %>%
+    gather(key = Quantile, value = GaR_forecast, -Date, -Horizon) %>%
+    select(Date, Quantile, GaR_forecast, Horizon) %>%
+    mutate(Forecast_Status = "Out of Sample") %>%
+    left_join(actual_df, by = c("Date","Horizon","Quantile"))
+
+
+  res_df = list(forecast_in_sample, forecast_out_of_sample) %>%
+    bind_rows() %>%
+    mutate(Date = as.yearqtr(Date)) %>%
+    mutate(Error = GaR_actual - GaR_forecast)
+
+
+
+  return(res_df)
 
 
 }
