@@ -1,0 +1,63 @@
+
+```{r get_fitted_df}
+
+fitted_df = lapply(names(results$long_series$quantile_reg),
+                   function(temp_name){
+                     
+                     date_vec = results$long_series$reg_df$Date
+                     
+                     date_vec = date_vec[1:(length(date_vec) - 
+                                              as.numeric(temp_name))]
+                     
+                     temp_df = results$long_series$quantile_reg[[
+                       temp_name]]$fitted.values %>% 
+                       as.data.frame() %>% 
+                       setNames(unlist(parameters_list$quantile_vec)) %>% 
+                       mutate(Date = date_vec) %>% 
+                       gather(key = Quantile,value = GaR,-Date) %>% 
+                       mutate(Horizon = temp_name)
+                     
+                     return(temp_df)
+                     
+                   }) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
+
+
+
+
+```
+
+
+```{r plot_gar_timeseries}
+
+
+ggplot(fitted_df %>% 
+         filter(Quantile == "0.05"),
+       aes(x = Date, y = GaR, color = Horizon)) + 
+  geom_line() + 
+  scale_x_yearqtr() + 
+  labs(title = "GaR (5% quantile) timeseries at different horizons",
+       x = "", y = "") + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r plot_gar_bounds_timeseries, fig.height=10}
+
+
+ggplot(fitted_df %>% 
+         filter(Quantile %in% c("0.05","0.95")),
+       aes(x = Date, y = GaR, color = Quantile)) + 
+  geom_line() + 
+  scale_x_yearqtr() + 
+  labs(title = "GaR upper and lower quantile timeseries", x = "", y = "") + 
+  facet_wrap(~Horizon,ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
+
