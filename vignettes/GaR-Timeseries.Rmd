@@ -1,15 +1,15 @@
 
 ```{r get_fitted_df}
 
-fitted_df = lapply(names(results$long_series$quantile_reg),
+fitted_df = lapply(names(results[[1]]$quantile_reg),
                    function(temp_name){
                      
-                     date_vec = results$long_series$reg_df$Date
+                     date_vec = results[[1]]$reg_df$Date
                      
                      date_vec = date_vec[1:(length(date_vec) - 
                                               as.numeric(temp_name))]
                      
-                     temp_df = results$long_series$quantile_reg[[
+                     temp_df = results[[1]]$quantile_reg[[
                        temp_name]]$fitted.values %>% 
                        as.data.frame() %>% 
                        setNames(unlist(parameters_list$quantile_vec)) %>% 
@@ -48,9 +48,14 @@ ggplot(fitted_df %>%
 
 ```{r plot_gar_bounds_timeseries, fig.height=10}
 
+temp_df = fitted_df %>% 
+  filter(Quantile %in% c("0.05","0.5","0.95")) %>% 
+  spread(key = Quantile,value = GaR) %>% 
+  mutate(`0.05`= `0.05`- `0.5`, `0.95` = `0.95` - `0.5`) %>% 
+  gather(key = Quantile,value = GaR,-Date, -Horizon)
 
 ggplot(fitted_df %>% 
-         filter(Quantile %in% c("0.05","0.95")),
+  filter(Quantile %in% c("0.05","0.5","0.95")),
        aes(x = Date, y = GaR, color = Quantile)) + 
   geom_line() + 
   scale_x_yearqtr() + 

@@ -86,7 +86,7 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 ```
 
 
-```{r Set_partitions}
+```{r Set_partitions_list}
 
 partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                   "C_FP","G_NDEFIMP_FP","INV_FP",
@@ -127,7 +127,7 @@ partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
 ```
 
 
-```{r Modify_partitions}
+```{r Robustness_partitions}
 
 baseline_partitions = partitions
 
@@ -150,22 +150,35 @@ baseline_partitions$Fin_Cycle = baseline_partitions[c("Credit","Returns")] %>%
 baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
                                             c("Credit","Returns")]
 
-
 ##############################################################################
 
-# michael_partitions = partitions
-# 
-# michael_partitions$Rates = michael_partitions[c("Spread","Rates")] %>% 
-#   setNames(NULL) %>% 
-#   unlist() %>% 
-#   as.list()
-# 
-# michael_partitions = michael_partitions[!names(michael_partitions) == "Spread"]
+
+no_labor_partitions = baseline_partitions
+
+no_labor_partitions$Dom_Real = baseline_partitions[c("Dom_Real","Labor")] %>% 
+  setNames(NULL) %>% 
+  unlist() %>% 
+  as.list()
+
+no_labor_partitions = baseline_partitions[!names(baseline_partitions) %in%
+                                            c("Dom_Real","Labor")]
+
+no_risk_partition = baseline_partitions
+
+no_risk_partition$Rates = baseline_partitions[c("Rates","Risk")] %>% 
+  setNames(NULL) %>% 
+  unlist() %>% 
+  as.list()
+
+no_risk_partition = baseline_partitions[!names(baseline_partitions) %in%
+                                            c("Rates","Risk")]
 
 
+partitions_robustness_test = list(baseline = baseline_partitions,
+                                  no_labor = no_labor_partitions,
+                                  no_risk = no_risk_partition)
 
-
-
+rm(baseline_partitions, no_labor_partitions, no_risk_partition)
 
 ```
 
@@ -245,17 +258,15 @@ data_list$interpolated_df = df %>%
 
 ```{r Analysis}
 
-results$long_series = run.GaR.analysis(partitions_list = baseline_partitions,
-                               vars_df = data_list$long_series_df,
-                               horizon_list = parameters_list$horizon_list,
-                               quantile_vec = parameters_list$quantile_vec)
+results = lapply(partitions_robustness_test, function(temp_partition){
+  run.GaR.analysis(partitions_list = temp_partition,
+                   vars_df = data_list$long_series_df,
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec)
 
-# results$interpolated = run.GaR.analysis(partitions_list = baseline_partitions,
-#                                vars_df = data_list$interpolated_df,
-#                                horizon_list = parameters_list$horizon_list,
-#                                quantile_vec = parameters_list$quantile_vec)
+})
 
-
+names(results) = names(partitions_robustness_test)
 
 ```
 
@@ -269,7 +280,7 @@ results$long_series = run.GaR.analysis(partitions_list = baseline_partitions,
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
 
 
 ```
@@ -291,7 +302,7 @@ results$long_series = run.GaR.analysis(partitions_list = baseline_partitions,
 
 \section{Prediction}
 
-```{r , child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
+```{r , child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 

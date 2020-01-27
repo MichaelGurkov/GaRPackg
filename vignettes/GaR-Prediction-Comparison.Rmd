@@ -5,18 +5,83 @@ library(stargazer)
 
 ```
 
+```{r set_forecast_parameters}
+
+forecast_parametrs = list(win_len = 30, out_of_sample_step = 1)
+
+```
 
 ```{r GaR_forecast}
 
-gar_forecast = get.gar.forecast(gar_obj = results[[1]],
-                        win_len = 30,
+gar_forecast = lapply(names(results), function(temp_name){
+  
+  gar_forecast_df = get.gar.forecast(gar_obj = results[[temp_name]],
+                        win_len = forecast_parametrs$win_len,
                         quantile_vec = parameters_list$quantile_vec,
-                        out_of_sample_step = 1)
+                        out_of_sample_step = forecast_parametrs$out_of_sample_step)
+  
+  gar_forecast_df = gar_forecast_df %>% 
+    filter(complete.cases(.)) %>% 
+    mutate(Partition = temp_name)
+  
+  return(gar_forecast_df)
+  
+}) %>% 
+  bind_rows()
+  
 
 ```
 
 
-```{r actual_values}
+```{r compare_partitions_forecats}
+
+robustness_forecast_error_df = gar_forecast %>% 
+  group_by(Partition, Forecast_Status,Horizon) %>% 
+  summarise(MAD = mean(abs(Error)),
+            RMSE = sqrt(mean(Error ^ 2)))
+
+
+
+
+```
+
+\subsection{Forecast accuracy}
+
+We use in sample and out of sample comparison in order to test the robustness of partition
+specification. The out of sample forecast is constracted by estimation of a rolling window of length
+`r forecast_parametrs$win_len` and forecasting `r forecast_parametrs$out_of_sample_step` step ahead.
+
+```{r plot_robustness_partition_MAD}
+
+ggplot(robustness_forecast_error_df %>% 
+         mutate(Horizon = factor(Horizon, levels = c("1","8","12"))),
+       aes(x = Partition,y = MAD, fill = Forecast_Status)) +
+  geom_col(position = "dodge") + 
+  labs(x = "", y = "", title = "Mean Absolute Deviation") + 
+  facet_wrap(~Horizon) + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+
+```
+
+
+```{r plot_robustness_partition_RMSE}
+
+ggplot(robustness_forecast_error_df %>% 
+         mutate(Horizon = factor(Horizon, levels = c("1","8","12"))),
+       aes(x = Partition,y = RMSE, fill = Forecast_Status)) +
+  geom_col(position = "dodge") + 
+  labs(x = "", y = "", title = "Root Mean Square Error") + 
+  facet_wrap(~Horizon) + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+
+```
+
+
+```{r actual_values, eval=FALSE}
 
 gar_actual_df = results[[1]]$reg_df %>% 
   select(Date, starts_with("GDP_growth")) %>% 
@@ -28,7 +93,7 @@ gar_actual_df = results[[1]]$reg_df %>%
 ```
 
 
-```{r naive_forecast}
+```{r naive_forecast, eval=FALSE}
 
 naive_forecast_df = results[[1]]$reg_df %>% 
   select(Date,GDP_F) %>% 
@@ -38,10 +103,7 @@ naive_forecast_df = results[[1]]$reg_df %>%
 ```
 
 
-```{r staff_forecast}
-
-path = 
-
+```{r staff_forecast, eval=FALSE}
 
 boi_forecast_df = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents"),
                                   "\\Data",
@@ -78,7 +140,7 @@ GDP YoY growth rates. That basicaly means looking at the residual
 \ref{forecast_accuracy}
 
 
-```{r forecast_error}
+```{r forecast_error, eval=FALSE}
 
 error_df = list(gar_forecast %>% 
                   filter(Quantile == "0.50",
@@ -130,7 +192,7 @@ error_df = error_df %>%
 ```
 
 
-```{r plot_errors}
+```{r plot_errors, eval=FALSE}
 
 ggplot(error_df, aes(x = Date, y = Forecast_Error, color = Horizon)) + 
   geom_line() + 
@@ -145,7 +207,7 @@ ggplot(error_df, aes(x = Date, y = Forecast_Error, color = Horizon)) +
 ```
 
 
-```{r calculate_accuracy_table}
+```{r calculate_accuracy_table, eval=FALSE}
 
 forecast_accuracy_table = error_df %>% 
   group_by(Indicator, Horizon) %>% 
@@ -158,7 +220,7 @@ forecast_accuracy_table = error_df %>%
 ```
 
 
-```{r output_accuracy_table, results='asis'}
+```{r output_accuracy_table, results='asis', eval=FALSE}
 
 stargazer(forecast_accuracy_table %>% 
             ungroup() %>% 
