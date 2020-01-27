@@ -40,7 +40,11 @@ naive_forecast_df = results[[1]]$reg_df %>%
 
 ```{r staff_forecast}
 
-boi_forecast_df = read.csv(paste0("C:\\Users\\Misha\\Documents\\Data",
+path = 
+
+
+boi_forecast_df = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents"),
+                                  "\\Data",
                                   "\\BOI\\DSGE",
                                   "\\DSGE and staff forecasts.csv"),
                            stringsAsFactors = FALSE) %>% 
@@ -124,8 +128,6 @@ error_df = error_df %>%
 
 
 ```
-
-
 
 
 ```{r plot_errors}
