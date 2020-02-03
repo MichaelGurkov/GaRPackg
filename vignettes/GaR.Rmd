@@ -88,7 +88,9 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 
 ```{r Set_partitions_list}
 
-partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
+partitions_list = list()
+
+partitions_list$extensive = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                   "C_FP","G_NDEFIMP_FP","INV_FP",
                                   "INV_NI_FP","EXP_ND_FP","IMP_ND_FP",
                                   "STARTUP_FP"),
@@ -121,6 +123,21 @@ partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                   Returns = list("TA125_Close"),
                   Credit = list("Credit_to_non_fin_sector",
                                 "Avg_House_Price_index"))
+
+
+
+partitions_list$basic = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
+                                             "CPI","BOI_rate","real_rate_1"),
+                             Global_Real = list("CA","ILS_USD","gdp_us",
+                                                "gdp_euro","infl_us","infl_euro",
+                                                "Ind_Prod_advanced","rate_euro","rate_us"),
+                             Dom_Fin =  list("Spread_CPI_corp",
+                                "ILS_USD_spread_pct","Interbank_spread",
+                                "Sovereigh_spread", "Term_spread",
+                                "ILS_USD_impl_vol","TA_35_impl_vol"),
+                             Credit = list("Credit_to_non_fin_sector",
+                                "Avg_House_Price_index","TA125_Close"),
+                             Global_Fin = list("VIX",),)
 
 
 
@@ -258,7 +275,8 @@ data_list$interpolated_df = df %>%
 
 ```{r Analysis}
 
-results = lapply(partitions_robustness_test, function(temp_partition){
+results = lapply(partitions_robustness_test[c("no_labor","baseline","no_risk")],
+                 function(temp_partition){
   run.GaR.analysis(partitions_list = temp_partition,
                    vars_df = data_list$long_series_df,
                    horizon_list = parameters_list$horizon_list,
@@ -280,7 +298,7 @@ names(results) = names(partitions_robustness_test)
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
 
 
 ```
@@ -288,7 +306,7 @@ names(results) = names(partitions_robustness_test)
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
 
 ```
 
@@ -314,7 +332,7 @@ names(results) = names(partitions_robustness_test)
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd", eval=FALSE}
+```{r child="GaR-Appendix.Rmd"}
 
 ```
 
