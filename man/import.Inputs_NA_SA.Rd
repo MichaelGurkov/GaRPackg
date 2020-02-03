@@ -4,9 +4,7 @@
 \alias{import.Inputs_NA_SA}
 \title{This function imports National Accounts data from Inputs_NA_SA file}
 \usage{
-
-  import.Inputs_NA_SA(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data\\\\BOI\\\\DSGE",
-  "\\\\Inputs_NA_SA.csv"))
+import.Inputs_NA_SA(filepath = NULL)
 }
 \description{
 This function imports National Accounts data from Inputs_NA_SA file

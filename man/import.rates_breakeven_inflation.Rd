@@ -4,9 +4,7 @@
 \alias{import.rates_breakeven_inflation}
 \title{This function imports inflation expectation data from rates_breakeven_inflation}
 \usage{
-
-  import.rates_breakeven_inflation(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\",
-  "Data\\\\BOI\\\\DSGE\\\\rates and ", "breakeven inflation.csv"))
+import.rates_breakeven_inflation(filepath = NULL)
 }
 \description{
 This function imports inflation expectation data from rates_breakeven_inflation

@@ -1,4 +1,12 @@
-#' This is a convinent function that encupsulates the GaR analysis
+#' @title Perform GaR analysis
+#'
+#' @description This is a convinent function that encupsulates the GaR analysis.
+#' The stages of the analysis are :
+#' \itemize{
+#'   \item Perform PCA
+#'   \item Run quantile regression
+#' }
+#'
 #'
 #' @importFrom stats formula
 #'
@@ -7,6 +15,11 @@
 #' @param vars_df data frame with input variables
 #'
 #' @param method string a method that aggregates the data to partitions
+#'
+#' @param horizon_list list of forecast horizon
+#'
+#' @param quantile_vec vector of required quantiles in quantile regression
+#' (corresponds to tau argument in rq)
 #'
 #'
 run.GaR.analysis = function(partitions_list, vars_df,horizon_list,

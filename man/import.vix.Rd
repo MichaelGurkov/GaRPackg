@@ -4,9 +4,7 @@
 \alias{import.vix}
 \title{This function imports VIX data from csv format}
 \usage{
-
-  import.vix(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\VIX.csv"))
+import.vix(filepath = NULL)
 }
 \description{
 This function imports VIX data from csv format

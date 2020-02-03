@@ -4,9 +4,7 @@
 \alias{import.Inputs_fw_row}
 \title{This function imports yields data from Inputs_fw_row file}
 \usage{
-
-  import.Inputs_fw_row(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\Inputs_fw_row.xlsx"))
+import.Inputs_fw_row(filepath = NULL)
 }
 \description{
 This function imports yields data from Inputs_fw_row file

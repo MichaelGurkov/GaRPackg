@@ -4,9 +4,7 @@
 \alias{import.inflation_sa}
 \title{This function imports CPI data from inflation_sa file}
 \usage{
-
-  import.inflation_sa(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\inflation_sa.xlsx"))
+import.inflation_sa(filepath = NULL)
 }
 \description{
 This function imports CPI data from inflation_sa file

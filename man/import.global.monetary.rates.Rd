@@ -4,9 +4,7 @@
 \alias{import.global.monetary.rates}
 \title{This function imports global monetary rates data from csv format}
 \usage{
-
-  import.global.monetary.rates(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data\\\\BOI\\\\",
-  "DSGE\\\\global monetary rates.csv"))
+import.global.monetary.rates(filepath = NULL)
 }
 \description{
 This function imports global monetary rates data from csv format

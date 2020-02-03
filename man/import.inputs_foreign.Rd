@@ -4,9 +4,7 @@
 \alias{import.inputs_foreign}
 \title{This function imports world economic data from inputs_foreign file}
 \usage{
-
-  import.inputs_foreign(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\inputs_foreign.xlsx"))
+import.inputs_foreign(filepath = NULL)
 }
 \description{
 This function imports world economic data from inputs_foreign file

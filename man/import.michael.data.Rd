@@ -4,9 +4,7 @@
 \alias{import.michael.data}
 \title{This function imports all Michael's data}
 \usage{
-
-  import.michael.data(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\GaR Python\\\\",
-  "Israel GaR\\\\Data\\\\Raw\\\\raw_GaR_data.csv"))
+import.michael.data(filepath = NULL)
 }
 \description{
 This function imports all Michael's data

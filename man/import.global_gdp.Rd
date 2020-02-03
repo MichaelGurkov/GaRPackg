@@ -4,9 +4,7 @@
 \alias{import.global_gdp}
 \title{This function imports global economic data from global_gdp file}
 \usage{
-
-  import.global_gdp(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\",
-  "Data\\\\BOI\\\\DSGE\\\\", "global gdp.csv"))
+import.global_gdp(filepath = NULL)
 }
 \description{
 This function imports global economic data from global_gdp file

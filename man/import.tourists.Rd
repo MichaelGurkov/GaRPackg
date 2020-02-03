@@ -4,8 +4,7 @@
 \alias{import.tourists}
 \title{This function imports tourists data from tourists file}
 \usage{
-import.tourists(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents",
-  "\\\\Data", "\\\\BOI\\\\DSGE\\\\tourists.csv"))
+import.tourists(filepath = NULL)
 }
 \description{
 This function imports tourists data from tourists file

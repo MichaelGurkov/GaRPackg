@@ -4,8 +4,7 @@
 \alias{import.iip.data}
 \title{This function imports IIP data from xls format}
 \usage{
-import.iip.data(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents",
-  "\\\\Data\\\\BOI\\\\iipsh_past_h.xls"))
+import.iip.data(filepath = NULL)
 }
 \description{
 This function imports IIP data from xls format

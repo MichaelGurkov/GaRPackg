@@ -4,9 +4,7 @@
 \alias{import.real_rate_1Y}
 \title{This function imports real short rate from real rate 1Y file}
 \usage{
-
-  import.real_rate_1Y(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\real rate 1Y.csv"))
+import.real_rate_1Y(filepath = NULL)
 }
 \description{
 This function imports real short rate from real rate 1Y file

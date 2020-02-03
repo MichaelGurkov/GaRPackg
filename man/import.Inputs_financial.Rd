@@ -4,9 +4,7 @@
 \alias{import.Inputs_financial}
 \title{This function imports current account data from Inputs_CurrentAccount file}
 \usage{
-
-  import.Inputs_financial(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\Inputs_financial.csv"))
+import.Inputs_financial(filepath = NULL)
 }
 \description{
 This function imports current account data from Inputs_CurrentAccount file

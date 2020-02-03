@@ -4,9 +4,7 @@
 \alias{import.gdp_without_startup_tax}
 \title{This function imports real short rate from real rate 1Y file}
 \usage{
-
-  import.gdp_without_startup_tax(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data\\\\BOI\\\\DSGE\\\\",
-  "GDP without startup or import tax.csv"))
+import.gdp_without_startup_tax(filepath = NULL)
 }
 \description{
 This function imports real short rate from real rate 1Y file

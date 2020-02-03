@@ -4,9 +4,7 @@
 \alias{import.indus.prod.data}
 \title{This function imports Industrial Production data from csv format}
 \usage{
-
-  import.indus.prod.data(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\",
-  "Data\\\\BOI\\\\DSGE\\\\", "Industrial production.csv"))
+import.indus.prod.data(filepath = NULL)
 }
 \description{
 This function imports Industrial Production data from csv format

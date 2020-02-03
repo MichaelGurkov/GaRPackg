@@ -4,9 +4,7 @@
 \alias{import.Inputs_labor}
 \title{This function imports  labor market data from Inputs_labor file}
 \usage{
-
-  import.Inputs_labor(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\Inputs_labor.xlsx"))
+import.Inputs_labor(filepath = NULL)
 }
 \description{
 This function imports  labor market data from Inputs_labor file

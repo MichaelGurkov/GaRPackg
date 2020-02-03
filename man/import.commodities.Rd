@@ -4,9 +4,7 @@
 \alias{import.commodities}
 \title{This function imports energy prices data from commodities file}
 \usage{
-
-  import.commodities(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents",
-  "\\\\Data\\\\BOI\\\\DSGE", "\\\\commodities.csv"))
+import.commodities(filepath = NULL)
 }
 \description{
 This function imports energy prices data from commodities file

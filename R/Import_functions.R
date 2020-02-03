@@ -1,6 +1,6 @@
 #' This function returns the path to Data folder
 #'
-
+#'
 #' @title Returns Data folder path
 #'
 #' @import stringr

@@ -4,9 +4,7 @@
 \alias{import.monetary_variables}
 \title{This function imports monetary data from monetary_variables file}
 \usage{
-
-  import.monetary_variables(filepath = paste0("C:\\\\Users\\\\Misha\\\\Documents\\\\Data",
-  "\\\\BOI\\\\DSGE\\\\monetary variables.xlsx"))
+import.monetary_variables(filepath = NULL)
 }
 \description{
 This function imports monetary data from monetary_variables file
