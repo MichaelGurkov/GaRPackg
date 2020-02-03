@@ -31,7 +31,7 @@ ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) +
 ```
 
 
-```{r plot_pca_loadings, fig.height=9}
+```{r plot_pca_loadings, fig.height=20, fig.width=15}
 
 pca_plots = lapply(names(pca_list), function(name){
   
@@ -47,7 +47,7 @@ pca_plots = lapply(names(pca_list), function(name){
 
 })
 
-plot_grid(plotlist = pca_plots, nrow = 4,ncol = 2)
+plot_grid(plotlist = pca_plots, ncol = 2, nrow = 3)
 
 ```
 

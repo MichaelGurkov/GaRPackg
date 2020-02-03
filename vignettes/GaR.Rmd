@@ -190,7 +190,7 @@ results = run.GaR.analysis(partitions_list = partitions,
 
 \section{Literature review}
 
-```{r child="GaR-LitReview.Rmd"}
+```{r child="GaR-LitReview.Rmd", eval=FALSE}
 
 ```
 
@@ -205,14 +205,14 @@ results = run.GaR.analysis(partitions_list = partitions,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd"}
+```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
 
 ```
 
