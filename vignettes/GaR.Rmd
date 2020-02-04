@@ -179,14 +179,14 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 

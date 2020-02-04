@@ -45,7 +45,7 @@ partitions_list$basic = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                 "ILS_USD_spread_pct","Interbank_spread",
                                 "Sovereigh_spread", "Term_spread",
                                 "ILS_USD_impl_vol","TA_35_impl_vol"),
-                             Credit = list("Credit_to_non_fin_sector",
+                             FinCycle = list("Credit_to_non_fin_sector",
                                 "Avg_House_Price_index","TA125_Close"),
                              Global_Fin = list("VIX"))
 

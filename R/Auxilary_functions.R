@@ -230,10 +230,13 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 }
 
 
-#' Calculate forecasts for GaR object
+#' @title  Calculate forecasts for GaR object
 #'
-#' This is a convenient function that calculates in sample and out of sample
-#' forecast
+#' @description This is a convenient function that calculates in sample and out of sample
+#' forecast.
+#' @details The in sample forecast is simply the fitted values of the regression.
+#' An out of sample forecast is calculated by rolling regression (determined by \code{win_len}) that forecast
+#' ahead according to \code{out_of_sample_step}
 #'
 get.gar.forecast = function(gar_obj, win_len, quantile_vec,
                             out_of_sample_step = 1){
