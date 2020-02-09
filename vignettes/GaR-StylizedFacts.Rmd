@@ -83,7 +83,8 @@ print(xtable(iqr_horizon_corr_mat), comment = FALSE)
   
 ```
 
-We can also try to asses the contribution of each factor to the volatility paradox. The volatility paradox suggest that the 
+We can also try to asses the contribution of each factor to the volatility paradox. A factor will decrease the distribution volatility if the effect of
+The volatility paradox suggest that the 
 
 ```{r factors_IQR}
 

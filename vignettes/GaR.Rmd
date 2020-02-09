@@ -45,7 +45,11 @@ library(tidyverse)
 
 library(quantreg)
 
-library(rlang)
+library(corrplot)
+
+library(stargazer)
+
+library(xtable)
 
 ```
 
@@ -77,7 +81,7 @@ parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
 parameters_list$horizon_list = list(1,8,12)
 
 parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
-                "Term_spread","Sovereigh_spread",
+                "Sovereigh_spread",
                 "Interbank_spread","LT_real_rate_change",
                 "TA125_Close","Indus_prod_ind","ILS_EURO",
                 "breakeven_inflation_5_10_fwd")
@@ -90,7 +94,7 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 
 source("Partition-Specs.R",echo = FALSE)
 
-current_partition = partitions_list$basic
+current_partition = partitions_list$OZMG
 
 ```
 
@@ -171,7 +175,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
 
 
 ```
@@ -180,6 +184,13 @@ results = run.GaR.analysis(partitions_list = current_partition,
 \section{Quantile regression results}
 
 ```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+
+```
+
+
+\section{Stylized facts}
+
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
@@ -198,7 +209,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd"}
+```{r child="GaR-Appendix.Rmd", eval=FALSE}
 
 ```
 
