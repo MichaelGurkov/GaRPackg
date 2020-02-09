@@ -23,7 +23,8 @@
 #'
 #'
 run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
-                            quantile_vec,method = "inner_join_PCA"){
+                            quantile_vec,method = "inner_join_PCA",
+                            run_ols_reg = TRUE){
 
   # Make PCA
 
@@ -97,7 +98,39 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
   names(qreg_result) = horizon_list
 
 
-  return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result))
+  # Run OLS regresion
+
+  if(run_ols_reg){
+
+    ols_result = lapply(horizon_list, function(temp_horizon){
+
+      dep_var = paste0("GDP_growth_", temp_horizon)
+
+      ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
+                     data = reg_df %>%
+                       select(-Date) %>%
+                       select(names(.)[!grepl("GDP",names(.))], dep_var))
+
+      return(ols_reg)
+
+
+    })
+
+    names(ols_result) = horizon_list
+
+    return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result,
+                ols_reg = ols_result))
+
+
+  } else {
+
+
+    return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result))
+
+  }
+
+
+
 
 }
 
