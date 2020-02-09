@@ -1,7 +1,6 @@
 
 partitions_list  = list()
 
-
 partitions_list$extensive = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                   "C_FP","G_NDEFIMP_FP","INV_FP",
                                   "INV_NI_FP","EXP_ND_FP","IMP_ND_FP",
@@ -50,40 +49,26 @@ partitions_list$basic = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                              Global_Fin = list("VIX"))
 
 
+# partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel",
+#                                              "CPI","BOI_rate","real_rate_1","CA","ILS_USD",
+#                                              "Unemp_rate"),
+#                              Global = list("gdp_us","gdp_euro","infl_us","infl_euro",
+#                                                 "Ind_Prod_advanced","rate_euro","rate_us","VIX"),
+#                              Dom_FCI =  list("Spread_CPI_corp",
+#                                              "ILS_USD_spread_pct","Interbank_spread",
+#                                              "Sovereigh_spread", "Term_spread",
+#                                              "ILS_USD_impl_vol","TA_35_impl_vol"),
+#                              FinCycle = list("Credit_to_non_fin_sector",
+#                                              "Avg_House_Price_index","TA125_Close"))
 
-# baseline_partitions = list(DomReal = c(partitions[c("Dom_Real",
-#                                                    "Dom_Prices",
-#                                                    "Labor")] %>%
-#                                          reduce(unlist)),
-#                            DomFin = c(partitions[c("Fin_Cycle",
-#                                                   "Rates","Risk")] %>%
-#                                          reduce(unlist)),
-#                            GlobalReal = c(partitions$Global %>%
-#                                            str_subset(pattern = "gdp|Ind|IMP")),
-#                            GlobalFin = c(partitions$Global %>%
-#                                            str_subset(pattern = "gdp|Ind|IMP",
-#                                                       negate = TRUE)))
-#
-#
-#
-# minimal_partition = list(Dom_Real = list("GDP_F","Ind_Prod_Israel"),
-#                          Dom_Prices = list("CPI","breakeven_inflation_1Y",
-#                                     "breakeven_inflation_2_3_fwd",
-#                                     "breakeven_inflation_5_10_fwd"),
-#                          Rates = list("BOI_rate","Spread_CPI_corp",
-#                                       "ILS_USD_spread_pct","Interbank_spread",
-#                                       "Sovereigh_spread","Term_spread"),
-#                          External = list("CA","ILS_USD","ILS_EURO"),
-#                          Global = list("VIX","Ind_Prod_advanced",
-#                                 "Brent","Commodity_Non_Energy",
-#                                 "gdp_us","gdp_euro","gdp_japan",
-#                                 "gdp_uk","infl_us","infl_euro",
-#                                 "infl_japan","infl_uk","rate_euro","rate_us",
-#                                 "rate_uk","rate_japan","US_10","EU_10",
-#                                 "UK_10","JPN_10", "US_5","EU_5","UK_5","JPN_5",
-#                                 "IMP_OECD"),
-#                          Volatility = list("ILS_USD_impl_vol","TA_35_impl_vol"),
-#                          Credit = list("Credit_to_non_fin_sector",
-#                                        "Avg_House_Price_index"))
 
+partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
+                            Global = list("gdp_us","gdp_euro","infl_us","infl_euro",
+                                          "Ind_Prod_advanced","rate_euro","rate_us","VIX"),
+                            Dom_FCI =  list("Spread_CPI_corp",
+                                            "ILS_USD_spread_pct","Interbank_spread",
+                                            "Sovereigh_spread", "Term_spread",
+                                            "ILS_USD_impl_vol","TA_35_impl_vol"),
+                            FinCycle = list("Credit_to_non_fin_sector",
+                                            "Avg_House_Price_index","TA125_Close"))
 
