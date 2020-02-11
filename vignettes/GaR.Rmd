@@ -158,7 +158,8 @@ df = df %>%
 ```{r Analysis}
 
 results = run.GaR.analysis(partitions_list = current_partition,
-                   vars_df = df,
+                   vars_df = df %>% 
+                     mutate(Spread_CPI_corp = -1 * Spread_CPI_corp),
                    horizon_list = parameters_list$horizon_list,
                    quantile_vec = parameters_list$quantile_vec)
 
