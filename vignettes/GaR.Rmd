@@ -7,7 +7,7 @@ output:
     latex_engine: xelatex
     number_sections: true
     includes:
-            in_header: C:\\Users\\internet\\Documents\\GaRpckg\\vignettes\\Preamble.tex
+            in_header: C:\\Users\\internet\\Documents\\GaRpckg\\GaR-preamble.tex
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -17,7 +17,7 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE, eval=FALSE,
   comment = "#>"
 )
 ```
@@ -169,7 +169,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Literature review}
 
-```{r child="GaR-LitReview.Rmd", eval=FALSE}
+```{r child="GaR-LitReview.Rmd", eval=TRUE}
 
 ```
 
@@ -210,7 +210,13 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd", eval=FALSE}
+```{r child="GaR-Appendix.Rmd"}
 
 ```
+
+
+```{r child="GaR-Variables-Desc-Chart.Rmd"}
+
+```
+
 

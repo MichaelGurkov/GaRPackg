@@ -72,8 +72,3 @@ cat(paste('-', parameters_list$drop_series), sep = '\n')
 
 ``` 
 
-
-```{r child="GaR-Variables-Desc-Chart.Rmd", eval=FALSE}
-
-```
-
