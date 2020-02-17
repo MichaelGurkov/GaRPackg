@@ -25,7 +25,30 @@ fitted_df = lapply(names(results$quantile_reg),
   mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
 
 
-
+sorted_fitted_df = lapply(names(results$quantile_reg),
+                   function(temp_name){
+                     
+                     date_vec = results$reg_df$Date
+                     
+                     date_vec = date_vec[1:(length(date_vec) - 
+                                              as.numeric(temp_name))]
+                     
+                     temp_df = t(apply(results$quantile_reg[[
+                       temp_name]]$fitted.values,1, sort))
+                     
+                     temp_df = temp_df %>% 
+                       as.data.frame() %>% 
+                       setNames(unlist(parameters_list$quantile_vec)) %>% 
+                       mutate(Date = date_vec) %>% 
+                       gather(key = Quantile,value = GaR,-Date) %>% 
+                       mutate(Horizon = temp_name)
+                     
+                     return(temp_df)
+                     
+                   }) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
 
 ```
 
@@ -58,7 +81,26 @@ ggplot(fitted_df %>%
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 
+
 ```
+
+
+
+```{r plot_gar_bounds_timeseries_sorted, fig.height=10}
+
+ggplot(sorted_fitted_df %>% 
+  filter(Quantile %in% c("0.05","0.5","0.95")),
+       aes(x = Date, y = GaR, color = Quantile)) + 
+  geom_line() + 
+  scale_x_yearqtr() + 
+  labs(title = "GaR upper and lower quantile of sorted timeseries", x = "", y = "") + 
+  facet_wrap(~Horizon,ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+
+```
+
 
 
 ```{r plot_normalized, eval=FALSE}

@@ -24,7 +24,7 @@
 #'
 run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                             quantile_vec,method = "inner_join_PCA",
-                            run_ols_reg = TRUE){
+                            run_ols_reg = TRUE, rq_method = "br"){
 
   # Make PCA
 
@@ -59,9 +59,6 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
            return(temp_df)
 
-
-
-
          }) %>%
     reduce(inner_join, by = "Date") %>%
     arrange(Date)%>%
@@ -88,7 +85,8 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                    tau = quantile_vec,
                    data = reg_df %>%
                      select(-Date) %>%
-                     select(names(.)[!grepl("GDP",names(.))], dep_var))
+                     select(names(.)[!grepl("GDP",names(.))], dep_var),
+                   method = rq_method)
 
     return(qreg_list)
 
