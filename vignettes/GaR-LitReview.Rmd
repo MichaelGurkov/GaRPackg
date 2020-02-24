@@ -9,29 +9,10 @@ refers to the fact that the left tail of the forecasted growth distribution
 tail of the distribution meaning that the downside growth risk is much more
 severe than upside risk.
 
-@Adrian2019 is a seminal paper that lays the foundation of the GaR approach. The authors model the
-full distribution of GDP growth as a function of current economic and financial conditions. The empirical specification is quite limited : economic conditions are represented by GDP growth and
-financial conditions are represented by National Financial Conditions Index (NFCI). The NFCI 
-provides a weekly estimate of US financial conditions in money markets, debt and equity markets, and the traditional and shadow banking systems. The empirical analysis involves estimating conditional quantiles (using quantile regression) and fitting a skewed t distribution. The authors
-introduce several risk measures:
-
-\begin{itemize}
-  \item
-  Upside (downside) enthropy measures the downside (upside) risks in excess of the risks predicted
-  by economic condition. The upside enthropy is calculated as the cumulative difference between
-  conditional (on financial conditions) and unconditional GDP growth distribution.
-  \item
-  Expected shortfall (expected longrise) measures the total probability mass that the conditional
-  distribution assign to the left (right) tail of the distribution.
-
-The sample period spans 1973Q1-2018Q4 and the two forecast horizons are a quarter and a year ahead.
-The authors find a negative correlation between the median and the interquartile range of the future growth distribution. A comparison of conditioning on past GDP growth only vs conditioning on both GDP and financial conditions reveals that during business cycle
-expansion financial conditions result lower variance and positive skewness relative to conditioning 
-on GDP only. However, during business cycle contractions financial conditions induce greater
-variance, negative skewness and lower mean. 
-
-
-\end{itemize}
+@Adrian2019 is a seminal paper that lays the foundation of the GaR approach. The authors model the full distribution of GDP growth as a function of current economic and financial conditions. The empirical specification is quite limited : economic conditions are represented by GDP growth and financial conditions are represented by National Financial Conditions Index (NFCI). The NFCI 
+provides a weekly estimate of US financial conditions in money markets, debt and equity markets, and the traditional and shadow banking systems. The empirical analysis involves estimating conditional quantiles (using quantile regression) and fitting a skewed t distribution.
+The sample period spans 1973Q1-2018Q4 and the two forecast horizons are a quarter and a year ahead. The authors report a negative correlation between the median and the interquartile range of the future growth distribution. A comparison of conditioning on past GDP growth only vs conditioning on both GDP and financial conditions reveals that during business cycle
+expansion financial conditions result lower variance and positive skewness relative to conditioning on GDP only. However, during business cycle contractions financial conditions induce greater variance, negative skewness and lower mean. 
 
 
 @Alessandri2019 apply the GaR framework to the Italian economy.
@@ -47,10 +28,8 @@ the results are influenced by the crises periods. From methodological perspectiv
 the article divides the explanatory variables to two broad categories: 
 real activity which is represented by GDP (or IP or Itacoin) and financial
 activity. Financial activity is represented either by composite indices such as
-FCI or simpler indices such as spreads (for example sovereign spread). Another
-important finding is the positive contribution (at one to two years ahead) of
-credit gap that increases over the forecasting horizon. The authors also note
-that the forecasts are quite volatile and the use of the model is challenging.
+FCI or simpler indices such as spreads (for example sovereign spread). The authors note
+that market based variables are mostly pronounced in the short term while credit based variables perform better well over one year (or more) horizon.Another important finding is the positive contribution (at one to two years ahead) of credit gap that increases over the forecasting horizon. The authors also note that the forecasts are quite volatile and the use of the model is challenging.
 
 @Aikman2018 use the GaR framework to identify risks to the UK financial
 stability. The researches introduce 29 financial risk indicators and group them
@@ -67,12 +46,12 @@ countries are: Australia, Belgium, Canada, Denmark, Finland, France, Germany,
 Ireland, Italy, Netherlands, Norway, Spain, Sweden, Switzerland, the United 
 Kingdom and the United States} for 1980-2017 period. The authors concentrate
 on medium term (3 year horizon) as being the most relevant from macro-prudential
-policy perspective. The analysis reveals that at medium term "excessive" credit
+policy perspective. The analysis reveals that at the medium term "excessive" credit
 growth, house price growth and current account deficit have detrimental effect
 on GDP growth (credit and current account's coefficients are negative across all 
 horizons). This finding is in line with early warnings literature that finds that
-these variables predict financial (banking) crises. As for financial conditions,
-the finding is that tightening in financial conditions depress growth in the 
+these variables predict financial (banking) crises. As for the financial conditions effect,
+the results reveal that tightening in financial conditions depress growth in the 
 near term (up to one year horizon) but has no effect at longer horizons. The 
 authors suggest that if the "volatility paradox" operates through loose financial 
 conditions that support credit and house price increase and thus curb economic
