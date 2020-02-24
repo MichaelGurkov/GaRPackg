@@ -17,7 +17,7 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE, eval=FALSE,
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
   comment = "#>"
 )
 ```
@@ -169,14 +169,14 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Literature review}
 
-```{r child="GaR-LitReview.Rmd", eval=TRUE}
+```{r child="GaR-LitReview.Rmd",eval=FALSE}
 
 ```
 
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd",eval=FALSE}
 
 
 ```
@@ -184,23 +184,30 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd",eval=FALSE}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd"}
+```{r child="GaR-StylizedFacts.Rmd",eval=FALSE}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd"}
+```{r plot_gar, child="GaR-Timeseries.Rmd",eval=FALSE}
 
 ```
+
+\section{Robustness}
+
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+
+```
+
 
 
 \section{Bibliography}
