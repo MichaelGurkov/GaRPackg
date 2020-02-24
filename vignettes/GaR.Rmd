@@ -126,6 +126,7 @@ df = df %>%
 # Transform variables to rates of change YoY
 
 df = df %>% 
+  mutate(GDP = GDP_F) %>% 
   mutate_at(vars(vars_to_rates),
             .funs = list(~./lag(.,4)-1))
 
@@ -184,21 +185,21 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd",eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd",eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd",eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 
@@ -217,12 +218,12 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd"}
+```{r child="GaR-Appendix.Rmd", eval=FALSE}
 
 ```
 
 
-```{r child="GaR-Variables-Desc-Chart.Rmd"}
+```{r child="GaR-Variables-Desc-Chart.Rmd", eval=FALSE}
 
 ```
 
