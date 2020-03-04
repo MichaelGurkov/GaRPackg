@@ -161,7 +161,9 @@ results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df %>% 
                      mutate(Spread_CPI_corp = -1 * Spread_CPI_corp),
                    horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec)
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(Dom_FCI = list(var_name = "Spread_CPI_corp",
+                                                        positive_direction = FALSE)))
 
 
 ```
@@ -169,14 +171,14 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Literature review}
 
-```{r child="GaR-LitReview.Rmd",eval=FALSE}
+```{r child="GaR-LitReview.Rmd", eval=FALSE}
 
 ```
 
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd",eval=FALSE}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
 
 
 ```
@@ -184,27 +186,27 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd",eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd",eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd",eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
 
 ```
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 
@@ -217,12 +219,12 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd"}
+```{r child="GaR-Appendix.Rmd", eval=FALSE}
 
 ```
 
 
-```{r child="GaR-Variables-Desc-Chart.Rmd"}
+```{r child="GaR-Variables-Desc-Chart.Rmd", eval=FALSE}
 
 ```
 

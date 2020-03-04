@@ -24,12 +24,16 @@
 #'
 run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                             quantile_vec,method = "inner_join_PCA",
-                            run_ols_reg = TRUE, rq_method = "br"){
+                            run_ols_reg = TRUE, rq_method = "br",
+                            pca.align.list = NULL){
 
-  # Make PCA
+  # Make and align PCA
 
-  pca_obj = lapply(partitions_list[sapply(partitions_list,length) > 1],
-         function(temp_part){
+  pca_obj = lapply(names(partitions_list)[sapply(partitions_list,length) > 1],
+         function(temp_name){
+
+           temp_part = partitions_list[[temp_name]]
+
            available_names = names(vars_df)
 
            part_df = vars_df %>%
@@ -37,15 +41,32 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                     Date) %>%
              filter_all(all_vars(is.finite(.)))
 
-           ret_list = list(pca = part_df %>%
-                             select(-Date) %>%
-                             prcomp(.,center = TRUE,scale. = TRUE) %>%
-                             align.pca(1),
-                           date_index = part_df$Date)
+           pca = part_df %>%
+             select(-Date) %>%
+             prcomp(.,center = TRUE,scale. = TRUE)
+
+           # Align PCA
+
+          if(temp_name %in% names(pca.align.list)){
+
+            pca = do.call("align.pca",c(list(pca_obj = pca),
+                                        pca.align.list[[temp_name]]))
+
+          } else {
+
+            pca = align.pca(pca,1)
+
+          }
+
+
+
+           ret_list = list(pca =  pca, date_index = part_df$Date)
 
             return(ret_list)
 
                            })
+
+  names(pca_obj) = names(partitions_list)[sapply(partitions_list,length) > 1]
 
 
   # Make regression data frame
