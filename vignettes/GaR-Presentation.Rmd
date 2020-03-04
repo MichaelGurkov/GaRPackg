@@ -1,0 +1,136 @@
+---
+title: "Growth at Risk model"
+institute: "Bank of Israel \\newline Research Department, Finance Division"
+author: "Michael Gurkov"
+# date: "August 15, 2018"
+classoption: t
+output:
+  beamer_presentation:
+    keep_tex: true
+    includes:
+      in_header: GaR-preamble-presentation.tex
+    latex_engine: xelatex
+vignette: >
+  %\VignetteIndexEntry{GlobalFinCycle-Presentation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
+  comment = "#>"
+)
+```
+
+
+```{r init_setup}
+
+devtools::load_all()
+
+library(GaRPackg)
+
+# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="\\"),
+#        "\\GaRPackg\\vignettes"))
+
+# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="/"),
+#        "/GaRPackg/vignettes"))
+
+
+```
+
+# Background
+
+\begin{itemize}
+	\item
+	Macro-financial model  developed by {adrian2019vulnerable}.
+	
+	
+	\begin{itemize}
+		\item Operationalized by IMF {prasad2019growth}.
+		\item
+		Applied for: 
+		\begin{itemize}
+			\item[] Italy {\scriptsize{Alessandri2019}}
+			\item[] UK {\scriptsize{Aikman2018}}
+			\item[] advanced economies {\scriptsize{Aikman2019}}
+			\item[] developing economies {\scriptsize{Komatsuzaki2019,Bespalova2019}}
+		\end{itemize}
+		 
+		\item
+		First run in Israel (based on IMF modelling): box in  Financial Stability Report 2019(1)
+	\end{itemize}
+	
+	\item
+	Today: 
+	\begin{itemize}
+		\item
+		Further adjustments of the model to Israel
+		\item
+		Discussion of main findings (corresponding to {adrian2019monetary})
+		
+	\end{itemize}
+\end{itemize}	
+	
+
+
+
+# Motivation
+
+\begin{itemize}
+	
+	\item
+	Goal: Estimate risks to growth using real and financial variables:	
+	
+	\begin{center}	
+		~
+	\begin{beamerboxesrounded}[width=0.75\linewidth]{}
+		Given current macro-financial conditions, what is the distribution of
+		expected economic growth?		
+	\end{beamerboxesrounded}
+	~
+	\end{center}
+	
+
+	
+	\item
+	Tool: Linear  model of
+	density forecasts. 
+	
+	\begin{itemize}
+		\item
+		Based on quantile regressions
+		\item
+		Parsimonious
+		\item
+		Easy to interpret
+		
+				
+	\end{itemize}
+	
+	\item
+	Possible uses:
+	\begin{enumerate}
+		
+		\item
+		Tool for regular assessment of risks:
+		\begin{itemize}
+			\item
+			Financial Stability Report
+			\item
+			Staff forecast fan chart
+		\end{itemize}
+		
+		\item
+		Provide empirical evidence to support macro-financial  modelling efforts (joint project with IMF)
+		
+		
+		
+	\end{enumerate}
+		
+\end{itemize}
+
+
+# Outline
+
+\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide] 
