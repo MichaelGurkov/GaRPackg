@@ -72,6 +72,37 @@ median_iqr_corr_mat = dist_quantile_df %>%
 ```
 
 
+
+
+\subsection{Median - Variance correlation}
+
+
+```{r median_variance_scatter_plot}
+
+ggplot(dist_quantile_df %>% 
+         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
+  geom_point() + 
+  stat_smooth(method = "lm",se = FALSE) + 
+  facet_wrap(~Horizon) + 
+  labs(x = "Volatility", y = "Median", title = "Median vs volatility") +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+    
+
+```
+
+
+```{r plot_median_variance_corr}
+
+ggplot(median_iqr_corr_mat, aes(x = Horizon, y = Corr)) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  theme_bw()
+
+```
+
+
+
 \subsection{Volatility Paradox}
 The volatility paradox describes a phenomenon where stable conditions today allow risk accumulation
 that realize in the future. The empirical representation of this phenomenon is a negative
@@ -97,7 +128,6 @@ ggplot(factor_quantiles_df, aes(x = Horizon, y = IQR, group = 1)) +
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
-
 
 \subsection{Risk Asymmetry}
 The "risk asymmetry" phenomenon refers to the fact that the left tail of the forecasted growth distribution (the depressed growth scenarios) is quite volatile relative to the right
@@ -129,18 +159,6 @@ ggplot(dist_quantile_df, aes(x = Date, y = OLS - Q_0.5)) +
   facet_wrap(~Horizon, scales = "free", ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-
-```
-
-
-\subsection{Median - Variance correlation}
-
-```{r plot_median_variance_corr}
-
-ggplot(median_iqr_corr_mat, aes(x = Horizon, y = Corr)) + 
-  geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  theme_bw()
 
 ```
 
