@@ -1,6 +1,18 @@
 
 partitions_list  = list()
 
+
+partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
+                            Global = list("gdp_us","gdp_euro","infl_us","infl_euro",
+                                          "Ind_Prod_advanced","rate_euro","rate_us","VIX"),
+                            Dom_FCI =  list("Spread_CPI_corp",
+                                            "ILS_USD_spread_pct","Interbank_spread",
+                                            "Sovereigh_spread", "Term_spread",
+                                            "ILS_USD_impl_vol","TA_35_impl_vol"),
+                            FinCycle = list("Credit_to_non_fin_sector",
+                                            "Avg_House_Price_index","TA125_Close"))
+
+
 partitions_list$extensive = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                   "C_FP","G_NDEFIMP_FP","INV_FP",
                                   "INV_NI_FP","EXP_ND_FP","IMP_ND_FP",
@@ -59,16 +71,6 @@ partitions_list$basic = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                              "Sovereigh_spread", "Term_spread",
                                              "ILS_USD_impl_vol","TA_35_impl_vol"))
 
-
-partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
-                            Global = list("gdp_us","gdp_euro","infl_us","infl_euro",
-                                          "Ind_Prod_advanced","rate_euro","rate_us","VIX"),
-                            Dom_FCI =  list("Spread_CPI_corp",
-                                            "ILS_USD_spread_pct","Interbank_spread",
-                                            "Sovereigh_spread", "Term_spread",
-                                            "ILS_USD_impl_vol","TA_35_impl_vol"),
-                            FinCycle = list("Credit_to_non_fin_sector",
-                                            "Avg_House_Price_index","TA125_Close"))
 
 partitions_list$OZMG_no_fincycle = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
                             Global = list("gdp_us","gdp_euro","infl_us","infl_euro",

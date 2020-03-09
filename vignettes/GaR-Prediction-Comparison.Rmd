@@ -9,7 +9,7 @@ library(stargazer)
 ```{r set_forecast_parameters}
 
 forecast_parametrs = list(win_len = 30, out_of_sample_step = 1,
-                          fan_chart_date = as.yearqtr("2017 Q2"))
+                          fan_chart_date = results$reg_df$Date[nrow(results$reg_df)])
 
 ```
 
@@ -92,18 +92,31 @@ fan_chart_df = lapply(names(results$quantile_reg), function(temp_name){
   
 }) %>% 
   bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  filter(Quantile %in% c("0.05","0.95")) %>% 
   spread(key = Quantile,value = Prediction) %>% 
-  setNames(c("Date","Min","Max"))
+  rename_at(.vars = vars(-Date),.funs = list(~paste0("Q_",.)))
+
+fan_chart_df = bind_rows(fan_chart_df,data.frame(Date = forecast_parametrs$fan_chart_date,
+                       matrix(ncol = ncol(fan_chart_df) - 1,
+                              df$GDP_F[df$Date == forecast_parametrs$fan_chart_date])) %>% 
+                         setNames(names(fan_chart_df))) %>% 
+  mutate(Date = as.yearqtr(Date))
+  
+
+
 
 ggplot() + 
   geom_line(data = df %>% 
               select(Date, GDP_F) %>% 
               filter(complete.cases(.)) %>% 
-              filter(Date <= forecast_parametrs$fan_chart_date), aes(x = Date, y = GDP_F)) + 
-  geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Min, ymax = Max), fill = "lightblue",
+              filter(Date <= forecast_parametrs$fan_chart_date),
+            aes(x = Date, y = GDP_F)) + 
+  geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.05, ymax = Q_0.95),
+              fill = "lightblue",
+              alpha = 0.6) +
+   geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.25, ymax = Q_0.75),
+              fill = "lightblue",
               alpha = 0.5) +
+  geom_line(data = fan_chart_df, aes(x = Date, y = Q_0.50), color = "white") + 
   labs(x = "", y = "",title = "Fan chart for GDP YoY growth rate") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.5)) + 
   theme_bw() + 

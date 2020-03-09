@@ -68,7 +68,6 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
   names(pca_obj) = names(partitions_list)[sapply(partitions_list,length) > 1]
 
-
   # Make regression data frame
 
   reg_df = lapply(names(pca_obj),function(temp_name){
