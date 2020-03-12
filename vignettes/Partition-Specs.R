@@ -8,7 +8,7 @@ partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
                             Dom_FCI =  list("Spread_CPI_corp",
                                             "ILS_USD_spread_pct","Interbank_spread",
                                             "Sovereigh_spread", "Term_spread",
-                                            "ILS_USD_impl_vol","TA_35_impl_vol"),
+                                            "ILS_USD_impl_vol","TA_35_impl_vol","BOI_rate"),
                             FinCycle = list("Credit_to_non_fin_sector",
                                             "Avg_House_Price_index","TA125_Close"))
 

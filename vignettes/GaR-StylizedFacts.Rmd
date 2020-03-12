@@ -82,7 +82,7 @@ median_iqr_corr_mat = dist_quantile_df %>%
 ggplot(dist_quantile_df %>% 
          select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
   geom_point() + 
-  stat_smooth(method = "lm",se = FALSE) + 
+  stat_smooth(method = "lm") + 
   facet_wrap(~Horizon) + 
   labs(x = "Volatility", y = "Median", title = "Median vs volatility") +
   theme_bw() + 
