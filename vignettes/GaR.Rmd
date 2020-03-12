@@ -154,6 +154,50 @@ df = df %>%
 
 ```
 
+```{r rename_vars}
+
+rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
+                                 "Ind_Prod_advanced","ILS_USD_spread_pct",
+                                 "TA_35_impl_vol","ILS_USD_impl_vol",
+                                 "Credit_to_non_fin_sector","Avg_House_Price_index"),
+                   new_names = c("GDP","Ind_Prod","IP_adv",
+                                 "FX_spread","VIX_TA",
+                                 "FX_imp_vol","Credit","HousePrice"))
+df = df %>% 
+  rename_at(vars(rename_list$old_names),list(~rename_list$new_names))
+
+
+current_partition = lapply(current_partition, function(temp_part){
+  
+  lapply(temp_part, function(temp_name){
+  
+  ind = which(rename_list$old_names == temp_name)
+  
+  if(length(ind) == 0){
+    
+    return(temp_name)
+    
+  } else {
+    
+    
+    return(rename_list$new_names[ind])
+    
+  }
+  
+  
+  return(rename_list$new_names[])
+  
+  
+})
+
+  
+  
+  
+})
+
+
+```
+
 
 ```{r Analysis}
 
@@ -205,7 +249,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd",eval=FALSE}
 
 ```
 

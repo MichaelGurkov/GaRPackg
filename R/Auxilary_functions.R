@@ -83,14 +83,14 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
     reduce(inner_join, by = "Date") %>%
     arrange(Date)%>%
     inner_join(vars_df %>%
-                 select(Date, GDP_F), by = "Date")
+                 select(Date, GDP), by = "Date")
 
   for(temp_horizon in unlist(horizon_list)){
 
     temp_var = paste("GDP_growth",temp_horizon,sep = "_")
 
     reg_df = reg_df %>%
-      mutate(!!sym(temp_var) := lead(GDP_F,temp_horizon))
+      mutate(!!sym(temp_var) := lead(GDP,temp_horizon))
 
   }
 

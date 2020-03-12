@@ -95,21 +95,24 @@ fan_chart_df = lapply(names(results$quantile_reg), function(temp_name){
   spread(key = Quantile,value = Prediction) %>% 
   rename_at(.vars = vars(-Date),.funs = list(~paste0("Q_",.)))
 
+
+fan_chart_df[,-1] = t(apply(as.matrix(fan_chart_df[,-1]),1,
+        function(temp_row){return(sort(as.numeric(temp_row)))}))
+
 fan_chart_df = bind_rows(fan_chart_df,data.frame(Date = forecast_parametrs$fan_chart_date,
                        matrix(ncol = ncol(fan_chart_df) - 1,
-                              df$GDP_F[df$Date == forecast_parametrs$fan_chart_date])) %>% 
+                              df$GDP[df$Date == forecast_parametrs$fan_chart_date])) %>% 
                          setNames(names(fan_chart_df))) %>% 
   mutate(Date = as.yearqtr(Date))
   
 
 
-
 ggplot() + 
   geom_line(data = df %>% 
-              select(Date, GDP_F) %>% 
+              select(Date, GDP) %>% 
               filter(complete.cases(.)) %>% 
               filter(Date <= forecast_parametrs$fan_chart_date),
-            aes(x = Date, y = GDP_F)) + 
+            aes(x = Date, y = GDP)) + 
   geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.05, ymax = Q_0.95),
               fill = "lightblue",
               alpha = 0.6) +
