@@ -154,6 +154,7 @@ df = df %>%
 
 ```
 
+
 ```{r rename_vars}
 
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
