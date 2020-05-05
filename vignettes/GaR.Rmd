@@ -7,7 +7,7 @@ output:
     latex_engine: xelatex
     number_sections: true
     includes:
-            in_header: C:\\Users\\internet\\Documents\\GaRpckg\\vignettes\\Preamble.tex
+            in_header: C:\\Users\\internet\\Documents\\GaRpckg\\GaR-preamble.tex
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -45,7 +45,11 @@ library(tidyverse)
 
 library(quantreg)
 
-library(rlang)
+library(corrplot)
+
+library(stargazer)
+
+library(xtable)
 
 ```
 
@@ -77,7 +81,7 @@ parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
 parameters_list$horizon_list = list(1,8,12)
 
 parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
-                "Term_spread","Sovereigh_spread",
+                "Sovereigh_spread",
                 "Interbank_spread","LT_real_rate_change",
                 "TA125_Close","Indus_prod_ind","ILS_EURO",
                 "breakeven_inflation_5_10_fwd")
@@ -86,99 +90,11 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 ```
 
 
-```{r Set_partitions_list}
+```{r Set_partitions}
 
-partitions = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
-                                  "C_FP","G_NDEFIMP_FP","INV_FP",
-                                  "INV_NI_FP","EXP_ND_FP","IMP_ND_FP",
-                                  "STARTUP_FP"),
-                  Dom_Prices = list("CPI","breakeven_inflation_1Y",
-                                    "breakeven_inflation_2_3_fwd",
-                                    "breakeven_inflation_5_10_fwd",
-                                    "CPI_season_adj",
-                                    "CPI_no_house_fruits_season_adj",
-                                    "CPI_no_house_season_adj",
-                                    "CPI_no_house","CPI_no_fruits"),
-                  Rates = list("BOI_rate","Telbor_1Y","real_rate_1",
-                               "real_rate_2_3_fwd","real_rate_5_10_fwd"),
-                  External = list("CA","ILS_USD","ILS_EURO",
-                                  "ILS_Yen","ILS_GBP"),
-                  Global = list("VIX","Ind_Prod_advanced",
-                                "Brent","Commodity_Non_Energy",
-                                "gdp_us","gdp_euro","gdp_japan",
-                                "gdp_uk","infl_us","infl_euro",
-                                "infl_japan","infl_uk","rate_euro","rate_us",
-                                "rate_uk","rate_japan","US_10","EU_10",
-                                "UK_10","JPN_10", "US_5","EU_5","UK_5","JPN_5",
-                                "IMP_OECD"),
-                  Labor = list("Wage","EMP","Unemp_rate","Vacancies_Rate"),
-                  National_Security = list("Tourists"),
-                  Spread = list("Spread_CPI_corp",
-                                "ILS_USD_spread_pct","Interbank_spread",
-                                "Sovereigh_spread",
-                                "Term_spread"),
-                  Volatility = list("ILS_USD_impl_vol","TA_35_impl_vol"),
-                  Returns = list("TA125_Close"),
-                  Credit = list("Credit_to_non_fin_sector",
-                                "Avg_House_Price_index"))
+source("Partition-Specs.R",echo = FALSE)
 
-
-
-```
-
-
-```{r Robustness_partitions}
-
-baseline_partitions = partitions
-
-baseline_partitions$Risk = baseline_partitions[c("Spread","National_Security",
-                                      "Volatility")] %>% 
-  setNames(NULL) %>% 
-  unlist() %>% 
-  as.list()
-
-baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
-                                            c("Spread",
-                                              "National_Security",
-                                              "Volatility")]
-
-baseline_partitions$Fin_Cycle = baseline_partitions[c("Credit","Returns")] %>% 
-  setNames(NULL) %>% 
-  unlist() %>% 
-  as.list()
-
-baseline_partitions = baseline_partitions[!names(baseline_partitions) %in%
-                                            c("Credit","Returns")]
-
-##############################################################################
-
-
-no_labor_partitions = baseline_partitions
-
-no_labor_partitions$Dom_Real = baseline_partitions[c("Dom_Real","Labor")] %>% 
-  setNames(NULL) %>% 
-  unlist() %>% 
-  as.list()
-
-no_labor_partitions = baseline_partitions[!names(baseline_partitions) %in%
-                                            c("Dom_Real","Labor")]
-
-no_risk_partition = baseline_partitions
-
-no_risk_partition$Rates = baseline_partitions[c("Rates","Risk")] %>% 
-  setNames(NULL) %>% 
-  unlist() %>% 
-  as.list()
-
-no_risk_partition = baseline_partitions[!names(baseline_partitions) %in%
-                                            c("Rates","Risk")]
-
-
-partitions_robustness_test = list(baseline = baseline_partitions,
-                                  no_labor = no_labor_partitions,
-                                  no_risk = no_risk_partition)
-
-rm(baseline_partitions, no_labor_partitions, no_risk_partition)
+current_partition = partitions_list$OZMG
 
 ```
 
@@ -200,10 +116,6 @@ vars_to_rates = c("Ind_Prod_advanced","Ind_Prod_Israel",
 df = raw_data$raw_df %>% 
   select(-GDP_F, -GDP_no_tax,-GDP_season_adj) %>% 
   rename(GDP_F = GDP_no_startup)
-
-# df = df %>% 
-#   mutate_at(.vars = vars(unlist(baseline_partitions$Dom_Real),CA),
-#             .funs = list(~c(rep(NA,3),rollsum(.,4))))
 
 # Normalize CA by GDP
 
@@ -234,23 +146,55 @@ df = df %>%
   mutate(rate_uk = rate_uk - UK_10) %>%
   select(-ends_with("10"))
 
-```
+# Filter df
 
-
-```{r make_data_list}
-
-data_list = list()
-
-data_list$complete_cases_df = df %>%
-  filter(complete.cases(.))
-
-data_list$long_series_df = df %>% 
+df = df %>% 
   select(-!!(parameters_list$drop_series))
 
 
-data_list$interpolated_df = df %>%
-  mutate_at(.vars = vars(-Date), interpolate)
+```
 
+
+```{r rename_vars}
+
+rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
+                                 "Ind_Prod_advanced","ILS_USD_spread_pct",
+                                 "TA_35_impl_vol","ILS_USD_impl_vol",
+                                 "Credit_to_non_fin_sector","Avg_House_Price_index"),
+                   new_names = c("GDP","Ind_Prod","IP_adv",
+                                 "FX_spread","VIX_TA",
+                                 "FX_imp_vol","Credit","HousePrice"))
+df = df %>% 
+  rename_at(vars(rename_list$old_names),list(~rename_list$new_names))
+
+
+current_partition = lapply(current_partition, function(temp_part){
+  
+  lapply(temp_part, function(temp_name){
+  
+  ind = which(rename_list$old_names == temp_name)
+  
+  if(length(ind) == 0){
+    
+    return(temp_name)
+    
+  } else {
+    
+    
+    return(rename_list$new_names[ind])
+    
+  }
+  
+  
+  return(rename_list$new_names[])
+  
+  
+})
+
+  
+  
+  
+})
 
 
 ```
@@ -258,22 +202,20 @@ data_list$interpolated_df = df %>%
 
 ```{r Analysis}
 
-results = lapply(partitions_robustness_test, function(temp_partition){
-  run.GaR.analysis(partitions_list = temp_partition,
-                   vars_df = data_list$long_series_df,
+results = run.GaR.analysis(partitions_list = current_partition,
+                   vars_df = df,
                    horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec)
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(Dom_FCI = list(var_name = "Spread_CPI_corp",
+                                                        positive_direction = FALSE)))
 
-})
-
-names(results) = names(partitions_robustness_test)
 
 ```
 
 
 \section{Literature review}
 
-```{r child="GaR-LitReview.Rmd"}
+```{r child="GaR-LitReview.Rmd", eval=FALSE}
 
 ```
 
@@ -293,18 +235,25 @@ names(results) = names(partitions_robustness_test)
 ```
 
 
+\section{Stylized facts}
+
+```{r child="GaR-StylizedFacts.Rmd"}
+
+```
+
+
 \section{GaR timeseries}
 
 ```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 
+\section{Robustness}
 
-\section{Prediction}
-
-```{r , child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd",eval=FALSE}
 
 ```
+
 
 
 \section{Bibliography}
@@ -317,4 +266,10 @@ names(results) = names(partitions_robustness_test)
 ```{r child="GaR-Appendix.Rmd", eval=FALSE}
 
 ```
+
+
+```{r child="GaR-Variables-Desc-Chart.Rmd", eval=FALSE}
+
+```
+
 
