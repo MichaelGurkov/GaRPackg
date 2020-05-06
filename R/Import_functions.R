@@ -1,13 +1,13 @@
-#' This function returns the path to Data folder
+#' This function returns the path to current user
 #'
 
-#' @title Returns Data folder path
+#' @title Returns current user path
 #'
 #' @import stringr
 #'
-#' @return string with path to Data folder
+#' @return string with path to current user
 
-get.data.folder.path = function(){
+get.current.user.path = function(){
 
   temp_user = list.dirs(path = "C:\\Users",recursive = FALSE)
 
@@ -17,11 +17,11 @@ get.data.folder.path = function(){
   temp_user = temp_user[!temp_user %in% c("All Users","Default",
                                          "Default User","Public" )]
 
-  data_path = paste0("C:\\Users\\", temp_user,"\\Documents\\Data")
+  user_path = paste0("C:\\Users\\", temp_user)
 
-  if (dir.exists(data_path)){
+  if (dir.exists(user_path)){
 
-    return(data_path)
+    return(user_path)
 
   } else {
 
