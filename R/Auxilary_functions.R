@@ -1,4 +1,12 @@
-#' This is a convinent function that encupsulates the GaR analysis
+#' @title Perform GaR analysis
+#'
+#' @description This is a convinent function that encupsulates the GaR analysis.
+#' The stages of the analysis are :
+#' \itemize{
+#'   \item Perform PCA
+#'   \item Run quantile regression
+#' }
+#'
 #'
 #' @importFrom stats formula
 #'
@@ -8,14 +16,24 @@
 #'
 #' @param method string a method that aggregates the data to partitions
 #'
+#' @param horizon_list list of forecast horizon
+#'
+#' @param quantile_vec vector of required quantiles in quantile regression
+#' (corresponds to tau argument in rq)
+#'
 #'
 run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
-                            quantile_vec,method = "inner_join_PCA"){
+                            quantile_vec,method = "inner_join_PCA",
+                            run_ols_reg = TRUE, rq_method = "br",
+                            pca.align.list = NULL){
 
-  # Make PCA
+  # Make and align PCA
 
-  pca_obj = lapply(partitions_list[sapply(partitions_list,length) > 1],
-         function(temp_part){
+  pca_obj = lapply(names(partitions_list)[sapply(partitions_list,length) > 1],
+         function(temp_name){
+
+           temp_part = partitions_list[[temp_name]]
+
            available_names = names(vars_df)
 
            part_df = vars_df %>%
@@ -23,16 +41,32 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                     Date) %>%
              filter_all(all_vars(is.finite(.)))
 
-           ret_list = list(pca = part_df %>%
-                             select(-Date) %>%
-                             prcomp(.,center = TRUE,scale. = TRUE) %>%
-                             align.pca(1),
-                           date_index = part_df$Date)
+           pca = part_df %>%
+             select(-Date) %>%
+             prcomp(.,center = TRUE,scale. = TRUE)
+
+           # Align PCA
+
+          if(temp_name %in% names(pca.align.list)){
+
+            pca = do.call("align.pca",c(list(pca_obj = pca),
+                                        pca.align.list[[temp_name]]))
+
+          } else {
+
+            pca = align.pca(pca,1)
+
+          }
+
+
+
+           ret_list = list(pca =  pca, date_index = part_df$Date)
 
             return(ret_list)
 
                            })
 
+  names(pca_obj) = names(partitions_list)[sapply(partitions_list,length) > 1]
 
   # Make regression data frame
 
@@ -45,21 +79,18 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
            return(temp_df)
 
-
-
-
          }) %>%
     reduce(inner_join, by = "Date") %>%
     arrange(Date)%>%
     inner_join(vars_df %>%
-                 select(Date, GDP_F), by = "Date")
+                 select(Date, GDP), by = "Date")
 
   for(temp_horizon in unlist(horizon_list)){
 
     temp_var = paste("GDP_growth",temp_horizon,sep = "_")
 
     reg_df = reg_df %>%
-      mutate(!!sym(temp_var) := lead(GDP_F,temp_horizon))
+      mutate(!!sym(temp_var) := lead(GDP,temp_horizon))
 
   }
 
@@ -74,7 +105,8 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                    tau = quantile_vec,
                    data = reg_df %>%
                      select(-Date) %>%
-                     select(names(.)[!grepl("GDP",names(.))], dep_var))
+                     select(names(.)[!grepl("GDP",names(.))], dep_var),
+                   method = rq_method)
 
     return(qreg_list)
 
@@ -84,7 +116,39 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
   names(qreg_result) = horizon_list
 
 
-  return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result))
+  # Run OLS regresion
+
+  if(run_ols_reg){
+
+    ols_result = lapply(horizon_list, function(temp_horizon){
+
+      dep_var = paste0("GDP_growth_", temp_horizon)
+
+      ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
+                     data = reg_df %>%
+                       select(-Date) %>%
+                       select(names(.)[!grepl("GDP",names(.))], dep_var))
+
+      return(ols_reg)
+
+
+    })
+
+    names(ols_result) = horizon_list
+
+    return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result,
+                ols_reg = ols_result))
+
+
+  } else {
+
+
+    return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result))
+
+  }
+
+
+
 
 }
 
@@ -94,7 +158,8 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 #'
 #'@param quantile_reg
 #'
-plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE){
+plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
+                            add.significance = FALSE){
 
   coeff_data = suppressWarnings(lapply(names(quantile_reg),
                                        function(temp_name){
@@ -123,18 +188,39 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE){
     mutate(Significant = (0 >= Upper.bd | 0 <= Lower.bd))
 
   for (temp_horizon in unique(coeff_data$Horizon)) {
-    temp_plot = ggplot(coeff_data %>%
-                         filter(Horizon == temp_horizon),
-                       aes(x = Tau, y = Coefficients,fill = Significant)) +
-      geom_bar(stat = "identity", width = 0.25) +
-      geom_hline(yintercept = 0, linetype = "dashed") +
-      scale_fill_manual(values = c("TRUE" = "lightblue",
-                                   "FALSE" = "lightgray")) +
-      labs(title = paste(temp_horizon, "quarters ahead")) +
-      theme_bw() +
-      theme(legend.position = "bottom",
-            plot.title = element_text(hjust = 0.5)) +
-      facet_wrap(~Name)
+
+    if(add.significance){
+
+      temp_plot = ggplot(coeff_data %>%
+                           filter(Horizon == temp_horizon),
+                         aes(x = Tau, y = Coefficients,fill = Significant)) +
+        geom_bar(stat = "identity", width = 0.25) +
+        geom_hline(yintercept = 0, linetype = "dashed") +
+        scale_fill_manual(values = c("TRUE" = "lightblue",
+                                     "FALSE" = "lightgray")) +
+        labs(title = paste(temp_horizon, "quarters ahead")) +
+        theme_bw() +
+        theme(legend.position = "bottom",
+              plot.title = element_text(hjust = 0.5)) +
+        facet_wrap(~Name)
+
+    } else {
+
+      temp_plot = ggplot(coeff_data %>%
+                           filter(Horizon == temp_horizon),
+                         aes(x = Tau, y = Coefficients)) +
+        geom_bar(stat = "identity", width = 0.25) +
+        geom_hline(yintercept = 0, linetype = "dashed") +
+        scale_fill_manual(values = c("TRUE" = "lightblue",
+                                     "FALSE" = "lightgray")) +
+        labs(title = paste(temp_horizon, "quarters ahead")) +
+        theme_bw() +
+        theme(legend.position = "bottom",
+              plot.title = element_text(hjust = 0.5)) +
+        facet_wrap(~Name)
+
+
+    }
 
     if(print_plot){
 
@@ -217,10 +303,13 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 }
 
 
-#' Calculate forecasts for GaR object
+#' @title  Calculate forecasts for GaR object
 #'
-#' This is a convenient function that calculates in sample and out of sample
-#' forecast
+#' @description This is a convenient function that calculates in sample and out of sample
+#' forecast.
+#' @details The in sample forecast is simply the fitted values of the regression.
+#' An out of sample forecast is calculated by rolling regression (determined by \code{win_len}) that forecast
+#' ahead according to \code{out_of_sample_step}
 #'
 get.gar.forecast = function(gar_obj, win_len, quantile_vec,
                             out_of_sample_step = 1){
