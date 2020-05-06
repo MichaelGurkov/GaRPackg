@@ -156,6 +156,7 @@ df = df %>%
 
 ```{r rename_vars}
 
+
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
                                  "Ind_Prod_advanced","ILS_USD_spread_pct",
                                  "TA_35_impl_vol","ILS_USD_impl_vol",
@@ -163,8 +164,10 @@ rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
                    new_names = c("GDP","Ind_Prod","IP_adv",
                                  "FX_spread","VIX_TA",
                                  "FX_imp_vol","Credit","HousePrice"))
-df = df %>% 
-  rename_at(vars(rename_list$old_names),list(~rename_list$new_names))
+
+existing <- match(rename_list$old_names,names(df))
+
+names(df)[na.omit(existing)] <- rename_list$new_names[which(!is.na(existing))]
 
 
 current_partition = lapply(current_partition, function(temp_part){
