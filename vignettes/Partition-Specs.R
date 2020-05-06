@@ -78,4 +78,4 @@ partitions_list$OZMG_no_fincycle = list(Dom_Macro = list("GDP_F","Ind_Prod_Israe
                             Dom_FCI =  list("Spread_CPI_corp",
                                             "ILS_USD_spread_pct","Interbank_spread",
                                             "Sovereigh_spread", "Term_spread",
-                                            "ILS_USD_impl_vol","TA_35_impl_vol"))
+                                            "ILS_USD_impl_vol","TA_35_impl_vol","BOI_rate"))

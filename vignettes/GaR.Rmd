@@ -71,7 +71,6 @@ raw_data$raw_df = full_join(raw_data$osnat_list$osnat_df,
 
 setwd("C:\\Users\\internet\\Documents\\GaRpckg\\vignettes")
 
-
 results = list()
 
 parameters_list = list()
@@ -82,8 +81,7 @@ parameters_list$horizon_list = list(1,8,12)
 
 parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
                 "Sovereigh_spread",
-                "Interbank_spread","LT_real_rate_change",
-                "TA125_Close","Indus_prod_ind","ILS_EURO",
+                "Interbank_spread","LT_real_rate_change","Indus_prod_ind","ILS_EURO",
                 "breakeven_inflation_5_10_fwd")
 
 
@@ -153,6 +151,7 @@ df = df %>%
 
 
 ```
+
 
 ```{r rename_vars}
 
