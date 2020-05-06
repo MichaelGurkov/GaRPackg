@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 
 devtools::load_all()
 
-library(GaRPackg)
+# library(GaRPackg)
 
 # setwd("C:\\Users\\Misha\\Documents\\GaRPackg\\vignettes")
 ```
@@ -54,19 +54,6 @@ library(xtable)
 ```
 
 
-```{r Import_data}
-
-raw_data = list(osnat_list = import.osnat.data(),
-                michael_list = import.michael.data())
-
-raw_data$raw_df = full_join(raw_data$osnat_list$osnat_df,
-                            raw_data$michael_list$michael_df,
-                            by = "Date") %>% 
-  arrange(Date)
-
-```
-
-
 ```{r Set_parameters}
 
 setwd("C:\\Users\\internet\\Documents\\GaRpckg\\vignettes")
@@ -82,8 +69,7 @@ parameters_list$horizon_list = list(1,8,12)
 
 parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
                 "Sovereigh_spread",
-                "Interbank_spread","LT_real_rate_change",
-                "TA125_Close","Indus_prod_ind","ILS_EURO",
+                "Interbank_spread","LT_real_rate_change","Indus_prod_ind","ILS_EURO",
                 "breakeven_inflation_5_10_fwd")
 
 
@@ -95,6 +81,35 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 source("Partition-Specs.R",echo = FALSE)
 
 current_partition = partitions_list$OZMG
+
+```
+
+
+```{r Import_data}
+
+fame_df = read.csv(paste0(get.current.user.path(),"\\OneDrive - Bank Of Israel",
+                 "\\Data\\BoI\\GaR_Data\\data_fame.csv"),stringsAsFactors = FALSE) %>% 
+  slice(-(1:10)) %>% 
+  rename(Date = 1) %>% 
+  mutate(Date = as.yearqtr(Date, format = "%m/%d/%Y"))
+
+missing_vars = colnames(fame_df)[sapply(fame_df,
+                      function(temp_col){sum(is.na(temp_col)) == length(temp_col)})]
+
+gar_df = read.csv(paste0(get.current.user.path(),"\\OneDrive - Bank Of Israel",
+                 "\\Data\\BoI\\GaR_Data\\raw_GaR_data.csv"),
+                 stringsAsFactors = FALSE) %>% 
+  rename(Date = date) %>% 
+  mutate(Date = as.yearqtr(str_remove(Date,"\\."), format = "%Y%q"))
+
+df = left_join(fame_df %>% select(-missing_vars),
+               gar_df %>% select(Date, missing_vars), by = "Date")
+
+# Drop short series
+
+df = df %>% 
+  select(-one_of(parameters_list$drop_series))
+
 
 ```
 
@@ -113,43 +128,26 @@ vars_to_rates = c("Ind_Prod_advanced","Ind_Prod_Israel",
                   "Avg_House_Price_index","Credit_to_non_fin_sector",
                   "IMP_OECD")
 
-df = raw_data$raw_df %>% 
-  select(-GDP_F, -GDP_no_tax,-GDP_season_adj) %>% 
-  rename(GDP_F = GDP_no_startup)
-
-# Normalize CA by GDP
+# vars_to_rates = c("Ind_Prod_advanced","GDP_F","Credit_to_non_fin_sector","IMP_OECD")
 
 df = df %>% 
-  mutate(CA = CA / GDP_F)
+  mutate_if(is.character,.funs = list(~as.numeric(str_remove_all(.,","))))
+
+
+# Append Euro rate
+
+df = df %>% 
+  mutate_at(vars(rate_euro, rate_euro_append), .funs = list(~na_if(.,""))) %>% 
+  mutate(rate_euro = coalesce(rate_euro, rate_euro_append)) %>% 
+  select(-rate_euro_append)
 
 
 # Transform variables to rates of change YoY
 
 df = df %>% 
-  mutate_at(vars(vars_to_rates),
+  mutate_at(vars(one_of(vars_to_rates)),
             .funs = list(~./lag(.,4)-1))
 
-
-# Calculate difference
-
-df = df %>%
-  mutate(real_rate_2_3_fwd = real_rate_2_3_fwd - real_rate_5_10_fwd) %>%
-  mutate(BOI_rate = BOI_rate - real_rate_5_10_fwd) %>%
-  mutate(US_5 = US_5 - US_10) %>%
-  mutate(EU_5 = EU_5 - EU_10) %>%
-  mutate(JPN_5 = JPN_5 - JPN_10) %>%
-  mutate(Ger_5 = Ger_5 - Ger_10) %>%
-  mutate(UK_5 = UK_5 - UK_10) %>%
-  mutate(rate_us = rate_us - US_10) %>%
-  mutate(rate_euro = rate_euro - EU_10) %>%
-  mutate(rate_japan = rate_japan - JPN_10) %>%
-  mutate(rate_uk = rate_uk - UK_10) %>%
-  select(-ends_with("10"))
-
-# Filter df
-
-df = df %>% 
-  select(-!!(parameters_list$drop_series))
 
 
 ```
