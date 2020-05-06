@@ -29,7 +29,8 @@ devtools::load_all()
 
 # library(GaRPackg)
 
-# setwd("C:\\Users\\Misha\\Documents\\GaRPackg\\vignettes")
+setwd(paste0(file.path(Sys.getenv("USERPROFILE")),
+             "\\Documents\\GaRPckg\\vignettes"))
 ```
 
 
