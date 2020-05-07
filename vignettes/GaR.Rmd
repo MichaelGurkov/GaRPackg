@@ -1,13 +1,13 @@
 ---
 title: "GaR analysis"
-bibliography: C:\\Users\\internet\\Documents\\Refrences\\GaR.bib
+bibliography: C:\\Users\\Misha\\Documents\\References\\GaR.bib
 fontsize: 11pt
 output:
   rmarkdown::pdf_document:
     latex_engine: xelatex
     number_sections: true
     includes:
-            in_header: C:\\Users\\internet\\Documents\\GaRpckg\\GaR-preamble.tex
+            in_header: GaR-preamble.tex
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -29,8 +29,8 @@ devtools::load_all()
 
 # library(GaRPackg)
 
-setwd(paste0(file.path(Sys.getenv("USERPROFILE")),
-             "\\Documents\\GaRPckg\\vignettes"))
+setwd(paste0(file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
+             "\\Documents\\GaRPackg\\vignettes"))
 ```
 
 
@@ -113,8 +113,10 @@ fame_non_na_vars = colnames(fame_df)[sapply(fame_df,function(temp_col){
 
 missing_vars = unlist(current_partition)[!unlist(current_partition) %in% fame_non_na_vars]
 
+names(missing_vars) = NULL
 
-df = left_join(fame_df %>% select(-any_of(fame_non_na_vars), Date),
+
+df = left_join(fame_df %>% select(any_of(fame_non_na_vars), Date),
                gar_df %>% select(Date, any_of(missing_vars)), by = "Date")
 
 # Drop short series
@@ -239,7 +241,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd"}
+```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
 
 ```
 
@@ -252,7 +254,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd",eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 
@@ -265,12 +267,12 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd", eval=FALSE}
+```{r child="GaR-Appendix.Rmd"}
 
 ```
 
 
-```{r child="GaR-Variables-Desc-Chart.Rmd", eval=FALSE}
+```{r child="GaR-Variables-Desc-Chart.Rmd"}
 
 ```
 
