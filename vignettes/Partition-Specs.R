@@ -3,8 +3,9 @@ partitions_list  = list()
 
 
 partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
-                            Global = list("gdp_us","gdp_euro","infl_us","infl_euro",
-                                          "Ind_Prod_advanced","rate_euro","rate_us","VIX"),
+                            Global = list("gdp_us","gdp_euro","infl_us",
+                                          "infl_euro","rate_euro","rate_us",
+                                          "VIX","Ind_Prod_us","Ind_Prod_euro"),
                             Dom_FCI =  list("Spread_CPI_corp",
                                             "ILS_USD_spread_pct","Interbank_spread",
                                             "Sovereigh_spread", "Term_spread",
