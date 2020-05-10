@@ -1,7 +1,8 @@
 
 ```{r set_pca_list}
 
-pca_list = results[[1]]$pca
+
+pca_list = results$pca
 
 ```
 
