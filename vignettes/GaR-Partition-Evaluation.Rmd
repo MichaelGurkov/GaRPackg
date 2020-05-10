@@ -35,13 +35,17 @@ ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) +
 
 ```{r plot_pca_loadings, fig.width = 10, fig.height=my_fig_height}
 
-pca_plots = lapply(names(pca_list), function(name){
+plot_names = c("Domestic Macro","Global Conditions",
+               "Financial Conditions \n (up = accomodating)",
+               "Financial Cycle \n (credit, houseprice)")
+
+pca_plots = lapply(seq_along(names(pca_list)), function(temp_ind){
   
-  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
-                  Val = pca_list[[name]]$pca$rotation[,1]),
+  bar_plot = ggplot(data.frame(Name = names(pca_list[[temp_ind]]$pca$rotation[,1]),
+                  Val = pca_list[[temp_ind]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = name) +
+  labs(x = "", y = "", title = plot_names[temp_ind]) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))

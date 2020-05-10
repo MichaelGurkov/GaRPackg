@@ -178,7 +178,6 @@ current_partition = lapply(current_partition, function(temp_part){
     
   } else {
     
-    
     return(rename_list$new_names[ind])
     
   }
@@ -248,7 +247,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd",eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 
