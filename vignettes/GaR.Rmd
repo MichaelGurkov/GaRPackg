@@ -88,8 +88,10 @@ current_partition = partitions_list$OZMG
 
 ```{r Import_data}
 
-fame_df = read.csv(paste0(get.current.user.path(),"\\OneDrive - Bank Of Israel",
-                 "\\Data\\BoI\\GaR_Data\\data_fame.csv"),stringsAsFactors = FALSE) %>% 
+fame_df = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+                          "\\OneDrive - Bank Of Israel",
+                          "\\Data\\BoI\\GaR_Data\\data_fame.csv"),
+                   stringsAsFactors = FALSE) %>% 
   slice(-(1:10)) %>% 
   rename(Date = 1) %>% 
   mutate(Date = as.yearqtr(Date, format = "%m/%d/%Y"))
