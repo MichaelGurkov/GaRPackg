@@ -4,18 +4,24 @@
 \alias{pca_reduction}
 \title{PCA reduction}
 \usage{
-pca_reduction(data, time_index = TRUE, scale = TRUE, n_comps = 1)
+pca_reduction(
+  data,
+  has_time_index = TRUE,
+  scale = TRUE,
+  n_comps = 1,
+  sign_align_params = NULL
+)
 }
 \arguments{
 \item{data}{dataframe}
 
-\item{time_index}{(optional) time index of the data}
+\item{has_time_index}{boolean indicator of time index of the data}
 
 \item{n_comps}{(optional) number of PCA components to return}
 }
 \description{
 This function reduces dimension based on pca method
-The function takes a data matrix and retuns the first n_comps
+The function takes a data matrix and returns the first n_comps
 components of PCA transformation. If the data matrix has a
-time index the results is aligned along the index
+time index the result is aligned along the index
 }

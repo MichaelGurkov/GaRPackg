@@ -8,7 +8,11 @@ Description: The package imports and processes data for GaR analysis
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
+Depends:
+    dplyr,
+    stringr,
+    zoo
 Suggests: 
     knitr,
     rmarkdown,
