@@ -205,14 +205,14 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 
@@ -231,7 +231,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd", eval=FALSE}
+```{r child="GaR-Appendix.Rmd"}
 
 ```
 
