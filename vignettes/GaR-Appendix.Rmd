@@ -52,12 +52,3 @@ ggplot(df %>%
 
 ```
 
-
-The following series were dropped because of short length
-
-```{r drop_series_list, results='asis'} 
-
-cat(paste('-', parameters_list$drop_series), sep = '\n') 
-
-``` 
-

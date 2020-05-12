@@ -1,6 +1,17 @@
 
 partitions_list  = list()
 
+partitions_list$basic = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
+                             Global = list("gdp_us","gdp_euro","infl_us",
+                                           "infl_euro","rate_euro","rate_us",
+                                           "VIX","Ind_Prod_us","Ind_Prod_euro"),
+                             Dom_FCI =  list("Spread_CPI_corp",
+                                             "Sovereigh_spread", "Term_spread",
+                                             "ILS_USD_impl_vol","TA_35_impl_vol","BOI_rate"),
+                             FinCycle = list("Credit_to_non_fin_sector",
+                                             "Avg_House_Price_index","TA125_Close"))
+
+
 
 partitions_list$OZMG = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
                             Global = list("gdp_us","gdp_euro","infl_us",
@@ -61,16 +72,6 @@ partitions_list$basic_fincycle = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
                                 "Avg_House_Price_index","TA125_Close"),
                              Global_Fin = list("VIX"))
 
-
-partitions_list$basic = list(Dom_Real = list("GDP_F","Ind_Prod_Israel",
-                                             "CPI","BOI_rate","real_rate_1"),
-                             Global_Real = list("CA","ILS_USD","gdp_us",
-                                                "gdp_euro","infl_us","infl_euro",
-                                                "Ind_Prod_advanced","rate_euro","rate_us"),
-                             Dom_Fin =  list("Spread_CPI_corp",
-                                             "ILS_USD_spread_pct","Interbank_spread",
-                                             "Sovereigh_spread", "Term_spread",
-                                             "ILS_USD_impl_vol","TA_35_impl_vol"))
 
 
 partitions_list$OZMG_no_fincycle = list(Dom_Macro = list("GDP_F","Ind_Prod_Israel"),

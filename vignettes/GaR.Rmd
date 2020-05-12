@@ -1,13 +1,13 @@
 ---
 title: "GaR analysis"
-bibliography: C:\\Users\\Misha\\Documents\\References\\GaR.bib
+bibliography: C:\\Users\\internet\\Documents\\References\\GaR.bib
 fontsize: 11pt
 output:
   rmarkdown::pdf_document:
     latex_engine: xelatex
     number_sections: true
     includes:
-            in_header: GaR-preamble.tex
+            in_header: Preamble.tex
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -87,42 +87,18 @@ parameters_list$vars_to_rates = c("Ind_Prod_us","Ind_Prod_euro",
 
 source("Partition-Specs.R",echo = FALSE)
 
-current_partition = partitions_list$OZMG
+current_partition = partitions_list$basic
 
 ```
 
 
 ```{r Import_data}
 
-fame_df = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-                          "\\OneDrive - Bank Of Israel",
-                          "\\Data\\BoI\\GaR_Data\\data_fame.csv"),
-                   stringsAsFactors = FALSE) %>% 
-  slice(-(1:10)) %>% 
-  rename(Date = 1) %>% 
-  mutate(Date = as.yearqtr(Date, format = "%m/%d/%Y"))
-
-gar_df = read.csv(paste0(get.current.user.path(),"\\OneDrive - Bank Of Israel",
-                 "\\Data\\BoI\\GaR_Data\\raw_GaR_data.csv"),
-                 stringsAsFactors = FALSE) %>% 
-  rename(Date = date) %>% 
-  mutate(Date = as.yearqtr(str_remove(Date,"\\."), format = "%Y%q"))
-
-fame_non_na_vars = colnames(fame_df)[sapply(fame_df,function(temp_col){
-                        sum(!is.na(temp_col)) == length(temp_col)})]
-
-missing_vars = unlist(current_partition)[!unlist(current_partition) %in% fame_non_na_vars]
-
-names(missing_vars) = NULL
+df = import.from.fame.template(paste0("C:\\Users\\internet\\OneDrive - Bank Of Israel\\",
+                          "Data\\BoI\\GaR_Data\\Working_data\\data_fame.csv")) %>% 
+  filter(Date >= as.yearqtr("1995 Q1"))
 
 
-df = left_join(fame_df %>% select(any_of(fame_non_na_vars), Date),
-               gar_df %>% select(Date, any_of(missing_vars)), by = "Date")
-
-# Drop short series
-
-df = df %>% 
-  select(-any_of(parameters_list$drop_series))
 
 
 ```
@@ -131,18 +107,6 @@ df = df %>%
 ```{r Process_data}
 
 # Convert to numeric
-
-df = df %>% 
-  mutate_if(is.character,.funs = list(~as.numeric(str_remove_all(.,","))))
-
-
-# Append Euro rate
-
-df = df %>% 
-  mutate_at(vars(rate_euro, rate_euro_append), .funs = list(~na_if(.,""))) %>% 
-  mutate(rate_euro = coalesce(rate_euro, rate_euro_append)) %>% 
-  select(-rate_euro_append)
-
 
 # Transform variables to rates of change YoY
 
@@ -219,7 +183,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Literature review}
 
-```{r child="GaR-LitReview.Rmd", eval=FALSE}
+```{r child="GaR-LitReview.Rmd"}
 
 ```
 
@@ -248,7 +212,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd"}
+```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
 
 ```
 
@@ -267,12 +231,12 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section {Appendix}
 
-```{r child="GaR-Appendix.Rmd"}
+```{r child="GaR-Appendix.Rmd", eval=FALSE}
 
 ```
 
 
-```{r child="GaR-Variables-Desc-Chart.Rmd"}
+```{r child="GaR-Variables-Desc-Chart.Rmd", eval=FALSE}
 
 ```
 
