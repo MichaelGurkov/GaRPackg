@@ -1,0 +1,164 @@
+
+```{r get_quantiles_df}
+
+dist_quantile_df = lapply(names(results$quantile_reg),
+                   function(temp_name){
+                     
+                     date_vec = results$reg_df$Date
+                     
+                     date_vec = date_vec[1:(length(date_vec) - 
+                                              as.numeric(temp_name))]
+                     
+                     temp_df = results$quantile_reg[[
+                       temp_name]]$fitted.values %>% 
+                       as.data.frame() %>% 
+                       setNames(unlist(parameters_list$quantile_vec)) %>% 
+                       mutate(Date = date_vec) %>% 
+                       mutate(OLS = results$ols_reg[[temp_name]]$fitted.values) %>% 
+                       gather(key = Quantile,value = GaR,-Date) %>% 
+                       mutate(Horizon = temp_name)
+                   
+                       return(temp_df)
+                     
+                   }) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  spread(key = Quantile,value = GaR) %>% 
+  rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
+            .funs = list(~paste0("Q_",.))) %>% 
+  group_by(Horizon) %>% 
+  mutate(IQR = Q_0.95 - Q_0.05) %>% 
+  mutate(Up_dist = Q_0.95-Q_0.5) %>% 
+  mutate(Down_dist = Q_0.5-Q_0.05) %>% 
+  mutate(RA = Up_dist - Down_dist)
+
+
+factor_quantiles_df = lapply(names(results$quantile_reg),
+                             function(temp_name){
+  
+  temp_df = results$quantile_reg[[temp_name]]$coefficients
+  
+  temp_df = temp_df %>% 
+  as.data.frame() %>% 
+  rename_at(.vars = vars(grep("tau",names(.),value = TRUE)),
+            .funs = list(~str_replace(.,"tau= ","Q_"))) %>% 
+  mutate(Factor = rownames(.)) %>% 
+  mutate(IQR = Q_0.95 - Q_0.05) %>% 
+  mutate(Horizon = temp_name)
+
+  return(temp_df)
+  
+}) %>% 
+  bind_rows() %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  filter(!Factor == "(Intercept)")
+
+
+iqr_horizon_corr_mat = dist_quantile_df %>% 
+  select(Date,Horizon, IQR) %>% 
+  spread(key = Horizon,value = IQR) %>% 
+  select(-Date) %>% 
+  cor(use = "pairwise.complete.obs")
+
+
+median_iqr_corr_mat = dist_quantile_df %>% 
+  select(Date,Horizon, IQR, Q_0.5) %>%
+  group_by(Horizon) %>% 
+  summarise(Corr = cor(IQR,Q_0.5))
+  
+
+
+```
+
+
+
+
+\subsection{Median - Variance correlation}
+
+
+```{r median_variance_scatter_plot}
+
+ggplot(dist_quantile_df %>% 
+         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
+  geom_point() + 
+  stat_smooth(method = "lm") + 
+  facet_wrap(~Horizon) + 
+  labs(x = "Volatility", y = "Median", title = "Median vs volatility") +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+    
+
+```
+
+
+```{r plot_median_variance_corr}
+
+ggplot(median_iqr_corr_mat, aes(x = Horizon, y = Corr)) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  theme_bw()
+
+```
+
+
+
+\subsection{Volatility Paradox}
+The volatility paradox describes a phenomenon where stable conditions today allow risk accumulation
+that realize in the future. The empirical representation of this phenomenon is a negative
+correlation between IQR (Inter Quartile Range) in the short and long term
+
+```{r output_VP_corr_mat, results='asis'}
+
+print(xtable(iqr_horizon_corr_mat), comment = FALSE)
+  
+```
+
+We can also try to asses the contribution of each factor to the volatility paradox. A factor will decrease the distribution volatility if the effect of
+The volatility paradox suggest that the 
+
+```{r factors_IQR}
+
+ggplot(factor_quantiles_df, aes(x = Horizon, y = IQR, group = 1)) + 
+  geom_path() + 
+  geom_point() + 
+  labs(y = "") + 
+  facet_wrap(~Factor) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+\subsection{Risk Asymmetry}
+The "risk asymmetry" phenomenon refers to the fact that the left tail of the forecasted growth distribution (the depressed growth scenarios) is quite volatile relative to the right
+tail of the distribution meaning that the downside growth risk is much more
+severe than upside risk. The empirical representation of this phenomenon is that a distance between
+of the 5th percentile from the median should be larger relative to the distance of the 95th 
+percentile from the median.
+
+
+```{r plot_risk_assymetry, fig.height=8}
+
+ggplot(dist_quantile_df, aes(x = Date, y = RA)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "", title = "Risk asymmetry") + 
+  facet_wrap(~Horizon, scales = "free", ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r plot_mean_median_diff, fig.height=8}
+
+ggplot(dist_quantile_df, aes(x = Date, y = OLS - Q_0.5)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "", title = "Difference between mean (OLS) and median (quantile) regressions ") + 
+  facet_wrap(~Horizon, scales = "free", ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
+
