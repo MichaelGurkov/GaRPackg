@@ -139,7 +139,7 @@ ggplot(error_stat_df %>%
          gather(key = Fit_Indicator,value = Val,
                 -Partition,-Horizon, -Forecast_Status),
        aes(x = Partition, y = Val, fill = Fit_Indicator)) + 
-  geom_col(position = "dodge", width = 0.35) + ?פרקג
+  geom_col(position = "dodge", width = 0.35) + 
   scale_fill_manual(values = c(MAD = "lightgray", RMSE = "lightblue")) + 
   facet_grid(rows = vars(Horizon), cols = vars(Forecast_Status)) + 
   labs(x = "", y = "", title = "Goodness of fit") + 
