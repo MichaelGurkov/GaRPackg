@@ -14,7 +14,7 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
                 "breakeven_inflation_5_10_fwd")
 
 parameters_list$vars_to_rates = c("Ind_Prod_us","Ind_Prod_euro",
-                                  "Ind_Prod_Israel","GDP_F",
+                                  "Ind_Prod_Israel","GDP",
                                   "Credit_to_non_fin_sector","TA125_Close",
                                   "Avg_House_Price_index","SP500","DXY",
                                   "eurostoxx600")
