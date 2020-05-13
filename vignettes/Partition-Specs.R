@@ -2,7 +2,7 @@
 partitions_list  = list()
 
 partitions_list$basic = list(
-  Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
+  Dom_Macro = list("GDP","Ind_Prod_Israel"),
   Global = list("gdp_us","gdp_euro","infl_us",
                 "infl_euro","rate_euro","rate_us",
                 "VIX","Ind_Prod_us","Ind_Prod_euro"),
@@ -13,7 +13,7 @@ partitions_list$basic = list(
                   "Avg_House_Price_index","TA125_Close"))
 
 partitions_list$basic_global_extended = list(
-  Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
+  Dom_Macro = list("GDP","Ind_Prod_Israel"),
   Global = list("gdp_us","gdp_euro","infl_us",
                 "infl_euro","rate_euro","rate_us",
                 "VIX","Ind_Prod_us","Ind_Prod_euro","eurostoxx600",
@@ -27,7 +27,7 @@ partitions_list$basic_global_extended = list(
 
 
 partitions_list$OZMG = list(
-  Dom_Macro = list("GDP_F","Ind_Prod_Israel"),
+  Dom_Macro = list("GDP","Ind_Prod_Israel"),
   Global = list("gdp_us","gdp_euro","infl_us",
                 "infl_euro","rate_euro","rate_us",
                 "VIX","Ind_Prod_us","Ind_Prod_euro"),
@@ -40,7 +40,7 @@ partitions_list$OZMG = list(
 
 
 partitions_list$extensive = list(
-  Dom_Real = list("GDP_F","Ind_Prod_Israel",
+  Dom_Real = list("GDP","Ind_Prod_Israel",
                   "C_FP","G_NDEFIMP_FP","INV_FP",
                   "INV_NI_FP","EXP_ND_FP","IMP_ND_FP",
                   "STARTUP_FP"),

@@ -27,10 +27,10 @@ knitr::opts_chunk$set(
 
 devtools::load_all()
 
-# library(GaRPackg)
-
 setwd(paste0(file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
              "\\Documents\\GaRPackg\\vignettes"))
+
+
 ```
 
 
@@ -55,31 +55,7 @@ library(xtable)
 ```
 
 
-```{r Set_parameters}
-
-setwd(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-      "\\Documents\\GaRPackg\\vignettes"))
-
-results = list()
-
-parameters_list = list()
-
-parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
-
-parameters_list$horizon_list = list(1,8,12)
-
-parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
-                "Sovereigh_spread",
-                "Interbank_spread","LT_real_rate_change","Indus_prod_ind",
-                "ILS_EURO",
-                "breakeven_inflation_5_10_fwd")
-
-parameters_list$vars_to_rates = c("Ind_Prod_us","Ind_Prod_euro",
-                                  "Ind_Prod_Israel","GDP_F",
-                                  "Credit_to_non_fin_sector","TA125_Close",
-                                  "Avg_House_Price_index","SP500","DXY",
-                                  "eurostoxx600")
-
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
 
 ```
 
@@ -94,37 +70,7 @@ current_partition = partitions_list$basic_global_extended
 ```
 
 
-```{r Import_data}
-
-df = import.from.fame.template(paste0(file.path(Sys.getenv("USERPROFILE"),
-                                                fsep="\\"),
-                                      "\\OneDrive - Bank Of Israel\\",
-                                      "Data\\BoI\\GaR_Data\\Working_data",
-                                      "\\data_fame.csv")) %>% 
-  filter(Date >= as.yearqtr("1995 Q1"))
-
-
-
-
-```
-
-
-```{r Process_data}
-
-# Convert to numeric
-
-# Transform variables to rates of change YoY
-
-df = df %>% 
-  mutate_at(vars(any_of(parameters_list$vars_to_rates)),
-            .funs = list(~./lag(.,4)-1))
-
-
-
-```
-
-
-```{r rename_vars}
+```{r rename_vars, eval=FALSE}
 
 
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
@@ -164,13 +110,12 @@ current_partition = lapply(current_partition, function(temp_part){
   
 })
 
-  
-  
-  
+
 })
 
 
 ```
+
 
 
 ```{r Analysis}
@@ -179,8 +124,9 @@ results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
                    horizon_list = parameters_list$horizon_list,
                    quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(Dom_FCI = list(var_name = "Spread_CPI_corp",
-                                                        positive_direction = FALSE)))
+                   pca.align.list = list(Dom_FCI = list(
+                     var_name = "Spread_CPI_corp",
+                     positive_direction = FALSE)))
 
 
 ```
