@@ -1,6 +1,6 @@
 ---
 title: "GaR analysis"
-bibliography: C:\\Users\\internet\\Documents\\References\\GaR.bib
+bibliography: C:\\Users\\Misha\\Documents\\References\\GaR.bib
 fontsize: 11pt
 output:
   rmarkdown::pdf_document:
@@ -77,7 +77,8 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 parameters_list$vars_to_rates = c("Ind_Prod_us","Ind_Prod_euro",
                                   "Ind_Prod_Israel","GDP_F",
                                   "Credit_to_non_fin_sector","TA125_Close",
-                                  "Avg_House_Price_index")
+                                  "Avg_House_Price_index","SP500","DXY",
+                                  "eurostoxx600")
 
 
 ```
@@ -87,15 +88,19 @@ parameters_list$vars_to_rates = c("Ind_Prod_us","Ind_Prod_euro",
 
 source("Partition-Specs.R",echo = FALSE)
 
-current_partition = partitions_list$basic
+current_partition = partitions_list$basic_global_extended
+
 
 ```
 
 
 ```{r Import_data}
 
-df = import.from.fame.template(paste0("C:\\Users\\internet\\OneDrive - Bank Of Israel\\",
-                          "Data\\BoI\\GaR_Data\\Working_data\\data_fame.csv")) %>% 
+df = import.from.fame.template(paste0(file.path(Sys.getenv("USERPROFILE"),
+                                                fsep="\\"),
+                                      "\\OneDrive - Bank Of Israel\\",
+                                      "Data\\BoI\\GaR_Data\\Working_data",
+                                      "\\data_fame.csv")) %>% 
   filter(Date >= as.yearqtr("1995 Q1"))
 
 
