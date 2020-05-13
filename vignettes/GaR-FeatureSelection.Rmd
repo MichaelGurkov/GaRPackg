@@ -1,0 +1,152 @@
+---
+title: "Feature selection"
+fontsize: 11pt
+output:
+  rmarkdown::pdf_document:
+    latex_engine: xelatex
+    number_sections: true
+    includes:
+            in_header: Preamble.tex
+
+vignette: >
+  %\VignetteIndexEntry{GaR analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF_8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
+  comment = "#>"
+)
+```
+
+
+```{r setup}
+
+devtools::load_all()
+
+setwd(paste0(file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
+             "\\Documents\\GaRPackg\\vignettes"))
+
+
+```
+
+
+```{r load_libraries}
+
+library(cowplot)
+
+library(gghighlight)
+
+library(tidyselect)
+
+library(tidyverse)
+
+library(quantreg)
+
+library(corrplot)
+
+library(stargazer)
+
+library(xtable)
+
+```
+
+
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
+
+
+```{r Set_partitions}
+
+source("Partition-Specs.R",echo = FALSE)
+
+
+current_partitions_list = partitions_list[names(partitions_list) %in%
+                                            c("basic",
+                                              "basic_global_extended")]
+
+
+```
+
+
+```{r GaR_analysis}
+
+results_list = lapply(current_partitions_list,
+                      function(temp_partition){
+                        temp_res = run.GaR.analysis(
+                          partitions_list = temp_partition,
+                          vars_df = df,
+                          horizon_list = parameters_list$horizon_list,
+                          quantile_vec = parameters_list$quantile_vec,
+                          pca.align.list = list(Dom_FCI = list(
+                            var_name = "Spread_CPI_corp",
+                            positive_direction = FALSE)))
+                       
+                        return(temp_res) 
+                        
+                      })
+
+
+```
+
+
+```{r GaR_forecast}
+
+gar_forecast_results = lapply(results_list,
+                              function(temp_gar_obj){
+                                
+                                temp_forecast = get.gar.forecast(
+                                  gar_obj = temp_gar_obj,win_len = 30,
+                                  quantile_vec = parameters_list$quantile_vec,
+                                  out_of_sample_step = 1)
+                                
+                                return(temp_forecast)
+
+                                
+                              })
+
+```
+
+
+```{r error_df}
+
+error_df = lapply(names(gar_forecast_results),
+                  function(temp_name){
+                    
+                    temp_df = gar_forecast_results[[temp_name]]
+                    
+                    temp_df = temp_df %>% 
+                      filter(complete.cases(.)) %>% 
+                      mutate(Partition = temp_name)
+                    
+                  }) %>% 
+  bind_rows()
+
+error_stat_df = error_df %>% 
+  group_by(Partition, Horizon, Forecast_Status) %>% 
+  summarise(RMSE = sqrt(mean(Error ^ 2)), MAD = mean(abs(Error))) %>% 
+  ungroup() %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,8,12)))
+
+```
+
+```{r plot_error_stat_df, fig.height=8}
+
+ggplot(error_stat_df %>% 
+         gather(key = Fit_Indicator,value = Val,
+                -Partition,-Horizon, -Forecast_Status),
+       aes(x = Partition, y = Val, fill = Fit_Indicator)) + 
+  geom_col(position = "dodge", width = 0.35) + 
+  scale_fill_manual(values = c(MAD = "lightgray", RMSE = "lightblue")) + 
+  facet_grid(rows = vars(Horizon), cols = vars(Forecast_Status)) + 
+  labs(x = "", y = "", title = "Goodness of fit") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+```
+
