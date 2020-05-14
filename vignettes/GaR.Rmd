@@ -66,6 +66,9 @@ source("Partition-Specs.R",echo = FALSE)
 
 current_partition = partitions_list$basic_global_extended
 
+# current_partition$Dom_FCI = str_replace(current_partition$Dom_FCI,
+#                                         "BOI_rate","d4")
+
 
 ```
 
