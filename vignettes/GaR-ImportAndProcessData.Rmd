@@ -19,6 +19,8 @@ parameters_list$vars_to_rates = c("Ind_Prod_us","Ind_Prod_euro",
                                   "Avg_House_Price_index","SP500","DXY",
                                   "eurostoxx600")
 
+parameters_list$vars_to_diff = c("BOI_rate")
+
 
 ```
 
@@ -47,6 +49,15 @@ df = import.from.fame.template(paste0(file.path(Sys.getenv("USERPROFILE"),
 df = df %>% 
   mutate_at(vars(any_of(parameters_list$vars_to_rates)),
             .funs = list(~./lag(.,4)-1))
+
+
+# Transform variables to difference
+
+df = df %>% 
+  mutate_at(vars(any_of(parameters_list$vars_to_diff)),
+            .funs = list(d1 = ~ . - lag(.,1))) %>% 
+  mutate_at(vars(any_of(parameters_list$vars_to_diff)),
+            .funs = list(d4 = ~ . - lag(.,4)))
 
 
 
