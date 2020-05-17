@@ -394,3 +394,37 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
 
 
 }
+
+
+
+#' @title Calculate Osnat's quantile fit score
+#'
+#' @description This function evaluates the goodness of fit between "realized" and to forecasted CDF
+#'
+quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
+
+  if(length(quantile_values) != length(quantiles)){
+
+    stop("Quantile values and quantiles must be of same length ")
+
+  }
+
+  score = 0
+
+  for (ind in seq_along(quantiles)){
+
+    if(quantile_values[ind] < realized_estimate){
+
+      score = score + quantiles[ind] ^ 2
+
+    } else {
+
+      score = score + (1 - quantiles[ind]) ^ 2
+
+    }
+
+  }
+
+  return(score)
+
+}
