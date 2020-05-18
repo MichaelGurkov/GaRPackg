@@ -85,3 +85,33 @@ ggplot(predict_df %>%
 
 ```
 
+
+```{r fan_chart}
+
+fan_chart_df  = predict_df %>% 
+  filter(Date == max(Date))%>% 
+  spread(key = Quantile,value = GaR) %>% 
+  rename_at(vars(-Date,-Horizon),
+            .funs = list(~paste0("Q_",.))) %>% 
+  mutate(Date = Date + as.numeric(as.character(Horizon)) * 0.25)
+
+ggplot() +
+  geom_line(data = df %>%
+              select(Date, GDP) %>%
+              filter(complete.cases(.)),
+            aes(x = Date, y = GDP)) +
+  geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.05, ymax = Q_0.95),
+              fill = "lightblue",
+              alpha = 0.6) +
+   geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.25, ymax = Q_0.75),
+              fill = "lightblue",
+              alpha = 0.5) +
+  geom_line(data = fan_chart_df, aes(x = Date, y = Q_0.5), color = "white") +
+  labs(x = "", y = "",title = "Fan chart for GDP YoY growth rate") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.5)) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
