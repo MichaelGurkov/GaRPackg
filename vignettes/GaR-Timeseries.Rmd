@@ -1,31 +1,50 @@
 
-```{r get_fitted_df}
+```{r get_predict_df}
 
-fitted_df = lapply(names(results$quantile_reg),
-                   function(temp_name){
-                     
-                     date_vec = results$reg_df$Date
-                     
-                     date_vec = date_vec[1:(length(date_vec) - 
-                                              as.numeric(temp_name))]
-                     
-                     temp_df = results$quantile_reg[[
-                       temp_name]]$fitted.values %>% 
-                       as.data.frame() %>% 
-                       setNames(unlist(parameters_list$quantile_vec)) %>% 
-                       mutate(Date = date_vec) %>% 
-                       gather(key = Quantile,value = GaR,-Date) %>% 
-                       mutate(Horizon = temp_name)
-                     
-                     return(temp_df)
-                     
-                   }) %>% 
+# fitted_df = lapply(names(results$quantile_reg),
+#                    function(temp_name){
+#                      
+#                      date_vec = results$reg_df$Date
+#                      
+#                      date_vec = date_vec[1:(length(date_vec) - 
+#                                               as.numeric(temp_name))]
+#                      
+#                      temp_df = results$quantile_reg[[
+#                        temp_name]]$fitted.values %>% 
+#                        as.data.frame() %>% 
+#                        setNames(unlist(parameters_list$quantile_vec)) %>% 
+#                        mutate(Date = date_vec) %>% 
+#                        gather(key = Quantile,value = GaR,-Date) %>% 
+#                        mutate(Horizon = temp_name)
+#                      
+#                      return(temp_df)
+#                      
+#                    }) %>% 
+#   bind_rows() %>% 
+#   mutate(Date = as.yearqtr(Date)) %>% 
+#   mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
+
+
+predict_df = lapply(names(results$quantile_reg),
+                               function(temp_name){
+
+    temp_forecast = predict(results$quantile_reg[[temp_name]],
+                       newdata = results$reg_df)
+    
+    temp_forecast  = temp_forecast %>% 
+      as.data.frame() %>% 
+      mutate(Date = results$reg_df$Date) %>% 
+      setNames(str_remove_all(names(.),"tau= ")) %>% 
+      gather(key = Quantile,value = GaR,-Date) %>% 
+      mutate(Horizon = temp_name)
+    
+    return(temp_forecast)
+  
+}) %>% 
   bind_rows() %>% 
   mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
-
-
-
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  mutate(Quantile = str_replace(Quantile,"0.50","0.5"))
 
 ```
 
@@ -33,7 +52,7 @@ fitted_df = lapply(names(results$quantile_reg),
 ```{r plot_gar_timeseries}
 
 
-ggplot(fitted_df %>% 
+ggplot(predict_df %>% 
          filter(Quantile == "0.05"),
        aes(x = Date, y = GaR, color = Horizon)) + 
   geom_line() + 
@@ -48,13 +67,13 @@ ggplot(fitted_df %>%
 
 ```{r plot_gar_bounds_timeseries, fig.height=10}
 
-temp_df = fitted_df %>% 
+temp_df = predict_df %>% 
   filter(Quantile %in% c("0.05","0.5","0.95")) %>% 
   spread(key = Quantile,value = GaR) %>% 
   mutate(`0.05`= `0.05`- `0.5`, `0.95` = `0.95` - `0.5`) %>% 
   gather(key = Quantile,value = GaR,-Date, -Horizon)
 
-ggplot(fitted_df %>% 
+ggplot(predict_df %>% 
   filter(Quantile %in% c("0.05","0.5","0.95")),
        aes(x = Date, y = GaR, color = Quantile)) + 
   geom_line() + 
