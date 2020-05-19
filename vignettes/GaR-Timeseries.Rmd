@@ -1,30 +1,6 @@
 
 ```{r get_predict_df}
 
-# fitted_df = lapply(names(results$quantile_reg),
-#                    function(temp_name){
-#                      
-#                      date_vec = results$reg_df$Date
-#                      
-#                      date_vec = date_vec[1:(length(date_vec) - 
-#                                               as.numeric(temp_name))]
-#                      
-#                      temp_df = results$quantile_reg[[
-#                        temp_name]]$fitted.values %>% 
-#                        as.data.frame() %>% 
-#                        setNames(unlist(parameters_list$quantile_vec)) %>% 
-#                        mutate(Date = date_vec) %>% 
-#                        gather(key = Quantile,value = GaR,-Date) %>% 
-#                        mutate(Horizon = temp_name)
-#                      
-#                      return(temp_df)
-#                      
-#                    }) %>% 
-#   bind_rows() %>% 
-#   mutate(Date = as.yearqtr(Date)) %>% 
-#   mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
-
-
 predict_df = lapply(names(results$quantile_reg),
                                function(temp_name){
 
@@ -88,17 +64,29 @@ ggplot(predict_df %>%
 
 ```{r fan_chart}
 
+gdp_df = df %>% 
+  select(Date, GDP) %>% 
+  filter(complete.cases(.)) %>% 
+  filter(Date >= as.yearqtr("2018 Q1"))
+
 fan_chart_df  = predict_df %>% 
   filter(Date == max(Date))%>% 
   spread(key = Quantile,value = GaR) %>% 
   rename_at(vars(-Date,-Horizon),
             .funs = list(~paste0("Q_",.))) %>% 
-  mutate(Date = Date + as.numeric(as.character(Horizon)) * 0.25)
+  mutate(Date = Date + as.numeric(as.character(Horizon)) * 0.25) %>% 
+  select(-Horizon)
+ 
+
+temp = fan_chart_df[nrow(fan_chart_df),]
+temp$Date = gdp_df$Date[nrow(gdp_df)]
+temp[,-1] = gdp_df$GDP[nrow(gdp_df)]
+
+fan_chart_df = fan_chart_df %>% 
+  rbind.data.frame(temp)
 
 ggplot() +
-  geom_line(data = df %>%
-              select(Date, GDP) %>%
-              filter(complete.cases(.)),
+  geom_line(data = gdp_df,
             aes(x = Date, y = GDP)) +
   geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.05, ymax = Q_0.95),
               fill = "lightblue",
@@ -111,6 +99,8 @@ ggplot() +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.5)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
+
+rm(temp, gdp_df)
 
 
 ```

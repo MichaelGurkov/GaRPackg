@@ -529,4 +529,40 @@ extract.qreg.coeff.table = function(qreg_obj){
 }
 
 
+#' @title Fill na with average of k previous observations
+#'
+#' @param data_vec vector of data
+#'
+#' @param k window size
+#'
+
+fill.na.average = function(data_vec, k = 4){
+
+  na_ind = which(is.na(data_vec))
+
+  fill_values = sapply(na_ind, function(temp_ind){
+
+    start_ind = temp_ind - k
+
+    end_ind = temp_ind - 1
+
+    if(start_ind > 0 & end_ind > 0){
+
+      return(mean(data_vec[start_ind:end_ind]))
+
+    } else {
+
+      return(NA)
+
+    }
+
+    })
+
+  filled_data_vec = data_vec
+
+  filled_data_vec[na_ind] = fill_values
+
+  return(filled_data_vec)
+
+}
 

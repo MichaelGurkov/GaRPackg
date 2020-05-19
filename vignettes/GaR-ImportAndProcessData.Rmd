@@ -35,6 +35,11 @@ df = import.from.fame.template(paste0(file.path(Sys.getenv("USERPROFILE"),
   filter(Date >= as.yearqtr("1995 Q1"))
 
 
+# Use Inustrial Production without seasonal adjustment
+
+df = df %>% 
+  mutate(Ind_Prod_Israel = Ind_Prod_Israel_NSA)
+
 
 
 ```
@@ -54,12 +59,19 @@ df = df %>%
 # Transform variables to difference
 
 df = df %>% 
-  mutate_at(vars(any_of(parameters_list$vars_to_diff)),
-            .funs = list(d1 = ~ . - lag(.,1))) %>% 
-  mutate_at(vars(any_of(parameters_list$vars_to_diff)),
-            .funs = list(d4 = ~ . - lag(.,4)))
+  mutate(BOI_rate = c(NA,diff(BOI_rate)))
 
 
+
+
+
+```
+
+
+```{r fill_last_NA}
+
+df = df %>% 
+  mutate_at(vars(GDP,Credit_to_non_fin_sector),.funs = list(~fill.na.average(.)))
 
 ```
 
