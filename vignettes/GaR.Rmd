@@ -1,6 +1,6 @@
 ---
 title: "GaR analysis"
-bibliography: C:\\Users\\Misha\\Documents\\References\\GaR.bib
+# bibliography: C:\\Users\\Misha\\Documents\\References\\GaR.bib
 fontsize: 11pt
 output:
   rmarkdown::pdf_document:
@@ -81,7 +81,7 @@ current_partition = partitions_list$basic_global_extended
 
 
 
-```{r rename_vars, eval=FALSE}
+```{r rename_vars}
 
 
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
@@ -180,7 +180,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 

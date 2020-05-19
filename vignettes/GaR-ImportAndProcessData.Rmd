@@ -63,3 +63,11 @@ df = df %>%
 
 ```
 
+
+```{r fill_last_NA}
+
+df = df %>% 
+  mutate_at(vars(GDP,Credit_to_non_fin_sector),.funs = list(~fill.na.average(.)))
+
+```
+
