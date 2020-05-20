@@ -83,8 +83,8 @@ current_partition = partitions_list$basic_global_extended
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
                                  "Ind_Prod_advanced","ILS_USD_spread_pct",
                                  "TA_35_impl_vol","ILS_USD_impl_vol",
-                                 "Credit_to_non_fin_sector",
-                                 "Avg_House_Price_index"),
+                                 "Credit",
+                                 "House_Price"),
                    new_names = c("GDP","Ind_Prod","IP_adv",
                                  "FX_spread","VIX_TA",
                                  "FX_imp_vol","Credit","HousePrice"))

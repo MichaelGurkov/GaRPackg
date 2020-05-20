@@ -22,8 +22,8 @@ partitions_list$basic = list(
     "BOI_rate"
   ),
   FinCycle = list(
-    "Credit_to_non_fin_sector",
-    "Avg_House_Price_index",
+    "Credit",
+    "House_Price",
     "TA125_Close"
   )
 )
@@ -52,8 +52,8 @@ partitions_list$basic_global_extended = list(
     "BOI_rate"
   ),
   FinCycle = list(
-    "Credit_to_non_fin_sector",
-    "Avg_House_Price_index",
+    "Credit",
+    "House_Price",
     "TA125_Close"
   )
 )
@@ -84,8 +84,8 @@ partitions_list$OZMG = list(
     "BOI_rate"
   ),
   FinCycle = list(
-    "Credit_to_non_fin_sector",
-    "Avg_House_Price_index",
+    "Credit",
+    "House_Price",
     "TA125_Close"
   )
 )
@@ -161,6 +161,6 @@ partitions_list$extensive = list(
   ),
   Volatility = list("ILS_USD_impl_vol", "TA_35_impl_vol"),
   Returns = list("TA125_Close"),
-  Credit = list("Credit_to_non_fin_sector",
-                "Avg_House_Price_index")
+  Credit = list("Credit",
+                "House_Price")
 )

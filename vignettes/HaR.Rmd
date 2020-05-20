@@ -86,8 +86,8 @@ df = df %>%
 
 df = df %>% 
   inner_join(raw_data$raw_df %>% 
-               select(Date, Avg_House_Price_index,Credit_to_non_fin_sector,BOI_rate) %>% 
-               rename(House = Avg_House_Price_index),
+               select(Date, House_Price,Credit,BOI_rate) %>% 
+               rename(House = House_Price),
              by = "Date")
 
 
@@ -133,7 +133,7 @@ processed_df = df %>%
             .funs = list(qoq = ~ (. / lag(.,1) - 1) * 100)) %>% 
   mutate_at(.vars = vars(GDP_Nominal,GDP_real,House),
             .funs = list(yoy = ~ (. / lag(.,4) - 1) * 100)) %>% 
-  mutate(Credit_to_GDP = GDP_Nominal / Credit_to_non_fin_sector) %>% 
+  mutate(Credit_to_GDP = GDP_Nominal / Credit) %>% 
   mutate_at(vars(House_qoq, House_yoy),.funs = list(lead = ~lead(.,4)))
 
 ```
