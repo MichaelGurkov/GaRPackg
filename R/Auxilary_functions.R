@@ -257,8 +257,8 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 #' on everything else)
 #'
 rolling.qreq = function(reg_df, win_len, quantile_vec,
-                            out_of_sample_step = 1,
-                            mod_formula = NULL){
+                        out_of_sample_step = 1,
+                        win_type = "fixed", mod_formula = NULL){
 
   if(is.null(mod_formula)){mod_formula = paste0(names(reg_df[1])," ~.")}
 
@@ -269,21 +269,22 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
   reg_df = reg_df %>%
     select(-Date)
 
-  out_of_sample_list = lapply(1:(n_row - win_len + 1),
-         function(temp_ind){
 
-      first_ind = temp_ind
+  rolling_grid = make.rolling.window.grid(total_len = nrow(df),
+                                          win_len = win_len,
+                                          out_of_sample_step = out_of_sample_step,
+                                          win_type = win_type)
 
-      last_ind = win_len + temp_ind - 1
+  out_of_sample_list = lapply(rolling_grid, function(temp_ind_df){
 
       temp_qreq = rq(formula = formula(mod_formula),
                      tau = quantile_vec,
-                     data = reg_df[first_ind:last_ind,])
+                     data = reg_df[temp_ind_df$First:temp_ind_df$Last,])
 
       temp_pred = predict(object = temp_qreq,
-                          newdata = reg_df[last_ind + out_of_sample_step,])
+                          newdata = reg_df[temp_ind_df$Last + out_of_sample_step,])
 
-      return(data.frame(Date = dates_vec[last_ind + out_of_sample_step],
+      return(data.frame(Date = dates_vec[temp_ind_df$Last + out_of_sample_step],
                         temp_pred))
 
 
@@ -312,7 +313,8 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 #' ahead according to \code{out_of_sample_step}
 #'
 get.gar.forecast = function(gar_obj, win_len, quantile_vec,
-                            out_of_sample_step = 1){
+                            out_of_sample_step = 1,
+                            win_type = "fixed"){
 
   #Calculate actual values
 
@@ -364,7 +366,8 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
                                                                  win_len = win_len,
                                                                  quantile_vec = quantile_vec,
                                                                  mod_formula = paste0(temp_var," ~ ."),
-                                                                 out_of_sample_step = out_of_sample_step)
+                                                                 out_of_sample_step = out_of_sample_step,
+                                                                 win_type = win_type)
 
                                         temp_roll = temp_roll %>%
                                           mutate(Horizon = as.character(temp_horizon))

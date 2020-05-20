@@ -8,17 +8,30 @@ library(stargazer)
 
 ```{r set_forecast_parameters}
 
-forecast_parametrs = list(win_len = 30, out_of_sample_step = 1)
+forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
 ```
 
 
 ```{r GaR_forecast}
 
-gar_forecast_df = get.gar.forecast(gar_obj = results,
-                        win_len = forecast_parametrs$win_len,
-                        quantile_vec = parameters_list$quantile_vec,
-                        out_of_sample_step = forecast_parametrs$out_of_sample_step) %>% 
+gar_forecast_list = list()
+
+gar_forecast_list$fixed_window = get.gar.forecast(
+  gar_obj = results,
+  win_len = forecast_parameters$win_len,
+  quantile_vec = parameters_list$quantile_vec,
+  out_of_sample_step = forecast_parameters$out_of_sample_step,
+  win_type = "fixed") %>% 
+  filter(complete.cases(.))
+
+
+gar_forecast_list$expanding_window = get.gar.forecast(
+  gar_obj = results,
+  win_len = forecast_parameters$win_len,
+  quantile_vec = parameters_list$quantile_vec,
+  out_of_sample_step = forecast_parameters$out_of_sample_step,
+  win_type = "expanding") %>% 
   filter(complete.cases(.))
   
 
@@ -72,10 +85,30 @@ ggplot(gar_forecast_df, aes(x = GaR_forecast, y = Error)) +
 
 We use in sample and out of sample comparison in order to test the robustness of partition
 specification. The out of sample forecast is constracted by estimation of a rolling window of length
-`r forecast_parametrs$win_len` and forecasting `r forecast_parametrs$out_of_sample_step` step ahead.
+`r forecast_parameters$win_len` and forecasting `r forecast_parameters$out_of_sample_step` step ahead.
 
 \subsection{Comparison to actual GDP}
 
 We take the predicted YoY GDP growth rates and compare them with actual
 GDP YoY growth rates. That basicaly means looking at the residual
 (difference between actual and predicted) values of the qunatile regression.
+
+\section{Comparison to staff forecast}
+
+```{r, make_staff_forecast}
+
+staff_forecast_df = df %>% 
+  select(Date, starts_with("staff")) %>% 
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
+  gather(key = Forecast_Horizon,value = GDP_Growth,-Date) %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(Time_Unit = str_remove(Forecast_Horizon,"\\d")) %>% 
+  mutate(Forecast_Horizon = str_remove(Forecast_Horizon,"\\D")) %>% 
+  mutate(Forecast_Horizon = if_else(Time_Unit == "Q",as.numeric(Forecast_Horizon) / 4,
+                                    as.numeric(Forecast_Horizon))) %>% 
+  select(-Time_Unit) %>% 
+  mutate(New_Date = Date + Forecast_Horizon)
+
+
+```
+
