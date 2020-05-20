@@ -428,3 +428,59 @@ quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
   return(score)
 
 }
+
+
+#' @title Make rolling window indices
+#'
+#' @description The function makes a grid of rolling window indices
+#'
+#' @param total_len = length of full grid (number of rows in data frame)
+#'
+#' @param win_len length of rolling window
+#'
+#' @param out_of_sample_step forecasting horizon
+#'
+#' @param win_type categorical can be either expanding or fixed. Default is fixed
+
+make.rolling.window.grid = function(total_len ,win_len, out_of_sample_step,
+                                    win_type = "fixed"){
+
+  if(win_type == "fixed"){
+
+    rolling_grid = lapply(1:(total_len - win_len + 1),
+                              function(temp_ind){
+
+                                first_ind = temp_ind
+
+                                last_ind = win_len + temp_ind - 1
+
+                                return(data.frame(First = first_ind, Last = last_ind))
+
+
+                              })
+
+  } else if (win_type == "expanding"){
+
+    rolling_grid = lapply(1:(total_len - win_len + 1),
+                          function(temp_ind){
+
+                            first_ind = 1
+
+                            last_ind = win_len + temp_ind - 1
+
+                            return(data.frame(First = first_ind, Last = last_ind))
+
+
+                          })
+
+  }
+
+
+  return(rolling_grid)
+
+
+
+
+
+
+}
