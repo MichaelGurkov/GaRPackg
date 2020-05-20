@@ -1,14 +1,12 @@
 
 ```{r set_pca_list}
 
-
 pca_list = results$pca
 
 ```
 
 
-```{r plot_pca_variance, eval=FALSE}
-
+```{r plot_pca_variance}
 
 pca_variance = lapply(names(pca_list), function(temp_name){
 

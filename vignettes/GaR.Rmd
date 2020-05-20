@@ -66,23 +66,19 @@ source("Partition-Specs.R",echo = FALSE)
 
 current_partition = partitions_list$basic_global_extended
 
-# current_partition$Dom_FCI = str_replace(current_partition$Dom_FCI,
-#                                         "BOI_rate","d4")
-
 
 ```
 
 
 \section{Descriptive Stats}
 
-```{r desc_stat, child="GaR-DescriptiveStat.Rmd"}
+```{r desc_stat, child="GaR-DescriptiveStat.Rmd", eval=FALSE}
 
 ```
 
 
 
-```{r rename_vars}
-
+```{r rename_vars, eval=FALSE}
 
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
                                  "Ind_Prod_advanced","ILS_USD_spread_pct",
@@ -180,7 +176,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 
