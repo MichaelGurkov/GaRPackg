@@ -27,7 +27,6 @@ predict_df = lapply(names(results$quantile_reg),
 
 ```{r plot_gar_timeseries}
 
-
 ggplot(predict_df %>% 
          filter(Quantile == "0.05"),
        aes(x = Date, y = GaR, color = Horizon)) + 

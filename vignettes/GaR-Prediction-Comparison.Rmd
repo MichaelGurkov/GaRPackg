@@ -97,17 +97,26 @@ GDP YoY growth rates. That basicaly means looking at the residual
 
 ```{r, make_staff_forecast}
 
+temp_df = gar_forecast_list$fixed_window
+
+temp_df = temp_df %>% 
+  mutate(Forecast_Period = paste(Date + 0.25,Date + 0.25 - 1,sep = "-"))
+
 staff_forecast_df = df %>% 
   select(Date, starts_with("staff")) %>% 
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
   gather(key = Forecast_Horizon,value = GDP_Growth,-Date) %>% 
   filter(complete.cases(.)) %>% 
-  mutate(Time_Unit = str_remove(Forecast_Horizon,"\\d")) %>% 
+  filter_at(vars(Forecast_Horizon),.vars_predicate = all_vars(grepl("Q$",.))) %>% 
   mutate(Forecast_Horizon = str_remove(Forecast_Horizon,"\\D")) %>% 
-  mutate(Forecast_Horizon = if_else(Time_Unit == "Q",as.numeric(Forecast_Horizon) / 4,
-                                    as.numeric(Forecast_Horizon))) %>% 
-  select(-Time_Unit) %>% 
-  mutate(New_Date = Date + Forecast_Horizon)
+  mutate(Forecast_Horizon = as.numeric(Forecast_Horizon)) %>% 
+  mutate(Horizon_Category = case_when(between(Forecast_Horizon,1,4) ~ "one",
+                                      between(Forecast_Horizon,5,8) ~ "two")) %>% 
+  group_by(Date, Horizon_Category) %>% 
+  summarise(GDP_Growth_YoY = mean(GDP_Growth)) %>% 
+  ungroup() %>% 
+  mutate(Forecast_Period = case_when(Horizon_Category == "one" ~ paste(Date, Date-1, sep = "-"),
+                                     Horizon_Category == "two" ~ paste(Date + 1, Date, sep = "-")))
 
 
 ```
