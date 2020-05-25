@@ -97,34 +97,70 @@ GDP YoY growth rates. That basicaly means looking at the residual
 
 ```{r, make_staff_forecast}
 
-temp_df = gar_forecast_list$fixed_window
-
-temp_df = temp_df %>% 
-  filter(Quantile == "0.50") %>% 
-  mutate(Forecast_Period = paste(Date + 0.25,Date + 0.25 - 1,sep = "-"))
-
-staff_forecast_df = df %>% 
-  select(Date, starts_with("staff")) %>% 
+staff_forecast_df_h1 = df %>% 
+  select(Date, staff_1Q) %>% 
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
-  gather(key = Forecast_Horizon,value = GDP_Growth,-Date) %>% 
+  gather(key = Quarter,value = Forecast, - Date) %>% 
   filter(complete.cases(.)) %>% 
-  filter_at(vars(Forecast_Horizon),.vars_predicate = all_vars(grepl("Q$",.))) %>% 
-  mutate(Forecast_Horizon = str_remove(Forecast_Horizon,"\\D")) %>% 
-  mutate(Forecast_Horizon = as.numeric(Forecast_Horizon)) %>% 
-  mutate(Horizon_Category = case_when(between(Forecast_Horizon,1,4) ~ "one",
-                                      between(Forecast_Horizon,5,8) ~ "two")) %>% 
-  group_by(Date, Horizon_Category) %>% 
-  summarise(GDP_Growth_YoY = mean(GDP_Growth)) %>% 
+  left_join(.,
+            raw_df %>% 
+              select(Date, GDP) %>% 
+              mutate(GDP = GDP / lag(GDP,3) - 1)) %>% 
+  mutate(Staff_Forecast = Forecast * 0.25 * 0.01 + GDP) %>% 
+  select(Date,Staff_Forecast) %>% 
+  mutate(Forecast_Period = paste(Date - 0.75,Date + 0.25, sep = "-")) %>% 
+  mutate(Horizon = "1")
+
+staff_forecast_df_h8 = df %>% 
+  select(Date, staff_5Q, staff_6Q, staff_7Q, staff_8Q) %>% 
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
+  gather(key = Quarter,value = Forecast, - Date) %>% 
+  group_by(Date) %>% 
+  summarise(Staff_Forecast = mean(Forecast)) %>% 
   ungroup() %>% 
-  mutate(Forecast_Period = case_when(Horizon_Category == "one" ~ paste(Date, Date-1, sep = "-"),
-                                     Horizon_Category == "two" ~ paste(Date + 1, Date, sep = "-")))
-
-
-temp_df = temp_df %>% 
-  left_join(staff_forecast_df[,c("GDP_Growth_YoY","Forecast_Period" )],
-            by = "Forecast_Period") %>% 
   filter(complete.cases(.)) %>% 
-  mutate(GDP_Growth_YoY = GDP_Growth_YoY * 0.01)
+  mutate(Forecast_Period = paste((Date + 1),(Date + 2), sep = "-")) %>% 
+  mutate(Horizon = "8")
+
+staff_forecast = bind_rows(staff_forecast_df_h1,
+                           staff_forecast_df_h8) %>% 
+  mutate(Date = as.yearqtr(Date))
+
+rm(staff_forecast_df_h8, staff_forecast_df_h1)
+
+
+
+```
+
+
+
+```{r make_comparison_between_staff_and_gar_forecast}
+
+staff_gar_comparison_df = inner_join(staff_forecast,
+                        gar_forecast_list$fixed_window %>% 
+                          filter(Forecast_Status == "Out of Sample") %>% 
+                          filter(Quantile == "0.50") %>% 
+                          filter(Horizon %in% c("1","8")) %>% 
+                          select(Date, GaR_forecast,Horizon) %>% 
+                          mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
+                                                         Date + as.numeric(Horizon) * 0.25,
+                                                         sep ="-")),
+                        by = c("Date","Horizon","Forecast_Period"))
+
+staff_gar_comparison_df = staff_gar_comparison_df %>% 
+  mutate(Error = GaR_forecast - Staff_Forecast)
+
+```
+
+```{r}
+
+ggplot(staff_gar_comparison_df, aes(x = Date, y = Error)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "", title = "Forecast difference \n (GaR - Staff)") + 
+  facet_wrap(~ Horizon,scales = "free") + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
 
 ```
 

@@ -247,6 +247,8 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 #'
 #' @param reg_df dataframe
 #'
+#' @param win_type categorical can be either expanding or fixed. Default is fixed
+#'
 #' @param win_len rolling window length
 #'
 #' @param quantile_vec vector of required quantiles
@@ -256,6 +258,9 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 #' @param mod_formula model formula (default is regress the first variable
 #' on everything else)
 #'
+#' @return A data frame with two columns: dates and predictions.
+#' Column Date is the date of the out of sample data point (determined by \code{out_of_sample_step})
+
 rolling.qreq = function(reg_df, win_len, quantile_vec,
                         out_of_sample_step = 1,
                         win_type = "fixed", mod_formula = NULL){
@@ -444,6 +449,7 @@ quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
 #' @param out_of_sample_step forecasting horizon
 #'
 #' @param win_type categorical can be either expanding or fixed. Default is fixed
+#'
 
 make.rolling.window.grid = function(total_len ,win_len, out_of_sample_step,
                                     win_type = "fixed"){

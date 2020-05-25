@@ -1,0 +1,95 @@
+
+
+
+```{r get_quantile_df_osnat}
+
+quantile_df_osnat = lapply(names(results$quantile_reg),
+                               function(temp_name){
+
+    temp_forecast = predict(results$quantile_reg[[temp_name]],
+                       newdata = results$reg_df)
+    
+    temp_forecast  = temp_forecast %>% 
+      as.data.frame() %>% 
+      mutate(Date = results$reg_df$Date) %>% 
+      setNames(str_remove_all(names(.),"tau= ")) %>% 
+      gather(key = Quantile,value = GaR,-Date) %>% 
+      mutate(Horizon = temp_name)
+    
+    return(temp_forecast)
+  
+}) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  mutate(Quantile = str_replace(Quantile,"0.50","0.5")) %>% 
+  spread(key = Quantile, value = GaR)
+
+
+write_csv(quantile_df_osnat, paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop",fsep="\\"),
+                                    "\\quantiles.csv"))
+
+
+```
+
+
+
+
+```{r charts_1_vs_5}
+
+coeff_df = lapply(names(results$quantile_reg), function(temp_name){
+  
+  temp_coeff_df = results$quantile_reg[[temp_name]]$coefficients %>% 
+    as.data.frame() %>% 
+    rename_all(.funs = list(~str_remove_all(.,"tau= "))) %>% 
+    mutate(Partition = rownames(.)) %>% 
+    gather(key = Quantile,value = Coeff, - Partition) %>% 
+    mutate(Horizon = temp_name)
+    
+  
+  return(temp_coeff_df)
+
+}) %>% 
+  bind_rows() %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,8,12))) %>% 
+  filter(!Partition == "(Intercept)")
+  
+my_lab = function(string){
+  
+  paste0("h = ", string)
+  
+}
+
+
+dom_macro_plot = ggplot(coeff_df %>% 
+         filter(Partition == "Dom_Macro") %>% 
+         filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "", title = "Domestic Macro coefficients") + 
+  facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab)) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+fin_cycle_plot = ggplot(coeff_df %>% 
+         filter(Partition == "FinCycle") %>% 
+         filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "", title = "Financial cycle coefficients") + 
+  facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab)) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+rm(my_lab)
+
+ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop",fsep="\\"),
+                         "\\dom_macro_plot.png"), plot = dom_macro_plot,
+       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
+
+ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop",fsep="\\"),
+                         "\\fin_cycle_plot.png"), plot = fin_cycle_plot,
+       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
+
+```

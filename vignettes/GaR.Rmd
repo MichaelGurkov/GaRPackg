@@ -55,11 +55,6 @@ library(xtable)
 ```
 
 
-```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
-
-```
-
-
 ```{r Set_partitions}
 
 source("Partition-Specs.R",echo = FALSE)
@@ -69,6 +64,10 @@ current_partition = partitions_list$basic_global_extended
 
 ```
 
+
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
 
 \section{Descriptive Stats}
 
