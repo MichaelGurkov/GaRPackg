@@ -102,8 +102,7 @@ staff_forecast_df_h1 = df %>%
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
   gather(key = Quarter,value = Forecast, - Date) %>% 
   filter(complete.cases(.)) %>% 
-  left_join(.,
-            raw_df %>% 
+  left_join(.,raw_df %>% 
               select(Date, GDP) %>% 
               mutate(GDP = GDP / lag(GDP,3) - 1)) %>% 
   mutate(Staff_Forecast = Forecast * 0.25 * 0.01 + GDP) %>% 
@@ -133,6 +132,18 @@ rm(staff_forecast_df_h8, staff_forecast_df_h1)
 ```
 
 
+=======
+  filter_at(vars(Forecast_Horizon),.vars_predicate = all_vars(grepl("Q$",.))) %>% 
+  mutate(Forecast_Horizon = str_remove(Forecast_Horizon,"\\D")) %>% 
+  mutate(Forecast_Horizon = as.numeric(Forecast_Horizon)) %>% 
+  mutate(Horizon_Category = case_when(between(Forecast_Horizon,1,4) ~ "one",
+                                      between(Forecast_Horizon,5,8) ~ "two")) %>% 
+  group_by(Date, Horizon_Category) %>% 
+  summarise(GDP_Growth_YoY = mean(GDP_Growth)) %>% 
+  ungroup() %>% 
+  mutate(Forecast_Period = case_when(Horizon_Category == "one" ~ paste(Date, Date-1, sep = "-"),
+                                     Horizon_Category == "two" ~ paste(Date + 1, Date, sep = "-")))
+>>>>>>> d341d2b193fec3f61ad41c8f48dc916ee5abf969
 
 ```{r make_comparison_between_staff_and_gar_forecast}
 
