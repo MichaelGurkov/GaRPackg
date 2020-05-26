@@ -12,7 +12,6 @@ forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
 ```
 
-
 ```{r make_actual_gdp_df}
 
 actual_gdp_df = df %>% 
@@ -22,7 +21,6 @@ actual_gdp_df = df %>%
   mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
   select(-Date)
 ```
-
 
 
 ```{r GaR_forecast}
@@ -40,9 +38,6 @@ gar_forecast_df = lapply(c("fixed","expanding"),
     mutate(Win_Type = temp_win_type)
   
   return(temp_res)
-  
-  
-  
 }) %>% 
   bind_rows() %>% 
   mutate(Date = as.yearqtr(Date))
@@ -159,7 +154,6 @@ gar_staff_comparison_df = gar_forecast_df %>%
   inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
   mutate(Error_GaR = GDP_actual - GaR_forecast) %>% 
   select(-Quantile)
-
 
 gar_staff_comparison_df = gar_staff_comparison_df %>% 
   inner_join(., staff_forecast %>% 
