@@ -1,6 +1,5 @@
 
 
-
 ```{r get_quantile_df_osnat}
 
 quantile_df_osnat = lapply(names(results$quantile_reg),
@@ -31,8 +30,6 @@ write_csv(quantile_df_osnat, paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop
 
 
 ```
-
-
 
 
 ```{r charts_1_vs_5}
@@ -84,12 +81,72 @@ fin_cycle_plot = ggplot(coeff_df %>%
 
 rm(my_lab)
 
-ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop",fsep="\\"),
+ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   "Desktop",fsep="\\"),
                          "\\dom_macro_plot.png"), plot = dom_macro_plot,
        device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
 
-ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop",fsep="\\"),
+ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   "Desktop",fsep="\\"),
                          "\\fin_cycle_plot.png"), plot = fin_cycle_plot,
        device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
 
 ```
+
+
+```{r plot_pca_loadings}
+
+pca_plots = lapply(names(pca_list), function(name){
+  
+  pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
+  
+  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
+                  Val = pca_list[[name]]$pca$rotation[,1]),
+       aes(x = reorder(Name, Val), y = Val)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(x = "", y = "", title = paste0(name, " (" ,pca_var, "%)")) +
+  coord_flip() +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+  rm(pca_var)
+  
+  return(bar_plot)
+  
+
+})
+
+panel_plot = plot_grid(plotlist = pca_plots)
+
+save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   "Desktop",fsep="\\"),
+                         "\\pca_loadings.png"),
+          plot = panel_plot, nrow = 4,ncol = 2,base_height = 4,base_width = 8)
+
+
+```
+
+
+
+```{r median_variance_scatter_plot}
+
+median_variance_plot  = ggplot(dist_quantile_df %>% 
+         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
+  geom_point() + 
+  stat_smooth(method = "lm") + 
+  facet_wrap(~Horizon) + 
+  labs(x = "Variance", y = "Median", title = "Median vs Variance") +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   "Desktop",fsep="\\"),
+                         "\\median_variance.png"),
+       plot = median_variance_plot,
+       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
+    
+
+```
+
