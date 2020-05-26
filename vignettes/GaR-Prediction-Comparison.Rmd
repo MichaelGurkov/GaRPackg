@@ -12,34 +12,48 @@ forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
 ```
 
+```{r make_actual_gdp_df}
+
+actual_gdp_df = df %>% 
+  select(Date, GDP) %>% 
+  filter(complete.cases(.)) %>% 
+  rename(GDP_actual = GDP) %>% 
+  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
+  select(-Date)
+```
+
+
 
 ```{r GaR_forecast}
 
-gar_forecast_list = list()
-
-gar_forecast_list$fixed_window = get.gar.forecast(
-  gar_obj = results,
-  win_len = forecast_parameters$win_len,
-  quantile_vec = parameters_list$quantile_vec,
-  out_of_sample_step = forecast_parameters$out_of_sample_step,
-  win_type = "fixed") %>% 
-  filter(complete.cases(.))
-
-
-gar_forecast_list$expanding_window = get.gar.forecast(
-  gar_obj = results,
-  win_len = forecast_parameters$win_len,
-  quantile_vec = parameters_list$quantile_vec,
-  out_of_sample_step = forecast_parameters$out_of_sample_step,
-  win_type = "expanding") %>% 
-  filter(complete.cases(.))
+gar_forecast_df = lapply(c("fixed","expanding"),
+                         function(temp_win_type){
   
+  temp_res = get.gar.forecast(
+    gar_obj = results,
+    win_len = forecast_parameters$win_len,
+    quantile_vec = parameters_list$quantile_vec,
+    out_of_sample_step = forecast_parameters$out_of_sample_step,
+    win_type = temp_win_type) %>% 
+    filter(complete.cases(.)) %>% 
+    mutate(Win_Type = temp_win_type)
+  
+  return(temp_res)
+  
+  
+  
+}) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date))
+
+
 
 ```
 
+
 \section{Residuals analysis}
 
-```{r error_timeseries_plot, fig.width=8, fig.height=8}
+```{r error_timeseries_plot, fig.width=8, fig.height=8, eval=FALSE}
 
 ggplot(gar_forecast_df, aes(x = Date, y = Error)) + 
   geom_point() + 
@@ -53,7 +67,7 @@ ggplot(gar_forecast_df, aes(x = Date, y = Error)) +
 ```
 
 
-```{r actual_vs_predicted_plot, fig.width=8, fig.height=8}
+```{r actual_vs_predicted_plot, fig.width=8, fig.height=8, eval=FALSE}
 
 ggplot(gar_forecast_df, aes(x = GaR_actual, y = GaR_forecast)) + 
   geom_point() + 
@@ -67,7 +81,7 @@ ggplot(gar_forecast_df, aes(x = GaR_actual, y = GaR_forecast)) +
 ```
 
 
-```{r error_vs_predicted_plot, fig.width=8, fig.height=8}
+```{r error_vs_predicted_plot, fig.width=8, fig.height=8, eval=FALSE}
 
 ggplot(gar_forecast_df, aes(x = GaR_forecast, y = Error)) + 
   geom_point() + 
@@ -115,7 +129,7 @@ staff_forecast_df_h8 = df %>%
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
   gather(key = Quarter,value = Forecast, - Date) %>% 
   group_by(Date) %>% 
-  summarise(Staff_Forecast = mean(Forecast)) %>% 
+  summarise(Staff_Forecast = mean(Forecast) * 0.01) %>% 
   ungroup() %>% 
   filter(complete.cases(.)) %>% 
   mutate(Forecast_Period = paste((Date + 1),(Date + 2), sep = "-")) %>% 
@@ -123,7 +137,9 @@ staff_forecast_df_h8 = df %>%
 
 staff_forecast = bind_rows(staff_forecast_df_h1,
                            staff_forecast_df_h8) %>% 
-  mutate(Date = as.yearqtr(Date))
+  mutate(Date = as.yearqtr(Date)) %>% 
+  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
+  mutate(Error_staff = GDP_actual - Staff_Forecast)
 
 rm(staff_forecast_df_h8, staff_forecast_df_h1)
 
@@ -132,46 +148,61 @@ rm(staff_forecast_df_h8, staff_forecast_df_h1)
 ```
 
 
-=======
-  filter_at(vars(Forecast_Horizon),.vars_predicate = all_vars(grepl("Q$",.))) %>% 
-  mutate(Forecast_Horizon = str_remove(Forecast_Horizon,"\\D")) %>% 
-  mutate(Forecast_Horizon = as.numeric(Forecast_Horizon)) %>% 
-  mutate(Horizon_Category = case_when(between(Forecast_Horizon,1,4) ~ "one",
-                                      between(Forecast_Horizon,5,8) ~ "two")) %>% 
-  group_by(Date, Horizon_Category) %>% 
-  summarise(GDP_Growth_YoY = mean(GDP_Growth)) %>% 
-  ungroup() %>% 
-  mutate(Forecast_Period = case_when(Horizon_Category == "one" ~ paste(Date, Date-1, sep = "-"),
-                                     Horizon_Category == "two" ~ paste(Date + 1, Date, sep = "-")))
->>>>>>> d341d2b193fec3f61ad41c8f48dc916ee5abf969
-
 ```{r make_comparison_between_staff_and_gar_forecast}
 
-staff_gar_comparison_df = inner_join(staff_forecast,
-                        gar_forecast_list$fixed_window %>% 
-                          filter(Forecast_Status == "Out of Sample") %>% 
-                          filter(Quantile == "0.50") %>% 
-                          filter(Horizon %in% c("1","8")) %>% 
-                          select(Date, GaR_forecast,Horizon) %>% 
-                          mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
-                                                         Date + as.numeric(Horizon) * 0.25,
-                                                         sep ="-")),
-                        by = c("Date","Horizon","Forecast_Period"))
+gar_staff_comparison_df = gar_forecast_df %>% 
+  filter(Quantile == "0.50") %>% 
+  mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
+                                  Date + as.numeric(Horizon) * 0.25,
+                                  sep = "-")) %>% 
+  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
+  mutate(Error_GaR = GDP_actual - GaR_forecast) %>% 
+  select(-Quantile)
 
-staff_gar_comparison_df = staff_gar_comparison_df %>% 
-  mutate(Error = GaR_forecast - Staff_Forecast)
+
+gar_staff_comparison_df = gar_staff_comparison_df %>% 
+  inner_join(., staff_forecast %>% 
+              select(-GDP_actual),
+            by = c("Date","Horizon", "Forecast_Period"))
 
 ```
 
-```{r}
 
-ggplot(staff_gar_comparison_df, aes(x = Date, y = Error)) + 
+```{r plot}
+
+ggplot(gar_staff_comparison_df %>% 
+         filter(Forecast_Status == "Out of Sample") %>% 
+         select(Date,Horizon,Win_Type,Error_GaR,Error_staff) %>% 
+         gather(key = Method, value = Error, -Date,-Horizon,-Win_Type),
+       aes(x = Date, y = Error, color = Method)) + 
   geom_point() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
   labs(x = "", y = "", title = "Forecast difference \n (GaR - Staff)") + 
-  facet_wrap(~ Horizon,scales = "free") + 
+  facet_grid(rows = vars(Horizon),cols = vars(Win_Type),scales = "free") + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom")
+
+```
+
+```{r compare_forecast}
+
+rmse_df = gar_staff_comparison_df %>% 
+  filter(Forecast_Status == "Out of Sample") %>% 
+  select(Date,Horizon,Win_Type,Error_GaR,Error_staff) %>% 
+  gather(key = Method, value = Error, -Date,-Horizon,-Win_Type) %>%
+  group_by(Win_Type, Horizon, Method) %>% 
+  summarise(RMSE = sqrt(mean(Error ^ 2))) %>% 
+  ungroup()
+
+ggplot(temp_df, aes(x = Method, y = RMSE  * 100, fill = Method)) + 
+  geom_col(position = "dodge", width = 0.4) + 
+  facet_grid(rows = vars(Horizon),cols = vars(Win_Type),scales = "free") + 
+  labs(x = "", y = "RMSE(%)", title = "GaR vs Staff forecast fit") +
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+
+
 
 ```
 
