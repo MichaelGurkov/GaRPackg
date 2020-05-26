@@ -10,9 +10,14 @@ predict_df = lapply(names(results$quantile_reg),
     temp_forecast  = temp_forecast %>% 
       as.data.frame() %>% 
       mutate(Date = results$reg_df$Date) %>% 
-      setNames(str_remove_all(names(.),"tau= ")) %>% 
-      gather(key = Quantile,value = GaR,-Date) %>% 
-      mutate(Horizon = temp_name)
+      setNames(str_remove_all(names(.),"tau= "))
+    
+    temp_forecast[,!colnames(temp_forecast) == "Date"] = t(apply(
+      temp_forecast[,!colnames(temp_forecast) == "Date"],1,sort))
+    
+      temp_forecast = temp_forecast %>% 
+        gather(key = Quantile,value = GaR,-Date) %>% 
+        mutate(Horizon = temp_name)
     
     return(temp_forecast)
   
