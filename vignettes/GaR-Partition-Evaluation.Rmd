@@ -19,13 +19,14 @@ pca_variance = lapply(names(pca_list), function(temp_name){
 }) %>%
   bind_rows()
 
-ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) + 
-  geom_bar(stat = "identity", width = 0.6) + 
-  labs(title = "Variance explained \n (by first PCA component)",
-       x = "", y = "") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
+# ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) + 
+#   geom_bar(stat = "identity", width = 0.6) + 
+#   geom_text(label = Variance) + 
+#   labs(title = "Variance explained \n (by first PCA component)",
+#        x = "", y = "") + 
+#   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+#   theme_bw() + 
+#   theme(plot.title = element_text(hjust = 0.5))
 
 ```
 
@@ -34,14 +35,20 @@ ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) +
 
 pca_plots = lapply(names(pca_list), function(name){
   
+  pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
+  
   bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = name) +
+  labs(x = "", y = "", title = paste0(name, " (" ,pca_var, "%)")) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
+  
+  rm(pca_var)
+  
+  return(bar_plot)
   
 
 })

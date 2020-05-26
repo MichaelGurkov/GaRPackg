@@ -84,7 +84,7 @@ ggplot(dist_quantile_df %>%
   geom_point() + 
   stat_smooth(method = "lm") + 
   facet_wrap(~Horizon) + 
-  labs(x = "Volatility", y = "Median", title = "Median vs volatility") +
+  labs(x = "Variance", y = "Median", title = "Median vs Variance") +
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
     
