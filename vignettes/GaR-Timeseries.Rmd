@@ -27,6 +27,13 @@ predict_df = lapply(names(results$quantile_reg),
   mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
   mutate(Quantile = str_replace(Quantile,"0.50","0.5"))
 
+
+gar_factors_df = results$reg_df %>% 
+  select(names(current_partition)) %>% 
+  as.matrix() * coefficients(results$quantile_reg$`1`)[-1,1]
+
+gar_factors_df = cbind(Date = results$reg_df$Date, as.data.frame(gar_factors_df))
+
 ```
 
 
@@ -41,6 +48,26 @@ ggplot(predict_df %>%
        x = "", y = "") + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r plot_factor_contribution}
+
+plot_df = gar_factors_df %>% 
+  gather(key = Partition, value = GaR, -Date)
+
+ggplot() + 
+  geom_col(data = plot_df, mapping = aes(x = Date, y = GaR,
+                                         fill = Partition),
+           position = "stack", size = 5) + 
+  geom_line(data = plot_df %>% 
+              group_by(Date) %>% 
+              summarise(Total = sum(GaR),.groups = "drop") %>% 
+              ungroup(),mapping =  aes(x = Date, y = Total)) + 
+  scale_fill_viridis_d(option = "plasma") +
+  theme_bw() + 
+  theme(legend.position = "bottom", legend.title = element_blank())
 
 ```
 
