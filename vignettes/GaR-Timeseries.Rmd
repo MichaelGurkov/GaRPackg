@@ -66,8 +66,12 @@ ggplot() +
               summarise(Total = sum(GaR),.groups = "drop") %>% 
               ungroup(),mapping =  aes(x = Date, y = Total)) + 
   scale_fill_viridis_d(option = "plasma") +
+  labs(title = "Growth at risk partition decomposition",
+       x = "", y = "") + 
   theme_bw() + 
-  theme(legend.position = "bottom", legend.title = element_blank())
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
 
 ```
 
