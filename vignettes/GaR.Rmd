@@ -17,8 +17,7 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
-  comment = "#>"
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE, comment = "#>"
 )
 ```
 
@@ -175,7 +174,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 

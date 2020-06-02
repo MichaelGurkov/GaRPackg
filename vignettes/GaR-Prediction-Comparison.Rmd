@@ -12,6 +12,7 @@ forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
 ```
 
+
 ```{r make_actual_gdp_df}
 
 actual_gdp_df = df %>% 
@@ -107,7 +108,7 @@ GDP YoY growth rates. That basicaly means looking at the residual
 
 ```{r, make_staff_forecast}
 
-staff_forecast_df_h1 = df %>% 
+staff_forecast_df_h1 = raw_df %>% 
   select(Date, staff_1Q) %>% 
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
   gather(key = Quarter,value = Forecast, - Date) %>% 
@@ -120,7 +121,7 @@ staff_forecast_df_h1 = df %>%
   mutate(Forecast_Period = paste(Date - 0.75,Date + 0.25, sep = "-")) %>% 
   mutate(Horizon = "1")
 
-staff_forecast_df_h8 = df %>% 
+staff_forecast_df_h8 = raw_df %>% 
   select(Date, staff_5Q, staff_6Q, staff_7Q, staff_8Q) %>% 
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
   gather(key = Quarter,value = Forecast, - Date) %>% 
@@ -190,7 +191,7 @@ rmse_df = gar_staff_comparison_df %>%
   summarise(RMSE = sqrt(mean(Error ^ 2))) %>% 
   ungroup()
 
-ggplot(temp_df, aes(x = Method, y = RMSE  * 100, fill = Method)) + 
+ggplot(rmse_df, aes(x = Method, y = RMSE  * 100, fill = Method)) + 
   geom_col(position = "dodge", width = 0.4) + 
   facet_grid(rows = vars(Horizon),cols = vars(Win_Type),scales = "free") + 
   labs(x = "", y = "RMSE(%)", title = "GaR vs Staff forecast fit") +

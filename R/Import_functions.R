@@ -12,7 +12,7 @@ import.from.fame.template = function(template_path){
   fame_df = read.csv(template_path,stringsAsFactors = FALSE) %>%
     slice(-(1:10)) %>%
     rename(Date = 1) %>%
-    mutate(Date = as.yearqtr(Date, format = "%m/%d/%Y"))
+    mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y"))
 
   # Substitute empty strings with NA
 
@@ -37,7 +37,7 @@ import.from.fame.template = function(template_path){
   }
 
   fame_df = fame_df %>%
-    select(-append_vars_list)
+    select(-all_of(append_vars_list))
 
 
   return(fame_df)

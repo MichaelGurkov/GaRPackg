@@ -28,11 +28,24 @@ predict_df = lapply(names(results$quantile_reg),
   mutate(Quantile = str_replace(Quantile,"0.50","0.5"))
 
 
-gar_factors_df = results$reg_df %>% 
-  select(names(current_partition)) %>% 
-  as.matrix() * coefficients(results$quantile_reg$`1`)[-1,1]
+gar_factors_df = lapply(
+  names(results$quantile_reg),function(temp_name){
+    
+    gar_factors_df = results$reg_df %>%
+      select(names(current_partition)) %>%
+      as.matrix() * coefficients(
+        results$quantile_reg[[temp_name]])[-1,1]
+    
+    gar_factors_df = cbind(Date = results$reg_df$Date,
+                           as.data.frame(gar_factors_df)) %>% 
+      mutate(Horizon = temp_name)
+    
+    return(gar_factors_df)
+ 
+                        })
 
-gar_factors_df = cbind(Date = results$reg_df$Date, as.data.frame(gar_factors_df))
+names(gar_factors_df) = names(results$quantile_reg)
+  
 
 ```
 
@@ -54,24 +67,34 @@ ggplot(predict_df %>%
 
 ```{r plot_factor_contribution}
 
-plot_df = gar_factors_df %>% 
-  gather(key = Partition, value = GaR, -Date)
+gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
+  
+  
+  plot_df = gar_factors_df[[temp_name]] %>% 
+  gather(key = Partition, value = GaR, -Date, -Horizon)
 
-ggplot() + 
+temp_plot = ggplot() + 
   geom_col(data = plot_df, mapping = aes(x = Date, y = GaR,
                                          fill = Partition),
-           position = "stack", size = 5) + 
-  geom_line(data = plot_df %>% 
-              group_by(Date) %>% 
-              summarise(Total = sum(GaR),.groups = "drop") %>% 
-              ungroup(),mapping =  aes(x = Date, y = Total)) + 
+           position = "stack", size = 5) +
+  geom_line(data = plot_df %>%
+              group_by(Date) %>%
+              summarise(Total = sum(GaR),.groups = "drop") %>%
+              ungroup(),mapping =  aes(x = Date, y = Total)) +
   scale_fill_viridis_d(option = "plasma") +
-  labs(title = "Growth at risk partition decomposition",
+  labs(title = paste("Growth at risk partition decomposition",
+                     "\n(at", temp_name, "Horizon)"),
        x = "", y = "") + 
   theme_bw() + 
   theme(legend.position = "bottom",
         legend.title = element_blank(),
         plot.title = element_text(hjust = 0.5))
+
+  return(temp_plot)
+
+})
+
+
 
 ```
 
