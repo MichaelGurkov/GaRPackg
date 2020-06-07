@@ -164,3 +164,16 @@ partitions_list$extensive = list(
   Credit = list("Credit",
                 "House_Price")
 )
+
+partitions_list$macro = list(
+  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
+  Global = list(
+    "infl_us",
+    "infl_euro",
+    "rate_euro",
+    "rate_us",
+    "VIX",
+    "Ind_Prod_us",
+    "Ind_Prod_euro"
+  )
+)

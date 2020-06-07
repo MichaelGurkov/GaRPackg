@@ -95,14 +95,16 @@ ggplot(gar_forecast_df, aes(x = GaR_forecast, y = Error)) +
 \subsection{Forecast accuracy}
 
 We use in sample and out of sample comparison in order to test the robustness of partition
-specification. The out of sample forecast is constracted by estimation of a rolling window of length
+specification. The out of sample forecast is constructed by estimation of a rolling window of length
 `r forecast_parameters$win_len` and forecasting `r forecast_parameters$out_of_sample_step` step ahead.
 
 \subsection{Comparison to actual GDP}
 
 We take the predicted YoY GDP growth rates and compare them with actual
-GDP YoY growth rates. That basicaly means looking at the residual
-(difference between actual and predicted) values of the qunatile regression.
+GDP YoY growth rates. That basically means looking at the residual
+(difference between actual and predicted) values of the quantile regression.
+
+
 
 \section{Comparison to staff forecast}
 
@@ -200,6 +202,18 @@ ggplot(rmse_df, aes(x = Method, y = RMSE  * 100, fill = Method)) +
 
 
 
+
+```
+
+
+\section{Comparison to constant}
+
+```{r}
+
+constant_gar = run.GaR.analysis(partitions_list = partitions_list$macro,
+                                vars_df = df,
+                                horizon_list = parameters_list$horizon_list,
+                                quantile_vec = parameters_list$quantile_vec)
 
 ```
 

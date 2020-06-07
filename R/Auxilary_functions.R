@@ -1,6 +1,6 @@
 #' @title Perform GaR analysis
 #'
-#' @description This is a convinent function that encupsulates the GaR analysis.
+#' @description This is a convenient function that encapsulates the GaR analysis.
 #' The stages of the analysis are :
 #' \itemize{
 #'   \item Perform PCA
