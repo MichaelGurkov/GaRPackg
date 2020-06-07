@@ -10,7 +10,20 @@ library(stargazer)
 
 forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
+forecast_comparisons = list()
+
 ```
+
+
+\subsection{Forecast accuracy}
+
+We use in sample and out of sample comparison in order to test the robustness of partition
+specification. The out of sample forecast is constructed by estimation of a rolling window of length `r forecast_parameters$win_len` and forecasting `r forecast_parameters$out_of_sample_step` step ahead.
+
+\subsection{Comparison to actual GDP}
+
+We take actual GDP YoY growth rates and compare them with the predicted median YoY GDP growth rates. The matching between the actual and forecasted values is based on
+forecasted period
 
 
 ```{r make_actual_gdp_df}
@@ -21,6 +34,7 @@ actual_gdp_df = df %>%
   rename(GDP_actual = GDP) %>% 
   mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
   select(-Date)
+
 ```
 
 
@@ -41,68 +55,88 @@ gar_forecast_df = lapply(c("fixed","expanding"),
   return(temp_res)
 }) %>% 
   bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date))
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
+                                  Date + as.numeric(Horizon) * 0.25,
+                                  sep = "-"))
 
 
 
 ```
 
 
-\section{Residuals analysis}
+```{r gar_actual_comparison}
 
-```{r error_timeseries_plot, fig.width=8, fig.height=8, eval=FALSE}
+forecast_comparisons$gar_actual = gar_forecast_df %>% 
+  filter(Quantile == "0.50") %>% 
+  select(-Quantile) %>% 
+  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
+  mutate(Error = GDP_actual - GaR_forecast)
 
-ggplot(gar_forecast_df, aes(x = Date, y = Error)) + 
-  geom_point() + 
-  geom_line() + 
-  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
-  facet_grid(rows = vars(Horizon), cols = vars(Forecast_Status), scales = "free") + 
-  labs(title = "Errors scatter plot", x = "", y = "") + 
+
+
+```
+
+
+```{r plot_gar_actual_rmse}
+
+ggplot(forecast_comparisons$gar_actual %>% 
+         group_by(Horizon,Forecast_Status,Win_Type) %>% 
+         summarise(RMSE = sqrt(mean(Error ^ 2)), .groups = "drop"),
+       aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "", title = "Forecast fit") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(legend.position = "bottom")
 
 ```
 
 
-```{r actual_vs_predicted_plot, fig.width=8, fig.height=8, eval=FALSE}
+```{r plot_actual_quantile_fit_score}
 
-ggplot(gar_forecast_df, aes(x = GaR_actual, y = GaR_forecast)) + 
-  geom_point() + 
-  geom_abline(slope = 1, color = "blue", linetype = "dashed") + 
-  facet_grid(rows = vars(Horizon), cols = vars(Forecast_Status), scales = "free") + 
-  labs(title = "Actual vs predicted scatter plot") + 
+forecast_periods = unique(gar_forecast_df$Forecast_Period)[
+  unique(gar_forecast_df$Forecast_Period) %in% actual_gdp_df$Forecast_Period]
+
+
+forecast_comparisons$gar_actual_fit_score = lapply(forecast_periods,
+                                                   function(temp_period){
+  
+  actual_gdp = actual_gdp_df$GDP_actual[actual_gdp_df$Forecast_Period == temp_period]
+  
+  temp_df = gar_forecast_df %>%
+    filter(Forecast_Period == temp_period) %>% 
+    group_by(Horizon, Win_Type,Forecast_Status) %>% 
+    summarise(Score = quantile.fit.score(realized_estimate = actual_gdp,
+                               quantile_values = GaR_forecast,
+                               quantiles = as.numeric(Quantile)),
+              .groups = "drop") %>% 
+    ungroup() %>% 
+    mutate(Forecast_Period = temp_period)
+  
+  return(temp_df)
+  
+  
+  
+}) %>% 
+  bind_rows() %>% 
+  mutate(Horizon = factor(Horizon, leves = c("1","8","12")))
+
+
+ggplot(forecast_comparisons$gar_actual_fit_score %>% 
+  group_by(Horizon,Win_Type,Forecast_Status) %>% 
+  summarise(SD = sd(Score), .groups = "drop"),
+  aes(x = Horizon, y = SD, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "", title = "Forecast fit - quantile fit score") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(legend.position = "bottom")
 
 
 ```
-
-
-```{r error_vs_predicted_plot, fig.width=8, fig.height=8, eval=FALSE}
-
-ggplot(gar_forecast_df, aes(x = GaR_forecast, y = Error)) + 
-  geom_point() + 
-  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") +
-  facet_grid(rows = vars(Horizon), cols = vars(Forecast_Status), scales = "free") + 
-  labs(title = "Predicted vs error scatter plot") + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-```
-
-
-\subsection{Forecast accuracy}
-
-We use in sample and out of sample comparison in order to test the robustness of partition
-specification. The out of sample forecast is constructed by estimation of a rolling window of length
-`r forecast_parameters$win_len` and forecasting `r forecast_parameters$out_of_sample_step` step ahead.
-
-\subsection{Comparison to actual GDP}
-
-We take the predicted YoY GDP growth rates and compare them with actual
-GDP YoY growth rates. That basically means looking at the residual
-(difference between actual and predicted) values of the quantile regression.
 
 
 
@@ -149,16 +183,8 @@ rm(staff_forecast_df_h8, staff_forecast_df_h1)
 
 ```{r make_comparison_between_staff_and_gar_forecast}
 
-gar_staff_comparison_df = gar_forecast_df %>% 
-  filter(Quantile == "0.50") %>% 
-  mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
-                                  Date + as.numeric(Horizon) * 0.25,
-                                  sep = "-")) %>% 
-  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
-  mutate(Error_GaR = GDP_actual - GaR_forecast) %>% 
-  select(-Quantile)
-
-gar_staff_comparison_df = gar_staff_comparison_df %>% 
+forecast_comparisons$gar_staff = forecast_comparisons$gar_actual %>% 
+  rename(Error_gar = Error) %>% 
   inner_join(., staff_forecast %>% 
               select(-GDP_actual),
             by = c("Date","Horizon", "Forecast_Period"))
@@ -166,11 +192,11 @@ gar_staff_comparison_df = gar_staff_comparison_df %>%
 ```
 
 
-```{r plot}
+```{r plot, eval=FALSE}
 
-ggplot(gar_staff_comparison_df %>% 
+ggplot(forecast_comparisons$gar_staff %>% 
          filter(Forecast_Status == "Out of Sample") %>% 
-         select(Date,Horizon,Win_Type,Error_GaR,Error_staff) %>% 
+         select(Date,Horizon,Win_Type,Error_gar,Error_staff) %>% 
          gather(key = Method, value = Error, -Date,-Horizon,-Win_Type),
        aes(x = Date, y = Error, color = Method)) + 
   geom_point() + 
@@ -187,7 +213,7 @@ ggplot(gar_staff_comparison_df %>%
 
 rmse_df = gar_staff_comparison_df %>% 
   filter(Forecast_Status == "Out of Sample") %>% 
-  select(Date,Horizon,Win_Type,Error_GaR,Error_staff) %>% 
+  select(Date,Horizon,Win_Type,Error_gar,Error_staff) %>% 
   gather(key = Method, value = Error, -Date,-Horizon,-Win_Type) %>%
   group_by(Win_Type, Horizon, Method) %>% 
   summarise(RMSE = sqrt(mean(Error ^ 2))) %>% 
@@ -206,14 +232,73 @@ ggplot(rmse_df, aes(x = Method, y = RMSE  * 100, fill = Method)) +
 ```
 
 
-\section{Comparison to constant}
+\section{Comparison to domestic macro}
 
-```{r}
+```{r macro_comparison}
 
-constant_gar = run.GaR.analysis(partitions_list = partitions_list$macro,
+macro_gar = run.GaR.analysis(partitions_list = partitions_list$macro,
                                 vars_df = df,
                                 horizon_list = parameters_list$horizon_list,
-                                quantile_vec = parameters_list$quantile_vec)
+                                quantile_vec = parameters_list$quantile_vec,
+                                run_ols_reg = FALSE)
+
+macro_gar_forecast_df = lapply(c("fixed","expanding"),
+                         function(temp_win_type){
+  
+  temp_res = get.gar.forecast(
+    gar_obj = macro_gar,
+    win_len = forecast_parameters$win_len,
+    quantile_vec = parameters_list$quantile_vec,
+    out_of_sample_step = forecast_parameters$out_of_sample_step,
+    win_type = temp_win_type) %>% 
+    filter(complete.cases(.)) %>% 
+    mutate(Win_Type = temp_win_type)
+  
+  return(temp_res)
+}) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date))
+
+
+gar_macro_comparison_df = list(gar_forecast_df %>% 
+                                 filter(Quantile == "0.50") %>% 
+                                 select(-Quantile),
+                               macro_gar_forecast_df %>% 
+                                 filter(Quantile == "0.50") %>% 
+                                 select(-Quantile)) %>% 
+  reduce(inner_join, by = c("Date","Horizon","Forecast_Status","Win_Type"),
+         suffix = c("_full", "_macro"))  %>% 
+  mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
+                                  Date + as.numeric(Horizon) * 0.25,
+                                  sep = "-"))  %>% 
+  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
+  mutate_at(.vars = vars(starts_with("GaR_forecast")),
+            .funs = list(Error = ~ . - GDP_actual))
 
 ```
 
+
+```{r plot_macro_rmse}
+
+gar_macro_comparison_rmse = gar_macro_comparison_df %>% 
+  group_by(Horizon, Forecast_Status,Win_Type) %>% 
+  summarise_at(.vars = vars(ends_with("Error")),
+               .funs = list(~ sqrt(mean(. ^ 2)) * 100)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = ends_with("Error"),names_to = "Category",
+               values_to = "RMSE")
+
+ggplot(gar_macro_comparison_rmse %>% 
+         filter(Forecast_Status == "Out of Sample"),
+       aes(x = Category ,y = RMSE, fill = Category)) + 
+  geom_col(position = "dodge", width = 0.5) + 
+  facet_grid(rows = vars(Horizon), cols = vars(Win_Type)) +
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+
+
+```
+
+
+\section{Residuals analysis}
