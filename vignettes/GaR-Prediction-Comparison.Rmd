@@ -12,23 +12,19 @@ forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
 forecast_comparisons = list()
 
+forecast_data_list = list()
+
+forecast_model_fit = list()
+
 ```
 
 
-\subsection{Forecast accuracy}
-
-We use in sample and out of sample comparison in order to test the robustness of partition
-specification. The out of sample forecast is constructed by estimation of a rolling window of length `r forecast_parameters$win_len` and forecasting `r forecast_parameters$out_of_sample_step` step ahead.
-
-\subsection{Comparison to actual GDP}
-
-We take actual GDP YoY growth rates and compare them with the predicted median YoY GDP growth rates. The matching between the actual and forecasted values is based on
-forecasted period
+<!-- Forecasts: GaR, staff, Macro -->
 
 
 ```{r make_actual_gdp_df}
 
-actual_gdp_df = df %>% 
+forecast_data_list$actual_gdp_df = df %>% 
   select(Date, GDP) %>% 
   filter(complete.cases(.)) %>% 
   rename(GDP_actual = GDP) %>% 
@@ -40,7 +36,7 @@ actual_gdp_df = df %>%
 
 ```{r GaR_forecast}
 
-gar_forecast_df = lapply(c("fixed","expanding"),
+forecast_data_list$gar_forecast = lapply(c("fixed","expanding"),
                          function(temp_win_type){
   
   temp_res = get.gar.forecast(
@@ -58,89 +54,13 @@ gar_forecast_df = lapply(c("fixed","expanding"),
   mutate(Date = as.yearqtr(Date)) %>% 
   mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
                                   Date + as.numeric(Horizon) * 0.25,
-                                  sep = "-"))
+                                  sep = "-")) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
 
 
 
 ```
 
-
-```{r gar_actual_comparison}
-
-forecast_comparisons$gar_actual = gar_forecast_df %>% 
-  filter(Quantile == "0.50") %>% 
-  select(-Quantile) %>% 
-  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
-  mutate(Error = GDP_actual - GaR_forecast)
-
-
-
-```
-
-
-```{r plot_gar_actual_rmse}
-
-ggplot(forecast_comparisons$gar_actual %>% 
-         group_by(Horizon,Forecast_Status,Win_Type) %>% 
-         summarise(RMSE = sqrt(mean(Error ^ 2)), .groups = "drop"),
-       aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
-  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
-  geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  theme_bw() + 
-  theme(legend.position = "bottom")
-
-```
-
-
-```{r plot_actual_quantile_fit_score}
-
-forecast_periods = unique(gar_forecast_df$Forecast_Period)[
-  unique(gar_forecast_df$Forecast_Period) %in% actual_gdp_df$Forecast_Period]
-
-
-forecast_comparisons$gar_actual_fit_score = lapply(forecast_periods,
-                                                   function(temp_period){
-  
-  actual_gdp = actual_gdp_df$GDP_actual[actual_gdp_df$Forecast_Period == temp_period]
-  
-  temp_df = gar_forecast_df %>%
-    filter(Forecast_Period == temp_period) %>% 
-    group_by(Horizon, Win_Type,Forecast_Status) %>% 
-    summarise(Score = quantile.fit.score(realized_estimate = actual_gdp,
-                               quantile_values = GaR_forecast,
-                               quantiles = as.numeric(Quantile)),
-              .groups = "drop") %>% 
-    ungroup() %>% 
-    mutate(Forecast_Period = temp_period)
-  
-  return(temp_df)
-  
-  
-  
-}) %>% 
-  bind_rows() %>% 
-  mutate(Horizon = factor(Horizon, leves = c("1","8","12")))
-
-
-ggplot(forecast_comparisons$gar_actual_fit_score %>% 
-  group_by(Horizon,Win_Type,Forecast_Status) %>% 
-  summarise(SD = sd(Score), .groups = "drop"),
-  aes(x = Horizon, y = SD, fill = Horizon)) + 
-  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
-  geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit - quantile fit score") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  theme_bw() + 
-  theme(legend.position = "bottom")
-
-
-```
-
-
-
-\section{Comparison to staff forecast}
 
 ```{r, make_staff_forecast}
 
@@ -168,10 +88,10 @@ staff_forecast_df_h8 = raw_df %>%
   mutate(Forecast_Period = paste((Date + 1),(Date + 2), sep = "-")) %>% 
   mutate(Horizon = "8")
 
-staff_forecast = bind_rows(staff_forecast_df_h1,
+forecast_data_list$staff_forecast = bind_rows(staff_forecast_df_h1,
                            staff_forecast_df_h8) %>% 
   mutate(Date = as.yearqtr(Date)) %>% 
-  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
+  inner_join(.,forecast_data_list$actual_gdp_df, by = "Forecast_Period") %>% 
   mutate(Error_staff = GDP_actual - Staff_Forecast)
 
 rm(staff_forecast_df_h8, staff_forecast_df_h1)
@@ -181,60 +101,7 @@ rm(staff_forecast_df_h8, staff_forecast_df_h1)
 ```
 
 
-```{r make_comparison_between_staff_and_gar_forecast}
-
-forecast_comparisons$gar_staff = forecast_comparisons$gar_actual %>% 
-  rename(Error_gar = Error) %>% 
-  inner_join(., staff_forecast %>% 
-              select(-GDP_actual),
-            by = c("Date","Horizon", "Forecast_Period"))
-
-```
-
-
-```{r plot, eval=FALSE}
-
-ggplot(forecast_comparisons$gar_staff %>% 
-         filter(Forecast_Status == "Out of Sample") %>% 
-         select(Date,Horizon,Win_Type,Error_gar,Error_staff) %>% 
-         gather(key = Method, value = Error, -Date,-Horizon,-Win_Type),
-       aes(x = Date, y = Error, color = Method)) + 
-  geom_point() + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "", y = "", title = "Forecast difference \n (GaR - Staff)") + 
-  facet_grid(rows = vars(Horizon),cols = vars(Win_Type),scales = "free") + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom")
-
-```
-
-
-```{r compare_forecast}
-
-rmse_df = gar_staff_comparison_df %>% 
-  filter(Forecast_Status == "Out of Sample") %>% 
-  select(Date,Horizon,Win_Type,Error_gar,Error_staff) %>% 
-  gather(key = Method, value = Error, -Date,-Horizon,-Win_Type) %>%
-  group_by(Win_Type, Horizon, Method) %>% 
-  summarise(RMSE = sqrt(mean(Error ^ 2))) %>% 
-  ungroup()
-
-ggplot(rmse_df, aes(x = Method, y = RMSE  * 100, fill = Method)) + 
-  geom_col(position = "dodge", width = 0.4) + 
-  facet_grid(rows = vars(Horizon),cols = vars(Win_Type),scales = "free") + 
-  labs(x = "", y = "RMSE(%)", title = "GaR vs Staff forecast fit") +
-  theme_bw() + 
-  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-
-
-
-
-```
-
-
-\section{Comparison to domestic macro}
-
-```{r macro_comparison}
+```{r, macro_forecast}
 
 macro_gar = run.GaR.analysis(partitions_list = partitions_list$macro,
                                 vars_df = df,
@@ -242,7 +109,7 @@ macro_gar = run.GaR.analysis(partitions_list = partitions_list$macro,
                                 quantile_vec = parameters_list$quantile_vec,
                                 run_ols_reg = FALSE)
 
-macro_gar_forecast_df = lapply(c("fixed","expanding"),
+forecast_data_list$macro_gar_forecast = lapply(c("fixed","expanding"),
                          function(temp_win_type){
   
   temp_res = get.gar.forecast(
@@ -257,48 +124,302 @@ macro_gar_forecast_df = lapply(c("fixed","expanding"),
   return(temp_res)
 }) %>% 
   bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date))
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
+                                  Date + as.numeric(Horizon) * 0.25,
+                                  sep = "-")) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
 
 
-gar_macro_comparison_df = list(gar_forecast_df %>% 
-                                 filter(Quantile == "0.50") %>% 
-                                 select(-Quantile),
-                               macro_gar_forecast_df %>% 
-                                 filter(Quantile == "0.50") %>% 
-                                 select(-Quantile)) %>% 
+rm(macro_gar)
+
+```
+
+
+<!-- Comparisons: gar vs actual, gar vs macro (rmse and quantile fit), gar vs staff -->
+
+
+```{r gar_actual_comparison}
+
+forecast_comparisons$gar_actual = forecast_data_list$gar_forecast %>% 
+  filter(Quantile == "0.50") %>% 
+  select(-Quantile) %>% 
+  inner_join(.,forecast_data_list$actual_gdp_df, by = "Forecast_Period") %>% 
+  mutate(Error = GDP_actual - GaR_forecast)
+
+
+
+```
+
+
+```{r gar_staff_comparison}
+
+forecast_comparisons$gar_staff = forecast_comparisons$gar_actual %>% 
+  rename(Error_gar = Error) %>% 
+  inner_join(., forecast_data_list$staff_forecast %>% 
+              select(-GDP_actual),
+            by = c("Date","Horizon", "Forecast_Period"))
+
+```
+
+
+```{r gar_macro_comparison}
+
+forecast_comparisons$gar_macro_comparison_df = list(
+  forecast_data_list$gar_forecast %>% 
+    filter(Quantile == "0.50") %>% 
+    select(-Quantile),
+  forecast_data_list$macro_gar_forecast %>% 
+    filter(Quantile == "0.50") %>% 
+    select(-Quantile)) %>% 
   reduce(inner_join, by = c("Date","Horizon","Forecast_Status","Win_Type"),
          suffix = c("_full", "_macro"))  %>% 
   mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
-                                  Date + as.numeric(Horizon) * 0.25,
-                                  sep = "-"))  %>% 
-  inner_join(.,actual_gdp_df, by = "Forecast_Period") %>% 
+                                 Date + as.numeric(Horizon) * 0.25,
+                                 sep = "-"))  %>% 
+  inner_join(.,forecast_data_list$actual_gdp_df, by = "Forecast_Period") %>% 
   mutate_at(.vars = vars(starts_with("GaR_forecast")),
             .funs = list(Error = ~ . - GDP_actual))
 
 ```
 
 
-```{r plot_macro_rmse}
+<!-- Model fit evaluation -->
 
-gar_macro_comparison_rmse = gar_macro_comparison_df %>% 
-  group_by(Horizon, Forecast_Status,Win_Type) %>% 
-  summarise_at(.vars = vars(ends_with("Error")),
-               .funs = list(~ sqrt(mean(. ^ 2)) * 100)) %>% 
-  ungroup() %>% 
-  pivot_longer(cols = ends_with("Error"),names_to = "Category",
-               values_to = "RMSE")
 
-ggplot(gar_macro_comparison_rmse %>% 
-         filter(Forecast_Status == "Out of Sample"),
-       aes(x = Category ,y = RMSE, fill = Category)) + 
-  geom_col(position = "dodge", width = 0.5) + 
-  facet_grid(rows = vars(Horizon), cols = vars(Win_Type)) +
+```{r rmse}
+
+forecast_model_fit$gar_actual_rmse =  forecast_comparisons$gar_actual %>% 
+  group_by(Horizon,Forecast_Status,Win_Type) %>% 
+  summarise(RMSE = sqrt(mean(Error ^ 2)), .groups = "drop")
+
+
+forecast_model_fit$macro_rmse =  forecast_comparisons$gar_macro_comparison_df %>% 
+  group_by(Horizon,Forecast_Status,Win_Type) %>% 
+  summarise(RMSE = sqrt(mean(GaR_forecast_macro_Error ^ 2)), .groups = "drop")
+
+
+
+forecast_model_fit$staff_rmse = forecast_comparisons$gar_staff %>% 
+  filter(Forecast_Status == "Out of Sample") %>% 
+  select(Date,Horizon,Win_Type,Error_gar,Error_staff) %>% 
+  gather(key = Method, value = Error, -Date,-Horizon,-Win_Type) %>%
+  group_by(Win_Type, Horizon, Method) %>% 
+  summarise(RMSE = sqrt(mean(Error ^ 2)), .groups = "drop") %>% 
+  ungroup()
+
+```
+
+
+```{r quantile_fit_score}
+
+forecast_periods = unique(forecast_data_list$gar_forecast$Forecast_Period)[
+  unique(forecast_data_list$gar_forecast$Forecast_Period) %in%
+    forecast_data_list$actual_gdp_df$Forecast_Period]
+
+
+forecast_model_fit$gar_actual_fit_score = lapply(forecast_periods,
+                                                   function(temp_period){
+                                                     
+  actual_gdp = forecast_data_list$actual_gdp_df$GDP_actual[
+    forecast_data_list$actual_gdp_df$Forecast_Period == temp_period]
+  
+  temp_df = forecast_data_list$gar_forecast %>%
+    filter(Forecast_Period == temp_period) %>% 
+    group_by(Horizon, Win_Type,Forecast_Status) %>% 
+    summarise(Score = quantile.fit.score(realized_estimate = actual_gdp,
+                               quantile_values = GaR_forecast,
+                               quantiles = as.numeric(Quantile)),
+              .groups = "drop") %>% 
+    ungroup() %>% 
+    mutate(Forecast_Period = temp_period)
+  
+  return(temp_df)
+  
+  
+  
+}) %>% 
+  bind_rows() %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
+
+
+
+forecast_model_fit$macro_actual_fit_score = lapply(forecast_periods,
+                                                   function(temp_period){
+                                                     
+  actual_gdp = forecast_data_list$actual_gdp_df$GDP_actual[
+    forecast_data_list$actual_gdp_df$Forecast_Period == temp_period]
+  
+  temp_df = forecast_data_list$macro_gar_forecast %>%
+    filter(Forecast_Period == temp_period) %>% 
+    group_by(Horizon, Win_Type,Forecast_Status) %>% 
+    summarise(Score = quantile.fit.score(realized_estimate = actual_gdp,
+                               quantile_values = GaR_forecast,
+                               quantiles = as.numeric(Quantile)),
+              .groups = "drop") %>% 
+    ungroup() %>% 
+    mutate(Forecast_Period = temp_period)
+  
+  return(temp_df)
+  
+  
+  
+}) %>% 
+  bind_rows() %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
+
+
+
+rm(forecast_periods)
+
+```
+
+
+\subsection{Forecast accuracy}
+
+We use in sample and out of sample comparison in order to test the robustness of partition
+specification. The out of sample forecast is constructed by estimation of a rolling window of length `r forecast_parameters$win_len` and forecasting `r forecast_parameters$out_of_sample_step` step ahead.
+
+\subsection{Comparison to actual GDP}
+
+We take actual GDP YoY growth rates and compare them with the predicted median YoY GDP growth rates. The matching between the actual and forecasted values is based on
+forecasted period
+
+```{r plot_gar_actual_rmse}
+
+ggplot(forecast_model_fit$gar_actual_rmse,
+       aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "", title = "Forecast fit") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+```
+
+
+```{r plot_actual_quantile_fit_score}
+
+
+ggplot(forecast_model_fit$gar_actual_fit_score %>% 
+  group_by(Horizon,Win_Type,Forecast_Status) %>% 
+  summarise(SD = sd(Score), .groups = "drop"),
+  aes(x = Horizon, y = SD, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "", title = "Forecast fit - quantile fit score") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
   theme(legend.position = "bottom")
 
 
+```
+
+
+
+\section{Comparison to staff forecast}
+
+```{r plot_actual_vs_staff_rmse}
+
+ggplot(forecast_model_fit$staff_rmse,
+       aes(x = Horizon, y = RMSE, fill = Method)) + 
+  facet_grid(cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5, position = "dodge") + 
+  labs(x = "", y = "", title = "GaR vs staff forecast (RMSE comparison)") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  scale_fill_hue(labels = c("GaR","Staff")) + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
 
 ```
+
+
+\section{Comparison to domestic macro}
+
+```{r plot_macro_rmse}
+
+ggplot(forecast_model_fit$macro_rmse %>% 
+         filter(Forecast_Status == "Out of Sample"),
+       aes(x = Horizon ,y = RMSE, fill = Horizon)) + 
+  geom_col(position = "dodge", width = 0.5) + 
+  labs(x = "", y = "", title = "Macro spec RMSE") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) + 
+  facet_grid(cols = vars(Win_Type)) +
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+
+
+```
+
+
+```{r plot_macro_quantile_fit_score}
+
+
+ggplot(forecast_model_fit$macro_actual_fit_score %>% 
+  group_by(Horizon,Win_Type,Forecast_Status) %>% 
+  summarise(SD = sd(Score), .groups = "drop"),
+  aes(x = Horizon, y = SD, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "", title = "Forecast fit - quantile fit score") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+
+```
+
+
+\subsection{GaR vs Macro}
+
+```{r gar_vs_macro_rmse}
+
+ggplot(forecast_model_fit[c("gar_actual_rmse","macro_rmse")] %>% 
+  reduce(inner_join, by = c("Horizon", "Forecast_Status", "Win_Type"),
+         suffix = c("_gar","_macro")) %>% 
+  filter(Forecast_Status == "Out of Sample") %>% 
+  pivot_longer(cols = c(RMSE_gar,RMSE_macro),names_to = "Model"),
+  aes(x = Model, y = value, fill = Model)) + 
+  geom_col(position = "dodge", width = 0.5) + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) + 
+  scale_fill_hue(labels = c("GaR", "Macro only")) + 
+  facet_grid(rows = vars(Win_Type), cols = vars(Horizon), scales = "free_y") + 
+  labs(x = "", y = "", title = "GaR vs Macro only (RMSE comparison)") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5),
+        legend.title = element_blank())
+  
+
+```
+
+
+```{r gar_vs_quantile_fit}
+
+ggplot(forecast_model_fit[c("gar_actual_fit_score","macro_actual_fit_score")] %>% 
+         reduce(inner_join, by = c("Horizon", "Forecast_Status", "Win_Type"),
+                suffix = c("_gar","_macro")) %>% 
+         select(-starts_with("Forecast_Period")) %>% 
+         filter(Forecast_Status == "Out of Sample") %>% 
+         pivot_longer(cols = c(Score_gar,Score_macro),names_to = "Model"),
+       aes(x = Model, y = value, fill = Model)) + 
+  geom_col(position = "dodge", width = 0.5) + 
+  scale_fill_hue(labels = c("GaR", "Macro only")) + 
+  facet_grid(rows = vars(Win_Type), cols = vars(Horizon), scales = "free_y") + 
+  labs(x = "", y = "", title = "GaR vs Macro only \n (quantile fit score comparison)") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5),
+        legend.title = element_blank())
+  
+
+```
+
 
 
 \section{Residuals analysis}
