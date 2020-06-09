@@ -440,13 +440,15 @@ quantile.fit.score.area = function(realized_estimate,
 
     stop("Quantile values and quantiles must be of same length ")
 
-  }
+    }
 
   score = 0
 
   # Construct named vector to hold values and quantiles
   # the names of the vector are quantiles and the values are
   # quantile values
+
+  # Construct vector to hold values and quantiles
 
   vec = quantile_values
 
@@ -488,6 +490,7 @@ quantile.fit.score.area = function(realized_estimate,
 
     weight = (vec[real_est_ind] - max_quantile_value) /
       (vec[real_est_ind - 1] - max_quantile_value)
+
 
     real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
       (1 - weight) * 1
