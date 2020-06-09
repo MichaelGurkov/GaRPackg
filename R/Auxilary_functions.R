@@ -391,7 +391,8 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
 
 #' @title Calculate Osnat's quantile fit score
 #'
-#' @description This function evaluates the goodness of fit between "realized" and to forecasted CDF
+#' @description This function evaluates the goodness of fit between
+#' "realized" and to forecasted CDF
 #'
 quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
 
@@ -422,6 +423,103 @@ quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
 }
 
 
+#' @title Calculate Osnat's augmented quantile fit score
+#'
+#' @description This function evaluates the goodness of fit between
+#' "realized" and to forecasted CDF by "area" method
+#'
+quantile.fit.score.area = function(realized_estimate, quantile_values, quantiles){
+
+  if(length(quantile_values) != length(quantiles)){
+
+    stop("Quantile values and quantiles must be of same length ")
+
+  }
+
+  score = 0
+
+  # Construct vector to hold values and quantiles
+
+  vec = quantile_values
+
+  names(vec) = quantiles
+
+  vec = c(vec, realized_estimate)
+
+  vec = vec[order(vec)]
+
+  # Calculate realized estimate prob
+
+  real_est_ind = which(vec == realized_estimate)
+
+  if(real_est_ind == 1){
+
+    weight = (vec[real_est_ind] - vec[real_est_ind + 1]) /
+      (0 - vec[real_est_ind + 1])
+
+    real_est_prob = weight * 0 +
+      (1 - weight) * as.numeric(names(vec))[real_est_ind + 1]
+
+  } else if(real_est_ind < length(vec)){
+
+    weight = (vec[real_est_ind] - vec[real_est_ind + 1]) /
+      (vec[real_est_ind - 1] - vec[real_est_ind + 1])
+
+    real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
+      (1 - weight) * as.numeric(names(vec))[real_est_ind + 1]
+
+  } else {
+
+    weight = (vec[real_est_ind] - 1) /
+      (vec[real_est_ind - 1] - 1)
+
+    real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
+      (1 - weight) * 1
+
+  }
+
+  names(vec)[real_est_ind] = real_est_prob
+
+  # Calculate score:
+
+  # Summarize quantile below realized estimates
+
+  if (real_est_ind > 1){
+
+    for (ind in 2:real_est_ind){
+
+      score = score +
+        0.5 * sum((as.numeric(names(vec)[c(ind - 1,ind)]))) *
+        diff(vec[c(ind - 1,ind)])
+
+
+
+    }
+
+
+  }
+
+  # Summarize quantile above realized estimates
+
+  if(real_est_ind < length(vec)){
+
+    for (ind in (real_est_ind + 1): length(vec)){
+
+      score = score +
+        0.5 * sum((1 - as.numeric(names(vec)[c(ind - 1,ind)]))) *
+        diff(vec[c(ind - 1,ind)])
+
+    }
+
+  }
+
+  names(score) = NULL
+
+  return(score)
+
+}
+
+
 #' @title Make rolling window indices
 #'
 #' @description The function makes a grid of rolling window indices
@@ -435,7 +533,8 @@ quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
 #' @param win_type categorical can be either expanding or fixed. Default is fixed
 #'
 
-make.rolling.window.grid = function(total_len ,win_len, out_of_sample_step,
+make.rolling.window.grid = function(total_len ,win_len,
+                                    out_of_sample_step,
                                     win_type = "fixed"){
 
   if(win_type == "fixed"){
