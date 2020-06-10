@@ -450,87 +450,50 @@ quantile.fit.score.area = function(realized_estimate,
 
   # Construct vector to hold values and quantiles
 
-  vec = quantile_values
+  vec = c(min_quantile_value,quantile_values, max_quantile_value)
 
-  names(vec) = quantiles
+  names(vec) = c(0,quantiles,1)
 
   vec = c(vec, realized_estimate)
 
   vec = vec[order(vec)] # order vec (quantile values + realization)
 
+  real_est_ind = which(vec == realized_estimate)
+
   # Calculate realized estimate prob (the height)
   # the weight is calculated as w = (B - C) / (A-C)
   # if B = w * A + (1-w) * C
 
-  real_est_ind = which(vec == realized_estimate)
+  weight = (vec[real_est_ind] - vec[real_est_ind + 1]) /
+    (vec[real_est_ind - 1] - vec[real_est_ind + 1])
 
-  # Case when realization less than quantile values
+  real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
+    (1 - weight) * as.numeric(names(vec))[real_est_ind + 1]
 
-  if(real_est_ind == 1){
-
-    weight = (vec[real_est_ind] - vec[real_est_ind + 1]) /
-      (min_quantile_value - vec[real_est_ind + 1])
-
-    real_est_prob = weight * 0 +
-      (1 - weight) * as.numeric(names(vec))[real_est_ind + 1]
-
-    # Case when realization inside quantile values
-
-  } else if(real_est_ind < length(vec)){
-
-    weight = (vec[real_est_ind] - vec[real_est_ind + 1]) /
-      (vec[real_est_ind - 1] - vec[real_est_ind + 1])
-
-    real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
-      (1 - weight) * as.numeric(names(vec))[real_est_ind + 1]
-
-    # Case when realization greater quantile values
-
-  } else {
-
-    weight = (vec[real_est_ind] - max_quantile_value) /
-      (vec[real_est_ind - 1] - max_quantile_value)
-
-
-    real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
-      (1 - weight) * 1
-
-  }
 
   names(vec)[real_est_ind] = real_est_prob
 
   # Calculate score:
 
   # Summarize quantile below realized estimates
-  # If realization less than quantile values -- skip
 
-  if (real_est_ind > 1){
+  for (ind in 2:real_est_ind){
 
-    for (ind in 2:real_est_ind){
+    score = score +
+      0.5 * sum((as.numeric(names(vec)[c(ind - 1,ind)]))) *
+      diff(vec[c(ind - 1,ind)])
 
-      score = score +
-        0.5 * sum((as.numeric(names(vec)[c(ind - 1,ind)]))) *
-        diff(vec[c(ind - 1,ind)])
-
-
-
-    }
 
 
   }
 
   # Summarize quantile above realized estimates
-  # If realization greater than quantile values -- skip
 
-  if(real_est_ind < length(vec)){
+  for (ind in (real_est_ind + 1): length(vec)){
 
-    for (ind in (real_est_ind + 1): length(vec)){
-
-      score = score +
-        0.5 * sum((1 - as.numeric(names(vec)[c(ind - 1,ind)]))) *
-        diff(vec[c(ind - 1,ind)])
-
-    }
+    score = score +
+      0.5 * sum((1 - as.numeric(names(vec)[c(ind - 1,ind)]))) *
+      diff(vec[c(ind - 1,ind)])
 
   }
 
