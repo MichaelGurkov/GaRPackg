@@ -8,7 +8,7 @@ library(stargazer)
 
 ```{r set_forecast_parameters}
 
-forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
+forecast_parameters = list(win_len = 30, out_of_sample_step = 0)
 
 forecast_comparisons = list()
 
@@ -136,6 +136,8 @@ rm(macro_gar)
 ```
 
 
+The first stage is to obtain in sample and out of sample forecast. The in sample forecast is just the fitted values, the out of sample forecast is calculated in the following manner : first a model is fitted on a subset of the data (the window) and then the outcome is predicted based on new data that is determined by the out of sample step (currently next period)
+
 <!-- Comparisons: gar vs actual, gar vs macro (rmse and quantile fit), gar vs staff -->
 
 
@@ -184,8 +186,14 @@ forecast_comparisons$gar_macro_comparison_df = list(
 ```
 
 
+In the next stage we compare the forecasts of the different models by matching them on Horizon, Forecast Period, Forecast Status and Win Type (where appropriate). The actual GDP growth is matched on Forecast Period only, staff forecast is matched on Forecast Period and Horizon.
+
+
 <!-- Model fit evaluation -->
 
+
+The third stage is model fit evaluation which is performed according to several metrics:
+RMSE, quantile fit score and quantile fit area score.
 
 ```{r rmse}
 
@@ -275,7 +283,6 @@ rm(forecast_periods)
 ```
 
 
-
 ```{r quantile_fit_area_score}
 
 forecast_periods = unique(forecast_data_list$gar_forecast$Forecast_Period)[
@@ -357,7 +364,7 @@ ggplot(forecast_model_fit$gar_actual_rmse,
        aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
   facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
   geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit") + 
+  labs(x = "", y = "", title = "Forecast fit - RMSE") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
   theme(legend.position = "bottom")
@@ -392,7 +399,7 @@ ggplot(forecast_model_fit$staff_rmse,
        aes(x = Horizon, y = RMSE, fill = Method)) + 
   facet_grid(cols = vars(Win_Type), scales = "free_y") + 
   geom_col(width = 0.5, position = "dodge") + 
-  labs(x = "", y = "", title = "GaR vs staff forecast (RMSE comparison)") + 
+  labs(x = "", y = "", title = "GaR vs staff forecast - RMSE") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   scale_fill_hue(labels = c("GaR","Staff")) + 
   theme_bw() + 
@@ -412,7 +419,7 @@ ggplot(forecast_model_fit$macro_rmse %>%
          filter(Forecast_Status == "Out of Sample"),
        aes(x = Horizon ,y = RMSE, fill = Horizon)) + 
   geom_col(position = "dodge", width = 0.5) + 
-  labs(x = "", y = "", title = "Macro spec RMSE") + 
+  labs(x = "", y = "", title = "Macro spec - RMSE") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) + 
   facet_grid(cols = vars(Win_Type)) +
   theme_bw() + 
@@ -432,10 +439,10 @@ ggplot(forecast_model_fit$macro_actual_fit_score %>%
   aes(x = Horizon, y = SD, fill = Horizon)) + 
   facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
   geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit - quantile fit score") + 
+  labs(x = "", y = "", title = "Macro spec - quantile fit score") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 
 
 ```
@@ -455,7 +462,7 @@ ggplot(forecast_model_fit[c("gar_actual_rmse","macro_rmse")] %>%
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) + 
   scale_fill_hue(labels = c("GaR", "Macro only")) + 
   facet_grid(rows = vars(Win_Type), cols = vars(Horizon), scales = "free_y") + 
-  labs(x = "", y = "", title = "GaR vs Macro only (RMSE comparison)") + 
+  labs(x = "", y = "", title = "GaR vs Macro only - RMSE") + 
   theme_bw() + 
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5),
@@ -477,7 +484,7 @@ ggplot(forecast_model_fit[c("gar_actual_fit_score","macro_actual_fit_score")] %>
   geom_col(position = "dodge", width = 0.5) + 
   scale_fill_hue(labels = c("GaR", "Macro only")) + 
   facet_grid(rows = vars(Win_Type), cols = vars(Horizon), scales = "free_y") + 
-  labs(x = "", y = "", title = "GaR vs Macro only \n (quantile fit score comparison)") + 
+  labs(x = "", y = "", title = "GaR vs Macro only \n (quantile fit score)") + 
   theme_bw() + 
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5),
@@ -504,7 +511,7 @@ ggplot(forecast_model_fit[c("gar_actual_fit_area_score",
   facet_grid(rows = vars(Win_Type), cols = vars(Horizon),
              scales = "free_y") + 
   labs(x = "", y = "",
-       title = "GaR vs Macro only \n (quantile fit area score comparison)") + 
+       title = "GaR vs Macro only \n (quantile fit area score)") + 
   theme_bw() + 
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5),
