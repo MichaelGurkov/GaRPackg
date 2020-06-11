@@ -560,3 +560,28 @@ make.rolling.window.grid = function(total_len ,win_len,
 
 
 }
+
+
+#' @title Calculate quantile R square score
+#'
+#' @description This function evaluates the goodness of fit between
+#' "realized"  value and forecasted quantiles
+#'
+quantile.r2.score = function(realized_estimate, quantile_values, quantile_probs, intercept_quantile_values){
+
+  if(length(quantile_values) != length(quantile_probs)){
+
+    stop("Quantile values and quantile_probs must be of same length ")
+
+  }
+
+  nom = mean(quantile_probs * (realized_estimate - quantile_values))
+
+  denom = mean(quantile_probs * (realized_estimate -
+                           intercept_quantile_values))
+
+  return(1 - nom / denom)
+
+
+
+}
