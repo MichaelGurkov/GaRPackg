@@ -1,9 +1,7 @@
 test_that("basic numeric example works",
-          expect_equal(round(
+          expect_equal(
             quantile.r2.score(
-            realized_estimate = 0,
-            quantile_values = c(-0.02,0.03,0.07),
-            quantile_probs = c(0.05,0.5,0.95),
-            intercept_quantile_values = c(-0.01,0.02,0.03)),
-            4),
-            -1.1184))
+              realized_estimates = c(0,0,0),
+              forecast_values = c(-0.02,0.03,0.07),
+              quantile = 0.05,
+              benchmark_values = c(-0.01,0.02,0.03)),-1))
