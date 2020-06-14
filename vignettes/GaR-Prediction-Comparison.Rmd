@@ -62,6 +62,43 @@ forecast_data_list$gar_forecast = lapply(c("fixed","expanding"),
 ```
 
 
+```{r Intercept_forecast}
+
+intercept_model = run.GaR.analysis(partitions_list = NULL,
+                   vars_df = df,
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(Dom_FCI = list(
+                     var_name = "Spread_CPI_corp",
+                     positive_direction = FALSE)))
+
+
+forecast_data_list$intercept_forecast = lapply(c("fixed","expanding"),
+                         function(temp_win_type){
+  
+  temp_res = get.gar.forecast(
+    gar_obj = intercept_model,
+    win_len = forecast_parameters$win_len,
+    quantile_vec = parameters_list$quantile_vec,
+    out_of_sample_step = forecast_parameters$out_of_sample_step,
+    win_type = temp_win_type) %>% 
+    filter(complete.cases(.)) %>% 
+    mutate(Win_Type = temp_win_type)
+  
+  return(temp_res)
+}) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Forecast_Period = paste(Date + as.numeric(Horizon) * 0.25 - 1,
+                                  Date + as.numeric(Horizon) * 0.25,
+                                  sep = "-")) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
+
+
+
+```
+
+
 ```{r, make_staff_forecast}
 
 staff_forecast_df_h1 = raw_df %>% 
@@ -347,6 +384,44 @@ rm(forecast_periods)
 ```
 
 
+```{r r_squared}
+
+temp_gar = forecast_data_list[c("gar_forecast","intercept_forecast")] %>% 
+  reduce(inner_join, by = c("Quantile","Horizon","Forecast_Status",
+                            "Win_Type","Forecast_Period","Date"),
+         suffix = c("_model","_benchmark")) %>% 
+  left_join(forecast_data_list$actual_gdp_df, by = "Forecast_Period")
+
+temp_macro = forecast_data_list[c("macro_gar_forecast","intercept_forecast")] %>% 
+  reduce(inner_join, by = c("Quantile","Horizon","Forecast_Status",
+                            "Win_Type","Forecast_Period","Date"),
+         suffix = c("_model","_benchmark")) %>% 
+  left_join(forecast_data_list$actual_gdp_df, by = "Forecast_Period")
+
+forecast_model_fit$gar_R2 = temp_gar %>% 
+  filter(complete.cases(.)) %>% 
+  group_by(Quantile, Horizon, Forecast_Status,Win_Type) %>% 
+  summarise(Score = quantile.r2.score(realized_estimates = GDP_actual,
+                                      forecast_values = GaR_forecast_model,
+                                      quantile = as.numeric(Quantile[1]),
+                                      benchmark_values = GaR_forecast_benchmark),
+            .groups = "drop")
+
+
+forecast_model_fit$macro_R2 = temp_macro %>% 
+  filter(complete.cases(.)) %>% 
+  group_by(Quantile, Horizon, Forecast_Status,Win_Type) %>% 
+  summarise(Score = quantile.r2.score(realized_estimates = GDP_actual,
+                                      forecast_values = GaR_forecast_model,
+                                      quantile = as.numeric(Quantile[1]),
+                                      benchmark_values = GaR_forecast_benchmark),
+            .groups = "drop")
+
+
+rm(temp_gar, temp_macro)
+
+```
+
 
 \subsection{Forecast accuracy}
 
@@ -448,6 +523,39 @@ ggplot(forecast_model_fit$macro_actual_fit_score %>%
 ```
 
 
+```{r plot_macro_R2}
+
+ggplot(forecast_model_fit$macro_R2,
+       aes(x = Quantile, y = Score, fill = Horizon)) + 
+  geom_col(position = "dodge", width = 0.5) + 
+  facet_grid(vars(Forecast_Status), vars(Win_Type)) + 
+  scale_fill_viridis_d(option = "plasma") + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+
+```
+
+
+
+
+\subsection{GaR vs Intercept}
+
+```{r}
+
+ggplot(forecast_model_fit$gar_R2,
+       aes(x = Quantile, y = Score, fill = Horizon)) + 
+  geom_col(position = "dodge", width = 0.5) + 
+  facet_grid(vars(Forecast_Status), vars(Win_Type)) + 
+  scale_fill_viridis_d(option = "plasma") + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+
+```
+
+
+
 \subsection{GaR vs Macro}
 
 ```{r gar_vs_macro_rmse}
@@ -494,7 +602,7 @@ ggplot(forecast_model_fit[c("gar_actual_fit_score","macro_actual_fit_score")] %>
 ```
 
 
-```{r gar_vs_macro_quantile_area_fit}
+```{r gar_vs_macro_quantile_area_fit, eval=FALSE}
 
 ggplot(forecast_model_fit[c("gar_actual_fit_area_score",
                             "macro_actual_fit_area_score")] %>% 
@@ -517,6 +625,35 @@ ggplot(forecast_model_fit[c("gar_actual_fit_area_score",
         plot.title = element_text(hjust = 0.5),
         legend.title = element_blank())
   
+
+```
+
+
+```{r gar_vs_macro_R2}
+
+temp_df = list(forecast_model_fit$gar_R2 %>% 
+       filter(Forecast_Status == "Out of Sample", Win_Type == "fixed") %>% 
+       select(-Forecast_Status,-Win_Type),
+     forecast_model_fit$macro_R2 %>% 
+       filter(Forecast_Status == "Out of Sample", Win_Type == "fixed") %>% 
+       select(-Forecast_Status,-Win_Type)) %>% 
+       reduce(inner_join, by = c("Quantile", "Horizon"),
+              suffix = c("_GaR", "_Macro_only")) %>% 
+       pivot_longer(cols = starts_with("Score"), names_to = "Model",
+                    values_to = "Score") %>% 
+       mutate(Model = str_remove_all(Model,"Score_"))
+
+ggplot(temp_df,
+     aes(x = Quantile, y = Score, fill = Model)) + 
+  geom_col(position = "dodge", width = 0.3) + 
+  scale_fill_viridis_d() + 
+  facet_wrap(~Horizon,nrow = 3, scales = "free_y") + 
+  labs(x = "Quantile", y = "",
+       title = "GaR vs Macro only \n (comparison by quantile R squared)") + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+
 
 ```
 
