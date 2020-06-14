@@ -523,6 +523,7 @@ ggplot(forecast_model_fit$macro_actual_fit_score %>%
 ```
 
 
+
 ```{r plot_macro_R2}
 
 ggplot(forecast_model_fit$macro_R2,
@@ -535,8 +536,6 @@ ggplot(forecast_model_fit$macro_R2,
 
 
 ```
-
-
 
 
 \subsection{GaR vs Intercept}
