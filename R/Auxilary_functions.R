@@ -247,7 +247,8 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 #'
 #' @param reg_df dataframe
 #'
-#' @param win_type categorical can be either expanding or fixed. Default is fixed
+#' @param win_type categorical can be either expanding or fixed.
+#' Default is fixed
 #'
 #' @param win_len rolling window length
 #'
@@ -498,6 +499,111 @@ quantile.fit.score.area = function(realized_estimate,
   }
 
   names(score) = NULL
+
+  return(score)
+
+}
+
+
+
+#' @title Calculate continuous ranked probability score
+#'
+#' @description This function evaluates the goodness of fit between
+#' "realized" and to forecasted CDF by "area" method
+#'
+quantile.crps.score = function(realized_estimate,
+                                   quantile_values,
+                                   quantiles,
+                                   min_quantile_value = -0.2,
+                                   max_quantile_value = 0.2){
+
+  # Data validation
+
+  if(length(quantile_values) != length(quantiles)){
+
+    stop("Quantile values and quantiles must be of same length ")
+
+  }
+
+  if(realized_estimate < min_quantile_value){
+
+    message("Realized estimate is less than min quantile value")
+
+    return(NA)
+
+
+  }
+
+  if(realized_estimate > max_quantile_value){
+
+    message("Realized estimate is greater than max quantile value")
+
+    return(NA)
+
+
+  }
+
+  # Construct named vector to hold values and quantiles
+  # the names of the vector are quantiles and the values are
+  # quantile values
+
+  # Construct vector to hold values and quantiles
+
+  vec = c(min_quantile_value,quantile_values, max_quantile_value)
+
+  names(vec) = c(0,quantiles,1)
+
+  vec = c(vec, realized_estimate)
+
+  vec = vec[order(vec)] # order vec (quantile values + realization)
+
+  real_est_ind = which(vec == realized_estimate)
+
+  # Calculate realized estimate prob (the height)
+  # the weight is calculated as w = (B - C) / (A-C)
+  # if B = w * A + (1-w) * C
+
+  weight = (vec[real_est_ind] - vec[real_est_ind + 1]) /
+    (vec[real_est_ind - 1] - vec[real_est_ind + 1])
+
+  real_est_prob = weight * as.numeric(names(vec))[real_est_ind - 1] +
+    (1 - weight) * as.numeric(names(vec))[real_est_ind + 1]
+
+
+  names(vec)[real_est_ind] = real_est_prob
+
+  # Calculate score:
+
+  quantile_values = as.numeric(vec)
+
+  quantiles = as.numeric(names(vec))
+
+  score = 0
+
+  # Summarize quantile below realized estimates
+
+  for (ind in 2:real_est_ind){
+
+    score = score +
+      diff(quantile_values[c(ind - 1,ind)]) *
+      mean(c(quantiles[ind] ^ 2,quantiles[ind] * quantiles[ind - 1],
+             quantiles[ind- 1]  ^ 2))
+
+
+
+  }
+
+  # Summarize quantile above realized estimates
+
+  for (ind in (real_est_ind + 1): length(vec)){
+
+    score = score +
+      diff(quantile_values[c(ind - 1,ind)]) *
+      mean(c((1 -quantiles[ind]) ^ 2,
+             (1 - quantiles[ind]) * (1 - quantiles[ind - 1]),
+             (1 - quantiles[ind- 1])  ^ 2))
+
+  }
 
   return(score)
 

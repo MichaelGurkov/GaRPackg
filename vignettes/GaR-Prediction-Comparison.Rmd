@@ -167,7 +167,7 @@ forecast_comparisons$gar_staff = forecast_comparisons$gar_actual %>%
 
 ```{r gar_macro_comparison}
 
-forecast_comparisons$gar_macro_comparison_df = list(
+forecast_comparisons$gar_macro = list(
   forecast_data_list$gar_forecast %>% 
     filter(Quantile == "0.50") %>% 
     select(-Quantile),
@@ -197,14 +197,17 @@ RMSE, quantile fit score and quantile fit area score.
 
 ```{r rmse}
 
-forecast_model_fit$gar_actual_rmse =  forecast_comparisons$gar_actual %>% 
+forecast_model_fit$gar_actual_rmse =  
+  forecast_comparisons$gar_actual %>% 
   group_by(Horizon,Forecast_Status,Win_Type) %>% 
   summarise(RMSE = sqrt(mean(Error ^ 2)), .groups = "drop")
 
 
-forecast_model_fit$macro_rmse =  forecast_comparisons$gar_macro_comparison_df %>% 
+forecast_model_fit$macro_rmse =
+  forecast_comparisons$gar_macro %>% 
   group_by(Horizon,Forecast_Status,Win_Type) %>% 
-  summarise(RMSE = sqrt(mean(GaR_forecast_macro_Error ^ 2)), .groups = "drop")
+  summarise(RMSE = sqrt(mean(GaR_forecast_macro_Error ^ 2)),
+            .groups = "drop")
 
 
 
@@ -221,13 +224,15 @@ forecast_model_fit$staff_rmse = forecast_comparisons$gar_staff %>%
 
 ```{r quantile_fit_score}
 
-forecast_periods = unique(forecast_data_list$gar_forecast$Forecast_Period)[
-  unique(forecast_data_list$gar_forecast$Forecast_Period) %in%
-    forecast_data_list$actual_gdp_df$Forecast_Period]
+forecast_periods = 
+  unique(forecast_data_list$gar_forecast$Forecast_Period)[
+    unique(forecast_data_list$gar_forecast$Forecast_Period) %in%
+      forecast_data_list$actual_gdp_df$Forecast_Period]
 
 
-forecast_model_fit$gar_actual_fit_score = lapply(forecast_periods,
-                                                   function(temp_period){
+forecast_model_fit$gar_actual_fit_score = 
+  lapply(forecast_periods,
+         function(temp_period){
                                                      
   actual_gdp = forecast_data_list$actual_gdp_df$GDP_actual[
     forecast_data_list$actual_gdp_df$Forecast_Period == temp_period]
@@ -252,8 +257,9 @@ forecast_model_fit$gar_actual_fit_score = lapply(forecast_periods,
 
 
 
-forecast_model_fit$macro_actual_fit_score = lapply(forecast_periods,
-                                                   function(temp_period){
+forecast_model_fit$macro_actual_fit_score = 
+  lapply(forecast_periods,
+         function(temp_period){
                                                      
   actual_gdp = forecast_data_list$actual_gdp_df$GDP_actual[
     forecast_data_list$actual_gdp_df$Forecast_Period == temp_period]
@@ -283,15 +289,17 @@ rm(forecast_periods)
 ```
 
 
-```{r quantile_fit_area_score}
+```{r quantile_crps_score}
 
-forecast_periods = unique(forecast_data_list$gar_forecast$Forecast_Period)[
+forecast_periods = 
+  unique(forecast_data_list$gar_forecast$Forecast_Period)[
   unique(forecast_data_list$gar_forecast$Forecast_Period) %in%
     forecast_data_list$actual_gdp_df$Forecast_Period]
 
 
-forecast_model_fit$gar_actual_fit_area_score = lapply(forecast_periods,
-                                                   function(temp_period){
+forecast_model_fit$gar_actual_fit_crps = 
+  lapply(forecast_periods,
+         function(temp_period){
                                                      
   actual_gdp = forecast_data_list$actual_gdp_df$GDP_actual[
     forecast_data_list$actual_gdp_df$Forecast_Period == temp_period]
@@ -299,10 +307,11 @@ forecast_model_fit$gar_actual_fit_area_score = lapply(forecast_periods,
   temp_df = forecast_data_list$gar_forecast %>%
     filter(Forecast_Period == temp_period) %>% 
     group_by(Horizon, Win_Type,Forecast_Status) %>% 
-    summarise(Score = quantile.fit.score.area(realized_estimate = actual_gdp,
-                               quantile_values = GaR_forecast,
-                               quantiles = as.numeric(Quantile)),
-              .groups = "drop") %>% 
+    summarise(Score = quantile.crps.score(
+      realized_estimate = actual_gdp,
+      quantile_values = GaR_forecast,
+      quantiles = as.numeric(Quantile)),
+      .groups = "drop") %>% 
     ungroup() %>% 
     mutate(Forecast_Period = temp_period)
   
@@ -316,8 +325,9 @@ forecast_model_fit$gar_actual_fit_area_score = lapply(forecast_periods,
 
 
 
-forecast_model_fit$macro_actual_fit_area_score = lapply(forecast_periods,
-                                                   function(temp_period){
+forecast_model_fit$macro_actual_fit_crps = 
+  lapply(forecast_periods,
+         function(temp_period){
                                                      
   actual_gdp = forecast_data_list$actual_gdp_df$GDP_actual[
     forecast_data_list$actual_gdp_df$Forecast_Period == temp_period]
@@ -325,9 +335,10 @@ forecast_model_fit$macro_actual_fit_area_score = lapply(forecast_periods,
   temp_df = forecast_data_list$macro_gar_forecast %>%
     filter(Forecast_Period == temp_period) %>% 
     group_by(Horizon, Win_Type,Forecast_Status) %>% 
-    summarise(Score = quantile.fit.score.area(realized_estimate = actual_gdp,
-                               quantile_values = GaR_forecast,
-                               quantiles = as.numeric(Quantile)),
+    summarise(Score = quantile.crps.score(
+      realized_estimate = actual_gdp,
+      quantile_values = GaR_forecast,
+      quantiles = as.numeric(Quantile)),
               .groups = "drop") %>% 
     ungroup() %>% 
     mutate(Forecast_Period = temp_period)
@@ -339,7 +350,6 @@ forecast_model_fit$macro_actual_fit_area_score = lapply(forecast_periods,
 }) %>% 
   bind_rows() %>% 
   mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
-
 
 
 rm(forecast_periods)
@@ -377,11 +387,12 @@ ggplot(forecast_model_fit$gar_actual_rmse,
 
 ggplot(forecast_model_fit$gar_actual_fit_score %>% 
   group_by(Horizon,Win_Type,Forecast_Status) %>% 
-  summarise(SD = sd(Score), .groups = "drop"),
+  summarise(SD = mean(Score, na.rm = TRUE), .groups = "drop"),
   aes(x = Horizon, y = SD, fill = Horizon)) + 
   facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
   geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit - quantile fit score") + 
+  labs(x = "", y = "",
+       title = "Forecast fit - average quantile fit score") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
   theme(legend.position = "bottom")
@@ -432,14 +443,14 @@ ggplot(forecast_model_fit$macro_rmse %>%
 
 ```{r plot_macro_quantile_fit_score}
 
-
-ggplot(forecast_model_fit$macro_actual_fit_score %>% 
+ggplot(forecast_model_fit$macro_actual_ %>% 
   group_by(Horizon,Win_Type,Forecast_Status) %>% 
-  summarise(SD = sd(Score), .groups = "drop"),
+  summarise(SD = mean(Score, na.rm = TRUE), .groups = "drop"),
   aes(x = Horizon, y = SD, fill = Horizon)) + 
   facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
   geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Macro spec - quantile fit score") + 
+  labs(x = "", y = "",
+       title = "Macro spec - average quantile fit score") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
@@ -494,12 +505,13 @@ ggplot(forecast_model_fit[c("gar_actual_fit_score","macro_actual_fit_score")] %>
 ```
 
 
-```{r gar_vs_macro_quantile_area_fit}
+```{r gar_vs_macro_crps}
 
-ggplot(forecast_model_fit[c("gar_actual_fit_area_score",
-                            "macro_actual_fit_area_score")] %>% 
-         reduce(inner_join, by = c("Horizon", "Forecast_Status",
-                                   "Win_Type"),
+ggplot(forecast_model_fit[c("gar_actual_fit_crps",
+                            "macro_actual_fit_crps")] %>% 
+         reduce(inner_join,
+                by = c("Horizon", "Forecast_Status","Win_Type",
+                       "Forecast_Period"),
                 suffix = c("_gar","_macro")) %>% 
          select(-starts_with("Forecast_Period")) %>% 
          filter(Forecast_Status == "Out of Sample") %>% 
@@ -511,7 +523,7 @@ ggplot(forecast_model_fit[c("gar_actual_fit_area_score",
   facet_grid(rows = vars(Win_Type), cols = vars(Horizon),
              scales = "free_y") + 
   labs(x = "", y = "",
-       title = "GaR vs Macro only \n (quantile fit area score)") + 
+       title = "GaR vs Macro only crps") + 
   theme_bw() + 
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5),
