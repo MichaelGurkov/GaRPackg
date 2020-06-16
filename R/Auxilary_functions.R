@@ -27,6 +27,8 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                             run_ols_reg = TRUE, rq_method = "br",
                             pca.align.list = NULL){
 
+  if(!is.null(partitions_list)){
+
   # Make and align PCA
 
   pca_obj = lapply(names(partitions_list)[sapply(partitions_list,length) > 1],
@@ -85,6 +87,15 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
     inner_join(vars_df %>%
                  select(Date, GDP), by = "Date")
 
+  } else {
+
+
+    reg_df =  vars_df %>%
+      select(Date, GDP)
+
+
+  }
+
   for(temp_horizon in unlist(horizon_list)){
 
     temp_var = paste("GDP_growth",temp_horizon,sep = "_")
@@ -105,7 +116,7 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                    tau = quantile_vec,
                    data = reg_df %>%
                      select(-Date) %>%
-                     select(names(.)[!grepl("GDP",names(.))], dep_var),
+                     select(names(.)[!grepl("GDP",names(.))], all_of(dep_var)),
                    method = rq_method)
 
     return(qreg_list)
@@ -127,7 +138,7 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
       ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
                      data = reg_df %>%
                        select(-Date) %>%
-                       select(names(.)[!grepl("GDP",names(.))], dep_var))
+                       select(names(.)[!grepl("GDP",names(.))], all_of(dep_var)))
 
       return(ols_reg)
 
@@ -136,21 +147,27 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
     names(ols_result) = horizon_list
 
-    return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result,
-                ols_reg = ols_result))
 
 
-  } else {
-
-
-    return(list(pca = pca_obj, reg_df = reg_df, quantile_reg = qreg_result))
 
   }
 
 
+  # Check for objects and return list
+
+  return_list = list()
+
+  for(obj in c("pca_obj","reg_df","qreg_result","ols_result")){
+
+    if(obj %in% ls()){return_list[[obj]] = get(obj)}
+
+  }
 
 
-}
+  return(return_list)
+
+  }
+
 
 
 #' This is a convinience functions that plots the coefficients of
@@ -276,7 +293,7 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
     select(-Date)
 
 
-  rolling_grid = make.rolling.window.grid(total_len = nrow(df),
+  rolling_grid = make.rolling.window.grid(total_len = nrow(reg_df),
                                           win_len = win_len,
                                           out_of_sample_step = out_of_sample_step,
                                           win_type = win_type)
@@ -285,10 +302,11 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 
       temp_qreq = rq(formula = formula(mod_formula),
                      tau = quantile_vec,
-                     data = reg_df[temp_ind_df$First:temp_ind_df$Last,])
+                     data = slice(reg_df,temp_ind_df$First:temp_ind_df$Last))
 
       temp_pred = predict(object = temp_qreq,
-                          newdata = reg_df[temp_ind_df$Last + out_of_sample_step,])
+                          newdata = slice(reg_df,temp_ind_df$Last + out_of_sample_step))
+
 
       return(data.frame(Date = dates_vec[temp_ind_df$Last + out_of_sample_step],
                         temp_pred))
@@ -324,12 +342,12 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
 
   # Calculate in sample forecast
 
-  forecast_in_sample = lapply(names(gar_obj$quantile_reg),
+  forecast_in_sample = lapply(names(gar_obj$qreg_result),
                               function(temp_name){
 
-                                    temp_reg = gar_obj$quantile_reg[[temp_name]]
+                                    temp_reg = gar_obj$qreg_result[[temp_name]]
 
-                                    col_names = gar_obj$quantile_reg[[1]] %>%
+                                    col_names = gar_obj$qreg_result[[1]] %>%
                                       coefficients() %>%
                                       colnames() %>%
                                       gsub(pattern = "tau= ",replacement = "")
@@ -673,18 +691,36 @@ make.rolling.window.grid = function(total_len ,win_len,
 #' @description This function evaluates the goodness of fit between
 #' "realized"  value and forecasted quantiles
 #'
-quantile.r2.score = function(realized_estimate, quantile_values, quantile_probs, intercept_quantile_values){
+quantile.r2.score = function(realized_estimates, forecast_values,
+                             quantile, benchmark_values){
 
-  if(length(quantile_values) != length(quantile_probs)){
+  if(length(forecast_values) != length(benchmark_values)){
 
-    stop("Quantile values and quantile_probs must be of same length ")
+    stop("Forecast values and benchmark must be of same length ")
 
   }
 
-  nom = mean(quantile_probs * (realized_estimate - quantile_values))
 
-  denom = mean(quantile_probs * (realized_estimate -
-                           intercept_quantile_values))
+  nom = 0
+
+  denom = 0
+
+  for (ind in 1:length(forecast_values)){
+
+    realized_error = realized_estimates[ind] - forecast_values[ind]
+
+    benchmark_error = realized_estimates[ind] - benchmark_values[ind]
+
+    nom = nom + if_else(realized_error > 0,
+                        realized_error * quantile,
+                        realized_error * (quantile - 1))
+
+    denom = denom + if_else(benchmark_error > 0,
+                            benchmark_error * quantile,
+                            benchmark_error * (quantile - 1))
+
+
+  }
 
   return(1 - nom / denom)
 
