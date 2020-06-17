@@ -60,7 +60,7 @@ library(forcats)
 
 source("Partition-Specs.R",echo = FALSE)
 
-current_partition = partitions_list$basic_global_extended
+current_partition = partitions_list$basic_inf_gdp_added
 
 
 ```
