@@ -89,7 +89,6 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
   } else {
 
-
     reg_df =  vars_df %>%
       select(Date, GDP)
 
@@ -727,3 +726,4 @@ quantile.r2.score = function(realized_estimates, forecast_values,
 
 
 }
+

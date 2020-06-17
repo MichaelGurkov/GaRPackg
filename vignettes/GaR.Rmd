@@ -56,12 +56,7 @@ library(forcats)
 ```
 
 
-```{r Set_partitions}
-
-source("Partition-Specs.R",echo = FALSE)
-
-current_partition = partitions_list$basic_global_extended
-
+```{r Get_partitions, child="Partition-Specs.Rmd"}
 
 ```
 
@@ -127,6 +122,8 @@ current_partition = lapply(current_partition, function(temp_part){
 
 ```{r Analysis}
 
+current_partition = partitions_list$basic_no_global_inf
+
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
                    horizon_list = parameters_list$horizon_list,
@@ -148,7 +145,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
 
 
 ```
@@ -156,21 +153,21 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 

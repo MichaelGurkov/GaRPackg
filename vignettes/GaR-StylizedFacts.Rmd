@@ -1,7 +1,7 @@
 
 ```{r get_quantiles_df}
 
-dist_quantile_df = lapply(names(results$quantile_reg),
+dist_quantile_df = lapply(names(results$qreg_result),
                    function(temp_name){
                      
                      date_vec = results$reg_df$Date
@@ -9,7 +9,7 @@ dist_quantile_df = lapply(names(results$quantile_reg),
                      date_vec = date_vec[1:(length(date_vec) - 
                                               as.numeric(temp_name))]
                      
-                     temp_df = results$quantile_reg[[
+                     temp_df = results$qreg_result[[
                        temp_name]]$fitted.values %>% 
                        as.data.frame() %>% 
                        setNames(unlist(parameters_list$quantile_vec)) %>% 
@@ -34,10 +34,10 @@ dist_quantile_df = lapply(names(results$quantile_reg),
   mutate(RA = Up_dist - Down_dist)
 
 
-factor_quantiles_df = lapply(names(results$quantile_reg),
+factor_quantiles_df = lapply(names(results$qreg_result),
                              function(temp_name){
   
-  temp_df = results$quantile_reg[[temp_name]]$coefficients
+  temp_df = results$qreg_result[[temp_name]]$coefficients
   
   temp_df = temp_df %>% 
   as.data.frame() %>% 
@@ -150,12 +150,13 @@ ggplot(dist_quantile_df, aes(x = Date, y = RA)) +
 ```
 
 
-```{r plot_mean_median_diff, fig.height=8}
+```{r plot_mean_median_diff, fig.height=8, eval=FALSE}
 
 ggplot(dist_quantile_df, aes(x = Date, y = OLS - Q_0.5)) + 
   geom_line() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "", y = "", title = "Difference between mean (OLS) and median (quantile) regressions ") + 
+  labs(x = "", y = "",
+       title = "Difference between mean (OLS) and median (quantile) regressions ") + 
   facet_wrap(~Horizon, scales = "free", ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))

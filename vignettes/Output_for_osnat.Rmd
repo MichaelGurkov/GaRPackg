@@ -2,10 +2,10 @@
 
 ```{r get_quantile_df_osnat}
 
-quantile_df_osnat = lapply(names(results$quantile_reg),
+quantile_df_osnat = lapply(names(results$qreg_result),
                                function(temp_name){
 
-    temp_forecast = predict(results$quantile_reg[[temp_name]],
+    temp_forecast = predict(results$qreg_result[[temp_name]],
                        newdata = results$reg_df)
     
     temp_forecast  = temp_forecast %>% 
@@ -34,9 +34,9 @@ write_csv(quantile_df_osnat, paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop
 
 ```{r charts_1_vs_5}
 
-coeff_df = lapply(names(results$quantile_reg), function(temp_name){
+coeff_df = lapply(names(results$qreg_result), function(temp_name){
   
-  temp_coeff_df = results$quantile_reg[[temp_name]]$coefficients %>% 
+  temp_coeff_df = results$qreg_result[[temp_name]]$coefficients %>% 
     as.data.frame() %>% 
     rename_all(.funs = list(~str_remove_all(.,"tau= "))) %>% 
     mutate(Partition = rownames(.)) %>% 
@@ -96,6 +96,8 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 ```{r plot_pca_loadings}
 
+pca_list = results$pca
+
 pca_plots = lapply(names(pca_list), function(name){
   
   pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
@@ -130,6 +132,38 @@ save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 ```{r median_variance_scatter_plot}
 
+dist_quantile_df = lapply(names(results$qreg_result),
+                   function(temp_name){
+                     
+                     date_vec = results$reg_df$Date
+                     
+                     date_vec = date_vec[1:(length(date_vec) - 
+                                              as.numeric(temp_name))]
+                     
+                     temp_df = results$qreg_result[[
+                       temp_name]]$fitted.values %>% 
+                       as.data.frame() %>% 
+                       setNames(unlist(parameters_list$quantile_vec)) %>% 
+                       mutate(Date = date_vec) %>% 
+                       mutate(OLS = results$ols_reg[[temp_name]]$fitted.values) %>% 
+                       gather(key = Quantile,value = GaR,-Date) %>% 
+                       mutate(Horizon = temp_name)
+                   
+                       return(temp_df)
+                     
+                   }) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  spread(key = Quantile,value = GaR) %>% 
+  rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
+            .funs = list(~paste0("Q_",.))) %>% 
+  group_by(Horizon) %>% 
+  mutate(IQR = Q_0.95 - Q_0.05) %>% 
+  mutate(Up_dist = Q_0.95-Q_0.5) %>% 
+  mutate(Down_dist = Q_0.5-Q_0.05) %>% 
+  mutate(RA = Up_dist - Down_dist)
+
 median_variance_plot  = ggplot(dist_quantile_df %>% 
          select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
   geom_point() + 
@@ -152,6 +186,24 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 
 ```{r plot_gar_factor_contribution}
+
+gar_factors_df = lapply(
+  names(results$qreg_result),function(temp_name){
+    
+    gar_factors_df = results$reg_df %>%
+      select(names(current_partition)) %>%
+      as.matrix() * coefficients(
+        results$qreg_result[[temp_name]])[-1,1]
+    
+    gar_factors_df = cbind(Date = results$reg_df$Date,
+                           as.data.frame(gar_factors_df)) %>% 
+      mutate(Horizon = temp_name)
+    
+    return(gar_factors_df)
+ 
+                        })
+
+names(gar_factors_df) = names(results$qreg_result)
 
 gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
   
@@ -221,8 +273,8 @@ temp = forecast_model_fit[c("gar_macro_r2","gar_staff_r2")] %>%
 good_fit_plot = ggplot(temp, aes(x = Quantile, y = score, fill = model)) + 
   geom_col(position = 'dodge', width = 0.5) + 
   scale_fill_viridis_d(labels = c("GaR", "Macro only", "Staff")) + 
-  labs(y = expression("quantile"~R^2), title = "Goodness of fit") + 
-  facet_wrap(~Horizon,ncol = 1, scales = "free_y") + 
+  labs(y = expression("quantile"~R^2), title = "Forecast accuracy") + 
+  facet_wrap(~Horizon,ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom",
         legend.title = element_blank(),

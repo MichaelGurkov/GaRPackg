@@ -1,34 +1,18 @@
 
 
+```{r initialize_list}
+
+
 partitions_list  = list()
 
-partitions_list$basic = list(
-  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
-  Global = list(
-    "infl_us",
-    "infl_euro",
-    "rate_euro",
-    "rate_us",
-    "VIX",
-    "Ind_Prod_us",
-    "Ind_Prod_euro"
-  ),
-  Dom_FCI =  list(
-    "Spread_CPI_corp",
-    "Sovereigh_spread",
-    "Term_spread",
-    "ILS_USD_impl_vol",
-    "TA_35_impl_vol",
-    "BOI_rate"
-  ),
-  FinCycle = list(
-    "Credit",
-    "House_Price",
-    "TA125_Close"
-  )
-)
 
-partitions_list$basic_global_extended = list(
+
+```
+
+
+```{r basic}
+
+partitions_list$basic = list(
   Dom_Macro = list("GDP", "Ind_Prod_Israel"),
   Global = list(
     "infl_us",
@@ -59,6 +43,96 @@ partitions_list$basic_global_extended = list(
 )
 
 
+
+```
+
+
+```{r basic_no_global_inf}
+
+partitions_list$basic_no_global_inf = list(
+  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
+  Global = list(
+    "rate_euro",
+    "rate_us",
+    "VIX",
+    "Ind_Prod_us",
+    "Ind_Prod_euro",
+    "eurostoxx600",
+    "SP500",
+    "DXY",
+    "US_term_spread"
+  ),
+  Dom_FCI =  list(
+    "Spread_CPI_corp",
+    "Sovereigh_spread",
+    "Term_spread",
+    "ILS_USD_impl_vol",
+    "TA_35_impl_vol",
+    "BOI_rate"
+  ),
+  FinCycle = list(
+    "Credit",
+    "House_Price",
+    "TA125_Close"
+  )
+)
+
+
+
+```
+
+
+```{r basic_fin_united}
+
+partitions_list$basic_fin_united = list(
+  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
+  Global = list(
+    "infl_us",
+    "infl_euro",
+    "rate_euro",
+    "rate_us",
+    "VIX",
+    "Ind_Prod_us",
+    "Ind_Prod_euro",
+    "eurostoxx600",
+    "SP500",
+    "DXY",
+    "US_term_spread"
+  ),
+  Dom_FCI =  list(
+    "Spread_CPI_corp",
+    "Sovereigh_spread",
+    "Term_spread",
+    "ILS_USD_impl_vol",
+    "TA_35_impl_vol",
+    "BOI_rate",
+    "Credit",
+    "House_Price",
+    "TA125_Close"
+  )
+)
+
+
+```
+
+
+```{r macro}
+
+partitions_list$macro = list(
+  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
+  Global = list(
+    "rate_euro",
+    "rate_us",
+    "VIX",
+    "Ind_Prod_us",
+    "Ind_Prod_euro"
+  )
+)
+
+```
+
+
+```{r extensive}
 
 partitions_list$extensive = list(
   Dom_Real = list(
@@ -134,21 +208,13 @@ partitions_list$extensive = list(
                 "House_Price")
 )
 
-partitions_list$macro = list(
-  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
-  Global = list(
-    "infl_us",
-    "infl_euro",
-    "rate_euro",
-    "rate_us",
-    "VIX",
-    "Ind_Prod_us",
-    "Ind_Prod_euro"
-  )
-)
+```
 
-partitions_list$basic_global_extended_fin_united = list(
-  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
+
+```{r basic_inf_isr_added}
+
+partitions_list$basic_inf_isr_added = list(
+  Dom_Macro = list("GDP", "Ind_Prod_Israel","infl_israel"),
   Global = list(
     "infl_us",
     "infl_euro",
@@ -168,9 +234,53 @@ partitions_list$basic_global_extended_fin_united = list(
     "Term_spread",
     "ILS_USD_impl_vol",
     "TA_35_impl_vol",
-    "BOI_rate",
+    "BOI_rate"
+  ),
+  FinCycle = list(
     "Credit",
     "House_Price",
     "TA125_Close"
   )
 )
+
+
+
+```
+
+
+```{r basic_inf_gdp_added}
+
+partitions_list$basic_inf_gdp_added = list(
+  Dom_Macro = list("GDP", "Ind_Prod_Israel","infl_israel_gdp"),
+  Global = list(
+    "infl_us",
+    "infl_euro",
+    "rate_euro",
+    "rate_us",
+    "VIX",
+    "Ind_Prod_us",
+    "Ind_Prod_euro",
+    "eurostoxx600",
+    "SP500",
+    "DXY",
+    "US_term_spread"
+  ),
+  Dom_FCI =  list(
+    "Spread_CPI_corp",
+    "Sovereigh_spread",
+    "Term_spread",
+    "ILS_USD_impl_vol",
+    "TA_35_impl_vol",
+    "BOI_rate"
+  ),
+  FinCycle = list(
+    "Credit",
+    "House_Price",
+    "TA125_Close"
+  )
+)
+
+
+
+```
+

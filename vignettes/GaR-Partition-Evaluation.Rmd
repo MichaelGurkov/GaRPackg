@@ -12,7 +12,8 @@ pca_variance = lapply(names(pca_list), function(temp_name){
 
   data.frame(Name = temp_name,
              Variance = round(pca_list[[temp_name]]$pca$sdev[1] ^ 2 /
-                                sum(pca_list[[temp_name]]$pca$sdev ^ 2),3), stringsAsFactors = FALSE)
+                                sum(pca_list[[temp_name]]$pca$sdev ^ 2),3),
+             stringsAsFactors = FALSE)
 
 
 

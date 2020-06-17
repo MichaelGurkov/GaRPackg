@@ -1,10 +1,10 @@
 
 ```{r get_predict_df}
 
-predict_df = lapply(names(results$quantile_reg),
+predict_df = lapply(names(results$qreg_result),
                                function(temp_name){
 
-    temp_forecast = predict(results$quantile_reg[[temp_name]],
+    temp_forecast = predict(results$qreg_result[[temp_name]],
                        newdata = results$reg_df)
     
     temp_forecast  = temp_forecast %>% 
@@ -29,12 +29,12 @@ predict_df = lapply(names(results$quantile_reg),
 
 
 gar_factors_df = lapply(
-  names(results$quantile_reg),function(temp_name){
+  names(results$qreg_result),function(temp_name){
     
     gar_factors_df = results$reg_df %>%
       select(names(current_partition)) %>%
       as.matrix() * coefficients(
-        results$quantile_reg[[temp_name]])[-1,1]
+        results$qreg_result[[temp_name]])[-1,1]
     
     gar_factors_df = cbind(Date = results$reg_df$Date,
                            as.data.frame(gar_factors_df)) %>% 
@@ -44,7 +44,7 @@ gar_factors_df = lapply(
  
                         })
 
-names(gar_factors_df) = names(results$quantile_reg)
+names(gar_factors_df) = names(results$qreg_result)
   
 
 ```
