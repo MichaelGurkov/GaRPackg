@@ -144,6 +144,7 @@ forecast_data_list$staff_forecast = bind_rows(staff_forecast_df_h1,
   inner_join(., staff_forecast_conversion_table,
              by = c("Date","Horizon")) %>% 
   mutate(Staff_Forecast = Staff_Forecast + Conversion_Coeff) %>% 
+  mutate(Quantile = str_replace_all(Quantile,"0.5","0.50")) %>% 
   select(-Conversion_Coeff) %>% 
   select(Date, Horizon, Quantile, Forecast_Period, Staff_Forecast)
 
@@ -290,7 +291,6 @@ gar_staff_r2_df = forecast_data_list[c("gar_forecast",
   reduce(inner_join,
          by = c("Forecast_Period", "Horizon",
                 "Quantile")) %>% 
-  mutate(Quantile = str_replace_all(Quantile,"0.50","0.5")) %>% 
   inner_join(forecast_data_list$staff_forecast,
              by = c("Forecast_Period", "Horizon",
                 "Quantile")) %>% 

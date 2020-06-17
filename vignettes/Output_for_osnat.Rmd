@@ -204,3 +204,38 @@ sapply(names(gar_factor_plot_list),
 
 ```
 
+
+```{r prediction_comparison}
+
+temp = forecast_model_fit[c("gar_macro_r2","gar_staff_r2")] %>% 
+  reduce(full_join,
+         by = c("Horizon","Quantile"), suffix = c("_macro","_staff")) %>% 
+  rename_all(~str_remove_all(.,"_r2_score")) %>% 
+  select(-gar_staff) %>% 
+  rename_at(vars(gar_macro),.funs = ~"gar") %>% 
+  pivot_longer(cols = c(-Horizon, -Quantile),
+               names_to = "model",
+               values_to = "score") %>% 
+  mutate(Horizon = factor(Horizon,levels = c("1","8","12")))
+  
+good_fit_plot = ggplot(temp, aes(x = Quantile, y = score, fill = model)) + 
+  geom_col(position = 'dodge', width = 0.5) + 
+  scale_fill_viridis_d(labels = c("GaR", "Macro only", "Staff")) + 
+  labs(y = expression("quantile"~R^2), title = "Goodness of fit") + 
+  facet_wrap(~Horizon,ncol = 1, scales = "free_y") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+
+ggsave(filename =
+           paste0(file.path(Sys.getenv("USERPROFILE"),
+                            "Desktop",fsep="\\"),
+                  "\\good_fit_plot.png"),
+         plot = good_fit_plot,
+       device = "png",width = 5,height = 4.5,
+       units = "in",dpi = 300)
+
+```
+
