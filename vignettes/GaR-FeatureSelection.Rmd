@@ -15,8 +15,20 @@ current_partitions_list = partitions_list[!names(partitions_list) %in%
 ```
 
 
+```{r Set_partitions, child="Partition-Specs.Rmd"}
+
+# source("Partition-Specs.R",echo = FALSE)
+
+current_partitions_list = partitions_list[!names(partitions_list) %in%
+                                            "extensive"]
+
+
+```
+
+
 ```{r make_actual_gdp_df}
 
+>>>>>>> 2dd13ab564df8e5f593406d2df541290e3c749a5
 actual_gdp_df = df %>% 
   select(Date, GDP) %>% 
   filter(complete.cases(.)) %>% 
