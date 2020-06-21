@@ -405,15 +405,11 @@ events_plot = events_plot +
   geom_text(data = events,mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
                                           label = Event), color = "blue")
 
-
-
 ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
                             "Desktop",fsep="\\"),
                   "\\events_plot.png"),
          plot =events_plot,
        device = "png",width = 5,height = 4.5,
        units = "in",dpi = 300)
-
-
 ```
 
