@@ -57,13 +57,12 @@ my_lab = function(string){
   
 }
 
-
 dom_macro_plot = ggplot(coeff_df %>% 
          filter(Partition == "Dom_Macro") %>% 
          filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
   geom_col(width = 0.5) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "", y = "", title = "Domestic Macro coefficients") + 
+  labs(x = "Quantile", y = "", title = "Domestic Macro coefficients") + 
   facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab)) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
@@ -74,7 +73,7 @@ fin_cycle_plot = ggplot(coeff_df %>%
          filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
   geom_col(width = 0.5) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "", y = "", title = "Financial cycle coefficients") + 
+  labs(x = "Quantile", y = "", title = "Financial cycle coefficients") + 
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab)) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
@@ -98,6 +97,10 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 pca_list = results$pca
 
+plot_names_list = list("Macro","Global","Fin. Conditions","Fin.Cycle")
+
+names(plot_names_list) = names(pca_list)
+
 pca_plots = lapply(names(pca_list), function(name){
   
   pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
@@ -106,7 +109,7 @@ pca_plots = lapply(names(pca_list), function(name){
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = paste0(name, " (" ,pca_var, "%)")) +
+  labs(x = "", y = "", title = paste0(plot_names_list[[name]], " (" ,pca_var, "%)")) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, size = 40),
@@ -125,6 +128,60 @@ save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
                                    "Desktop",fsep="\\"),
                          "\\pca_loadings.png"),
           plot = panel_plot, nrow = 4,ncol = 2,base_height = 4,base_width = 8)
+
+
+```
+
+
+```{r risk_assymetry}
+
+dist_quantile_df = lapply(names(results$qreg_result),
+                   function(temp_name){
+                     
+                     date_vec = results$reg_df$Date
+                     
+                     date_vec = date_vec[1:(length(date_vec) - 
+                                              as.numeric(temp_name))]
+                     
+                     temp_df = results$qreg_result[[
+                       temp_name]]$fitted.values %>% 
+                       as.data.frame() %>% 
+                       setNames(unlist(parameters_list$quantile_vec)) %>% 
+                       mutate(Date = date_vec) %>% 
+                       mutate(OLS = results$ols_reg[[temp_name]]$fitted.values) %>% 
+                       gather(key = Quantile,value = GaR,-Date) %>% 
+                       mutate(Horizon = temp_name)
+                   
+                       return(temp_df)
+                     
+                   }) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  spread(key = Quantile,value = GaR) %>% 
+  rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
+            .funs = list(~paste0("Q_",.))) %>% 
+  group_by(Horizon) %>% 
+  mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
+           (0.5 * Q_0.75 - 0.5 * Q_0.25))
+
+
+
+risk_assymetry_plot = ggplot(dist_quantile_df, aes(x = Date, y = Skew)) + 
+  geom_line() + 
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
+  labs(x = "", y = "", title = "Risk asymmetry") + 
+  facet_wrap(~Horizon, scales = "free", ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   "Desktop",fsep="\\"),
+                         "\\risk_assymetry.png"),
+       plot = risk_assymetry_plot,
+       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
+
 
 
 ```
@@ -291,6 +348,72 @@ ggsave(filename =
          plot = good_fit_plot,
        device = "png",width = 5,height = 4.5,
        units = "in",dpi = 300)
+
+```
+
+
+```{r summary_stat}
+
+summary_table = stargazer(df %>% 
+                select(-Date) %>% 
+                select(names(df)[names(df) %in% unlist(current_partition)]),
+              summary = TRUE, header = FALSE,type = "text")
+
+
+write.csv(summary_table, paste0(file.path(Sys.getenv("USERPROFILE"),
+                            "Desktop",fsep="\\"),
+                  "\\summary_table.csv"))
+
+```
+
+
+```{r events_plot}
+
+recessions = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+                         "\\OneDrive - Bank Of Israel\\",
+                         "Data\\BoI\\GaR_Data","\\recessions.csv")) %>% 
+  mutate(across(c(Start, End), ~as.yearqtr(.)))
+
+events = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+                         "\\OneDrive - Bank Of Israel\\",
+                         "Data\\BoI\\GaR_Data","\\events.csv")) %>% 
+  mutate(across(c(Start, End), ~as.yearqtr(.)))
+
+gar_df =  data.frame(Date = results$reg_df$Date,
+                     GaR = predict(results$qreg_result$`1`,
+                                   newdata = results$reg_df)[,1])
+
+
+events_plot = ggplot() + 
+  ylim(c(-0.08,0.08)) + 
+  geom_point(data = gar_df, mapping = aes(x = Date, y = GaR)) + 
+  geom_line(data = gar_df, mapping = aes(x = Date, y = GaR)) + 
+  geom_rect(data = recessions,mapping = aes(xmin = Start, xmax = End,
+                                            ymin = -Inf, ymax = Inf),
+            fill = "lightblue", alpha = 0.5) +
+  theme_bw()
+
+events_plot = events_plot + 
+  geom_point(data = gar_df %>% 
+             filter(Date %in% events$Start),
+           mapping = aes(x = Date, y = GaR), color = "blue") + 
+  geom_segment(data = gar_df %>% 
+                 filter(Date %in% events$Start) %>% 
+                 slice(1:2),
+             mapping = aes(x = Date, y = c(0.0745,0.0745), xend = Date, yend = GaR),
+             arrow = arrow(length = unit(0.1,"cm")), color = "blue") + 
+  geom_text(data = events,mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
+                                          label = Event), color = "blue")
+
+
+
+ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
+                            "Desktop",fsep="\\"),
+                  "\\events_plot.png"),
+         plot =events_plot,
+       device = "png",width = 5,height = 4.5,
+       units = "in",dpi = 300)
+
 
 ```
 
