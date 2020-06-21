@@ -28,10 +28,8 @@ dist_quantile_df = lapply(names(results$qreg_result),
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
             .funs = list(~paste0("Q_",.))) %>% 
   group_by(Horizon) %>% 
-  mutate(IQR = Q_0.95 - Q_0.05) %>% 
-  mutate(Up_dist = Q_0.95-Q_0.5) %>% 
-  mutate(Down_dist = Q_0.5-Q_0.05) %>% 
-  mutate(RA = Up_dist - Down_dist)
+  mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
+           (0.5 * Q_0.75 - 0.5 * Q_0.25))
 
 
 factor_quantiles_df = lapply(names(results$qreg_result),
@@ -139,7 +137,7 @@ percentile from the median.
 
 ```{r plot_risk_assymetry, fig.height=8}
 
-ggplot(dist_quantile_df, aes(x = Date, y = RA)) + 
+ggplot(dist_quantile_df, aes(x = Date, y = Skew)) + 
   geom_line() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
   labs(x = "", y = "", title = "Risk asymmetry") + 
