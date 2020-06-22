@@ -182,7 +182,8 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 
     temp_summary_list = summary(quantile_reg[[temp_name]])
 
-    coeff_data = lapply(temp_summary_list, function(temp_summary){
+    coeff_data = lapply(temp_summary_list,
+                        function(temp_summary){
 
       temp_df = data.frame(Tau = as.character(temp_summary$tau),
                            temp_summary$coefficients[-1,])
@@ -209,7 +210,8 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 
       temp_plot = ggplot(coeff_data %>%
                            filter(Horizon == temp_horizon),
-                         aes(x = Tau, y = Coefficients,fill = Significant)) +
+                         aes(x = Tau, y = Coefficients,
+                             fill = Significant)) +
         geom_bar(stat = "identity", width = 0.25) +
         geom_hline(yintercept = 0, linetype = "dashed") +
         scale_fill_manual(values = c("TRUE" = "lightblue",
@@ -250,8 +252,6 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
       }
 
   }
-
-
 
 
 }

@@ -1,4 +1,13 @@
 
+```{r set_params}
+
+plot_names_list = list("Macro","Global","Fin. Conditions",
+                       "Fin. Cycle")
+
+names(plot_names_list) = names(pca_list)
+
+```
+
 
 ```{r get_quantile_df_osnat}
 
@@ -34,7 +43,8 @@ write_csv(quantile_df_osnat, paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop
 
 ```{r charts_1_vs_5}
 
-coeff_df = lapply(names(results$qreg_result), function(temp_name){
+coeff_df = lapply(names(results$qreg_result),
+                  function(temp_name){
   
   temp_coeff_df = results$qreg_result[[temp_name]]$coefficients %>% 
     as.data.frame() %>% 
@@ -59,10 +69,12 @@ my_lab = function(string){
 
 dom_macro_plot = ggplot(coeff_df %>% 
          filter(Partition == "Dom_Macro") %>% 
-         filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
+         filter(Horizon %in% c(1,12)),
+         aes(x = Quantile, y= Coeff)) + 
   geom_col(width = 0.5) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "Quantile", y = "", title = "Domestic Macro coefficients") + 
+  labs(x = "Quantile", y = "",
+       title = "Macro coefficients") + 
   facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab)) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
@@ -73,7 +85,8 @@ fin_cycle_plot = ggplot(coeff_df %>%
          filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
   geom_col(width = 0.5) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "Quantile", y = "", title = "Financial cycle coefficients") + 
+  labs(x = "Quantile", y = "",
+       title = "Fin.Cycle coefficients") + 
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab)) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
@@ -82,12 +95,14 @@ rm(my_lab)
 
 ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
                                    "Desktop",fsep="\\"),
-                         "\\dom_macro_plot.png"), plot = dom_macro_plot,
+                         "\\dom_macro_plot.png"),
+       plot = dom_macro_plot,
        device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
 
 ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
                                    "Desktop",fsep="\\"),
-                         "\\fin_cycle_plot.png"), plot = fin_cycle_plot,
+                         "\\fin_cycle_plot.png"),
+       plot = fin_cycle_plot,
        device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
 
 ```
@@ -96,10 +111,6 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 ```{r plot_pca_loadings}
 
 pca_list = results$pca
-
-plot_names_list = list("Macro","Global","Fin. Conditions","Fin.Cycle")
-
-names(plot_names_list) = names(pca_list)
 
 pca_plots = lapply(names(pca_list), function(name){
   
@@ -127,7 +138,35 @@ panel_plot = plot_grid(plotlist = pca_plots)
 save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
                                    "Desktop",fsep="\\"),
                          "\\pca_loadings.png"),
-          plot = panel_plot, nrow = 4,ncol = 2,base_height = 4,base_width = 8)
+          plot = panel_plot, nrow = 4,ncol = 2,
+          base_height = 4,base_width = 8)
+
+
+```
+
+
+```{r plot_partiton_timeseries}
+
+
+pca_timeseries_plots = lapply(names(pca_list), function(name){
+  
+  ggplot(data.frame(x = pca_list[[name]]$date_index,
+                  y = pca_list[[name]]$pca$x[,1]), aes(x = x, y = y)) + 
+    geom_line() + 
+    labs(title = plot_names_list[name], x = "", y = "") + 
+    scale_x_yearqtr() + 
+    theme_bw() + 
+    theme(plot.title = element_text(hjust = 0.5, size = 40),
+          axis.text = element_text(size = 30))
+
+  })
+
+
+save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   "Desktop",fsep="\\"),
+                         "\\pca_timeseries.png"),
+          plot = plot_grid(plotlist = pca_timeseries_plots),
+          nrow = 4,ncol = 2,base_height = 4,base_width = 8)
 
 
 ```
@@ -167,14 +206,17 @@ dist_quantile_df = lapply(names(results$qreg_result),
 
 
 
-risk_assymetry_plot = ggplot(dist_quantile_df, aes(x = Date, y = Skew)) + 
+risk_assymetry_plot = ggplot(dist_quantile_df,
+                             aes(x = Date, y = Skew)) + 
   geom_line() + 
-  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
+             color = "blue") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
   labs(x = "", y = "", title = "Risk asymmetry") + 
   facet_wrap(~Horizon, scales = "free", ncol = 1) + 
   theme_bw() + 
-  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5))
 
 ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
                                    "Desktop",fsep="\\"),
@@ -265,8 +307,18 @@ gar_factors_df = lapply(
 
 names(gar_factors_df) = names(results$qreg_result)
 
-gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
+gar_factors_df = lapply(gar_factors_df,function(temp_df){
   
+  temp_df = temp_df %>% 
+    rename(Macro = Dom_Macro) %>% 
+    rename(`Fin. Cycle` = FinCycle) %>% 
+    rename(`Fin. Conditions` = Dom_FCI)
+  
+  return(temp_df)
+  
+})
+
+gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
   
   plot_df = gar_factors_df[[temp_name]] %>% 
   gather(key = Partition, value = GaR, -Date, -Horizon)
@@ -321,7 +373,8 @@ sapply(names(gar_factor_plot_list),
 
 temp = forecast_model_fit[c("gar_macro_r2","gar_staff_r2")] %>% 
   reduce(full_join,
-         by = c("Horizon","Quantile"), suffix = c("_macro","_staff")) %>% 
+         by = c("Horizon","Quantile"),
+         suffix = c("_macro","_staff")) %>% 
   rename_all(~str_remove_all(.,"_r2_score")) %>% 
   select(-gar_staff) %>% 
   rename_at(vars(gar_macro),.funs = ~"gar") %>% 
@@ -369,12 +422,14 @@ write.csv(summary_table, paste0(file.path(Sys.getenv("USERPROFILE"),
 
 ```{r events_plot}
 
-recessions = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+recessions = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),
+                                       fsep="\\"),
                          "\\OneDrive - Bank Of Israel\\",
                          "Data\\BoI\\GaR_Data","\\recessions.csv")) %>% 
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
-events = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+events = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),
+                                   fsep="\\"),
                          "\\OneDrive - Bank Of Israel\\",
                          "Data\\BoI\\GaR_Data","\\events.csv")) %>% 
   mutate(across(c(Start, End), ~as.yearqtr(.)))
@@ -396,14 +451,19 @@ events_plot = ggplot() +
 events_plot = events_plot + 
   geom_point(data = gar_df %>% 
              filter(Date %in% events$Start),
-           mapping = aes(x = Date, y = GaR), color = "blue") + 
+           mapping = aes(x = Date, y = GaR),
+           color = "blue") + 
   geom_segment(data = gar_df %>% 
                  filter(Date %in% events$Start) %>% 
                  slice(1:2),
-             mapping = aes(x = Date, y = c(0.0745,0.0745), xend = Date, yend = GaR),
-             arrow = arrow(length = unit(0.1,"cm")), color = "blue") + 
-  geom_text(data = events,mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
-                                          label = Event), color = "blue")
+             mapping = aes(x = Date, y = c(0.0745,0.0745),
+                           xend = Date, yend = GaR),
+             arrow = arrow(length = unit(0.1,"cm")),
+             color = "blue") + 
+  geom_text(data = events,
+            mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
+                                          label = Event),
+            color = "blue")
 
 ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
                             "Desktop",fsep="\\"),
@@ -411,5 +471,29 @@ ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
          plot =events_plot,
        device = "png",width = 5,height = 4.5,
        units = "in",dpi = 300)
+```
+
+
+```{r plot_quant_reg_panel}
+
+sapply(names(results$qreg_result), function(temp_name){
+  
+  panel_coef_plot = plot.qreg.coeffs(results$qreg_result[temp_name],
+                               print_plot = FALSE)
+  
+  panel_coef_plot = panel_coef_plot + facet_wrap(~Name,
+               labeller = labeller(Name = unlist(plot_names_list)))
+  
+  ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
+                            "Desktop",fsep="\\"),
+                  "\\quantile_plot_hor_",temp_name,".png"),
+         plot = panel_coef_plot,
+       device = "png",width = 5,height = 4.5,
+       units = "in",dpi = 300)
+  
+  
+  
+})
+
 ```
 
