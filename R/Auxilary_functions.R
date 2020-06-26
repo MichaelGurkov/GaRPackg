@@ -21,7 +21,7 @@
 #' @param quantile_vec vector of required quantiles in quantile regression
 #' (corresponds to tau argument in rq)
 #'
-#'
+#' @export
 run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                             quantile_vec,method = "inner_join_PCA",
                             run_ols_reg = TRUE, rq_method = "br",

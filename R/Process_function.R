@@ -21,7 +21,8 @@
 #'  (x component of the PCA object list). The loadings are left unchaged.
 
 
-align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
+align.pca = function(pca_obj, var_name,
+                     positive_direction = TRUE){
 
 
   if(length(var_name) > 1){
@@ -242,7 +243,7 @@ identify.endpoints.NA = function(data_vec){
 #'
 #' @import zoo
 #'
-#' @export
+#'
 #'
 interpolate = function(data_vec, direction = "forward"){
 
