@@ -22,9 +22,14 @@
 #' (corresponds to tau argument in rq)
 #'
 #' @export
-run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
-                            quantile_vec,method = "inner_join_PCA",
-                            run_ols_reg = TRUE, rq_method = "br",
+run.GaR.analysis = function(outcome_variable_name = NULL,
+                            partitions_list,
+                            vars_df,
+                            horizon_list,
+                            quantile_vec,
+                            method = "inner_join_PCA",
+                            run_ols_reg = FALSE,
+                            rq_method = "br",
                             pca.align.list = NULL){
 
   if(!is.null(partitions_list)){
@@ -85,38 +90,41 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
     reduce(inner_join, by = "Date") %>%
     arrange(Date)%>%
     inner_join(vars_df %>%
-                 select(Date, GDP), by = "Date")
+                 select(Date, all_of(outcome_variable_name)), by = "Date")
 
   } else {
 
     reg_df =  vars_df %>%
-      select(Date, GDP)
+      select(Date, all_of(outcome_variable_name))
 
 
   }
 
-  for(temp_horizon in unlist(horizon_list)){
+  # Add outcome variable leads
 
-    temp_var = paste("GDP_growth",temp_horizon,sep = "_")
-
-    reg_df = reg_df %>%
-      mutate(!!sym(temp_var) := lead(GDP,temp_horizon))
-
-  }
-
+  reg_df = add.feature.leads(
+    feature_name = outcome_variable_name,
+    df = reg_df,
+    lead_vec = unlist(horizon_list)
+    )
 
   # Run quantile regression
 
   qreg_result = lapply(horizon_list, function(temp_horizon){
 
-    dep_var = paste0("GDP_growth_", temp_horizon)
+    temp_dep_var = paste(outcome_variable_name,"lead",temp_horizon, sep = "_")
 
-    qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
-                   tau = quantile_vec,
-                   data = reg_df %>%
-                     select(-Date) %>%
-                     select(names(.)[!grepl("GDP",names(.))], all_of(dep_var)),
-                   method = rq_method)
+    temp_reg_df = reg_df %>%
+      select(-Date) %>%
+      select(-all_of(contains(paste0(outcome_variable_name,"_lead"))),
+             all_of(temp_dep_var))
+
+    qreg_list = rq(
+      formula = formula(paste0(temp_dep_var,"~.")),
+      tau = quantile_vec,
+      data = temp_reg_df,
+      method = rq_method
+      )
 
     return(qreg_list)
 
@@ -132,12 +140,17 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
     ols_result = lapply(horizon_list, function(temp_horizon){
 
-      dep_var = paste0("GDP_growth_", temp_horizon)
+      temp_dep_var = paste(outcome_variable_name,"lead",temp_horizon, sep = "_")
 
-      ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
-                     data = reg_df %>%
-                       select(-Date) %>%
-                       select(names(.)[!grepl("GDP",names(.))], all_of(dep_var)))
+      temp_reg_df = reg_df %>%
+        select(-Date) %>%
+        select(-all_of(contains(paste0(outcome_variable_name,"_lead"))),
+               all_of(temp_dep_var))
+
+      ols_reg = lm(
+        formula = formula(paste0(temp_dep_var,"~.")),
+        data =temp_reg_df
+        )
 
       return(ols_reg)
 
@@ -727,3 +740,25 @@ quantile.r2.score = function(realized_estimates, forecast_values,
 
 }
 
+
+#' @title Add lead features
+#'
+#' @description This is an auxilary function that adds lead values of given feature
+
+add.feature.leads = function(feature_name, df, lead_vec){
+
+  for(lead_val in lead_vec){
+
+    temp_var = paste(feature_name,"lead",lead_val,sep = "_")
+
+    df = df %>%
+      mutate(!!sym(temp_var) := lead(!!sym(feature_name),lead_val))
+
+  }
+
+
+  return(df)
+
+
+
+}
