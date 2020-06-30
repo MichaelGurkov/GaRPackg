@@ -11,8 +11,21 @@ import.from.fame.template = function(template_path){
 
   fame_df = read.csv(template_path,stringsAsFactors = FALSE) %>%
     slice(-(1:10)) %>%
-    rename(Date = 1) %>%
-    mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y"))
+    rename(Date = 1)
+
+  if(!is.na(as.yearqtr(fame_df$Date[1], format = "%d/%m/%Y"))){
+
+    fame_df = fame_df %>%
+      mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y"))
+
+  }
+  else if(!is.na(as.yearqtr(fame_df$Date[1], format = "%m/%d/%Y"))){
+
+    fame_df = fame_df %>%
+      mutate(Date = as.yearqtr(Date, format = "%m/%d/%Y"))
+
+  }
+
 
   # Substitute empty strings with NA
 
