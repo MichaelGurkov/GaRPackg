@@ -1,6 +1,8 @@
 
 ```{r set_params}
 
+pca_list = results$pca
+
 plot_names_list = list("Macro","Global","Fin. Conditions",
                        "Fin. Cycle")
 
@@ -109,8 +111,6 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 
 ```{r plot_pca_loadings}
-
-pca_list = results$pca
 
 pca_plots = lapply(names(pca_list), function(name){
   
@@ -479,7 +479,7 @@ ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
 sapply(names(results$qreg_result), function(temp_name){
   
   panel_coef_plot = plot.qreg.coeffs(results$qreg_result[temp_name],
-                               print_plot = FALSE)
+                               print_plot = FALSE,add.significance = TRUE)
   
   panel_coef_plot = panel_coef_plot + facet_wrap(~Name,
                labeller = labeller(Name = unlist(plot_names_list)))
