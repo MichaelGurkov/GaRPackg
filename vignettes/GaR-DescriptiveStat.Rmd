@@ -1,4 +1,22 @@
 
+
+```{r correlations, eval=FALSE}
+
+cor_mat = df %>% 
+  select(-starts_with("staff")) %>% 
+  select(-starts_with("dsge")) %>% 
+  select(-Date) %>% 
+  select(-Interbank_spread,-ILS_USD_spread_pct) %>% 
+  filter(complete.cases(.)) %>% 
+  cor()
+
+
+corrplot(cor_mat,order = "hclust",addrect = 5)
+
+```
+
+
+
 ```{r descriptive_plots}
 
 

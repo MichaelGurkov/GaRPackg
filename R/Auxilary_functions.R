@@ -27,73 +27,11 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
                             run_ols_reg = TRUE, rq_method = "br",
                             pca.align.list = NULL){
 
-  if(!is.null(partitions_list)){
-
-  # Make and align PCA
-
-  pca_obj = lapply(names(partitions_list)[sapply(partitions_list,length) > 1],
-         function(temp_name){
-
-           temp_part = partitions_list[[temp_name]]
-
-           available_names = names(vars_df)
-
-           part_df = vars_df %>%
-             select(unlist(temp_part)[unlist(temp_part) %in% available_names],
-                    Date) %>%
-             filter_all(all_vars(is.finite(.)))
-
-           pca = part_df %>%
-             select(-Date) %>%
-             prcomp(.,center = TRUE,scale. = TRUE)
-
-           # Align PCA
-
-          if(temp_name %in% names(pca.align.list)){
-
-            pca = do.call("align.pca",c(list(pca_obj = pca),
-                                        pca.align.list[[temp_name]]))
-
-          } else {
-
-            pca = align.pca(pca,1)
-
-          }
+  temp = reduce_data_dimension(vars_df = df,
+                               partition = partitions_list,
+                               return_objects_list = TRUE)
 
 
-
-           ret_list = list(pca =  pca, date_index = part_df$Date)
-
-            return(ret_list)
-
-                           })
-
-  names(pca_obj) = names(partitions_list)[sapply(partitions_list,length) > 1]
-
-  # Make regression data frame
-
-  reg_df = lapply(names(pca_obj),function(temp_name){
-           temp_df = data.frame(Date = pca_obj[[temp_name]]$date_index,
-                                PCA = pca_obj[[temp_name]]$pca$x[,1],
-                                stringsAsFactors = FALSE)
-
-           names(temp_df) = c("Date",temp_name)
-
-           return(temp_df)
-
-         }) %>%
-    reduce(inner_join, by = "Date") %>%
-    arrange(Date)%>%
-    inner_join(vars_df %>%
-                 select(Date, GDP), by = "Date")
-
-  } else {
-
-    reg_df =  vars_df %>%
-      select(Date, GDP)
-
-
-  }
 
   for(temp_horizon in unlist(horizon_list)){
 

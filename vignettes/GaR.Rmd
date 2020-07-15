@@ -72,7 +72,6 @@ library(forcats)
 ```
 
 
-
 ```{r rename_vars, eval=FALSE}
 
 rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
@@ -117,7 +116,6 @@ current_partition = lapply(current_partition, function(temp_part){
 
 
 ```
-
 
 
 ```{r Analysis}

@@ -71,7 +71,7 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 }
 
 
-#' This function reduces dimension based on pca method
+#' This function reduces dimension based on PCA method
 #' The function takes a data matrix and returns the first n_comps
 #' components of PCA transformation. If the data matrix has a
 #' time index the result is aligned along the index
@@ -79,78 +79,53 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 #' @title PCA reduction
 #'
 #'
-#' @param data dataframe
+#' @param df dataframe
 #'
-#' @param has_time_index boolean indicator of time index of the data
+#' @param center boolean indicator
 #'
-#' @param n_comps (optional) number of PCA components to return
+#' @param scale boolean indicator
 #'
+#' @param sign_align_params (optional) a list of alignment parameters.
+#' The first element in the list is the aligning (axis) variable, the value is either
+#' character (variable's name) or numeric (variable's position index). The second element
+#' if(supplied) is boolean indicator alignment direction (True means positive direction).
 #'
-pca_reduction = function(data, has_time_index = TRUE,
-                         scale = TRUE, n_comps = 1,
+#' @return a list with two elements : pca_obj - PCA object, time_index - dates vector
+#'
+pca_reduction = function(df,center = TRUE,
+                         scale = TRUE,
                          sign_align_params = NULL){
 
-  if(has_time_index){
+  # Identify time index
 
-    date_varname = grep("^[Dd]ate$",names(data), value = TRUE)
+  time_index_var = str_subset(names(df), "[Dd]ate")
 
-    # Check for unique date variable
+  if(length(time_index_var) != 1){message("Could not identify time index")}
 
-    if(length(date_varname) < 1){
+  # Extract PCA
 
-      stop("Couldn't identify a time index variable")
+  df = df %>%
+    filter(complete.cases(.))
 
-    } else if(length(date_varname) > 1){
+  temp_pca = df %>%
+    select(-all_of(time_index_var)) %>%
+    prcomp(center = center,scale. = scale)
 
-      stop(paste0("Identified multiple possible time index variables :",
-                 paste0(date_varname, collapse = ",")))
 
-    }
-
-    time_index = data[,date_varname]
-
-    pca_df = data[,!names(data) == date_varname]
-
-    temp_pca = prcomp(pca_df, scale. = scale)
-
-  } else {
-
-    temp_pca = prcomp(data, scale. = scale)
-
-  }
-
-      # Align PCA, if length == 2 then the second parameter is the direction
-    # boolean indicator.
+  # Align PCA, if length == 2 then the second parameter is
+  # the direction (boolean indicator).
 
     if(!is.null(sign_align_params)){
-
-      temp_var_name = sign_align_params[[1]]
-
-      if(ncol(temp_var_name) == 2){
-
-        date_temp_var_name = grep("^[Dd]ate$",names(temp_var_name),
-                                  value = TRUE)
-
-        temp_var_name = temp_var_name %>%
-          filter(!!sym(date_temp_var_name) %in% time_index) %>%
-          select(-date_temp_var_name) %>%
-          unlist()
-
-
-
-      }
 
       if(length(sign_align_params) == 2){
 
         temp_pca = align.pca(pca_obj = temp_pca,
-                             var_name = temp_var_name,
+                             var_name = sign_align_params[[1]],
                              positive_direction = sign_align_params[[2]])
       } else {
 
-        temp_pca = align.pca(pca_obj = temp_pca,
+        temp_pca = align.pca(pca_obj = sign_align_params[[1]],
                              var_name = temp_var_name)
-
-
 
       }
 
@@ -159,22 +134,113 @@ pca_reduction = function(data, has_time_index = TRUE,
     }
 
 
-    if(has_time_index){
+    return(list(pca_obj = temp_pca, time_index = df[,time_index_var]))
 
-      temp_df = data.frame(Date = as.Date(time_index),
-                           PCA = temp_pca$x[,1:n_comps])
+  }
+
+
+#' This function preprocess data by reducing dimension and returns regression dataset
+#'
+#' @title Data dimesion reduction
+#'
+#' @param vars_df a dataframe with all variables
+#'
+#' @param partition a list of partitions for dimension reduction
+#'
+#' @param n_components number of components that should be returned
+#'
+#' @param method (optional) string that specifies dimesion reduction method
+#' (default is PCA)
+#'
+#' @param pca_align_list (optional) a list with alignment parameters. For each partition
+#'  the aligning (axis) variable is specified together with aligning direction (optional).
+#'
+#' @param return_objects_list boolean indicator that specifies whether a list
+#' with object containing information (such as loadings) should be returned
+
+reduce_data_dimension = function(vars_df,partition,
+                                 n_components = 1,
+                                 pca_align_list = NULL,
+                                 method = "pca",
+                                 return_objects_list = FALSE){
+
+  # Make and align PCA
+
+  reduction_objects_list = map(names(partition)[sapply(partition,length) > 1],
+                   function(temp_name){
+
+                     temp_part = partition[[temp_name]]
+
+                     temp_df = vars_df %>%
+                       select(any_of(c(unlist(temp_part),"Date")))
+
+                     # Set alignment params
+
+                     if(temp_name %in% names(pca_align_list)){
+
+                       temp_sign_align_params = pca_align_list[[temp_name]]
+
+                     } else {
+
+                       temp_sign_align_params = NULL
+
+
+                     }
+
+                     temp_pca = pca_reduction(
+                       df = temp_df,
+                       sign_align_params = temp_sign_align_params)
+
+                     return(temp_pca)
+
+                     })
+
+  names(reduction_objects_list) = names(partition)
+
+
+  xreg_df = map(names(reduction_objects_list),
+                function(temp_name){
+
+    date_vec = reduction_objects_list[[temp_name]]$time_index
+
+    data_df = reduction_objects_list[[temp_name]]$pca_obj$x[,1:n_components]
+
+    temp_df = cbind.data.frame(date_vec, data_df)
+
+    if(n_components > 1){
+
+      names(temp_df) = c("date", paste(rep(temp_name, n_components),
+                                       seq(1,n_components), sep = "_"))
 
     } else {
 
 
-      temp_df = data.frame(PCA = temp_pca$x[,1:n_comps])
+      names(temp_df) = c("date", temp_name)
 
-      }
+    }
+
 
     return(temp_df)
 
+  }) %>%
+    reduce(full_join, by = "date")
+
+
+  if(return_objects_list){
+
+    return(list(objects_list = reduction_objects_list, xreg_df = xreg_df))
+
+  } else {
+
+    return(xreg_df)
 
   }
+
+
+
+
+}
+
 
 
 #' This function identifies consequitive NA sequences
