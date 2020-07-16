@@ -61,13 +61,26 @@ forecast_data_list$gar_forecast = get.gar.forecast(
 
 ```{r Intercept_forecast}
 
+# intercept_model = run.GaR.analysis(partitions_list = NULL,
+#                    vars_df = df,
+#                    horizon_list = parameters_list$horizon_list,
+#                    quantile_vec = parameters_list$quantile_vec,
+#                    pca.align.list = list(Dom_FCI = list(
+#                      var_name = "Spread_CPI_corp",
+#                      positive_direction = FALSE)))
+
 intercept_model = run.GaR.analysis(partitions_list = NULL,
                    vars_df = df,
+                   target_var_name = "GDP",
                    horizon_list = parameters_list$horizon_list,
                    quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(Dom_FCI = list(
-                     var_name = "Spread_CPI_corp",
-                     positive_direction = FALSE)))
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "GDP"),
+                     Global = list(var_name = "rate_euro"),
+                     FinCycle = list(var_name = "Credit")))
 
 
 forecast_data_list$intercept_forecast = get.gar.forecast(
@@ -158,12 +171,27 @@ rm(staff_forecast_df_h8, staff_forecast_df_h1,
 
 ```{r, macro_forecast}
 
-macro_gar_model = run.GaR.analysis(
-  partitions_list = partitions_list$macro,
-  vars_df = df,
-  horizon_list = parameters_list$horizon_list,
-  quantile_vec = parameters_list$quantile_vec,
-  run_ols_reg = FALSE)
+# macro_gar_model = run.GaR.analysis(
+#   partitions_list = partitions_list$macro,
+#   vars_df = df,
+#   horizon_list = parameters_list$horizon_list,
+#   quantile_vec = parameters_list$quantile_vec,
+#   run_ols_reg = FALSE)
+
+
+macro_gar_model = run.GaR.analysis(partitions_list = partitions_list$macro,
+                   vars_df = df,
+                   target_var_name = "GDP",
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "GDP"),
+                     Global = list(var_name = "rate_euro"),
+                     FinCycle = list(var_name = "Credit")))
+
 
 forecast_data_list$macro_gar_forecast = get.gar.forecast(
     gar_obj = macro_gar_model,

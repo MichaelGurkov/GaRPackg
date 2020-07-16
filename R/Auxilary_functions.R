@@ -32,24 +32,43 @@ run.GaR.analysis = function(partitions_list, vars_df,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 
+  if(!is.null(partitions_list)){
 
-  # Preprocess
+    # Preprocess
 
-  preproc_df_list = reduce_data_dimension(vars_df = df,
-                               pca_align_list = pca.align.list,
-                               partition = partitions_list,
-                               return_objects_list = return_objects_list)
+    preproc_df_list = reduce_data_dimension(vars_df = df,
+                                            pca_align_list = pca.align.list,
+                                            partition = partitions_list,
+                                            return_objects_list = return_objects_list)
 
 
-  # Add lead values of target var
+    # Add lead values of target var
 
-  reg_df = vars_df %>%
-    select(Date, all_of(target_var_name)) %>%
-    inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
-    filter(complete.cases(.)) %>%
-    add_leads_to_target_var(target_var_name = target_var_name,
-                            leads_vector = unlist(horizon_list))
+    reg_df = vars_df %>%
+      select(Date, all_of(target_var_name)) %>%
+      inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
 
+
+
+
+  }
+
+
+  if(is.null(partitions_list)){
+
+    return_objects_list = FALSE
+
+    reg_df = vars_df %>%
+      select(Date, all_of(target_var_name)) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+
+  }
 
   # Run quantile regression
 
