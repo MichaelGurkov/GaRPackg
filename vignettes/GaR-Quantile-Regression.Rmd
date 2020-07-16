@@ -1,20 +1,4 @@
 
-```{r plot_quantreq_rho, fig.height=8, eval=FALSE}
-
-rho_data = lapply(qregs_results, function(temp_qreg){temp_qreg$rho}) %>% 
-  bind_rows() %>% 
-  mutate(Quantile = as.character(quantile_vec)) %>% 
-  gather(key = Horizon,value = Rho, -Quantile)
-
-ggplot(data = rho_data, aes(x = Quantile, y = Rho)) + 
-  geom_bar(stat = "identity") + 
-  labs(title = "Distribution of rho by quantiles and horizon") + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5)) + 
-  facet_wrap(~Horizon)
-
-```
-
 
 ```{r plot_quant_reg_long_series_1, fig.height=8}
 
