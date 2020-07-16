@@ -124,11 +124,16 @@ current_partition = partitions_list$basic_no_global_inf
 
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
+                   target_var_name = "GDP",
                    horizon_list = parameters_list$horizon_list,
                    quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(Dom_FCI = list(
-                     var_name = "Spread_CPI_corp",
-                     positive_direction = FALSE)))
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "GDP"),
+                     Global = list(var_name = "Ind_Prod_us"),
+                     FinCycle = list(var_name = "Credit")))
 
 
 ```
@@ -166,27 +171,27 @@ nowcast_results = run.GaR.analysis(
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd"}
+```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd"}
+```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
 
 ```
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 

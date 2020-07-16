@@ -22,38 +22,46 @@
 #' (corresponds to tau argument in rq)
 #'
 #'
-run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
-                            quantile_vec,method = "inner_join_PCA",
-                            run_ols_reg = TRUE, rq_method = "br",
-                            pca.align.list = NULL){
+run.GaR.analysis = function(partitions_list, vars_df,
+                            target_var_name,
+                            horizon_list,
+                            quantile_vec,
+                            method = "inner_join_PCA",
+                            run_ols_reg = FALSE,
+                            rq_method = "br",
+                            pca.align.list = NULL,
+                            return_objects_list = TRUE){
 
-  temp = reduce_data_dimension(vars_df = df,
+
+  # Preprocess
+
+  preproc_df_list = reduce_data_dimension(vars_df = df,
+                               pca_align_list = pca.align.list,
                                partition = partitions_list,
-                               return_objects_list = TRUE)
+                               return_objects_list = return_objects_list)
 
 
+  # Add lead values of target var
 
-  for(temp_horizon in unlist(horizon_list)){
-
-    temp_var = paste("GDP_growth",temp_horizon,sep = "_")
-
-    reg_df = reg_df %>%
-      mutate(!!sym(temp_var) := lead(GDP,temp_horizon))
-
-  }
+  reg_df = vars_df %>%
+    select(Date, all_of(target_var_name)) %>%
+    inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
+    filter(complete.cases(.)) %>%
+    add_leads_to_target_var(target_var_name = target_var_name,
+                            leads_vector = unlist(horizon_list))
 
 
   # Run quantile regression
 
   qreg_result = lapply(horizon_list, function(temp_horizon){
 
-    dep_var = paste0("GDP_growth_", temp_horizon)
+    dep_var = paste(target_var_name, temp_horizon, sep = "_")
 
     qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
                    tau = quantile_vec,
                    data = reg_df %>%
                      select(-Date) %>%
-                     select(names(.)[!grepl("GDP",names(.))], all_of(dep_var)),
+                     select(-contains(target_var_name), all_of(dep_var)),
                    method = rq_method)
 
     return(qreg_list)
@@ -70,12 +78,10 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
     ols_result = lapply(horizon_list, function(temp_horizon){
 
-      dep_var = paste0("GDP_growth_", temp_horizon)
-
       ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
                      data = reg_df %>%
-                       select(-Date) %>%
-                       select(names(.)[!grepl("GDP",names(.))], all_of(dep_var)))
+                     select(-Date) %>%
+                     select(-contains(target_var_name), all_of(dep_var)))
 
       return(ols_reg)
 
@@ -94,12 +100,13 @@ run.GaR.analysis = function(partitions_list, vars_df,horizon_list,
 
   return_list = list()
 
-  for(obj in c("pca_obj","reg_df","qreg_result","ols_result")){
+  return_list$reg_df = reg_df
 
-    if(obj %in% ls()){return_list[[obj]] = get(obj)}
+  return_list$qreg_result = qreg_result
 
-  }
+  if(return_objects_list){return_list$pca_obj = preproc_df_list$objects_list}
 
+  if(run_ols_reg){return_list$ols_result = preproc_df_list$ols_result}
 
   return(return_list)
 

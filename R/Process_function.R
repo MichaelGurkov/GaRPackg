@@ -124,8 +124,8 @@ pca_reduction = function(df,center = TRUE,
                              positive_direction = sign_align_params[[2]])
       } else {
 
-        temp_pca = align.pca(pca_obj = sign_align_params[[1]],
-                             var_name = temp_var_name)
+        temp_pca = align.pca(pca_obj = temp_pca,
+                             var_name = sign_align_params[[1]])
 
       }
 
@@ -632,3 +632,32 @@ fill.na.average = function(data_vec, k = 4){
 
 }
 
+
+
+#' This helper function adds leads of target variable
+#'
+#' @param df
+#'
+#' @param target_var_name
+#'
+#' @param  leads_vector
+#'
+add_leads_to_target_var = function(df, target_var_name,leads_vector){
+
+
+  for(temp_lead in unlist(leads_vector)){
+
+    target_var_name_lead = paste(target_var_name,temp_lead,sep = "_")
+
+    df = df %>%
+      mutate(!!sym(target_var_name_lead) := lead(!!sym(target_var_name),temp_lead))
+
+  }
+
+
+  return(df)
+
+
+
+
+}
