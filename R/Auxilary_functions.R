@@ -313,7 +313,7 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
   forecast_out_of_sample = lapply(parameters_list$horizon_list,
                                       function(temp_horizon){
 
-                                        temp_var = paste("GDP_growth",temp_horizon,sep = "_")
+                                        temp_var = paste("GDP",temp_horizon,sep = "_")
 
                                         temp_roll = rolling.qreq(reg_df = gar_obj$reg_df  %>%
                                                                    select(names(.)[!grepl("GDP",names(.))],

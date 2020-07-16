@@ -132,7 +132,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
                        var_name = "Spread_CPI_corp",
                        positive_direction = FALSE),
                      Dom_Macro = list(var_name = "GDP"),
-                     Global = list(var_name = "Ind_Prod_us"),
+                     Global = list(var_name = "rate_euro"),
                      FinCycle = list(var_name = "Credit")))
 
 
