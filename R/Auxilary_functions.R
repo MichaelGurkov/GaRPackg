@@ -14,13 +14,25 @@
 #'
 #' @param vars_df data frame with input variables
 #'
-#' @param method string a method that aggregates the data to partitions
+#' @param target_var_name string that specifies outcome feature
 #'
 #' @param horizon_list list of forecast horizon
 #'
 #' @param quantile_vec vector of required quantiles in quantile regression
 #' (corresponds to tau argument in rq)
 #'
+#' @param method string a method that aggregates the data to partitions
+#'
+#' @param run_ols_reg boolean indicator that adds an OLS regression
+#'
+#' @param rq_method string that set the optimization mode of quantile regression.
+#' Default is "br"
+#'
+#' @param pca.align.list A list that specifies the PCA aligning variable for
+#' each partition and alignment direction (default is positive direction).
+#'
+#' @param return_objects_list boolean indicator that returns PCA objects.
+#' Default is TRUE
 #'
 run.GaR.analysis = function(partitions_list, vars_df,
                             target_var_name,
@@ -32,43 +44,17 @@ run.GaR.analysis = function(partitions_list, vars_df,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 
-  if(!is.null(partitions_list)){
 
-    # Preprocess
-
-    preproc_df_list = reduce_data_dimension(vars_df = df,
-                                            pca_align_list = pca.align.list,
-                                            partition = partitions_list,
-                                            return_objects_list = return_objects_list)
-
-
-    # Add lead values of target var
-
-    reg_df = vars_df %>%
-      select(Date, all_of(target_var_name)) %>%
-      inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
-      filter(complete.cases(.)) %>%
-      add_leads_to_target_var(target_var_name = target_var_name,
-                              leads_vector = unlist(horizon_list))
-
-
-
-
-  }
-
-
-  if(is.null(partitions_list)){
-
-    return_objects_list = FALSE
-
-    reg_df = vars_df %>%
-      select(Date, all_of(target_var_name)) %>%
-      filter(complete.cases(.)) %>%
-      add_leads_to_target_var(target_var_name = target_var_name,
-                              leads_vector = unlist(horizon_list))
-
-
-  }
+  reg_df_list = make.quant.reg.df(
+    partitions_list = partitions_list,
+    vars_df = vars_df,
+    target_var_name = target_var_name,
+    horizon_list = horizon_list,
+    quantile_vec = quantile_vec,
+    pca.align.list = pca.align.list,
+    method = method,
+    return_objects_list = return_objects_list
+    )
 
   # Run quantile regression
 
@@ -78,7 +64,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
     qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
                    tau = quantile_vec,
-                   data = reg_df %>%
+                   data = reg_df_list$reg_df %>%
                      select(-Date) %>%
                      select(-contains(target_var_name), all_of(dep_var)),
                    method = rq_method)
@@ -98,7 +84,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
     ols_result = lapply(horizon_list, function(temp_horizon){
 
       ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
-                     data = reg_df %>%
+                     data = reg_df_list$reg_df %>%
                      select(-Date) %>%
                      select(-contains(target_var_name), all_of(dep_var)))
 
@@ -109,9 +95,6 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
     names(ols_result) = horizon_list
 
-
-
-
   }
 
 
@@ -119,11 +102,12 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
   return_list = list()
 
-  return_list$reg_df = reg_df
+  return_list$reg_df = reg_df_list$reg_df
 
   return_list$qreg_result = qreg_result
 
-  if(return_objects_list){return_list$pca_obj = preproc_df_list$objects_list}
+  if(length(reg_df_list) == 2){
+    return_list$pca_obj = reg_df_list$pca_obj}
 
   if(run_ols_reg){return_list$ols_result = preproc_df_list$ols_result}
 
@@ -299,72 +283,28 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 #' An out of sample forecast is calculated by rolling regression (determined by \code{win_len}) that forecast
 #' ahead according to \code{out_of_sample_step}
 #'
+#' @import rsample
+#'
 get.gar.forecast = function(gar_obj, win_len, quantile_vec,
                             out_of_sample_step = 1,
                             win_type = "fixed"){
 
-  # Calculate in sample forecast
+  reg_df = gar_obj$reg_df
 
-  forecast_in_sample = lapply(names(gar_obj$qreg_result),
-                              function(temp_name){
+  roll_cv_list = reg_df %>%
+    rolling_origin(initial = 30,assess = 1)
 
-                                    temp_reg = gar_obj$qreg_result[[temp_name]]
+  prediction_df = map(roll_cv_list$splits, function(temp_split){
 
-                                    col_names = gar_obj$qreg_result[[1]] %>%
-                                      coefficients() %>%
-                                      colnames() %>%
-                                      gsub(pattern = "tau= ",replacement = "")
+    analysis_set = analysis(temp_split)
 
-                                    temp_reg$fitted.values %>%
-                                      as.data.frame() %>%
-                                      setNames(col_names) %>%
-                                      mutate(Date = gar_obj$reg_df$Date[1:nrow(.)]) %>%
-                                      gather(key = Quantile,value = GaR_forecast, -Date) %>%
-                                      mutate(Horizon = temp_name)
+    assement_set = assessment(temp_split)
 
-                                  }) %>%
-    bind_rows() %>%
-    mutate(Date = as.yearqtr(Date)) %>%
-    mutate(Forecast_Status = "In Sample")
+    qreq_model_list = map(gar_obj$qreg_result)
 
-  # Calculate out of sample forecast
-
-  forecast_out_of_sample = lapply(parameters_list$horizon_list,
-                                      function(temp_horizon){
-
-                                        temp_var = paste("GDP",temp_horizon,sep = "_")
-
-                                        temp_roll = rolling.qreq(reg_df = gar_obj$reg_df  %>%
-                                                                   select(names(.)[!grepl("GDP",names(.))],
-                                                                          all_of(temp_var)),
-                                                                 win_len = win_len,
-                                                                 quantile_vec = quantile_vec,
-                                                                 mod_formula = paste0(temp_var," ~ ."),
-                                                                 out_of_sample_step = out_of_sample_step,
-                                                                 win_type = win_type)
-
-                                        temp_roll = temp_roll %>%
-                                          mutate(Horizon = as.character(temp_horizon))
-
-                                        temp_roll = temp_roll %>%
-                                          filter(complete.cases(.))
-
-                                        return(temp_roll)
-
-                                      }) %>%
-    bind_rows() %>%
-    mutate(Date = as.yearqtr(Date)) %>%
-    gather(key = Quantile, value = GaR_forecast, -Date, -Horizon) %>%
-    select(Date, Quantile, GaR_forecast, Horizon) %>%
-    mutate(Forecast_Status = "Out of Sample")
+  })
 
 
-  res_df = list(forecast_in_sample, forecast_out_of_sample) %>%
-    bind_rows() %>%
-    mutate(Date = as.yearqtr(Date))
-
-
-  return(res_df)
 
 
 }

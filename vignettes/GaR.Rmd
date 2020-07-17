@@ -191,7 +191,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 

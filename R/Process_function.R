@@ -524,31 +524,75 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #'@importFrom stats complete.cases
 #'
-#'@param partitions_df data frame with explanatory variables
+#' @param partititions_list list of partitons
 #'
-#'@param dep_var_df data frame with time indexed depended variable
+#' @param vars_df data frame with input variables
 #'
-#'@param horizon forecasting horizon
+#' @param target_var_name string that specifies outcome feature
 #'
-#'@param transform_to_rate parameter that defines whether to transform
-#'the depended variable to growth rate
+#' @param horizon_list list of forecast horizon
+#'
+#' @param quantile_vec vector of required quantiles in quantile regression
+#' (corresponds to tau argument in rq)
+#'
+#' @param method string a method that aggregates the data to partitions
+#'
+#' @param return_objects_list boolean indicator that returns PCA objects.
 #'
 #'
-make.quant.reg.df = function(partitions_df, dep_var_df,
-                             horizon, transform_to_rate = TRUE){
+make.quant.reg.df = function(partitions_list, vars_df,
+                             target_var_name,
+                             horizon_list,
+                             quantile_vec,
+                             return_objects_list,
+                             pca.align.list = NULL,
+                             method = "inner_join_PCA"){
 
-  if(transform_to_rate){
+  if(!is.null(partitions_list)){
 
-    dep_var_df = calculate.CAGR(dep_var_df,
-                                horizon = horizon)
+    # Preprocess
+
+    preproc_df_list = reduce_data_dimension(vars_df = df,
+                                            pca_align_list = pca.align.list,
+                                            partition = partitions_list,
+                                            return_objects_list = return_objects_list)
+
+
+    # Add lead values of target var
+
+    reg_df = vars_df %>%
+      select(Date, all_of(target_var_name)) %>%
+      inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+
+
 
   }
 
-  reg_df = dep_var_df %>%
-    inner_join(partitions_df) %>%
-    filter(complete.cases(.))
 
-  return(reg_df)
+  if(is.null(partitions_list)){
+
+     reg_df = vars_df %>%
+      select(Date, all_of(target_var_name)) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+
+  }
+
+  return_list = list()
+
+  return_list$reg_df = reg_df
+
+  if(return_objects_list & (!is.null(partitions_list))){
+    return_list$pca_obj = preproc_df_list$objects_list}
+
+
+  return(return_list)
 
 }
 
