@@ -56,25 +56,16 @@ run.GaR.analysis = function(partitions_list, vars_df,
     return_objects_list = return_objects_list
     )
 
-  # Run quantile regression
-
-  qreg_result = lapply(horizon_list, function(temp_horizon){
-
-    dep_var = paste(target_var_name, temp_horizon, sep = "_")
-
-    qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
-                   tau = quantile_vec,
-                   data = reg_df_list$reg_df %>%
-                     select(-Date) %>%
-                     select(-contains(target_var_name), all_of(dep_var)),
-                   method = rq_method)
-
-    return(qreg_list)
 
 
-  })
+  qreg_result = run.quant.reg(
+    reg_df = reg_df_list$reg_df,
+    target_var_name = target_var_name,
+    quantile_vec = quantile_vec,
+    horizon_list = horizon_list,
+    rq_method = rq_method
+    )
 
-  names(qreg_result) = horizon_list
 
 
   # Run OLS regresion
@@ -289,18 +280,36 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
                             out_of_sample_step = 1,
                             win_type = "fixed"){
 
-  reg_df = gar_obj$reg_df
+  reg_df = make.quant.reg.df(
+    partitions_list = partitions_list,
+    vars_df = vars_df,
+    target_var_name = target_var_name,
+    horizon_list = horizon_list,
+    quantile_vec = quantile_vec,
+    pca.align.list = pca.align.list,
+    method = method,
+    return_objects_list = FALSE
+  )[[1]]
+
 
   roll_cv_list = reg_df %>%
     rolling_origin(initial = 30,assess = 1)
 
-  prediction_df = map(roll_cv_list$splits, function(temp_split){
+  prediction_list = map(roll_cv_list$splits, function(temp_split){
 
     analysis_set = analysis(temp_split)
 
     assement_set = assessment(temp_split)
 
-    qreq_model_list = map(gar_obj$qreg_result)
+    qreg_result = run.quant.reg(
+      reg_df = analysis_set,
+      target_var_name = target_var_name,
+      quantile_vec = quantile_vec,
+      horizon_list = horizon_list,
+      rq_method = rq_method
+    )
+
+
 
   })
 
@@ -631,3 +640,36 @@ quantile.r2.score = function(realized_estimates, forecast_values,
 
 }
 
+
+#' This function runs quantile regression
+#'
+#'
+run.quant.reg = function(reg_df,
+                         target_var_name,
+                         quantile_vec,
+                         horizon_list,
+                         rq_method){
+
+  qreg_result = map(horizon_list, function(temp_horizon){
+
+    dep_var = paste(target_var_name, temp_horizon, sep = "_")
+
+    qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
+                   tau = quantile_vec,
+                   data = reg_df %>%
+                     select(-Date) %>%
+                     select(-contains(target_var_name), all_of(dep_var)),
+                   method = rq_method)
+
+    return(qreg_list)
+
+
+  })
+
+  names(qreg_result) = horizon_list
+
+
+  return(qreg_result)
+
+
+}
