@@ -8,7 +8,7 @@ library(stargazer)
 
 ```{r set_forecast_parameters}
 
-forecast_parameters = list(win_len = 30, out_of_sample_step = 0)
+forecast_parameters = list(win_len = 30, out_of_sample_step = 1)
 
 forecast_comparisons = list()
 
@@ -37,71 +37,48 @@ forecast_data_list$actual_gdp_df = df %>%
 
 ```{r GaR_forecast}
 
-forecast_data_list$gar_forecast = get.gar.forecast(
-    gar_obj = results,
-    win_len = forecast_parameters$win_len,
-    quantile_vec = parameters_list$quantile_vec,
-    out_of_sample_step = forecast_parameters$out_of_sample_step,
-    win_type = "fixed") %>% 
+models_list = list(GaR_Forecast = current_partition,
+                   Intercept_Forecast = NULL,
+                   Macro_Forecast = partitions_list$macro)
+
+
+temp_gar_forecasts_list = map(names(models_list), function(temp_name){
+  
+  temp_res = get.gar.forecast(
+  partitions_list = models_list[[temp_name]],
+  vars_df = df,
+  target_var_name = "GDP",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  pca.align.list = list(
+    Dom_FCI = list(
+      var_name = "Spread_CPI_corp",
+      positive_direction = FALSE),
+    Dom_Macro = list(var_name = "GDP"),
+    Global = list(var_name = "rate_euro"),
+    FinCycle = list(var_name = "Credit")),
+  win_len = forecast_parameters$win_len,
+  out_of_sample_step = forecast_parameters$out_of_sample_step) %>% 
     filter(complete.cases(.)) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
   mutate(Forecast_Period = paste(
     Date + as.numeric(Horizon) * 0.25 - 1,
     Date + as.numeric(Horizon) * 0.25,
     sep = "-")) %>% 
-  mutate(Horizon = as_factor(Horizon)) %>% 
-  select(Date, Horizon, Quantile,Forecast_Status,
-         Forecast_Period,GaR_forecast)
+    mutate(Horizon = as_factor(Horizon)) %>% 
+    select(Date, Horizon, Quantile,Forecast_Period,Forecast) %>% 
+    rename(!!sym(temp_name) := Forecast)
+    
+  
+  return(temp_res)
+  
+  
+})
 
+names(temp_gar_forecasts_list) = names(models_list)
 
+forecast_data_list = c(forecast_data_list, temp_gar_forecasts_list)
 
-```
-
-
-```{r Intercept_forecast}
-
-# intercept_model = run.GaR.analysis(partitions_list = NULL,
-#                    vars_df = df,
-#                    horizon_list = parameters_list$horizon_list,
-#                    quantile_vec = parameters_list$quantile_vec,
-#                    pca.align.list = list(Dom_FCI = list(
-#                      var_name = "Spread_CPI_corp",
-#                      positive_direction = FALSE)))
-
-intercept_model = run.GaR.analysis(partitions_list = NULL,
-                   vars_df = df,
-                   target_var_name = "GDP",
-                   horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(
-                     Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
-                       positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit")))
-
-
-forecast_data_list$intercept_forecast = get.gar.forecast(
-    gar_obj = intercept_model,
-    win_len = forecast_parameters$win_len,
-    quantile_vec = parameters_list$quantile_vec,
-    out_of_sample_step = forecast_parameters$out_of_sample_step,
-    win_type = "fixed") %>% 
-    filter(complete.cases(.)) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
-    sep = "-")) %>% 
-  mutate(Horizon = as_factor(Horizon)) %>% 
-  rename(Intercept_Forecast = GaR_forecast) %>% 
-  select(Date, Horizon, Quantile,Forecast_Status,
-         Forecast_Period, Intercept_Forecast)
-
-rm(intercept_model)
+rm(models_list, temp_gar_forecasts_list)
 
 ```
 
@@ -169,55 +146,6 @@ rm(staff_forecast_df_h8, staff_forecast_df_h1,
 ```
 
 
-```{r, macro_forecast}
-
-# macro_gar_model = run.GaR.analysis(
-#   partitions_list = partitions_list$macro,
-#   vars_df = df,
-#   horizon_list = parameters_list$horizon_list,
-#   quantile_vec = parameters_list$quantile_vec,
-#   run_ols_reg = FALSE)
-
-
-macro_gar_model = run.GaR.analysis(partitions_list = partitions_list$macro,
-                   vars_df = df,
-                   target_var_name = "GDP",
-                   horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(
-                     Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
-                       positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit")))
-
-
-forecast_data_list$macro_gar_forecast = get.gar.forecast(
-    gar_obj = macro_gar_model,
-    win_len = forecast_parameters$win_len,
-    quantile_vec = parameters_list$quantile_vec,
-    out_of_sample_step = forecast_parameters$out_of_sample_step,
-    win_type = "fixed") %>% 
-    filter(complete.cases(.)) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
-    sep = "-")) %>% 
-  mutate(Horizon = as_factor(Horizon))  %>% 
-  rename(Macro_Forecast = GaR_forecast) %>% 
-  select(Date, Horizon, Quantile,Forecast_Status,
-         Forecast_Period, Macro_Forecast)
-  
-
-
-rm(macro_gar_model)
-
-```
-
-
 The first stage is to obtain out of sample forecast which is calculated in the following manner : first a model is fitted on a subset of the data (the window) and then the outcome is predicted based on new data that is determined by the out of sample step (currently next period)
 
 <!-- Comparisons: gar vs actual, gar vs macro (rmse and quantile fit), gar vs staff -->
@@ -255,13 +183,13 @@ forecast_comparisons$gar_staff = forecast_data_list[
 ```{r gar_macro_comparison, eval=FALSE}
 
 forecast_comparisons$gar_macro = forecast_data_list[
-  c("gar_forecast","macro_gar_forecast")] %>% 
+  c("GaR_Forecast","Macro_Forecast")] %>% 
   reduce(inner_join,
          by = c("Date","Forecast_Period", "Horizon",
-                "Quantile","Forecast_Status")) %>% 
+                "Quantile")) %>% 
   inner_join(forecast_data_list$actual_gdp_df,
              by = "Forecast_Period") %>% 
-  mutate(across(.cols = c(GaR_forecast, Macro_Forecast),
+  mutate(across(.cols = c(GaR_Forecast, Macro_Forecast),
                 .fns = ~ GDP_actual - .,
                 .names = "{col}_error"))
 
@@ -279,11 +207,13 @@ The third stage is model fit evaluation which is performed according to quantile
 
 ```{r gar_macro_r_squared}
 
-gar_macro_r2_df = forecast_data_list[c("gar_forecast",
-                                       "intercept_forecast",
-                                       "macro_gar_forecast")] %>% 
-  map(~ filter(.,Forecast_Status == "Out of Sample") %>% 
-        select(-Forecast_Status)) %>% 
+gar_macro_r2_df = map(c("gar","intercept","macro"), function(temp_name){
+  
+  temp_df = forecast_data_list[[temp_name]] %>% 
+    rename(Date = Forecast_Date) %>% 
+    rename(!!sym(temp_name) := GaR_forecast)
+
+}) %>% 
   reduce(inner_join,
          by = c("Date","Forecast_Period", "Horizon",
                 "Quantile")) %>% 
@@ -296,14 +226,14 @@ forecast_model_fit$gar_macro_r2 = gar_macro_r2_df %>%
   summarise(
     gar_r2_score = quantile.r2.score(
     realized_estimates = GDP_actual,
-    forecast_values = GaR_forecast,
+    forecast_values = gar,
     quantile = as.numeric(Quantile[1]),
-    benchmark_values = Intercept_Forecast),
+    benchmark_values = intercept),
     macro_r2_score = quantile.r2.score(
     realized_estimates = GDP_actual,
-    forecast_values = Macro_Forecast,
+    forecast_values = macro,
     quantile = as.numeric(Quantile[1]),
-    benchmark_values = Intercept_Forecast))
+    benchmark_values = intercept))
 
 rm(gar_macro_r2_df)
 

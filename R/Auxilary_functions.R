@@ -25,8 +25,6 @@
 #'
 #' @param run_ols_reg boolean indicator that adds an OLS regression
 #'
-#' @param rq_method string that set the optimization mode of quantile regression.
-#' Default is "br"
 #'
 #' @param pca.align.list A list that specifies the PCA aligning variable for
 #' each partition and alignment direction (default is positive direction).
@@ -40,7 +38,6 @@ run.GaR.analysis = function(partitions_list, vars_df,
                             quantile_vec,
                             method = "inner_join_PCA",
                             run_ols_reg = FALSE,
-                            rq_method = "br",
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 
@@ -62,8 +59,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
     reg_df = reg_df_list$reg_df,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
-    horizon_list = horizon_list,
-    rq_method = rq_method
+    horizon_list = horizon_list
     )
 
 
@@ -276,11 +272,18 @@ rolling.qreq = function(reg_df, win_len, quantile_vec,
 #'
 #' @import rsample
 #'
-get.gar.forecast = function(gar_obj, win_len, quantile_vec,
+get.gar.forecast = function(partitions_list,
+                            vars_df,
+                            target_var_name,
+                            horizon_list,
+                            quantile_vec,
+                            pca.align.list,
+                            method,
+                            win_len = 30,
                             out_of_sample_step = 1,
-                            win_type = "fixed"){
+                            win_type_expanding = FALSE){
 
-  reg_df = make.quant.reg.df(
+  reg_df_list = make.quant.reg.df(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
@@ -289,31 +292,57 @@ get.gar.forecast = function(gar_obj, win_len, quantile_vec,
     pca.align.list = pca.align.list,
     method = method,
     return_objects_list = FALSE
-  )[[1]]
+  )
 
 
-  roll_cv_list = reg_df %>%
-    rolling_origin(initial = 30,assess = 1)
+   roll_cv_list = reg_df_list$reg_df %>%
+    rolling_origin(
+      initial = win_len,
+      assess = out_of_sample_step,
+      cumulative = win_type_expanding
+      )
+
 
   prediction_list = map(roll_cv_list$splits, function(temp_split){
 
     analysis_set = analysis(temp_split)
 
-    assement_set = assessment(temp_split)
+    assessment_set = assessment(temp_split)
 
     qreg_result = run.quant.reg(
       reg_df = analysis_set,
       target_var_name = target_var_name,
       quantile_vec = quantile_vec,
-      horizon_list = horizon_list,
-      rq_method = rq_method
-    )
+      horizon_list = horizon_list
+      )
+
+    temp_predict = map(names(qreg_result), function(temp_name){
+
+      temp_pred = qreg_result[[temp_name]] %>%
+        predict(newdata = assessment_set) %>%
+        as.data.frame() %>%
+        rename_all(~str_remove(.,"tau= ")) %>%
+        pivot_longer(cols = everything(),
+                     names_to = "Quantile",
+                     values_to = "Forecast") %>%
+        mutate(Horizon = temp_name) %>%
+        mutate(Date = assessment_set$Date)
+
+      return(temp_pred)
+
+    }) %>%
+      bind_rows()
 
 
 
   })
 
 
+  prediction_df = prediction_list %>%
+    bind_rows()
+
+
+  return(prediction_df)
 
 
 }
@@ -647,8 +676,7 @@ quantile.r2.score = function(realized_estimates, forecast_values,
 run.quant.reg = function(reg_df,
                          target_var_name,
                          quantile_vec,
-                         horizon_list,
-                         rq_method){
+                         horizon_list){
 
   qreg_result = map(horizon_list, function(temp_horizon){
 
@@ -658,8 +686,7 @@ run.quant.reg = function(reg_df,
                    tau = quantile_vec,
                    data = reg_df %>%
                      select(-Date) %>%
-                     select(-contains(target_var_name), all_of(dep_var)),
-                   method = rq_method)
+                     select(-contains(target_var_name), all_of(dep_var)))
 
     return(qreg_list)
 
