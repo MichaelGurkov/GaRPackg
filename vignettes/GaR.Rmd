@@ -175,14 +175,14 @@ nowcast_results = run.GaR.analysis(
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd"}
+```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd"}
+```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
 
 ```
 
