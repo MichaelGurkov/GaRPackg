@@ -2,6 +2,7 @@
 
 export(interpolate)
 import(dplyr)
+import(rsample)
 import(stringr)
 import(zoo)
 importFrom(stats,complete.cases)

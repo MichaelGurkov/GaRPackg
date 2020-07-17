@@ -157,6 +157,9 @@ pca_reduction = function(df,center = TRUE,
 #'
 #' @param return_objects_list boolean indicator that specifies whether a list
 #' with object containing information (such as loadings) should be returned
+#'
+#' @return a list where first element is regression data (named xreg) and second
+#' (optional) element is the pca obj list
 
 reduce_data_dimension = function(vars_df,partition,
                                  n_components = 1,
@@ -226,15 +229,17 @@ reduce_data_dimension = function(vars_df,partition,
     reduce(full_join, by = "date")
 
 
+  return_list = list()
+
+  return_list$xreg_df = xreg_df
+
   if(return_objects_list){
 
-    return(list(objects_list = reduction_objects_list, xreg_df = xreg_df))
-
-  } else {
-
-    return(xreg_df)
+    return_list$objects_list = reduction_objects_list
 
   }
+
+  return(return_list)
 
 
 
