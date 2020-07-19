@@ -213,53 +213,53 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 #' @return A data frame with two columns: dates and predictions.
 #' Column Date is the date of the out of sample data point (determined by \code{out_of_sample_step})
 
-rolling.qreq = function(reg_df, win_len, quantile_vec,
-                        out_of_sample_step = 1,
-                        win_type = "fixed", mod_formula = NULL){
-
-  if(is.null(mod_formula)){mod_formula = paste0(names(reg_df[1])," ~.")}
-
-  n_row = nrow(reg_df)
-
-  dates_vec = reg_df$Date
-
-  reg_df = reg_df %>%
-    select(-Date)
-
-
-  rolling_grid = make.rolling.window.grid(total_len = nrow(reg_df),
-                                          win_len = win_len,
-                                          out_of_sample_step = out_of_sample_step,
-                                          win_type = win_type)
-
-  out_of_sample_list = lapply(rolling_grid, function(temp_ind_df){
-
-      temp_qreq = rq(formula = formula(mod_formula),
-                     tau = quantile_vec,
-                     data = slice(reg_df,temp_ind_df$First:temp_ind_df$Last))
-
-      temp_pred = predict(object = temp_qreq,
-                          newdata = slice(reg_df,temp_ind_df$Last + out_of_sample_step))
-
-
-      return(data.frame(Date = dates_vec[temp_ind_df$Last + out_of_sample_step],
-                        temp_pred))
-
-
-    })
-
-  temp_res = out_of_sample_list %>%
-    bind_rows() %>%
-    filter(complete.cases(.)) %>%
-    rename_at(.vars = vars(starts_with("tau")),
-              .funs = list(~str_replace(.,pattern = "tau..",
-                                        replacement = "")))
-
-
-  return(temp_res)
-
-
-}
+# rolling.qreq = function(reg_df, win_len, quantile_vec,
+#                         out_of_sample_step = 1,
+#                         win_type = "fixed", mod_formula = NULL){
+#
+#   if(is.null(mod_formula)){mod_formula = paste0(names(reg_df[1])," ~.")}
+#
+#   n_row = nrow(reg_df)
+#
+#   dates_vec = reg_df$Date
+#
+#   reg_df = reg_df %>%
+#     select(-Date)
+#
+#
+#   rolling_grid = make.rolling.window.grid(total_len = nrow(reg_df),
+#                                           win_len = win_len,
+#                                           out_of_sample_step = out_of_sample_step,
+#                                           win_type = win_type)
+#
+#   out_of_sample_list = lapply(rolling_grid, function(temp_ind_df){
+#
+#       temp_qreq = rq(formula = formula(mod_formula),
+#                      tau = quantile_vec,
+#                      data = slice(reg_df,temp_ind_df$First:temp_ind_df$Last))
+#
+#       temp_pred = predict(object = temp_qreq,
+#                           newdata = slice(reg_df,temp_ind_df$Last + out_of_sample_step))
+#
+#
+#       return(data.frame(Date = dates_vec[temp_ind_df$Last + out_of_sample_step],
+#                         temp_pred))
+#
+#
+#     })
+#
+#   temp_res = out_of_sample_list %>%
+#     bind_rows() %>%
+#     filter(complete.cases(.)) %>%
+#     rename_at(.vars = vars(starts_with("tau")),
+#               .funs = list(~str_replace(.,pattern = "tau..",
+#                                         replacement = "")))
+#
+#
+#   return(temp_res)
+#
+#
+# }
 
 
 #' @title  Calculate forecasts for GaR object
@@ -280,7 +280,6 @@ get.gar.forecast = function(partitions_list,
                             pca.align.list,
                             method,
                             win_len = 30,
-                            out_of_sample_step = 1,
                             win_type_expanding = FALSE){
 
   reg_df_list = make.quant.reg.df(
@@ -295,55 +294,16 @@ get.gar.forecast = function(partitions_list,
   )
 
 
-   roll_cv_list = reg_df_list$reg_df %>%
-    rolling_origin(
-      initial = win_len,
-      assess = out_of_sample_step,
-      cumulative = win_type_expanding
-      )
+prediction_df = map(horizon_list,run.cross.validation,
+                    reg_df = reg_df_list$reg_df,
+                    target_var_name = target_var_name,
+                    quantile_vec = quantile_vec,
+                    win_len = win_len,
+                    win_type_expanding = win_type_expanding) %>%
+  bind_rows()
 
 
-  prediction_list = map(roll_cv_list$splits, function(temp_split){
-
-    analysis_set = analysis(temp_split)
-
-    assessment_set = assessment(temp_split)
-
-    qreg_result = run.quant.reg(
-      reg_df = analysis_set,
-      target_var_name = target_var_name,
-      quantile_vec = quantile_vec,
-      horizon_list = horizon_list
-      )
-
-    temp_predict = map(names(qreg_result), function(temp_name){
-
-      temp_pred = qreg_result[[temp_name]] %>%
-        predict(newdata = assessment_set) %>%
-        as.data.frame() %>%
-        rename_all(~str_remove(.,"tau= ")) %>%
-        pivot_longer(cols = everything(),
-                     names_to = "Quantile",
-                     values_to = "GaR_forecast") %>%
-        mutate(Horizon = temp_name) %>%
-        mutate(Date = assessment_set$Date)
-
-      return(temp_pred)
-
-    }) %>%
-      bind_rows()
-
-
-
-  })
-
-
-  prediction_df = prediction_list %>%
-    bind_rows()
-
-
-  return(prediction_df)
-
+return(prediction_df)
 
 }
 
@@ -582,49 +542,49 @@ quantile.crps.score = function(realized_estimate,
 #' @param win_type categorical can be either expanding or fixed. Default is fixed
 #'
 
-make.rolling.window.grid = function(total_len ,win_len,
-                                    out_of_sample_step,
-                                    win_type = "fixed"){
-
-  if(win_type == "fixed"){
-
-    rolling_grid = lapply(1:(total_len - win_len + 1),
-                              function(temp_ind){
-
-                                first_ind = temp_ind
-
-                                last_ind = win_len + temp_ind - 1
-
-                                return(data.frame(First = first_ind, Last = last_ind))
-
-
-                              })
-
-  } else if (win_type == "expanding"){
-
-    rolling_grid = lapply(1:(total_len - win_len + 1),
-                          function(temp_ind){
-
-                            first_ind = 1
-
-                            last_ind = win_len + temp_ind - 1
-
-                            return(data.frame(First = first_ind, Last = last_ind))
-
-
-                          })
-
-  }
-
-
-  return(rolling_grid)
-
-
-
-
-
-
-}
+# make.rolling.window.grid = function(total_len ,win_len,
+#                                     out_of_sample_step,
+#                                     win_type = "fixed"){
+#
+#   if(win_type == "fixed"){
+#
+#     rolling_grid = lapply(1:(total_len - win_len + 1),
+#                               function(temp_ind){
+#
+#                                 first_ind = temp_ind
+#
+#                                 last_ind = win_len + temp_ind - 1
+#
+#                                 return(data.frame(First = first_ind, Last = last_ind))
+#
+#
+#                               })
+#
+#   } else if (win_type == "expanding"){
+#
+#     rolling_grid = lapply(1:(total_len - win_len + 1),
+#                           function(temp_ind){
+#
+#                             first_ind = 1
+#
+#                             last_ind = win_len + temp_ind - 1
+#
+#                             return(data.frame(First = first_ind, Last = last_ind))
+#
+#
+#                           })
+#
+#   }
+#
+#
+#   return(rolling_grid)
+#
+#
+#
+#
+#
+#
+# }
 
 
 #' @title Calculate quantile R square score
@@ -698,5 +658,65 @@ run.quant.reg = function(reg_df,
 
   return(qreg_result)
 
+
+}
+
+
+#' This function preforms cross validation for quantile regression
+#'
+#'
+run.cross.validation = function(reg_df,
+                                target_var_name,
+                                horizon,
+                                quantile_vec,
+                                win_len = 30,
+                                win_type_expanding = FALSE){
+
+
+roll_cv_list = reg_df_list$reg_df %>%
+  rolling_origin(
+    initial = win_len,
+    assess = horizon,
+    cumulative = win_type_expanding
+  )
+
+predict_df = map(roll_cv_list$splits,
+                 function(temp_split){
+
+  analysis_set = analysis(temp_split)
+
+  assessment_set = assessment(temp_split) %>%
+    slice(n())
+
+  qreg_result = run.quant.reg(
+    reg_df = analysis_set,
+    target_var_name = target_var_name,
+    quantile_vec = quantile_vec,
+    horizon_list = list(horizon)
+  )
+
+  temp_predict = map(names(qreg_result), function(temp_name){
+
+    temp_pred = qreg_result[[temp_name]] %>%
+      predict(newdata = assessment_set) %>%
+      as.data.frame() %>%
+      rename_all(~str_remove(.,"tau= ")) %>%
+      pivot_longer(cols = everything(),
+                   names_to = "Quantile",
+                   values_to = "GaR_forecast") %>%
+      mutate(Horizon = temp_name) %>%
+      mutate(Date = assessment_set$Date)
+
+    return(temp_pred)
+
+  }) %>%
+    bind_rows()
+
+
+
+}) %>%
+  bind_rows()
+
+return(predict_df)
 
 }

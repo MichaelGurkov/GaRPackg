@@ -50,16 +50,13 @@ forecast_data_list$gar_forecast = get.gar.forecast(
     Dom_Macro = list(var_name = "GDP"),
     Global = list(var_name = "rate_euro"),
     FinCycle = list(var_name = "Credit")),
-  win_len = forecast_parameters$win_len,
-  out_of_sample_step = forecast_parameters$out_of_sample_step) %>% 
+  win_len = forecast_parameters$win_len) %>% 
   filter(complete.cases(.)) %>% 
   mutate(Forecast_Period = paste(
-    Forecast_Date + as.numeric(Horizon) * 0.25 - 1,
-    Forecast_Date + as.numeric(Horizon) * 0.25,
+    Date + as.numeric(Horizon) * 0.25 - 1,
+    Date + as.numeric(Horizon) * 0.25,
     sep = "-")) %>% 
-  mutate(Horizon = as_factor(Horizon)) %>% 
-  select(Forecast_Date, Horizon, Quantile,Forecast_Status,
-         Forecast_Period,GaR_forecast)
+  mutate(Horizon = as_factor(Horizon))
 
 
 
@@ -68,47 +65,6 @@ forecast_data_list$gar_forecast = get.gar.forecast(
 
 ```{r Intercept_forecast}
 
-# intercept_model = run.GaR.analysis(partitions_list = NULL,
-#                    vars_df = df,
-#                    horizon_list = parameters_list$horizon_list,
-#                    quantile_vec = parameters_list$quantile_vec,
-#                    pca.align.list = list(Dom_FCI = list(
-#                      var_name = "Spread_CPI_corp",
-#                      positive_direction = FALSE)))
-
-intercept_model = run.GaR.analysis(partitions_list = NULL,
-                   vars_df = df,
-                   target_var_name = "GDP",
-                   horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(
-                     Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
-                       positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit")))
-
-
-forecast_data_list$intercept_forecast = get.gar.forecast(
-    gar_obj = intercept_model,
-    win_len = forecast_parameters$win_len,
-    quantile_vec = parameters_list$quantile_vec,
-    out_of_sample_step = forecast_parameters$out_of_sample_step,
-    win_type = "fixed") %>% 
-    filter(complete.cases(.)) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
-    sep = "-")) %>% 
-  mutate(Horizon = as_factor(Horizon)) %>% 
-  rename(Intercept_Forecast = GaR_forecast) %>% 
-  select(Date, Horizon, Quantile,Forecast_Status,
-         Forecast_Period, Intercept_Forecast)
-
-rm(intercept_model)
 
 ```
 
