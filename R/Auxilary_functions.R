@@ -18,8 +18,8 @@
 #'
 #' @param horizon_list list of forecast horizon
 #'
-#' @param quantile_vec vector of required quantiles in quantile regression
-#' (corresponds to tau argument in rq)
+#' @param quantile_vec vector of required quantiles in quantile
+#' regression (corresponds to tau argument in rq)
 #'
 #' @param method string a method that aggregates the data to partitions
 #'
@@ -662,7 +662,27 @@ run.quant.reg = function(reg_df,
 }
 
 
-#' This function preforms cross validation for quantile regression
+#' @title Run cross validation for quantile regression
+#'
+#' @description  The function performs rolling ("walk forward")
+#' quantile regression. After the estimation of the parameters on
+#' the rolling window sample an out of sample prediction is performed
+#' based on the out of sample step that is determined by the
+#'  \code{horizon} parameter.
+#'
+#' @param reg_df data
+#'
+#' @param target_var_name string that specifies outcome feature
+#'
+#' @param horizon determines the out of sample step
+#'
+#' @param quantile_vec vector of required quantiles in quantile
+#' regression (corresponds to tau argument in rq)
+#'
+#' @param win_len rolling window length
+#'
+#' @param win_type_expanding boolean indicator that determines
+#' whether the rolling window should be expanding or rolling
 #'
 #'
 run.cross.validation = function(reg_df,
@@ -673,7 +693,7 @@ run.cross.validation = function(reg_df,
                                 win_type_expanding = FALSE){
 
 
-roll_cv_list = reg_df_list$reg_df %>%
+roll_cv_list = reg_df %>%
   rolling_origin(
     initial = win_len,
     assess = horizon,
