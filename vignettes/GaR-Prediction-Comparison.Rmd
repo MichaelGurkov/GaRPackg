@@ -88,6 +88,7 @@ rm(models_list,temp_forecasts)
 
 ```
 
+
 ```{r test_gar_forecast, eval=FALSE}
 
 temp_forecasts = run.GaR.analysis(partitions_list = current_partition,
@@ -143,6 +144,21 @@ staff_forecast_df_h1 = raw_df %>%
                                  sep = "-")) %>% 
   mutate(Horizon = "1")
 
+
+staff_forecast_df_h4 = raw_df %>%
+  select(Date, staff_1Q, staff_2Q, staff_3Q, staff_4Q) %>%
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>%
+  gather(key = Quarter,value = Forecast, - Date) %>%
+  group_by(Date) %>%
+  summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
+  ungroup() %>%
+  filter(complete.cases(.)) %>%
+  mutate(Forecast_Period = paste((Date + 1),(Date + 2),
+                                 sep = "-")) %>%
+  mutate(Horizon = "4")
+
+
+
 staff_forecast_df_h8 = raw_df %>% 
   select(Date, staff_5Q, staff_6Q, staff_7Q, staff_8Q) %>% 
   rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
@@ -155,8 +171,11 @@ staff_forecast_df_h8 = raw_df %>%
                                  sep = "-")) %>% 
   mutate(Horizon = "8")
 
-forecast_data_list$staff_forecast = bind_rows(staff_forecast_df_h1,
-                           staff_forecast_df_h8) %>% 
+forecast_data_list$staff_forecast = list(
+  staff_forecast_df_h1,
+  staff_forecast_df_h4,
+  staff_forecast_df_h8) %>% 
+  bind_rows() %>% 
   mutate(Date = as.yearqtr(Date)) %>% 
   inner_join(., staff_forecast_conversion_table,
              by = c("Date","Horizon")) %>% 
@@ -219,7 +238,7 @@ gar_staff_r2_df = forecast_data_list[c("GaR_forecast",
                                        "Intercept_Forecast")] %>% 
   reduce(inner_join,
          by = c("Forecast_Period", "Horizon",
-                "Quantile")) %>% 
+                "Quantile","Date")) %>% 
   inner_join(forecast_data_list$staff_forecast,
              by = c("Forecast_Period", "Horizon",
                 "Quantile")) %>% 
@@ -245,57 +264,31 @@ rm(gar_staff_r2_df)
 ```
 
 
+```{r plot_goodness_of_fit}
 
-\subsubsection{Comparison to staff forecast}
-
-```{r gar_vs_staff_R2, fig.height=8}
-
-ggplot(forecast_model_fit$gar_staff_r2 %>% 
-         pivot_longer(cols = c(gar_r2_score,staff_r2_score),
-                      names_to = "Model",values_to = "score") %>% 
-         mutate(Model = str_remove_all(Model,"_r2_score")),
-     aes(x = Quantile, y = score, fill = Model)) + 
-  geom_col(position = "dodge", width = 0.3) + 
-  scale_fill_viridis_d(labels = c("GaR", "Staff")) + 
-  facet_wrap(~Horizon,nrow = 3, scales = "free_y") + 
-  labs(x = "Quantile", y = "",
-       title = paste0("GaR vs Staff \n ",
-                      "(comparison by quantile R squared)")) + 
+forecast_model_fit[c("gar_macro_r2",
+                            "gar_staff_r2")] %>% 
+  reduce(
+    full_join,
+    by = c("Horizon","Quantile"),
+    suffix = c("_macro","_staff")
+    ) %>% 
+  rename_all(~str_remove_all(.,"_r2_score")) %>% 
+  pivot_longer(cols = c(-Horizon, -Quantile),
+               names_to = "model",
+               values_to = "score") %>% 
+  filter(model != "gar_staff") %>% 
+  ggplot(aes(x = Quantile, y = score, fill = model)) + 
+  geom_col(position = "dodge") + 
+  facet_wrap(~Horizon) + 
+  scale_fill_viridis_d() + 
   theme_bw() + 
-  theme(legend.position = "bottom",
-        plot.title = element_text(hjust = 0.5),
-        legend.title = element_blank())
-
-
+  theme(legend.position = "bottom", legend.title = element_blank())
+  
 
 ```
 
 
-
-\subsubsection{Comparison to domestic macro}
-
-
-```{r gar_vs_macro_R2, fig.height=8}
-
-ggplot(forecast_model_fit$gar_macro_r2 %>% 
-         pivot_longer(cols = c(gar_r2_score,macro_r2_score),
-                      names_to = "Model",values_to = "score") %>% 
-         mutate(Model = str_remove_all(Model,"_r2_score")),
-     aes(x = Quantile, y = score, fill = Model)) + 
-  geom_col(position = "dodge", width = 0.3) + 
-  scale_fill_viridis_d(labels = c("GaR", "Macro vars only")) + 
-  facet_wrap(~Horizon,nrow = 3, scales = "free_y") + 
-  labs(x = "Quantile", y = "",
-       title = paste0("GaR vs Macro only \n ",
-                      "(comparison by quantile R squared)")) + 
-  theme_bw() + 
-  theme(legend.position = "bottom",
-        plot.title = element_text(hjust = 0.5),
-        legend.title = element_blank())
-
-
-
-```
 
 
 

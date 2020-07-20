@@ -191,76 +191,6 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 
 }
 
-#' Calculate rolling window predictions
-#'
-#' This function calculates the rolling regression predictions
-#' for quantile regression
-#'
-#' @param reg_df dataframe
-#'
-#' @param win_type categorical can be either expanding or fixed.
-#' Default is fixed
-#'
-#' @param win_len rolling window length
-#'
-#' @param quantile_vec vector of required quantiles
-#'
-#' @param out_of_sample_step forecasting horizon (default is next period)
-#'
-#' @param mod_formula model formula (default is regress the first variable
-#' on everything else)
-#'
-#' @return A data frame with two columns: dates and predictions.
-#' Column Date is the date of the out of sample data point (determined by \code{out_of_sample_step})
-
-# rolling.qreq = function(reg_df, win_len, quantile_vec,
-#                         out_of_sample_step = 1,
-#                         win_type = "fixed", mod_formula = NULL){
-#
-#   if(is.null(mod_formula)){mod_formula = paste0(names(reg_df[1])," ~.")}
-#
-#   n_row = nrow(reg_df)
-#
-#   dates_vec = reg_df$Date
-#
-#   reg_df = reg_df %>%
-#     select(-Date)
-#
-#
-#   rolling_grid = make.rolling.window.grid(total_len = nrow(reg_df),
-#                                           win_len = win_len,
-#                                           out_of_sample_step = out_of_sample_step,
-#                                           win_type = win_type)
-#
-#   out_of_sample_list = lapply(rolling_grid, function(temp_ind_df){
-#
-#       temp_qreq = rq(formula = formula(mod_formula),
-#                      tau = quantile_vec,
-#                      data = slice(reg_df,temp_ind_df$First:temp_ind_df$Last))
-#
-#       temp_pred = predict(object = temp_qreq,
-#                           newdata = slice(reg_df,temp_ind_df$Last + out_of_sample_step))
-#
-#
-#       return(data.frame(Date = dates_vec[temp_ind_df$Last + out_of_sample_step],
-#                         temp_pred))
-#
-#
-#     })
-#
-#   temp_res = out_of_sample_list %>%
-#     bind_rows() %>%
-#     filter(complete.cases(.)) %>%
-#     rename_at(.vars = vars(starts_with("tau")),
-#               .funs = list(~str_replace(.,pattern = "tau..",
-#                                         replacement = "")))
-#
-#
-#   return(temp_res)
-#
-#
-# }
-
 
 #' @title  Out of sample forecasts
 #'
@@ -315,6 +245,8 @@ return(prediction_df)
 #'
 #' @description This function evaluates the goodness of fit between
 #' "realized" and to forecasted CDF
+#'
+#' @details
 #'
 quantile.fit.score = function(realized_estimate, quantile_values, quantiles){
 
@@ -531,62 +463,6 @@ quantile.crps.score = function(realized_estimate,
 }
 
 
-#' @title Make rolling window indices
-#'
-#' @description The function makes a grid of rolling window indices
-#'
-#' @param total_len = length of full grid (number of rows in data frame)
-#'
-#' @param win_len length of rolling window
-#'
-#' @param out_of_sample_step forecasting horizon
-#'
-#' @param win_type categorical can be either expanding or fixed. Default is fixed
-#'
-
-# make.rolling.window.grid = function(total_len ,win_len,
-#                                     out_of_sample_step,
-#                                     win_type = "fixed"){
-#
-#   if(win_type == "fixed"){
-#
-#     rolling_grid = lapply(1:(total_len - win_len + 1),
-#                               function(temp_ind){
-#
-#                                 first_ind = temp_ind
-#
-#                                 last_ind = win_len + temp_ind - 1
-#
-#                                 return(data.frame(First = first_ind, Last = last_ind))
-#
-#
-#                               })
-#
-#   } else if (win_type == "expanding"){
-#
-#     rolling_grid = lapply(1:(total_len - win_len + 1),
-#                           function(temp_ind){
-#
-#                             first_ind = 1
-#
-#                             last_ind = win_len + temp_ind - 1
-#
-#                             return(data.frame(First = first_ind, Last = last_ind))
-#
-#
-#                           })
-#
-#   }
-#
-#
-#   return(rolling_grid)
-#
-#
-#
-#
-#
-#
-# }
 
 
 #' @title Calculate quantile R square score

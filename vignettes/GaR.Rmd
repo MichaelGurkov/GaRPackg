@@ -122,7 +122,7 @@ current_partition = lapply(current_partition, function(temp_part){
 
 current_partition = partitions_list$basic_no_global_inf
 
-results = run.GaR.analysis(partitions_list = current_partition,
+reporresults = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
                    target_var_name = "GDP",
                    horizon_list = parameters_list$horizon_list,
