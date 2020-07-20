@@ -1,25 +1,54 @@
-set.seed(123)
+data("gar_data")
 
-test_df = data.frame(Date = 1:10,
-                     x = rnorm(10),
-                     y = rnorm(10)) %>%
-  mutate(y_2 = lead(y,2))
+gar_data = gar_data %>% slice(1:40)
 
-test_reg = rq(
-  formula = "y_2~x",
-  tau = 0.5,
-  data = test_df[1:5,])
+test_params = list()
 
-test_pred = predict(test_reg, newdata = test_df[7,])
+test_params$target_var_name = "GDP"
+
+test_params$horizon_list = list(4)
+
+test_params$quantile_vec = c(0.5)
+
+test_params$win_len = 30
+
+# Make reg df
+
+test_reg_df = make.quant.reg.df(
+  partitions_list = list(Macro = c("GDP","Ind_Prod_Israel"),
+                         FinCycle = c("Credit","House_Price")),
+  vars_df = gar_data,
+  target_var_name = "GDP",
+  horizon_list = test_params$horizon_list,
+  quantile_vec = test_params$quantile_vec)[["reg_df"]]
+
+
+
+# Run quantile reg
+
+test_quant_reg_list = run.quant.reg(
+  reg_df = test_reg_df[1:test_params$win_len,],
+  target_var_name = test_params$target_var_name,
+  quantile_vec = test_params$quantile_vec,
+  horizon_list = test_params$horizon_list)
+
+# Predict out of sample
+
+test_pred = predict(
+  test_quant_reg_list$`4`,
+  newdata = test_reg_df[test_params$win_len +
+                          unlist(test_params$horizon_list),]
+  )
 
 names(test_pred) = NULL
 
+
 cross_validation_pred = run.cross.validation(
-  reg_df = test_df,
-  target_var_name = "y",
-  horizon = 2,
-  quantile_vec = 0.5,
-  win_len = 5,
+  reg_df = test_reg_df,
+  target_var_name = test_params$target_var_name,
+  horizon = unlist(test_params$horizon_list),
+  quantile_vec = test_params$quantile_vec,
+  win_len = test_params$win_len,
   win_type_expanding = FALSE)
 
 

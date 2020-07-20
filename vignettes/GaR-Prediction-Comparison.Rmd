@@ -88,6 +88,27 @@ rm(models_list,temp_forecasts)
 
 ```
 
+```{r test_gar_forecast, eval=FALSE}
+
+temp_forecasts = run.GaR.analysis(partitions_list = current_partition,
+                   vars_df = df[1:30,],
+                   target_var_name = "GDP",
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "GDP"),
+                     Global = list(var_name = "rate_euro"),
+                     FinCycle = list(var_name = "Credit")))
+
+
+
+
+```
+
+
 
 ```{r, make_staff_forecast}
 

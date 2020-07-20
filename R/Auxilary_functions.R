@@ -262,22 +262,24 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 # }
 
 
-#' @title  Calculate forecasts for GaR object
+#' @title  Out of sample forecasts
 #'
-#' @description This is a convenient function that calculates in sample and out of sample
-#' forecast.
-#' @details The in sample forecast is simply the fitted values of the regression.
-#' An out of sample forecast is calculated by rolling regression (determined by \code{win_len}) that forecast
+#' @description This is a convenient function that calculates out of
+#' sample forecast.
+#' @details An out of sample forecast is calculated by rolling
+#' regression (determined by \code{win_len}) that forecast
 #' ahead according to \code{out_of_sample_step}
 #'
 #' @import rsample
+#'
+#' @return a data frame with out of sample predictions
 #'
 get.gar.forecast = function(partitions_list,
                             vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
-                            pca.align.list,
+                            pca.align.list = NULL,
                             method,
                             win_len = 30,
                             win_type_expanding = FALSE){
