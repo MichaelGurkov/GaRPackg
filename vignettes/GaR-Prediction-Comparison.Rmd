@@ -8,6 +8,8 @@ library(stargazer)
 
 ```{r set_forecast_parameters}
 
+theme_set(theme_bw())
+
 forecast_parameters = list(
   win_len = 40,
   win_type_expanding = TRUE,
@@ -130,6 +132,8 @@ staff_forecast_conversion_table = read_csv(
          "Staff_forecast_conversion_table.csv"))
 
 staff_forecast_conversion_table = staff_forecast_conversion_table %>% 
+  filter(Type == "YoY") %>% 
+  select(-Type) %>% 
   mutate(Horizon = as_factor(Horizon,)) %>% 
   pivot_longer(cols = c(-Horizon),
                names_to = "Quantile",
@@ -164,7 +168,7 @@ staff_forecast_df_h4 = raw_df %>%
   summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
   ungroup() %>%
   filter(complete.cases(.)) %>%
-  mutate(Forecast_Period = paste((Date + 1),(Date + 2),
+  mutate(Forecast_Period = paste(Date,(Date + 1),
                                  sep = "-")) %>%
   mutate(Horizon = "4")
 
@@ -393,4 +397,68 @@ ggplot(forecast_model_fit$gar_actual_fit_score %>%
 
 \section{Residuals analysis}
 
+```{r plot_gar_forecast}
+
+forecast_data_list$GaR_Forecast %>% 
+  ggplot(aes(x = Date, y = GaR_Forecast)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  labs(title = "GaR Predictions (out of sample)") + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
+```
+
+
+```{r plot_staff_forecast}
+
+forecast_data_list$staff_forecast %>% 
+  ggplot(aes(x = Date, y =Staff_Forecast)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  labs(title = "Staff Predictions") + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
+```
+
+
+```{r plot_intercept_forecast}
+
+forecast_data_list$Intercept_Forecast %>% 
+  ggplot(aes(x = Date, y = Intercept_Forecast)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  labs(title = "Intercept GaR Predictions (out of sample)") + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
+```
+
+
+
+
+```{r plot_gar_vs_staff}
+
+forecast_data_list[c("GaR_Forecast","staff_forecast")] %>% 
+  reduce(inner_join, by = c("Date",
+                            "Horizon",
+                            "Quantile",
+                            "Forecast_Period")) %>% 
+  select(-Forecast_Period) %>% 
+  pivot_longer(cols = ends_with("Forecast")) %>% 
+  mutate(name = str_remove_all(name,"_Forecast")) %>% 
+  ggplot(aes(x = Date, y = value, color = name)) + 
+  geom_line() + 
+  facet_grid(rows = vars(Horizon),cols = vars(Quantile)) + 
+  labs(x = "", y = "") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+```
 
