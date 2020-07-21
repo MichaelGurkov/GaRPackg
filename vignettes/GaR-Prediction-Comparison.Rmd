@@ -130,6 +130,8 @@ staff_forecast_conversion_table = read_csv(
          "Staff_forecast_conversion_table.csv"))
 
 staff_forecast_conversion_table = staff_forecast_conversion_table %>% 
+  filter(Type == "Cumulative") %>% 
+  select(-Type) %>% 
   mutate(Horizon = as_factor(Horizon,)) %>% 
   pivot_longer(cols = c(-Horizon),
                names_to = "Quantile",
