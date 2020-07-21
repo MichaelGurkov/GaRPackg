@@ -8,50 +8,195 @@ library(stargazer)
 
 ```{r set_forecast_parameters}
 
-forecast_parametrs = list(win_len = 30, out_of_sample_step = 1)
+forecast_parameters = list(
+  win_len = 40,
+  win_type_expanding = TRUE,
+  df = df %>% filter(Date < as.yearqtr("2020Q1"))
+    )
+
+forecast_comparisons = list()
+
+forecast_data_list = list()
+
+forecast_model_fit = list()
 
 ```
 
 
-```{r run_robustness_analysis}
+<!-- Forecasts: GaR, staff, Macro -->
 
-basic_fincycle = run.GaR.analysis(partitions_list = partitions_list$basic_fincycle,
-                                  vars_df = df %>% 
-                                    mutate(Spread_CPI_corp = -1 * Spread_CPI_corp),
-                                  horizon_list = parameters_list$horizon_list,
-                                  quantile_vec = parameters_list$quantile_vec)
 
-robustness_results = list(OZMG = results,
-                          basic_fincycle = basic_fincycle)
+```{r make_actual_gdp_df}
 
-rm(basic_fincycle)
+forecast_data_list$actual_gdp_df = forecast_parameters$df %>% 
+  select(Date, GDP) %>% 
+  filter(complete.cases(.)) %>% 
+  rename(GDP_actual = GDP) %>% 
+  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
+  select(-Date) %>% 
+  select(Forecast_Period, GDP_actual)
 
 ```
 
 
-```{r GaR_forecast}
+```{r GaR_Forecast}
 
-gar_forecast = lapply(names(robustness_results), function(temp_name){
+
+models_list = list(GaR_Forecast = current_partition,
+                   Intercept_Forecast = NULL,
+                   Macro_Forecast = partitions_list$macro)
+
+
+temp_forecasts = map(
+  names(models_list),function(temp_name){
   
-  gar_forecast_df = get.gar.forecast(gar_obj = robustness_results[[temp_name]],
-                        win_len = forecast_parametrs$win_len,
-                        quantile_vec = parameters_list$quantile_vec,
-                        out_of_sample_step = forecast_parametrs$out_of_sample_step)
-  
-  gar_forecast_df = gar_forecast_df %>% 
+  temp_forecast = get.gar.forecast(
+  partitions_list = models_list[[temp_name]],
+  vars_df = forecast_parameters$df,
+  target_var_name = "GDP",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  pca.align.list = list(
+    Dom_FCI = list(
+      var_name = "Spread_CPI_corp",
+      positive_direction = FALSE),
+    Dom_Macro = list(var_name = "GDP"),
+    Global = list(var_name = "rate_euro"),
+    FinCycle = list(var_name = "Credit")),
+  win_len = forecast_parameters$win_len,
+  win_type_expanding = forecast_parameters$win_type_expanding) %>% 
     filter(complete.cases(.)) %>% 
-    mutate(Partition = temp_name)
+    mutate(Forecast_Period = paste(
+    Date + as.numeric(Horizon) * 0.25 - 1,
+    Date + as.numeric(Horizon) * 0.25,
+    sep = "-")) %>% 
+    mutate(Horizon = as_factor(Horizon)) %>% 
+    rename(!!temp_name := GaR_forecast)
+
   
-  return(gar_forecast_df)
   
-}) %>% 
-  bind_rows()
   
+  
+}
+)
+
+names(temp_forecasts) = names(models_list)
+
+forecast_data_list = c(
+  forecast_data_list,
+  temp_forecasts
+  )
+
+
+rm(models_list,temp_forecasts)
+
 
 ```
 
 
-```{r compare_partitions_forecast}
+```{r test_GaR_forecast, eval=FALSE}
+
+gar_forecast_fixed = get.gar.forecast(
+  partitions_list = current_partition,
+  vars_df = forecast_parameters$df,
+  target_var_name = "GDP",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  pca.align.list = list(
+    Dom_FCI = list(
+      var_name = "Spread_CPI_corp",
+      positive_direction = FALSE),
+    Dom_Macro = list(var_name = "GDP"),
+    Global = list(var_name = "rate_euro"),
+    FinCycle = list(var_name = "Credit")),
+  win_len = forecast_parameters$win_len,
+  win_type_expanding = FALSE) %>% 
+    filter(complete.cases(.)) %>% 
+    mutate(Forecast_Period = paste(
+    Date + as.numeric(Horizon) * 0.25 - 1,
+    Date + as.numeric(Horizon) * 0.25,
+    sep = "-")) %>% 
+    mutate(Horizon = as_factor(Horizon))
+
+
+```
+
+
+```{r, make_staff_forecast}
+
+staff_forecast_conversion_table = read_csv(
+  paste0(file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+         "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\",
+         "Staff_forecast_conversion_table.csv"))
+
+staff_forecast_conversion_table = staff_forecast_conversion_table %>% 
+  mutate(Horizon = as_factor(Horizon,)) %>% 
+  pivot_longer(cols = c(-Horizon),
+               names_to = "Quantile",
+               values_to = "Conversion_Coeff") %>% 
+  mutate(Conversion_Coeff = Conversion_Coeff * 0.01)
+
+staff_forecast_conversion_table = full_join(
+  staff_forecast_conversion_table,
+  select(raw_df, Date), by = character())
+  
+
+staff_forecast_df_h1 = raw_df %>% 
+  select(Date, staff_1Q) %>% 
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
+  gather(key = Quarter,value = Forecast, - Date) %>% 
+  filter(complete.cases(.)) %>% 
+  left_join(.,raw_df %>% 
+              select(Date, GDP) %>% 
+              mutate(GDP = GDP / lag(GDP,3) - 1)) %>% 
+  mutate(Staff_Forecast = Forecast * 0.25 * 0.01 + GDP) %>% 
+  select(Date,Staff_Forecast) %>% 
+  mutate(Forecast_Period = paste(Date - 0.75,Date + 0.25,
+                                 sep = "-")) %>% 
+  mutate(Horizon = "1")
+
+
+staff_forecast_df_h4 = raw_df %>%
+  select(Date, staff_1Q, staff_2Q, staff_3Q, staff_4Q) %>%
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>%
+  gather(key = Quarter,value = Forecast, - Date) %>%
+  group_by(Date) %>%
+  summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
+  ungroup() %>%
+  filter(complete.cases(.)) %>%
+  mutate(Forecast_Period = paste((Date + 1),(Date + 2),
+                                 sep = "-")) %>%
+  mutate(Horizon = "4")
+
+
+
+staff_forecast_df_h8 = raw_df %>% 
+  select(Date, staff_5Q, staff_6Q, staff_7Q, staff_8Q) %>% 
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
+  gather(key = Quarter,value = Forecast, - Date) %>% 
+  group_by(Date) %>% 
+  summarise(Staff_Forecast = mean(Forecast) * 0.01) %>% 
+  ungroup() %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(Forecast_Period = paste((Date + 1),(Date + 2),
+                                 sep = "-")) %>% 
+  mutate(Horizon = "8")
+
+forecast_data_list$staff_forecast = list(
+  staff_forecast_df_h1,
+  staff_forecast_df_h4,
+  staff_forecast_df_h8) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  inner_join(., staff_forecast_conversion_table,
+             by = c("Date","Horizon")) %>% 
+  mutate(Staff_Forecast = Staff_Forecast + Conversion_Coeff) %>% 
+  mutate(Quantile = str_replace_all(Quantile,"0.5","0.50")) %>% 
+  select(-Conversion_Coeff) %>% 
+  select(Date, Horizon, Quantile, Forecast_Period, Staff_Forecast)
+
+rm(staff_forecast_df_h8, staff_forecast_df_h1,
+   staff_forecast_conversion_table)
 
 forecast_accuracy_table = gar_forecast %>% 
   group_by(Partition, Forecast_Status,Horizon, Quantile) %>% 
@@ -62,34 +207,195 @@ forecast_accuracy_table = gar_forecast %>%
 ```
 
 
-```{r output_accuracy_table, results='asis'}
 
-stargazer(forecast_accuracy_table %>% 
-            ungroup() %>% 
-            mutate(Horizon = as.character(Horizon)),
-          summary = FALSE, header = FALSE,
-          label = "forecast_accuracy",
-          title = "Forecast accuracy")
+The first stage is to obtain out of sample forecast which is calculated in the following manner : first a model is fitted on a subset of the data (the window) and then the outcome is predicted based on new data that is determined by the out of sample step.
+
+
+<!-- Model fit evaluation -->
+
+
+The model fit evaluation which is performed according to quantile $R^{2}$.
+
+
+```{r gar_macro_r_squared}
+
+gar_macro_r2_df = forecast_data_list[c("GaR_Forecast",
+                                       "Intercept_Forecast",
+                                       "Macro_Forecast")] %>% 
+  reduce(inner_join,
+         by = c("Date","Forecast_Period", "Horizon",
+                "Quantile")) %>% 
+  inner_join(forecast_data_list$actual_gdp_df,
+             by = "Forecast_Period") %>% 
+  select(-Forecast_Period)
+
+forecast_model_fit$gar_macro_r2 = gar_macro_r2_df %>% 
+  group_by(Horizon, Quantile) %>% 
+  summarise(
+    gar_r2_score = quantile.r2.score(
+    realized_estimates = GDP_actual,
+    forecast_values = GaR_Forecast,
+    quantile = as.numeric(Quantile[1]),
+    benchmark_values = Intercept_Forecast),
+    macro_r2_score = quantile.r2.score(
+    realized_estimates = GDP_actual,
+    forecast_values = Macro_Forecast,
+    quantile = as.numeric(Quantile[1]),
+    benchmark_values = Intercept_Forecast))
+
+rm(gar_macro_r2_df)
 
 ```
 
 
+```{r gar_staff_r_squared}
+
+gar_staff_r2_df = forecast_data_list[c("GaR_Forecast",
+                                       "Intercept_Forecast")] %>% 
+  reduce(inner_join,
+         by = c("Forecast_Period", "Horizon",
+                "Quantile","Date")) %>% 
+  inner_join(forecast_data_list$staff_forecast,
+             by = c("Forecast_Period", "Horizon",
+                "Quantile")) %>% 
+  inner_join(forecast_data_list$actual_gdp_df,
+             by = "Forecast_Period")
+
+forecast_model_fit$gar_staff_r2 = gar_staff_r2_df %>% 
+  group_by(Horizon, Quantile) %>% 
+  summarise(
+    gar_r2_score = quantile.r2.score(
+    realized_estimates = GDP_actual,
+    forecast_values = GaR_Forecast,
+    quantile = as.numeric(Quantile[1]),
+    benchmark_values = Intercept_Forecast),
+    staff_r2_score = quantile.r2.score(
+    realized_estimates = GDP_actual,
+    forecast_values = Staff_Forecast,
+    quantile = as.numeric(Quantile[1]),
+    benchmark_values = Intercept_Forecast))
+
+rm(gar_staff_r2_df)
+
+```
 
 
-\subsection{Forecast accuracy}
+```{r plot_goodness_of_fit}
 
-We take the predicted YoY GDP growth rates and compare them with actual GDP YoY growth rates.  The accuracy measures for different time horizons are summarized in table \ref{forecast_accuracy}. We use in sample and out of sample comparison in order to test the robustness of partition specification. The out of sample forecast is constracted by estimation of a rolling window of length
-`r forecast_parametrs$win_len` and forecasting `r forecast_parametrs$out_of_sample_step` step ahead.
+forecast_model_fit[c("gar_macro_r2",
+                            "gar_staff_r2")] %>% 
+  reduce(
+    full_join,
+    by = c("Horizon","Quantile"),
+    suffix = c("_macro","_staff")
+    ) %>% 
+  rename_all(~str_remove_all(.,"_r2_score")) %>% 
+  pivot_longer(cols = c(-Horizon, -Quantile),
+               names_to = "model",
+               values_to = "score") %>% 
+  # filter(model != "gar_staff") %>% 
+  ggplot(aes(x = Quantile, y = score, fill = model)) + 
+  geom_col(position = "dodge") + 
+  facet_wrap(~Horizon) + 
+  scale_fill_viridis_d() + 
+  theme_bw() + 
+  theme(legend.position = "bottom", legend.title = element_blank())
+  
 
-```{r plot_accuracy_table}
+```
 
-ggplot(forecast_accuracy_table, aes(x = Horizon, y = MAD,
-                                    fill = Partition)) + 
-  facet_wrap(~Forecast_Status) + 
-  geom_bar(stat = "identity",position = "dodge", width = 0.5) + 
-  # scale_fill_manual(values = c("red","blue","black","gray")) + 
+
+<!-- Comparisons: gar vs actual, gar vs macro (rmse and quantile fit), gar vs staff -->
+
+
+```{r gar_actual_comparison, eval=FALSE}
+
+forecast_comparisons$gar_actual = forecast_data_list$GaR_Forecast %>% 
+  filter(Quantile == "0.50") %>% 
+  select(-Quantile) %>% 
+  inner_join(.,forecast_data_list$actual_gdp_df,
+             by = "Forecast_Period") %>% 
+  mutate(Error = GDP_actual - GaR_Forecast)
+
+
+```
+
+
+```{r gar_staff_comparison, eval=FALSE}
+
+forecast_comparisons$gar_staff = forecast_data_list[
+  c("GaR_Forecast","staff_forecast")] %>% 
+  reduce(inner_join,
+         by = c("Date","Forecast_Period", "Horizon", "Quantile")) %>% 
+  inner_join(forecast_data_list$actual_gdp_df,
+             by = "Forecast_Period") %>% 
+  mutate(across(.cols = c(GaR_Forecast, Staff_Forecast),
+                .fns = ~ GDP_actual - .,
+                .names = "{col}_error"))
+
+```
+
+
+```{r gar_macro_comparison, eval=FALSE}
+
+forecast_comparisons$gar_macro = forecast_data_list[
+  c("GaR_Forecast","Macro_Forecast")] %>% 
+  reduce(inner_join,
+         by = c("Date","Forecast_Period", "Horizon",
+                "Quantile")) %>% 
+  inner_join(forecast_data_list$actual_gdp_df,
+             by = "Forecast_Period") %>% 
+  mutate(across(.cols = c(GaR_Forecast, Macro_Forecast),
+                .fns = ~ GDP_actual - .,
+                .names = "{col}_error"))
+
+```
+
+
+In the next stage we compare the forecasts of the different models by matching them on Horizon, Forecast Period, Forecast Status and Win Type (where appropriate). The actual GDP growth is matched on Forecast Period only, staff forecast is matched on Forecast Period and Horizon.
+
+
+\subsection{Comparison to actual GDP}
+
+We take actual GDP YoY growth rates and compare them with the predicted median YoY GDP growth rates. The matching between the actual and forecasted values is based on
+forecasted period
+
+```{r plot_gar_actual_rmse, eval=FALSE}
+
+ggplot(forecast_model_fit$gar_actual_rmse,
+       aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "", title = "Forecast fit - RMSE") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
   theme_bw() + 
   theme(legend.position = "bottom")
 
 ```
+
+
+We take the predicted YoY GDP growth rates and compare them with actual GDP YoY growth rates.  The accuracy measures for different time horizons are summarized in table \ref{forecast_accuracy}. We use in sample and out of sample comparison in order to test the robustness of partition specification. The out of sample forecast is constracted by estimation of a rolling window of length
+`r forecast_parametrs$win_len` and forecasting `r forecast_parametrs$out_of_sample_step` step ahead.
+
+```{r plot_actual_quantile_fit_score, eval=FALSE}
+
+
+ggplot(forecast_model_fit$gar_actual_fit_score %>% 
+  group_by(Horizon,Win_Type,Forecast_Status) %>% 
+  summarise(SD = mean(Score, na.rm = TRUE), .groups = "drop"),
+  aes(x = Horizon, y = SD, fill = Horizon)) + 
+  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
+  geom_col(width = 0.5) + 
+  labs(x = "", y = "",
+       title = "Forecast fit - average quantile fit score") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+
+```
+
+
+
+\section{Residuals analysis}
+
 

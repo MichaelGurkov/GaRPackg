@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 ```{r plot_quantreq_rho, fig.height=8, eval=FALSE}
 
 rho_data = lapply(results$quantile_reg, function(temp_qreg){temp_qreg$rho}) %>% 
@@ -15,10 +16,16 @@ ggplot(data = rho_data, aes(x = Quantile, y = Rho)) +
 
 ```
 
+=======
+>>>>>>> temp
 
 ```{r plot_quant_reg_long_series_1}
 
+<<<<<<< HEAD
 plot.qreg.coeffs(results$quantile_reg[1])
+=======
+plot.qreg.coeffs(results$qreg_result[1])
+>>>>>>> temp
 
 ```
 
@@ -26,7 +33,11 @@ plot.qreg.coeffs(results$quantile_reg[1])
 
 ```{r plot_quant_reg_long_series_2}
 
+<<<<<<< HEAD
 plot.qreg.coeffs(results$quantile_reg[2])
+=======
+plot.qreg.coeffs(results$qreg_result[2])
+>>>>>>> temp
 
 ```
 
@@ -34,7 +45,11 @@ plot.qreg.coeffs(results$quantile_reg[2])
 
 ```{r plot_quant_reg_long_series_3}
 
+<<<<<<< HEAD
 plot.qreg.coeffs(results$quantile_reg[3])
+=======
+plot.qreg.coeffs(results$qreg_result[3])
+>>>>>>> temp
 
 ```
 

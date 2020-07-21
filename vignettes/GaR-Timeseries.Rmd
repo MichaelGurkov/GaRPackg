@@ -1,62 +1,9 @@
 
-```{r get_fitted_df}
-
-fitted_df = lapply(names(results$quantile_reg),
-                   function(temp_name){
-                     
-                     date_vec = results$reg_df$Date
-                     
-                     date_vec = date_vec[1:(length(date_vec) - 
-                                              as.numeric(temp_name))]
-                     
-                     temp_df = results$quantile_reg[[
-                       temp_name]]$fitted.values %>% 
-                       as.data.frame() %>% 
-                       setNames(unlist(parameters_list$quantile_vec)) %>% 
-                       mutate(Date = date_vec) %>% 
-                       gather(key = Quantile,value = GaR,-Date) %>% 
-                       mutate(Horizon = temp_name)
-                     
-                     return(temp_df)
-                     
-                   }) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
-
-
-sorted_fitted_df = lapply(names(results$quantile_reg),
-                   function(temp_name){
-                     
-                     date_vec = results$reg_df$Date
-                     
-                     date_vec = date_vec[1:(length(date_vec) - 
-                                              as.numeric(temp_name))]
-                     
-                     temp_df = t(apply(results$quantile_reg[[
-                       temp_name]]$fitted.values,1, sort))
-                     
-                     temp_df = temp_df %>% 
-                       as.data.frame() %>% 
-                       setNames(unlist(parameters_list$quantile_vec)) %>% 
-                       mutate(Date = date_vec) %>% 
-                       gather(key = Quantile,value = GaR,-Date) %>% 
-                       mutate(Horizon = temp_name)
-                     
-                     return(temp_df)
-                     
-                   }) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12")))
-
-```
 
 
 ```{r plot_gar_timeseries}
 
-
-ggplot(fitted_df %>% 
+ggplot(predict_df %>% 
          filter(Quantile == "0.05"),
        aes(x = Date, y = GaR, color = Horizon)) + 
   geom_line() + 
@@ -69,51 +16,51 @@ ggplot(fitted_df %>%
 ```
 
 
+```{r plot_factor_contribution}
+
+gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
+  
+  
+  plot_df = gar_factors_df[[temp_name]] %>% 
+  gather(key = Partition, value = GaR, -Date, -Horizon)
+
+temp_plot = ggplot() + 
+  geom_col(data = plot_df, mapping = aes(x = Date, y = GaR,
+                                         fill = Partition),
+           position = "stack", size = 5) +
+  geom_line(data = plot_df %>%
+              group_by(Date) %>%
+              summarise(Total = sum(GaR),.groups = "drop") %>%
+              ungroup(),mapping =  aes(x = Date, y = Total)) +
+  scale_fill_viridis_d(option = "plasma") +
+  labs(title = paste("Growth at risk partition decomposition",
+                     "\n(at", temp_name, "Horizon)"),
+       x = "", y = "") + 
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+  return(temp_plot)
+
+})
+
+
+
+```
+
+
 ```{r plot_gar_bounds_timeseries, fig.height=10}
 
-ggplot(fitted_df %>% 
-  filter(Quantile %in% c("0.05","0.5","0.95")),
-       aes(x = Date, y = GaR, color = Quantile)) + 
-  geom_line() + 
-  scale_x_yearqtr() + 
-  labs(title = "GaR upper and lower quantile timeseries", x = "", y = "") + 
-  facet_wrap(~Horizon,ncol = 1) + 
-  theme_bw() + 
-  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-
-
-```
-
-
-
-```{r plot_gar_bounds_timeseries_sorted, fig.height=10}
-
-ggplot(sorted_fitted_df %>% 
-  filter(Quantile %in% c("0.05","0.5","0.95")),
-       aes(x = Date, y = GaR, color = Quantile)) + 
-  geom_line() + 
-  scale_x_yearqtr() + 
-  labs(title = "GaR upper and lower quantile of sorted timeseries", x = "", y = "") + 
-  facet_wrap(~Horizon,ncol = 1) + 
-  theme_bw() + 
-  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-
-
-```
-
-
-
-```{r plot_normalized, eval=FALSE}
-
-temp_df = fitted_df %>% 
+temp_df = predict_df %>% 
   filter(Quantile %in% c("0.05","0.5","0.95")) %>% 
   spread(key = Quantile,value = GaR) %>% 
   mutate(`0.05`= `0.05`- `0.5`, `0.95` = `0.95` - `0.5`) %>% 
   gather(key = Quantile,value = GaR,-Date, -Horizon) %>% 
   filter(!Quantile == "0.05")
 
-
-ggplot(temp_df,
+ggplot(predict_df %>% 
+  filter(Quantile %in% c("0.05","0.5","0.95")),
        aes(x = Date, y = GaR, color = Quantile)) + 
   geom_line() + 
   scale_x_yearqtr() + 
@@ -121,6 +68,50 @@ ggplot(temp_df,
   facet_wrap(~Horizon,ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+```{r fan_chart}
+
+gdp_df = df %>% 
+  select(Date, GDP) %>% 
+  filter(complete.cases(.)) %>% 
+  filter(Date >= as.yearqtr("2018 Q1"))
+
+fan_chart_df  = predict_df %>% 
+  filter(Date == max(Date))%>% 
+  spread(key = Quantile,value = GaR) %>% 
+  rename_at(vars(-Date,-Horizon),
+            .funs = list(~paste0("Q_",.))) %>% 
+  mutate(Date = Date + as.numeric(as.character(Horizon)) * 0.25) %>% 
+  select(-Horizon)
+ 
+
+temp = fan_chart_df[nrow(fan_chart_df),]
+temp$Date = gdp_df$Date[nrow(gdp_df)]
+temp[,-1] = gdp_df$GDP[nrow(gdp_df)]
+
+fan_chart_df = fan_chart_df %>% 
+  rbind.data.frame(temp)
+
+ggplot() +
+  geom_line(data = gdp_df,
+            aes(x = Date, y = GDP)) +
+  geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.05, ymax = Q_0.95),
+              fill = "lightblue",
+              alpha = 0.6) +
+   geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.25, ymax = Q_0.75),
+              fill = "lightblue",
+              alpha = 0.5) +
+  geom_line(data = fan_chart_df, aes(x = Date, y = Q_0.5), color = "white") +
+  labs(x = "", y = "",title = "Fan chart for GDP YoY growth rate") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.5)) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+rm(temp, gdp_df)
 
 
 ```

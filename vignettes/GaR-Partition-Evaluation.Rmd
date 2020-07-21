@@ -1,34 +1,35 @@
 
 ```{r set_pca_list}
 
-pca_list = results$pca
 
-my_fig_height = length(pca_list) * 1.5
+pca_list = results$pca_obj
+
 
 ```
 
 
-```{r plot_pca_variance, eval=FALSE}
-
+```{r plot_pca_variance}
 
 pca_variance = lapply(names(pca_list), function(temp_name){
 
   data.frame(Name = temp_name,
              Variance = round(pca_list[[temp_name]]$pca$sdev[1] ^ 2 /
-                                sum(pca_list[[temp_name]]$pca$sdev ^ 2),3), stringsAsFactors = FALSE)
+                                sum(pca_list[[temp_name]]$pca$sdev ^ 2),3),
+             stringsAsFactors = FALSE)
 
 
 
 }) %>%
   bind_rows()
 
-ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) + 
-  geom_bar(stat = "identity", width = 0.6) + 
-  labs(title = "Variance explained \n (by first PCA component)",
-       x = "", y = "") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
+# ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) + 
+#   geom_bar(stat = "identity", width = 0.6) + 
+#   geom_text(label = Variance) + 
+#   labs(title = "Variance explained \n (by first PCA component)",
+#        x = "", y = "") + 
+#   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+#   theme_bw() + 
+#   theme(plot.title = element_text(hjust = 0.5))
 
 ```
 
@@ -37,14 +38,20 @@ ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) +
 
 pca_plots = lapply(names(pca_list), function(name){
   
+  pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
+  
   bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = name) +
+  labs(x = "", y = "", title = paste0(name, " (" ,pca_var, "%)")) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
+  
+  rm(pca_var)
+  
+  return(bar_plot)
   
 
 })
@@ -59,7 +66,7 @@ plot_grid(plotlist = pca_plots, ncol = 2)
 
 pca_timeseries_plots = lapply(names(pca_list), function(name){
   
-  ggplot(data.frame(x = pca_list[[name]]$date_index,
+  ggplot(data.frame(x = pca_list[[name]]$time_index,
                   y = pca_list[[name]]$pca$x[,1]), aes(x = x, y = y)) + 
     geom_line() + 
     labs(title = name, x = "", y = "") + 

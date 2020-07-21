@@ -4,23 +4,25 @@
 \alias{pca_reduction}
 \title{PCA reduction}
 \usage{
-pca_reduction(
-  data,
-  has_time_index = TRUE,
-  scale = TRUE,
-  n_comps = 1,
-  sign_align_params = NULL
-)
+pca_reduction(df, center = TRUE, scale = TRUE, sign_align_params = NULL)
 }
 \arguments{
-\item{data}{dataframe}
+\item{df}{dataframe}
 
-\item{has_time_index}{boolean indicator of time index of the data}
+\item{center}{boolean indicator}
 
-\item{n_comps}{(optional) number of PCA components to return}
+\item{scale}{boolean indicator}
+
+\item{sign_align_params}{(optional) a list of alignment parameters.
+The first element in the list is the aligning (axis) variable, the value is either
+character (variable's name) or numeric (variable's position index). The second element
+if(supplied) is boolean indicator alignment direction (True means positive direction).}
+}
+\value{
+a list with two elements : pca_obj - PCA object, time_index - dates vector
 }
 \description{
-This function reduces dimension based on pca method
+This function reduces dimension based on PCA method
 The function takes a data matrix and returns the first n_comps
 components of PCA transformation. If the data matrix has a
 time index the result is aligned along the index

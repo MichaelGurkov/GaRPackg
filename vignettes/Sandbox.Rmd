@@ -1,0 +1,42 @@
+
+```{r, treat_match_df}
+
+treat_match_df = df %>% 
+  select(tase_id, match,treat) %>% 
+  distinct()
+  
+
+
+```
+
+
+```{r compare_matching, eval=FALSE}
+
+
+michael_match_df %>% 
+  filter(treat_tase_id == 103)
+
+nimrod_match_df %>% 
+  filter(treat_tase_id == 103)
+
+
+temp = df %>% 
+  filter(tase_id %in% c(103,51,1033)) %>% 
+  select(tase_id,date,tase_branch,tase_sub_branch, total_assets,market_cap) %>% 
+  filter(complete.cases(.))
+
+# Match by sector
+
+temp %>% 
+  select(tase_id, tase_branch, tase_sub_branch) %>% 
+  distinct()
+
+# Match by assets
+
+temp %>% 
+  select(tase_id, total_assets, market_cap) %>% 
+  group_by(tase_id) %>% 
+  summarise(across(everything(), mean, na.rm = TRUE))
+
+```
+

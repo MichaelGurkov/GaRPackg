@@ -1,15 +1,12 @@
 
 ```{r get_quantiles_df}
 
-dist_quantile_df = lapply(names(results$quantile_reg),
+dist_quantile_df = lapply(names(results$qreg_result),
                    function(temp_name){
-                     
                      date_vec = results$reg_df$Date
-                     
                      date_vec = date_vec[1:(length(date_vec) - 
                                               as.numeric(temp_name))]
-                     
-                     temp_df = results$quantile_reg[[
+                     temp_df = results$qreg_result[[
                        temp_name]]$fitted.values %>% 
                        as.data.frame() %>% 
                        setNames(unlist(parameters_list$quantile_vec)) %>% 
@@ -28,16 +25,14 @@ dist_quantile_df = lapply(names(results$quantile_reg),
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
             .funs = list(~paste0("Q_",.))) %>% 
   group_by(Horizon) %>% 
-  mutate(IQR = Q_0.95 - Q_0.05) %>% 
-  mutate(Up_dist = Q_0.95-Q_0.5) %>% 
-  mutate(Down_dist = Q_0.5-Q_0.05) %>% 
-  mutate(RA = Up_dist - Down_dist)
+ mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
+           (0.5 * Q_0.75 - 0.5 * Q_0.25))
 
 
-factor_quantiles_df = lapply(names(results$quantile_reg),
+factor_quantiles_df = lapply(names(results$qreg_result),
                              function(temp_name){
   
-  temp_df = results$quantile_reg[[temp_name]]$coefficients
+  temp_df = results$qreg_result[[temp_name]]$coefficients
   
   temp_df = temp_df %>% 
   as.data.frame() %>% 
@@ -72,6 +67,35 @@ median_iqr_corr_mat = dist_quantile_df %>%
 ```
 
 
+
+\subsection{Median - Variance correlation}
+
+
+```{r median_variance_scatter_plot}
+
+ggplot(dist_quantile_df %>% 
+         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
+  geom_point() + 
+  stat_smooth(method = "lm") + 
+  facet_wrap(~Horizon) + 
+  labs(x = "Variance", y = "Median", title = "Median vs Variance") +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+    
+
+```
+
+
+```{r plot_median_variance_corr}
+
+ggplot(median_iqr_corr_mat, aes(x = Horizon, y = Corr)) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  theme_bw()
+
+```
+
+
 \subsection{Volatility Paradox}
 The volatility paradox describes a phenomenon where stable conditions today allow risk accumulation
 that realize in the future. The empirical representation of this phenomenon is a negative
@@ -91,7 +115,7 @@ The volatility paradox suggest that the
 ggplot(factor_quantiles_df, aes(x = Horizon, y = IQR, group = 1)) + 
   geom_path() + 
   geom_point() + 
-  labs(y = "", title = "The difference between \"tail\" coefficients") + 
+  labs(y = "") + 
   facet_wrap(~Factor) + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
@@ -109,7 +133,7 @@ percentile from the median.
 
 ```{r plot_risk_assymetry, fig.height=8}
 
-ggplot(dist_quantile_df, aes(x = Date, y = RA)) + 
+ggplot(dist_quantile_df, aes(x = Date, y = Skew)) + 
   geom_line() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
   labs(x = "", y = "", title = "Risk asymmetry") + 
@@ -120,27 +144,17 @@ ggplot(dist_quantile_df, aes(x = Date, y = RA)) +
 ```
 
 
-```{r plot_mean_median_diff, fig.height=8}
+
+```{r plot_mean_median_diff, fig.height=8, eval=FALSE}
 
 ggplot(dist_quantile_df, aes(x = Date, y = OLS - Q_0.5)) + 
   geom_line() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "", y = "", title = "Difference between mean (OLS) and median (quantile) regressions ") + 
+  labs(x = "", y = "",
+       title = "Difference between mean (OLS) and median (quantile) regressions ") + 
   facet_wrap(~Horizon, scales = "free", ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-
-```
-
-
-\subsection{Median - Variance correlation}
-
-```{r plot_median_variance_corr}
-
-ggplot(median_iqr_corr_mat, aes(x = Horizon, y = Corr)) + 
-  geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  theme_bw()
 
 ```
 

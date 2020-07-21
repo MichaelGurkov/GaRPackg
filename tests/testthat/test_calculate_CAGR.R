@@ -1,0 +1,11 @@
+
+context("calculate CAGR function")
+
+test_df = data.frame(Date = seq.Date(from = as.Date("2000-01-01"),
+                                     to = as.Date("2008-01-01"),
+                                     by = "year"), X = 1:9)
+
+out_vec =  c(((test_df$X[5:9]/ test_df$X[1:5]) - 1), rep(NA,4))
+
+testthat::expect_equal(calculate.CAGR(test_df,4),
+                       data.frame(Date = test_df$Date, X = out_vec))

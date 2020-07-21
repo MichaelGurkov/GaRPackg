@@ -1,23 +1,3 @@
-#' This function filters non NA observations and detrends the clean
-#'  series using HP filter
-#'
-#'  @import mFilter
-#'
-
-detrend.HP = function(data, HP_gamma = NULL){
-
-  non_na_ind = !is.na(data)
-
-  HP_cycle = hpfilter(data[non_na_ind],freq = 400,type = "lambda")[["cycle"]]
-
-  res = data
-
-  res[non_na_ind] = HP_cycle
-
-  return(res)
-
-}
-
 
 #' Aligns the sign of PCA components
 #'
@@ -91,7 +71,7 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 }
 
 
-#' This function reduces dimension based on pca method
+#' This function reduces dimension based on PCA method
 #' The function takes a data matrix and returns the first n_comps
 #' components of PCA transformation. If the data matrix has a
 #' time index the result is aligned along the index
@@ -99,78 +79,53 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 #' @title PCA reduction
 #'
 #'
-#' @param data dataframe
+#' @param df dataframe
 #'
-#' @param has_time_index boolean indicator of time index of the data
+#' @param center boolean indicator
 #'
-#' @param n_comps (optional) number of PCA components to return
+#' @param scale boolean indicator
 #'
+#' @param sign_align_params (optional) a list of alignment parameters.
+#' The first element in the list is the aligning (axis) variable, the value is either
+#' character (variable's name) or numeric (variable's position index). The second element
+#' if(supplied) is boolean indicator alignment direction (True means positive direction).
 #'
-pca_reduction = function(data, has_time_index = TRUE,
-                         scale = TRUE, n_comps = 1,
+#' @return a list with two elements : pca_obj - PCA object, time_index - dates vector
+#'
+pca_reduction = function(df,center = TRUE,
+                         scale = TRUE,
                          sign_align_params = NULL){
 
-  if(has_time_index){
+  # Identify time index
 
-    date_varname = grep("^[Dd]ate$",names(data), value = TRUE)
+  time_index_var = str_subset(names(df), "[Dd]ate")
 
-    # Check for unique date variable
+  if(length(time_index_var) != 1){message("Could not identify time index")}
 
-    if(length(date_varname) < 1){
+  # Extract PCA
 
-      stop("Couldn't identify a time index variable")
+  df = df %>%
+    filter(complete.cases(.))
 
-    } else if(length(date_varname) > 1){
+  temp_pca = df %>%
+    select(-all_of(time_index_var)) %>%
+    prcomp(center = center,scale. = scale)
 
-      stop(paste0("Identified multiple possible time index variables :",
-                 paste0(date_varname, collapse = ",")))
 
-    }
-
-    time_index = data[,date_varname]
-
-    pca_df = data[,!names(data) == date_varname]
-
-    temp_pca = prcomp(pca_df, scale. = scale)
-
-  } else {
-
-    temp_pca = prcomp(data, scale. = scale)
-
-  }
-
-      # Align PCA, if length == 2 then the second parameter is the direction
-    # boolean indicator.
+  # Align PCA, if length == 2 then the second parameter is
+  # the direction (boolean indicator).
 
     if(!is.null(sign_align_params)){
-
-      temp_var_name = sign_align_params[[1]]
-
-      if(ncol(temp_var_name) == 2){
-
-        date_temp_var_name = grep("^[Dd]ate$",names(temp_var_name),
-                                  value = TRUE)
-
-        temp_var_name = temp_var_name %>%
-          filter(!!sym(date_temp_var_name) %in% time_index) %>%
-          select(-date_temp_var_name) %>%
-          unlist()
-
-
-
-      }
 
       if(length(sign_align_params) == 2){
 
         temp_pca = align.pca(pca_obj = temp_pca,
-                             var_name = temp_var_name,
+                             var_name = sign_align_params[[1]],
                              positive_direction = sign_align_params[[2]])
       } else {
 
         temp_pca = align.pca(pca_obj = temp_pca,
-                             var_name = temp_var_name)
-
-
+                             var_name = sign_align_params[[1]])
 
       }
 
@@ -179,22 +134,115 @@ pca_reduction = function(data, has_time_index = TRUE,
     }
 
 
-    if(has_time_index){
+    return(list(pca_obj = temp_pca, time_index = df[,time_index_var]))
 
-      temp_df = data.frame(Date = as.Date(time_index),
-                           PCA = temp_pca$x[,1:n_comps])
+  }
+
+
+#' This function preprocess data by reducing dimension and returns regression dataset
+#'
+#' @title Data dimesion reduction
+#'
+#' @param vars_df a dataframe with all variables
+#'
+#' @param partition a list of partitions for dimension reduction
+#'
+#' @param n_components number of components that should be returned
+#'
+#' @param method (optional) string that specifies dimesion reduction method
+#' (default is PCA)
+#'
+#' @param pca_align_list (optional) a list with alignment parameters. For each partition
+#'  the aligning (axis) variable is specified together with aligning direction (optional).
+#'
+#' @param return_objects_list boolean indicator that specifies whether a list
+#' with object containing information (such as loadings) should be returned
+#'
+#' @return a list where first element is regression data (named xreg) and second
+#' (optional) element is the pca obj list
+
+reduce_data_dimension = function(vars_df,partition,
+                                 n_components = 1,
+                                 pca_align_list = NULL,
+                                 method = "pca",
+                                 return_objects_list = FALSE){
+
+  # Make and align PCA
+
+  reduction_objects_list = map(
+    names(partition)[sapply(partition,length) > 1],
+    function(temp_name){
+      temp_part = partition[[temp_name]]
+
+      temp_df = vars_df %>%
+        select(any_of(c(unlist(temp_part),"Date")))
+
+      # Set alignment params
+
+      if(temp_name %in% names(pca_align_list)){
+
+        temp_sign_align_params = pca_align_list[[temp_name]]
+
+        } else {
+
+          temp_sign_align_params = NULL
+
+          }
+
+      temp_pca = pca_reduction(
+        df = temp_df,
+        sign_align_params = temp_sign_align_params)
+
+
+      return(temp_pca)
+
+                     })
+
+  names(reduction_objects_list) = names(partition)
+
+
+  xreg_df = map(names(reduction_objects_list),
+                function(temp_name){
+
+    date_vec = reduction_objects_list[[temp_name]]$time_index
+
+    data_df = reduction_objects_list[[temp_name]]$pca_obj$x[,1:n_components]
+
+    temp_df = cbind.data.frame(date_vec, data_df)
+
+    if(n_components > 1){
+
+      names(temp_df) = c("date", paste(rep(temp_name, n_components),
+                                       seq(1,n_components), sep = "_"))
 
     } else {
 
 
-      temp_df = data.frame(PCA = temp_pca$x[,1:n_comps])
+      names(temp_df) = c("date", temp_name)
 
-      }
+    }
+
 
     return(temp_df)
 
+  }) %>%
+    reduce(full_join, by = "date")
+
+
+  return_list = list()
+
+  return_list$xreg_df = xreg_df
+
+  if(return_objects_list){
+
+    return_list$objects_list = reduction_objects_list
 
   }
+
+  return(return_list)
+
+}
+
 
 
 #' This function identifies consequitive NA sequences
@@ -478,31 +526,75 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #'@importFrom stats complete.cases
 #'
-#'@param partitions_df data frame with explanatory variables
+#' @param partititions_list list of partitons
 #'
-#'@param dep_var_df data frame with time indexed depended variable
+#' @param vars_df data frame with input variables
 #'
-#'@param horizon forecasting horizon
+#' @param target_var_name string that specifies outcome feature
 #'
-#'@param transform_to_rate parameter that defines whether to transform
-#'the depended variable to growth rate
+#' @param horizon_list list of forecast horizon
+#'
+#' @param quantile_vec vector of required quantiles in quantile regression
+#' (corresponds to tau argument in rq)
+#'
+#' @param method string a method that aggregates the data to partitions
+#'
+#' @param return_objects_list boolean indicator that returns PCA objects.
 #'
 #'
-make.quant.reg.df = function(partitions_df, dep_var_df,
-                             horizon, transform_to_rate = TRUE){
+make.quant.reg.df = function(partitions_list, vars_df,
+                             target_var_name,
+                             horizon_list,
+                             quantile_vec,
+                             return_objects_list = FALSE,
+                             pca.align.list = NULL,
+                             method = "inner_join_PCA"){
 
-  if(transform_to_rate){
+  if(!is.null(partitions_list)){
 
-    dep_var_df = calculate.CAGR(dep_var_df,
-                                horizon = horizon)
+    # Preprocess
+
+    preproc_df_list = reduce_data_dimension(vars_df = vars_df,
+                                            pca_align_list = pca.align.list,
+                                            partition = partitions_list,
+                                            return_objects_list = return_objects_list)
+
+
+    # Add lead values of target var
+
+    reg_df = vars_df %>%
+      select(Date, all_of(target_var_name)) %>%
+      inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+
+
 
   }
 
-  reg_df = dep_var_df %>%
-    inner_join(partitions_df) %>%
-    filter(complete.cases(.))
 
-  return(reg_df)
+  if(is.null(partitions_list)){
+
+     reg_df = vars_df %>%
+      select(Date, all_of(target_var_name)) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+
+  }
+
+  return_list = list()
+
+  return_list$reg_df = reg_df
+
+  if(return_objects_list & (!is.null(partitions_list))){
+    return_list$pca_obj = preproc_df_list$objects_list}
+
+
+  return(return_list)
 
 }
 
@@ -549,4 +641,69 @@ extract.qreg.coeff.table = function(qreg_obj){
 }
 
 
+#' @title Fill na with average of k previous observations
+#'
+#' @param data_vec vector of data
+#'
+#' @param k window size
+#'
 
+fill.na.average = function(data_vec, k = 4){
+
+  na_ind = which(is.na(data_vec))
+
+  fill_values = sapply(na_ind, function(temp_ind){
+
+    start_ind = temp_ind - k
+
+    end_ind = temp_ind - 1
+
+    if(start_ind > 0 & end_ind > 0){
+
+      return(mean(data_vec[start_ind:end_ind]))
+
+    } else {
+
+      return(NA)
+
+    }
+
+    })
+
+  filled_data_vec = data_vec
+
+  filled_data_vec[na_ind] = fill_values
+
+  return(filled_data_vec)
+
+}
+
+
+
+#' This helper function adds leads of target variable
+#'
+#' @param df
+#'
+#' @param target_var_name
+#'
+#' @param  leads_vector
+#'
+add_leads_to_target_var = function(df, target_var_name,leads_vector){
+
+
+  for(temp_lead in unlist(leads_vector)){
+
+    target_var_name_lead = paste(target_var_name,temp_lead,sep = "_")
+
+    df = df %>%
+      mutate(!!sym(target_var_name_lead) := lead(!!sym(target_var_name),temp_lead))
+
+  }
+
+
+  return(df)
+
+
+
+
+}
