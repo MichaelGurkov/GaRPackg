@@ -163,7 +163,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
 
 
 ```
@@ -171,7 +171,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
 
 ```
 
@@ -191,7 +191,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 

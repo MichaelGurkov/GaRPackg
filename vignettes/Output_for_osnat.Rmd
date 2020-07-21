@@ -380,8 +380,7 @@ temp = forecast_model_fit[c("gar_macro_r2","gar_staff_r2")] %>%
   rename_at(vars(gar_macro),.funs = ~"gar") %>% 
   pivot_longer(cols = c(-Horizon, -Quantile),
                names_to = "model",
-               values_to = "score") %>% 
-  mutate(Horizon = factor(Horizon,levels = c("1","8","12")))
+               values_to = "score")
   
 good_fit_plot = ggplot(temp, aes(x = Quantile, y = score, fill = model)) + 
   geom_col(position = 'dodge', width = 0.5) + 

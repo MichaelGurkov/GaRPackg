@@ -169,32 +169,32 @@ reduce_data_dimension = function(vars_df,partition,
 
   # Make and align PCA
 
-  reduction_objects_list = map(names(partition)[sapply(partition,length) > 1],
-                   function(temp_name){
+  reduction_objects_list = map(
+    names(partition)[sapply(partition,length) > 1],
+    function(temp_name){
+      temp_part = partition[[temp_name]]
 
-                     temp_part = partition[[temp_name]]
+      temp_df = vars_df %>%
+        select(any_of(c(unlist(temp_part),"Date")))
 
-                     temp_df = vars_df %>%
-                       select(any_of(c(unlist(temp_part),"Date")))
+      # Set alignment params
 
-                     # Set alignment params
+      if(temp_name %in% names(pca_align_list)){
 
-                     if(temp_name %in% names(pca_align_list)){
+        temp_sign_align_params = pca_align_list[[temp_name]]
 
-                       temp_sign_align_params = pca_align_list[[temp_name]]
+        } else {
 
-                     } else {
+          temp_sign_align_params = NULL
 
-                       temp_sign_align_params = NULL
+          }
+
+      temp_pca = pca_reduction(
+        df = temp_df,
+        sign_align_params = temp_sign_align_params)
 
 
-                     }
-
-                     temp_pca = pca_reduction(
-                       df = temp_df,
-                       sign_align_params = temp_sign_align_params)
-
-                     return(temp_pca)
+      return(temp_pca)
 
                      })
 
@@ -240,9 +240,6 @@ reduce_data_dimension = function(vars_df,partition,
   }
 
   return(return_list)
-
-
-
 
 }
 
@@ -549,7 +546,7 @@ make.quant.reg.df = function(partitions_list, vars_df,
                              target_var_name,
                              horizon_list,
                              quantile_vec,
-                             return_objects_list,
+                             return_objects_list = FALSE,
                              pca.align.list = NULL,
                              method = "inner_join_PCA"){
 
@@ -557,7 +554,7 @@ make.quant.reg.df = function(partitions_list, vars_df,
 
     # Preprocess
 
-    preproc_df_list = reduce_data_dimension(vars_df = df,
+    preproc_df_list = reduce_data_dimension(vars_df = vars_df,
                                             pca_align_list = pca.align.list,
                                             partition = partitions_list,
                                             return_objects_list = return_objects_list)
