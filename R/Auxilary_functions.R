@@ -605,7 +605,15 @@ predict_df = map(roll_cv_list$splits,
       mutate(Horizon = temp_name) %>%
       mutate(Date = assessment_set$Date)
 
+    if(length(quantile_vec) == 1){
+      temp_pred = temp_pred %>%
+        mutate(Quantile = quantile_vec)
+      }
+
     return(temp_pred)
+
+
+
 
   }) %>%
     bind_rows()
