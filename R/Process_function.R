@@ -167,6 +167,22 @@ reduce_data_dimension = function(vars_df,partition,
                                  method = "pca",
                                  return_objects_list = FALSE){
 
+  return_list = list()
+
+  # Check for one variable partitions
+
+  if(all(sapply(partition,length) == 1)){
+
+    return_list$xreg_df = vars_df %>%
+      select(Date, unlist(partitions_list$two_features)) %>%
+      rename(date = Date)
+
+    return(return_list)
+
+
+  }
+
+
   # Make and align PCA
 
   reduction_objects_list = map(
@@ -228,8 +244,6 @@ reduce_data_dimension = function(vars_df,partition,
   }) %>%
     reduce(full_join, by = "date")
 
-
-  return_list = list()
 
   return_list$xreg_df = xreg_df
 
