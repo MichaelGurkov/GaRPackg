@@ -96,20 +96,16 @@ rm(models_list,temp_forecasts)
 ```
 
 
-```{r test_GaR_forecast, eval=FALSE}
+```{r basic_forecast, eval=FALSE}
 
-gar_forecast_fixed = get.gar.forecast(
-  partitions_list = current_partition,
+forecast_data_list$Basic_Forecast = get.gar.forecast(
+  partitions_list = partitions_list$two_features,
   vars_df = forecast_parameters$df,
   target_var_name = "GDP",
   horizon_list = parameters_list$horizon_list,
   quantile_vec = parameters_list$quantile_vec,
   pca.align.list = list(
-    Dom_FCI = list(
-      var_name = "Spread_CPI_corp",
-      positive_direction = FALSE),
     Dom_Macro = list(var_name = "GDP"),
-    Global = list(var_name = "rate_euro"),
     FinCycle = list(var_name = "Credit")),
   win_len = forecast_parameters$win_len,
   win_type_expanding = FALSE) %>% 
@@ -119,6 +115,34 @@ gar_forecast_fixed = get.gar.forecast(
     Date + as.numeric(Horizon) * 0.25,
     sep = "-")) %>% 
     mutate(Horizon = as_factor(Horizon))
+
+
+gar_basic_r2_df = forecast_data_list[c("Basic_Forecast",
+                                       "Intercept_Forecast")] %>% 
+  reduce(inner_join,
+         by = c("Date","Forecast_Period", "Horizon",
+                "Quantile")) %>% 
+  inner_join(forecast_data_list$actual_gdp_df,
+             by = "Forecast_Period") %>% 
+  select(-Forecast_Period) %>% 
+  rename(Basic_Forecast = GaR_forecast)
+
+forecast_model_fit$gar_basic_r2 = gar_basic_r2_df %>% 
+  group_by(Horizon, Quantile) %>% 
+  summarise(
+    gar_r2_score = quantile.r2.score(
+    realized_estimates = GDP_actual,
+    forecast_values = Basic_Forecast,
+    quantile = as.numeric(Quantile[1]),
+    benchmark_values = Intercept_Forecast))
+
+rm(gar_basic_r2_df)
+
+ggplot(forecast_model_fit$gar_basic_r2,
+       aes(x = Quantile, y = gar_r2_score)) + 
+  geom_col(width = 0.3) + 
+  facet_wrap(~Horizon) + 
+  labs(x = "", y = "", title = "Goodness of fit of Basic (GDP + Credit) model")
 
 
 ```
@@ -408,6 +432,17 @@ forecast_data_list$GaR_Forecast %>%
   labs(title = "GaR Predictions (out of sample)") + 
   scale_y_continuous(labels = scales::percent_format()) + 
   facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
+
+
+forecast_data_list$GaR_Forecast %>% 
+  ggplot(aes(x = Date, y = GaR_Forecast, color = Quantile)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
+  xlab(NULL) + 
+  ylab(NULL) + 
+  labs(title = "GaR Predictions (out of sample)") + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  facet_wrap(~Horizon, scales = "free")
 ```
 
 
@@ -437,8 +472,6 @@ forecast_data_list$Intercept_Forecast %>%
   scale_y_continuous(labels = scales::percent_format()) + 
   facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
 ```
-
-
 
 
 ```{r plot_gar_vs_staff}

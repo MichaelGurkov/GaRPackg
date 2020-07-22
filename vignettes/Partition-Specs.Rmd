@@ -10,6 +10,18 @@ partitions_list  = list()
 ```
 
 
+```{r two_features}
+
+partitions_list$two_features = list(
+  Dom_Macro = list("GDP"),
+  FinCycle = list(
+    "Credit"
+  )
+)
+
+```
+
+
 ```{r basic}
 
 partitions_list$basic = list(
