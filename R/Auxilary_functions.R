@@ -36,6 +36,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
+                            type = "YoY",
                             method = "inner_join_PCA",
                             run_ols_reg = FALSE,
                             pca.align.list = NULL,
@@ -47,6 +48,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
     quantile_vec = quantile_vec,
+    type = type,
     pca.align.list = pca.align.list,
     method = method,
     return_objects_list = return_objects_list
@@ -81,9 +83,6 @@ run.GaR.analysis = function(partitions_list, vars_df,
     names(ols_result) = horizon_list
 
   }
-
-  reg_df = reg_df %>%
-    select(-GDP_F,-GDP)
 
 
   # Check for objects and return list
@@ -214,6 +213,7 @@ get.gar.forecast = function(partitions_list,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
+                            type = "YoY",
                             pca.align.list = NULL,
                             method,
                             win_len = 30,
@@ -225,6 +225,7 @@ get.gar.forecast = function(partitions_list,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
     quantile_vec = quantile_vec,
+    type = type,
     pca.align.list = pca.align.list,
     method = method,
     return_objects_list = FALSE

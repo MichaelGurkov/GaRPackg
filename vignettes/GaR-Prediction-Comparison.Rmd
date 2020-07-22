@@ -55,9 +55,10 @@ temp_forecasts = map(
   temp_forecast = get.gar.forecast(
   partitions_list = models_list[[temp_name]],
   vars_df = forecast_parameters$df,
-  target_var_name = "GDP",
+  target_var_name = "GDP_cum",
   horizon_list = parameters_list$horizon_list,
   quantile_vec = parameters_list$quantile_vec,
+  type = "Cumulative",
   pca.align.list = list(
     Dom_FCI = list(
       var_name = "Spread_CPI_corp",
@@ -226,11 +227,6 @@ forecast_data_list$staff_forecast = list(
 rm(staff_forecast_df_h8, staff_forecast_df_h1,
    staff_forecast_conversion_table)
 
-forecast_accuracy_table = gar_forecast %>% 
-  group_by(Partition, Forecast_Status,Horizon, Quantile) %>% 
-  summarise(MAD = round(mean(abs(Error)),4),
-            RMSE = round(sqrt(mean(Error ^ 2)),4))
-
 
 ```
 
@@ -324,7 +320,7 @@ forecast_model_fit[c("gar_macro_r2",
   # filter(model != "gar_staff") %>% 
   ggplot(aes(x = Quantile, y = score, fill = model)) + 
   geom_col(position = "dodge") + 
-  facet_wrap(~Horizon) + 
+  facet_wrap(~Horizon, scales = "free") + 
   scale_fill_viridis_d() + 
   theme_bw() + 
   theme(legend.position = "bottom", legend.title = element_blank())
@@ -381,46 +377,6 @@ forecast_comparisons$gar_macro = forecast_data_list[
 
 
 In the next stage we compare the forecasts of the different models by matching them on Horizon, Forecast Period, Forecast Status and Win Type (where appropriate). The actual GDP growth is matched on Forecast Period only, staff forecast is matched on Forecast Period and Horizon.
-
-
-\subsection{Comparison to actual GDP}
-
-We take actual GDP YoY growth rates and compare them with the predicted median YoY GDP growth rates. The matching between the actual and forecasted values is based on
-forecasted period
-
-```{r plot_gar_actual_rmse, eval=FALSE}
-
-ggplot(forecast_model_fit$gar_actual_rmse,
-       aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
-  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
-  geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit - RMSE") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  theme_bw() + 
-  theme(legend.position = "bottom")
-
-```
-
-
-We take the predicted YoY GDP growth rates and compare them with actual GDP YoY growth rates.  The accuracy measures for different time horizons are summarized in table \ref{forecast_accuracy}. We use in sample and out of sample comparison in order to test the robustness of partition specification. The out of sample forecast is constracted by estimation of a rolling window of length
-`r forecast_parametrs$win_len` and forecasting `r forecast_parametrs$out_of_sample_step` step ahead.
-
-```{r plot_actual_quantile_fit_score, eval=FALSE}
-
-
-ggplot(forecast_model_fit$gar_actual_fit_score %>% 
-  group_by(Horizon,Win_Type,Forecast_Status) %>% 
-  summarise(SD = mean(Score, na.rm = TRUE), .groups = "drop"),
-  aes(x = Horizon, y = SD, fill = Horizon)) + 
-  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
-  geom_col(width = 0.5) + 
-  labs(x = "", y = "",
-       title = "Forecast fit - average quantile fit score") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  theme_bw() + 
-  theme(legend.position = "bottom")
-
-```
 
 
 

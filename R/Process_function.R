@@ -536,11 +536,13 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 }
 
 
-#'This function creates a data set for quantile regression
+#' @title  Create a data set for quantile regression
 #'
-#'@importFrom stats complete.cases
+#' @details First the data is preprocessed  using dimension reduction (PCA)
 #'
-#' @param partititions_list list of partitons
+#' @importFrom stats complete.cases
+#'
+#' @param partititions_list list of partitions
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -558,6 +560,7 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 make.quant.reg.df = function(partitions_list, vars_df,
                              target_var_name,
+                             type = "YoY",
                              horizon_list,
                              quantile_vec,
                              return_objects_list = FALSE,
@@ -581,7 +584,8 @@ make.quant.reg.df = function(partitions_list, vars_df,
       inner_join(preproc_df_list$xreg_df, by = c("Date" = "date")) %>%
       filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
-                              leads_vector = unlist(horizon_list))
+                              leads_vector = unlist(horizon_list),
+                              type = type)
 
 
 
@@ -595,7 +599,8 @@ make.quant.reg.df = function(partitions_list, vars_df,
       select(Date, all_of(target_var_name)) %>%
       filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
-                              leads_vector = unlist(horizon_list))
+                              leads_vector = unlist(horizon_list),
+                              type = type)
 
 
   }
@@ -702,22 +707,46 @@ fill.na.average = function(data_vec, k = 4){
 #'
 #' @param  leads_vector
 #'
-add_leads_to_target_var = function(df, target_var_name,leads_vector){
+add_leads_to_target_var = function(df,
+                                   target_var_name,
+                                   leads_vector,
+                                   type = "YoY"){
 
 
-  for(temp_lead in unlist(leads_vector)){
+  if(type == "YoY"){
 
-    target_var_name_lead = paste(target_var_name,temp_lead,sep = "_")
 
-    df = df %>%
-      mutate(!!sym(target_var_name_lead) := lead(!!sym(target_var_name),temp_lead))
+    for(temp_lead in unlist(leads_vector)){
+
+      target_var_name_lead = paste(target_var_name,temp_lead,sep = "_")
+
+      df = df %>%
+        mutate(!!sym(target_var_name_lead) := lead(!!sym(target_var_name),temp_lead))
+
+    }
+
+
+  }
+
+
+  if(type == "Cumulative"){
+
+
+    for(temp_lead in unlist(leads_vector)){
+
+      target_var_name_lead = paste(target_var_name,temp_lead,sep = "_")
+
+      df = df %>%
+        mutate(!!sym(target_var_name_lead) :=
+                 lead(!!sym(target_var_name),temp_lead) / !!sym(target_var_name) - 1)
+
+    }
+
 
   }
 
 
   return(df)
-
-
 
 
 }

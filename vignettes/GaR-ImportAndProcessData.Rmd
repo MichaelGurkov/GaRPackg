@@ -57,6 +57,7 @@ rm(partiton_in_env)
 # Transform variables to rates of change YoY
 
 df = df %>% 
+  mutate(GDP_cum = GDP) %>% 
   mutate_at(vars(any_of(parameters_list$vars_to_rates)),
             .funs = list(~./lag(.,4)-1))
 
