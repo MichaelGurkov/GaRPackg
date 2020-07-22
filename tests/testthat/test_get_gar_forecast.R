@@ -37,7 +37,7 @@ test_pred_df = map(
   ) %>%
   bind_rows()
 
-test_that("get.gar.forecasr returns proper predictions",
+test_that("get.gar.forecast returns proper predictions",
           expect_equal(
             object = get.gar.forecast(
               partitions_list = test_params$partition,

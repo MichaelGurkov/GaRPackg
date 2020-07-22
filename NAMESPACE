@@ -2,8 +2,11 @@
 
 export(interpolate)
 import(dplyr)
+import(purrr)
+import(quantreg)
 import(rsample)
 import(stringr)
+import(tidyr)
 import(zoo)
 importFrom(stats,complete.cases)
 importFrom(stats,cor)

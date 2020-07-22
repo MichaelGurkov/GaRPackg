@@ -202,6 +202,8 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 #'
 #' @import rsample
 #'
+#' @import purrr
+#'
 #' @return a data frame with out of sample predictions
 #'
 
@@ -233,7 +235,8 @@ get.gar.forecast = function(partitions_list,
                     quantile_vec = quantile_vec,
                     win_len = win_len,
                     win_type_expanding = win_type_expanding) %>%
-  bind_rows()
+    bind_rows() %>%
+    fix.quantile.crossing()
 
   return(prediction_df)
 
@@ -510,6 +513,7 @@ quantile.r2.score = function(realized_estimates, forecast_values,
 
 #' This function runs quantile regression
 #'
+#'@import quantreg
 #'
 run.quant.reg = function(reg_df,
                          target_var_name,
@@ -561,6 +565,9 @@ run.quant.reg = function(reg_df,
 #'
 #' @param win_type_expanding boolean indicator that determines
 #' whether the rolling window should be expanding or rolling
+#'
+#'
+#' @import tidyr
 #'
 #'
 run.cross.validation = function(reg_df,
@@ -624,5 +631,30 @@ predict_df = map(roll_cv_list$splits,
   bind_rows()
 
 return(predict_df)
+
+}
+
+
+#' @title Fixes quantile regression crossing
+#'
+#' This function fixes the crossing issue in quantile regression
+#'
+#' @import tidyr
+#'
+#' @param prediction_df
+#'
+fix.quantile.crossing = function(prediction_df){
+
+   prediction_df = prediction_df %>%
+    group_by(Horizon,Date) %>%
+    arrange(Quantile) %>%
+    mutate(GaR_forecast = sort(GaR_forecast)) %>%
+    ungroup()
+
+
+   return(prediction_df)
+
+
+
 
 }
