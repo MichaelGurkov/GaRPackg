@@ -22,6 +22,23 @@ partitions_list$two_features = list(
 ```
 
 
+```{r real_fin}
+
+partitions_list$real_fin = list(
+  Dom_Macro = list(
+    "GDP",
+    "Ind_Prod_Israel"),
+  FinCycle = list(
+    "Credit",
+    "House_Price"
+  )
+)
+
+
+
+```
+
+
 ```{r basic}
 
 partitions_list$basic = list(
