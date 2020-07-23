@@ -79,6 +79,54 @@ rm(models_list)
 ```
 
 
+```{r plot_actual}
+
+forecast_benchmarks$actual_gdp_df %>% 
+  separate(col = Forecast_Period, into = c("start","end"),
+           sep = "-") %>% 
+  mutate(start = as.yearqtr(start)) %>% 
+  ggplot(aes(x = start, y = GDP_actual)) + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  geom_line()
+
+```
+
+
+```{r check_gar_intercept}
+
+temp_df = list(forecast_data_list$GaR_Forecast,
+     forecast_benchmarks$Intercept_Forecast) %>% 
+  reduce(inner_join) %>% 
+  filter(Quantile == "0.05") %>% 
+  filter(Horizon == "8") %>% 
+  mutate(Forecast_Period = paste(
+    Date + as.numeric(Horizon) * 0.25 - 1,
+    Date + as.numeric(Horizon) * 0.25,
+    sep = "-")) %>% 
+  select(-Quantile, -Horizon) %>% 
+  inner_join(forecast_benchmarks$actual_gdp_df,
+             by = "Forecast_Period") %>% 
+  select(-Forecast_Period)
+
+```
+
+
+
+```{r plot_residuals}
+
+temp_df %>% 
+  mutate(across(c("GaR_forecast","Intercept_Forecast"),
+                ~ GDP_actual - .)) %>% 
+  select(-GDP_actual) %>% 
+  pivot_longer(cols = -Date) %>% 
+  ggplot(aes(x = Date, y = value, color = name)) +
+  theme()
+
+
+```
+
+
+
 ```{r r_squared}
 
 r2_df =  map(names(forecast_data_list),
@@ -107,7 +155,6 @@ r2_df =  map(names(forecast_data_list),
  
 
 ```
-
 
 
 ```{r plot_r_2}
