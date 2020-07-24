@@ -2,6 +2,8 @@
 
 ```{r load_library}
 
+library(corrplot)
+
 library(devtools)
 
 load_all()
@@ -25,11 +27,15 @@ forecast_data_list = list()
 
 forecast_model_fit = list()
 
-models_list = list(GaR_Forecast = partitions_list$basic_no_global_inf,
-                   Intercept_Forecast = NULL,
-                   Macro_Forecast = partitions_list$macro,
-                   Basic_Forecast = partitions_list$two_features,
-                   RealFin_Forecast = partitions_list$real_fin)
+models_list = list(
+  real_fin_glob_one_Forecast = partitions_list$real_fin_glob_one,
+  real_fin_glob_two_Forecast = partitions_list$real_fin_glob_two,
+  real_fin_glob_three_Forecast = partitions_list$real_fin_glob_three,
+  real_fin_one_Forecast = partitions_list$real_fin_one,
+  real_fin_two_Forecast = partitions_list$real_fin_two,
+  real_fin_three_Forecast = partitions_list$real_fin_glob_three,
+  Intercept_Forecast = NULL
+  )
 
 
 ```
@@ -51,56 +57,67 @@ forecast_benchmarks$actual_gdp_df = forecast_parameters$df %>%
 ```{r reg_dfs}
 
 
-temp_models = tibble(model = names(models_list$GaR_Forecast))
+temp_xreg_list = map(
+  models_list,
+  reduce_data_dimension,
+  vars_df = df
+  )
 
-temp_reg_df_list = map(models_list, function(temp_part){
-  
-  temp_df = make.quant.reg.df(
-    partitions_list = temp_part,
-    vars_df = df,
-    target_var_name = "GDP",
-    horizon_list = list(1,4,8,12)
-    )
-  
-  temp_df = temp_df$reg_df  %>% 
-    select(-contains("GDP"))
-  
-  
-  
-})
 
-temp_reg_cor_df = map(
-  names(models_list$GaR_Forecast),function(temp_name){
+extract.comp.from.xreg.list = function(comp_name, xreg_list){
+  
+  comp_list = map2(
+  names(xreg_list),
+  xreg_list,
+  function(temp_name, temp_df){
     
-    temp_cor_df = map(names(temp_reg_df_list),
-                      function(temp_reg_name){
-      
-      temp_df = temp_reg_df_list[[temp_reg_name]]
-      
-      temp_df = temp_df %>% 
-        select(any_of(c("Date", temp_name)))
-      
-      if(temp_name %in% names(temp_df)){
-        
-        temp_df = temp_df %>% 
-        rename(!!sym(temp_reg_name) := !!sym(temp_name))
-        
-        
-      }
-
-      return(temp_df)
-      
-      
-    }) %>% 
-  reduce(inner_join, by = "Date")
-                      })
-
-temp_reg_cor_df[[5]] %>% 
-  select(-Date) %>% 
-  cor()
-
-
+    temp_df = temp_df[[1]]
+  
+  if(comp_name %in% names(temp_df)){
     
+    return(temp_df %>% 
+      select("Date", all_of(comp_name)) %>% 
+      rename(!!sym(temp_name) := !!sym(comp_name)))
+    
+    
+  }
+  
+  
+}
+)
+  
+  comp_list = comp_list[!sapply(comp_list, is.null)]
+  
+  comp_list = comp_list %>% 
+    reduce(inner_join, by = "Date") %>% 
+    select(-Date) %>% 
+    filter(complete.cases(.))
+  
+  return(comp_list)
+  
+}
+
+corr_df_list = map(
+  list(
+    Dom_Macro = "Dom_Macro",
+    FinCycle = "FinCycle",
+    Global = "Global"),
+  extract.comp.from.xreg.list,
+  xreg_list = temp_xreg_list)
+
+
+for(temp_name in names(corr_df_list)){
+  
+  corrplot(cor(corr_df_list[[temp_name]]),
+         type = "upper",
+         diag = FALSE,
+         tl.srt = 0,
+         tl.cex = 0.8,
+         mar = c(1,5,1,1),
+         method = "number",
+         title = temp_name)
+}
+
 
 ```
 
@@ -177,7 +194,6 @@ forecast_model_fit$r2 %>%
 ```
 
 
-
 ```{r plot_actual}
 
 forecast_benchmarks$actual_gdp_df %>% 
@@ -189,29 +205,6 @@ forecast_benchmarks$actual_gdp_df %>%
   geom_line()
 
 ```
-
-
-```{r check_gar_intercept}
-
-temp_df = list(forecast_data_list$GaR_Forecast,
-     forecast_benchmarks$Intercept_Forecast) %>% 
-  reduce(inner_join) %>% 
-  filter(Quantile == "0.05") %>% 
-  filter(Horizon == "8") %>% 
-  mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
-    sep = "-")) %>% 
-  select(-Quantile, -Horizon) %>% 
-  inner_join(forecast_benchmarks$actual_gdp_df,
-             by = "Forecast_Period") %>% 
-  select(-Forecast_Period)
-
-write_csv(temp_df,
-"C:\\Users\\Misha\\Desktop\\r2_test_data.csv")
-
-```
-
 
 
 ```{r plot_residuals}
@@ -228,6 +221,17 @@ temp_df %>%
   scale_y_continuous(labels = scales::percent_format()) + 
   theme(legend.position = "bottom", legend.title = element_blank())
 
+
+```
+
+
+```{r temp, eval=FALSE}
+
+pc1 = reduce_data_dimension(df,partitions_list$real_fin_glob_two,
+                            return_objects_list = TRUE)
+
+pc2 = reduce_data_dimension(df,partitions_list$real_fin_glob_three,
+                            return_objects_list = TRUE)
 
 ```
 

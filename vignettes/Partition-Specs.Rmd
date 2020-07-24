@@ -10,31 +10,95 @@ partitions_list  = list()
 ```
 
 
-```{r two_features}
+<!-- Real + Financial -->
 
-partitions_list$two_features = list(
-  Dom_Macro = list("GDP"),
+```{r real_fin}
+
+partitions_list$real_fin_one = list(
+  Dom_Macro = list(
+    "GDP"
+    ),
   FinCycle = list(
     "Credit"
   )
 )
 
-```
 
-
-```{r real_fin}
-
-partitions_list$real_fin = list(
+partitions_list$real_fin_two = list(
   Dom_Macro = list(
     "GDP",
-    "Ind_Prod_Israel"),
+    "Ind_Prod_Israel"
+    ),
   FinCycle = list(
     "Credit",
     "House_Price"
   )
 )
 
+partitions_list$real_fin_three = list(
+  Dom_Macro = list(
+    "GDP",
+    "Ind_Prod_Israel",
+    "C_FP"
+    ),
+  FinCycle = list(
+    "Credit",
+    "House_Price",
+    "TA125_Close"
+  )
+)
 
+```
+
+<!-- Real + Financial  + Global-->
+
+```{r real_fin_glob}
+
+partitions_list$real_fin_glob_one = list(
+  Dom_Macro = list(
+    "GDP"
+    ),
+  FinCycle = list(
+    "Credit"
+  ),
+  Global = list(
+    "gdp_us"
+  )
+)
+
+
+partitions_list$real_fin_glob_two = list(
+  Dom_Macro = list(
+    "GDP",
+    "Ind_Prod_Israel"
+    ),
+  FinCycle = list(
+    "Credit",
+    "House_Price"
+  ),
+  Global = list(
+    "gdp_us",
+    "gdp_euro"
+  )
+)
+
+partitions_list$real_fin_glob_three = list(
+  Dom_Macro = list(
+    "GDP",
+    "Ind_Prod_Israel",
+    "Ind_Prod_Israel_NSA"
+    ),
+  FinCycle = list(
+    "Credit",
+    "House_Price",
+    "TA125_Close"
+  ),
+  Global = list(
+    "gdp_us",
+    "gdp_euro",
+    "Ind_Prod_us"
+  )
+)
 
 ```
 
