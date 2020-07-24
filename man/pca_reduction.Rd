@@ -17,9 +17,11 @@ pca_reduction(df, center = TRUE, scale = TRUE, sign_align_params = NULL)
 The first element in the list is the aligning (axis) variable, the value is either
 character (variable's name) or numeric (variable's position index). The second element
 if(supplied) is boolean indicator alignment direction (True means positive direction).}
+
+\item{target_var_name}{string that specifies outcome feature}
 }
 \value{
-a list with two elements : pca_obj - PCA object, time_index - dates vector
+a list with two elements : pca_obj - PCA object, time_index - Dates vector
 }
 \description{
 This function reduces dimension based on PCA method
