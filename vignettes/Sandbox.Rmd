@@ -54,7 +54,7 @@ forecast_benchmarks$actual_gdp_df = forecast_parameters$df %>%
 ```
 
 
-```{r reg_dfs}
+```{r reg_dfs, eval=FALSE}
 
 
 temp_xreg_list = map(
@@ -112,7 +112,7 @@ for(temp_name in names(corr_df_list)){
          type = "upper",
          diag = FALSE,
          tl.srt = 0,
-         tl.cex = 0.8,
+         tl.cex = 0.5,
          mar = c(1,5,1,1),
          method = "number",
          title = temp_name)
@@ -123,7 +123,7 @@ for(temp_name in names(corr_df_list)){
 
 
 
-```{r GaR_Forecast}
+```{r GaR_Forecast_pca, eval=FALSE}
 
 forecast_data_list = map(names(models_list),
   function(temp_name){
@@ -154,6 +154,36 @@ forecast_data_list = map(names(models_list),
   )
 
 ```
+
+
+```{r GaR_Forecast_pls, eval=FALSE}
+
+forecast_data_list = map(names(models_list),
+  function(temp_name){
+    
+    temp_df = get.gar.forecast(
+      partitions_list = models_list[[temp_name]],
+      vars_df = forecast_parameters$df,
+      target_var_name = "GDP",
+      horizon_list = parameters_list$horizon_list,
+      quantile_vec = parameters_list$quantile_vec,
+      method = "pls",
+      win_len = forecast_parameters$win_len,
+      win_type_expanding = forecast_parameters$win_type_expanding
+      ) %>% 
+      rename(!!sym(temp_name) := GaR_forecast)
+    
+
+    return(temp_df)
+    
+    
+
+  }
+  
+  )
+
+```
+
 
 
 ```{r r_squared}

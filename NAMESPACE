@@ -2,6 +2,7 @@
 
 export(interpolate)
 import(dplyr)
+import(pls)
 import(purrr)
 import(quantreg)
 import(rsample)

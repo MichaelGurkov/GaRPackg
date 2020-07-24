@@ -27,6 +27,7 @@ parameters_list$vars_to_diff = c("BOI_rate")
 
 ```{r Import_data}
 
+
 raw_df = import.from.fame.template(
   paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
          "\\OneDrive - Bank Of Israel\\",
@@ -39,8 +40,8 @@ raw_df = import.from.fame.template(
 
 partiton_in_env = "current_partition" %in% ls()
 
-df = raw_df %>% 
-  mutate(Ind_Prod_Israel = Ind_Prod_Israel_NSA) %>% 
+df = raw_df %>%
+  mutate(Ind_Prod_Israel = Ind_Prod_Israel_NSA) %>%
   {if(partiton_in_env) select(.,Date,
                               unlist(current_partition,
                                      use.names = FALSE)) else .}
