@@ -270,9 +270,9 @@ quantile.r2.score = function(realized_values, forecast_values,
 #' @details This function calcualtes the Probability Integral
 #' Transformation to evaluate goodness of fit
 #'
-#' @param realized_values
+#' @param realized_values actual values
 #'
-#' @param forecast_values
+#' @param forecast_values predicted values
 
 quantile.pit.score = function(realized_values,forecast_values){
 

@@ -44,7 +44,8 @@ test_mix_df = data.frame(
   inner_join(
     gar_data %>%
       select(Date,Credit) %>%
-      mutate(FinCycle = scale(Credit))
+      mutate(FinCycle = scale(Credit)),
+    by = "Date"
   ) %>%
   select(Date, FinCycle, Dom_Macro)
 
@@ -83,10 +84,19 @@ test_that("reduce_data_dimension returns multi feature data",
             expected = test_multi_df$xreg_df_multi)
           )
 
-test_that(paste0("reduce_data_dimension returns Null",
+
+test_that(paste0("reduce_data_dimension issues warning",
                  " when partition is NULL"),
-          expect_null(object = reduce_data_dimension(
+          expect_warning(object = reduce_data_dimension(
             vars_df = gar_data,
             partition = NULL))
 )
+
+
+# test_that(paste0("reduce_data_dimension returns Null",
+#                  " when partition is NULL"),
+#           expect_null(object = reduce_data_dimension(
+#             vars_df = gar_data,
+#             partition = NULL))
+# )
 

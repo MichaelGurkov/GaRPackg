@@ -16,3 +16,15 @@ test_that("pls reduction returns complete obs date vector",
             expected = date_vec[c(-1,-12)]
           ))
 
+
+data("gar_data")
+
+temp_part = list("GDP","Ind_Prod_Israel")
+
+result_temp_part = pls_reduction(
+  df = gar_data %>%
+    select(Date,unlist(temp_part)),
+  target_var_name = "GDP")
+
+
+expect_equal()
