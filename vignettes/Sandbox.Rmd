@@ -156,7 +156,7 @@ forecast_data_list = map(names(models_list),
 ```
 
 
-```{r GaR_Forecast_pls, eval=FALSE}
+```{r GaR_Forecast_pls}
 
 forecast_data_list = map(names(models_list),
   function(temp_name){

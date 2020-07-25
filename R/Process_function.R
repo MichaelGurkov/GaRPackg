@@ -333,8 +333,6 @@ map_pls_reduction = function(multi_feature_partitions,
 
       temp_df = vars_df %>%
         select(any_of(c(unlist(temp_part),"Date",target_var_name)))
-
-
       temp_pls = pls_reduction(
         df = temp_df,
         target_var_name = target_var_name
@@ -349,7 +347,6 @@ map_pls_reduction = function(multi_feature_partitions,
 
   xreg_df_multi = map(names(reduction_objects_list),
                       function(temp_name){
-
                         Date_vec = reduction_objects_list[[
                           temp_name]]$time_index
 
@@ -468,9 +465,7 @@ reduce_data_dimension = function(vars_df,
   # Reduce multi variable partitions
 
 
-  if(length(multi_feature_partitions) > 0 &
-     method == "inner_join_pca"){
-
+  if(length(multi_feature_partitions) > 0 & method == "pca"){
   multi_part_return_list = map_pca_reduction(
     multi_feature_partitions = multi_feature_partitions,
     vars_df = vars_df,
