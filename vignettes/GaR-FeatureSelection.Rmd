@@ -26,21 +26,21 @@ temp_df = df %>%
     leads_vector = parameters_list$horizon_list)
 
 lasso_df = temp_df %>% 
-  select(-contains("GDP"), GDP, GDP_1) %>% 
+  select(-contains("GDP"), GDP, GDP_4) %>% 
   filter(complete.cases(.))
 
 x_mat = lasso_df %>% 
-  select(-GDP_1, -Date) %>% 
+  select(-GDP_4, -Date) %>% 
   as.matrix()
 
-y_vec = lasso_df$GDP_1 %>% 
+y_vec = lasso_df$GDP_4 %>% 
   as.matrix()
 
-lasso_reg_list = map(seq(0,2,0.25),function(temp_lambda){
+lasso_reg_list = map(seq(0,1,2),function(temp_lambda){
   temp_reg = rq.fit.lasso(
     x = x_mat,
     y = y_vec,
-    tau = 0.5,
+    tau = 0.05,
     lambda = temp_lambda)
   
   return(temp_reg)

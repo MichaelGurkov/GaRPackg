@@ -178,27 +178,17 @@ partitions_list$basic_no_global_inf = list(
 ```{r basic_fin_united}
 
 partitions_list$basic_fin_united = list(
-  Dom_Macro = list("GDP", "Ind_Prod_Israel"),
+  Dom_Macro = list("GDP"),
   Global = list(
-    "infl_us",
-    "infl_euro",
     "rate_euro",
     "rate_us",
-    "VIX",
     "Ind_Prod_us",
     "Ind_Prod_euro",
     "eurostoxx600",
-    "SP500",
-    "DXY",
-    "US_term_spread"
+    "SP500"
   ),
   Dom_FCI =  list(
-    "Spread_CPI_corp",
-    "Sovereigh_spread",
-    "Term_spread",
-    "ILS_USD_impl_vol",
-    "TA_35_impl_vol",
-    "BOI_rate",
+     "BOI_rate",
     "Credit",
     "House_Price",
     "TA125_Close"

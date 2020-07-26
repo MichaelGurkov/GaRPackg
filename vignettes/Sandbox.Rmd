@@ -28,7 +28,7 @@ forecast_data_list = list()
 forecast_model_fit = list()
 
 models_list = list(
-  GaR_Forecast = partitions_list$basic_no_global_inf,
+  GaR_Forecast = partitions_list$basic_fin_united,
   Macro_Forecast = partitions_list$macro,
   One_Forecast = partitions_list$real_fin_one,
   Intercept_Forecast = NULL
@@ -140,13 +140,7 @@ forecast_data_list = map(names(models_list),
       target_var_name = "GDP",
       horizon_list = parameters_list$horizon_list,
       quantile_vec = parameters_list$quantile_vec,
-      pca.align.list = list(
-        Dom_FCI = list(
-          var_name = "Spread_CPI_corp",
-          positive_direction = FALSE),
-        Dom_Macro = list(var_name = "GDP"),
-        Global = list(var_name = "rate_euro"),
-        FinCycle = list(var_name = "Credit")),
+      pca.align.list = NULL,
       win_len = forecast_parameters$win_len,
       win_type_expanding = forecast_parameters$win_type_expanding,
       method = "inner_join_pca"
