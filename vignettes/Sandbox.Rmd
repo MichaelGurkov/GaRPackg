@@ -28,14 +28,21 @@ forecast_data_list = list()
 forecast_model_fit = list()
 
 models_list = list(
-  real_fin_glob_one_Forecast = partitions_list$real_fin_glob_one,
-  real_fin_glob_two_Forecast = partitions_list$real_fin_glob_two,
-  real_fin_glob_three_Forecast = partitions_list$real_fin_glob_three,
-  real_fin_one_Forecast = partitions_list$real_fin_one,
-  real_fin_two_Forecast = partitions_list$real_fin_two,
-  real_fin_three_Forecast = partitions_list$real_fin_glob_three,
+  GaR_Forecast = partitions_list$basic_no_global_inf,
+  Macro_Forecast = partitions_list$macro,
+  One_Forecast = partitions_list$real_fin_one,
   Intercept_Forecast = NULL
   )
+
+# models_list = list(
+#   real_fin_glob_one_Forecast = partitions_list$real_fin_glob_one,
+#   real_fin_glob_two_Forecast = partitions_list$real_fin_glob_two,
+#   real_fin_glob_three_Forecast = partitions_list$real_fin_glob_three,
+#   real_fin_one_Forecast = partitions_list$real_fin_one,
+#   real_fin_two_Forecast = partitions_list$real_fin_two,
+#   real_fin_three_Forecast = partitions_list$real_fin_glob_three,
+#   Intercept_Forecast = NULL
+#   )
 
 
 ```
@@ -122,8 +129,7 @@ for(temp_name in names(corr_df_list)){
 ```
 
 
-
-```{r GaR_Forecast_pca, eval=FALSE}
+```{r GaR_Forecast_pca}
 
 forecast_data_list = map(names(models_list),
   function(temp_name){
@@ -142,7 +148,8 @@ forecast_data_list = map(names(models_list),
         Global = list(var_name = "rate_euro"),
         FinCycle = list(var_name = "Credit")),
       win_len = forecast_parameters$win_len,
-      win_type_expanding = forecast_parameters$win_type_expanding
+      win_type_expanding = forecast_parameters$win_type_expanding,
+      method = "inner_join_pca"
       ) %>% 
       rename(!!sym(temp_name) := GaR_forecast)
     
@@ -153,10 +160,12 @@ forecast_data_list = map(names(models_list),
   
   )
 
+names(forecast_data_list) = names(models_list)
+
 ```
 
 
-```{r GaR_Forecast_pls}
+```{r GaR_Forecast_pls, eval=FALSE}
 
 forecast_data_list = map(names(models_list),
   function(temp_name){
@@ -182,11 +191,13 @@ forecast_data_list = map(names(models_list),
   
   )
 
+names(forecast_data_list) = names(models_list)
+
 ```
 
 
 
-```{r r_squared}
+```{r r_2}
 
 forecast_model_fit$r2 = forecast_data_list %>% 
   reduce(inner_join,by = c("Quantile", "Horizon", "Date")) %>% 
@@ -211,6 +222,37 @@ forecast_model_fit$r2 = forecast_data_list %>%
 ```
 
 
+```{r r_pit}
+
+forecast_model_fit$pit = map2(
+  names(forecast_data_list),forecast_data_list,
+  function(temp_name, temp_df){
+    pit_df = temp_df %>% 
+      mutate(Forecast_Period = paste(
+        Date + as.numeric(Horizon) * 0.25 - 1,
+        Date + as.numeric(Horizon) * 0.25,
+        sep = "-")) %>% 
+      inner_join(forecast_benchmarks$actual_gdp_df,
+                 by = "Forecast_Period") %>% 
+      select(-Forecast_Period) %>% 
+      rename(actual_values = GDP_actual) %>% 
+      rename(predicted_values = !!sym(temp_name)) %>% 
+      quantile.pit.score() %>% 
+      mutate(model = temp_name)
+    
+    return(pit_df)
+    
+    
+  }) %>% 
+  bind_rows()
+  
+  
+
+
+
+```
+
+
 ```{r plot_r_2}
 
 forecast_model_fit$r2 %>% 
@@ -222,6 +264,23 @@ forecast_model_fit$r2 %>%
   theme(legend.position = "bottom", legend.title = element_blank())
 
 ```
+
+
+```{r plot_pit}
+
+forecast_model_fit$pit %>% 
+  ggplot(aes(x = Quantile, y = pit, color = model, group = model)) + 
+  geom_line() + 
+  scale_color_viridis_d() + 
+  geom_line(aes(x = Quantile,y = as.numeric(Quantile)),
+            linetype = "dashed", color = "black") + 
+  xlab(NULL) + ylab(NULL) + 
+  facet_wrap(~Horizon, scales = "free") + 
+  theme_bw() + 
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+```
+
 
 
 ```{r plot_actual}

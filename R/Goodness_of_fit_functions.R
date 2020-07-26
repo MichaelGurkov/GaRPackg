@@ -267,16 +267,24 @@ quantile.r2.score = function(realized_values, forecast_values,
 
 #' @title Calculate PIT score
 #'
-#' @details This function calcualtes the Probability Integral
+#' @details This function calculates the Probability Integral
 #' Transformation to evaluate goodness of fit
 #'
-#' @param realized_values actual values
+#' @param prediction_df data frame with actual values and
+#' predicted values by horizon, quantile and date
 #'
-#' @param forecast_values predicted values
 
-quantile.pit.score = function(realized_values,forecast_values){
+quantile.pit.score = function(prediction_df){
 
+  T_sample = length(unique(prediction_df$Date))
 
+  pit_score_df = prediction_df %>%
+    mutate(pit = if_else(actual_values < predicted_values,
+                         1 /T_sample,0)) %>%
+    group_by(Horizon,Quantile) %>%
+    summarise(pit = sum(pit), .groups = "drop")
+
+  return(pit_score_df)
 
 
 }
