@@ -36,7 +36,8 @@ pca_variance = lapply(names(pca_list), function(temp_name){
 
 pca_plots = lapply(names(pca_list), function(name){
   
-  pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
+  pca_var = round(pca_variance$Variance[
+    pca_variance$Name == name] * 100,0)
   
   bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
                   Val = pca_list[[name]]$pca$rotation[,1]),

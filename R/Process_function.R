@@ -302,7 +302,7 @@ make.quant.reg.df = function(partitions_list, vars_df,
                              quantile_vec,
                              return_objects_list = FALSE,
                              pca.align.list = NULL,
-                             method = "inner_join_PCA"){
+                             method = "inner_join_pca"){
 
   if(!is.null(partitions_list)){
 

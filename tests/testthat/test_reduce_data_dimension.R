@@ -93,10 +93,14 @@ test_that(paste0("reduce_data_dimension issues warning",
 )
 
 
-# test_that(paste0("reduce_data_dimension returns Null",
-#                  " when partition is NULL"),
-#           expect_null(object = reduce_data_dimension(
-#             vars_df = gar_data,
-#             partition = NULL))
-# )
+test_that(paste0("reduce_data_dimension skips reduction",
+                 " object list with one feature part"),
+          expect_equal(object = reduce_data_dimension(
+            vars_df = gar_data,
+            partition = one_feature_part,
+            return_objects_list = TRUE)[[1]],
+            expected = gar_data %>%
+              select(Date,unlist(one_feature_part)) %>%
+              mutate(across(-Date,scale)))
+)
 

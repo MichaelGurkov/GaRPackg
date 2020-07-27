@@ -463,31 +463,42 @@ reduce_data_dimension = function(vars_df,
   # Reduce multi variable partitions
 
 
-  if(length(multi_feature_partitions) > 0 &
-     method == "inner_join_pca"){
-    multi_part_return_list = map_pca_reduction(
-      multi_feature_partitions = multi_feature_partitions,
-      vars_df = vars_df,
-      n_components = n_components,
-      pca_align_list = pca_align_list
-    )
+  if(length(multi_feature_partitions) > 0){
+
+
+    if(method == "inner_join_pca"){
+      multi_part_return_list = map_pca_reduction(
+        multi_feature_partitions = multi_feature_partitions,
+        vars_df = vars_df,
+        n_components = n_components,
+        pca_align_list = pca_align_list
+      )
+
+    }
+
+
+    if(method == "pls"){
+
+      multi_part_return_list = map_pls_reduction(
+        multi_feature_partitions = multi_feature_partitions,
+        vars_df = vars_df,
+        target_var_name = target_var_name,
+        n_components = n_components
+      )
+
+
+    }
+
+
+    if(return_objects_list){
+
+      return_list$objects_list =
+        multi_part_return_list$reduction_objects_list
+
+    }
+
 
   }
-
-
-  if(length(multi_feature_partitions) > 0 & method == "pls"){
-
-    multi_part_return_list = map_pls_reduction(
-      multi_feature_partitions = multi_feature_partitions,
-      vars_df = vars_df,
-      target_var_name = target_var_name,
-      n_components = n_components
-    )
-
-
-  }
-
-
 
 
   # Return xreg df and reduction objects (optional)
@@ -518,12 +529,7 @@ reduce_data_dimension = function(vars_df,
 
   }
 
-  if(return_objects_list){
 
-    return_list$objects_list =
-      multi_part_return_list$reduction_objects_list
-
-  }
 
   return(return_list)
 

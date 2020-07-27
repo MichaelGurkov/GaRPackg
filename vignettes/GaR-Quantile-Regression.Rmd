@@ -1,6 +1,6 @@
 
 
-```{r plot_quant_reg_long_series_1, fig.height=8}
+```{r plot_quant_reg_long_series_1, fig.height=4}
 
 plot.qreg.coeffs(results$qreg_result[1])
 
@@ -8,7 +8,7 @@ plot.qreg.coeffs(results$qreg_result[1])
 
 
 
-```{r plot_quant_reg_long_series_2, fig.height=8}
+```{r plot_quant_reg_long_series_2, fig.height=4}
 
 plot.qreg.coeffs(results$qreg_result[2])
 
@@ -16,9 +16,17 @@ plot.qreg.coeffs(results$qreg_result[2])
 
 
 
-```{r plot_quant_reg_long_series_3, fig.height=8}
+```{r plot_quant_reg_long_series_3, fig.height=4}
 
 plot.qreg.coeffs(results$qreg_result[3])
+
+```
+
+
+
+```{r plot_quant_reg_long_series_4, fig.height=4}
+
+plot.qreg.coeffs(results$qreg_result[4])
 
 ```
 

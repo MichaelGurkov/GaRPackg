@@ -28,7 +28,7 @@ forecast_data_list = list()
 forecast_model_fit = list()
 
 models_list = list(
-  GaR_Forecast = partitions_list$basic_fin_united,
+  GaR_Forecast = partitions_list$basic_no_global_inf,
   Macro_Forecast = partitions_list$macro,
   One_Forecast = partitions_list$real_fin_one,
   Intercept_Forecast = NULL
@@ -41,6 +41,7 @@ models_list = list(
 #   real_fin_one_Forecast = partitions_list$real_fin_one,
 #   real_fin_two_Forecast = partitions_list$real_fin_two,
 #   real_fin_three_Forecast = partitions_list$real_fin_glob_three,
+#   real_fin_glob_ext_Forecast = partitions_list$real_fin_glob_extended,
 #   Intercept_Forecast = NULL
 #   )
 
@@ -57,6 +58,10 @@ forecast_benchmarks$actual_gdp_df = forecast_parameters$df %>%
   mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
   select(-Date) %>% 
   select(Forecast_Period, GDP_actual)
+
+
+
+
 
 ```
 
@@ -191,6 +196,138 @@ names(forecast_data_list) = names(models_list)
 
 
 
+```{r plot_forecast, eval=FALSE}
+
+forecast_data_list %>% 
+  reduce(inner_join) %>% 
+  pivot_longer(-c(Quantile,Horizon,Date)) %>% 
+  ggplot(aes(x = Date, y = value, color = name)) + 
+  geom_line() + 
+  facet_grid(rows = vars(Quantile), cols = vars(Horizon)) + 
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+```
+
+
+<!-- Staff forecast -->
+
+
+```{r, make_staff_forecast}
+
+staff_forecast_conversion_table = read_csv(
+  paste0(file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+         "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\",
+         "Staff_forecast_conversion_table.csv"))
+
+staff_forecast_conversion_table = staff_forecast_conversion_table %>% 
+  filter(Type == "YoY") %>% 
+  select(-Type) %>% 
+  mutate(Horizon = as_factor(Horizon,)) %>% 
+  pivot_longer(cols = c(-Horizon),
+               names_to = "Quantile",
+               values_to = "Conversion_Coeff") %>% 
+  mutate(Conversion_Coeff = Conversion_Coeff * 0.01)
+
+staff_forecast_conversion_table = full_join(
+  staff_forecast_conversion_table,
+  select(raw_df, Date), by = character())
+  
+
+staff_forecast_df_h1 = raw_df %>% 
+  select(Date, staff_1Q) %>% 
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
+  gather(key = Quarter,value = Forecast, - Date) %>% 
+  filter(complete.cases(.)) %>% 
+  left_join(.,raw_df %>% 
+              select(Date, GDP) %>% 
+              mutate(GDP = GDP / lag(GDP,3) - 1)) %>% 
+  mutate(Staff_Forecast = Forecast * 0.25 * 0.01 + GDP) %>% 
+  select(Date,Staff_Forecast) %>% 
+  mutate(Forecast_Period = paste(Date - 0.75,Date + 0.25,
+                                 sep = "-")) %>% 
+  mutate(Horizon = "1")
+
+
+staff_forecast_df_h4 = raw_df %>%
+  select(Date, staff_1Q, staff_2Q, staff_3Q, staff_4Q) %>%
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>%
+  gather(key = Quarter,value = Forecast, - Date) %>%
+  group_by(Date) %>%
+  summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
+  ungroup() %>%
+  filter(complete.cases(.)) %>%
+  mutate(Forecast_Period = paste(Date,(Date + 1),
+                                 sep = "-")) %>%
+  mutate(Horizon = "4")
+
+
+
+staff_forecast_df_h8 = raw_df %>% 
+  select(Date, staff_5Q, staff_6Q, staff_7Q, staff_8Q) %>% 
+  rename_all(.funs = list(~str_remove(.,"staff_"))) %>% 
+  gather(key = Quarter,value = Forecast, - Date) %>% 
+  group_by(Date) %>% 
+  summarise(Staff_Forecast = mean(Forecast) * 0.01) %>% 
+  ungroup() %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(Forecast_Period = paste((Date + 1),(Date + 2),
+                                 sep = "-")) %>% 
+  mutate(Horizon = "8")
+
+forecast_benchmarks$staff_forecast = list(
+  staff_forecast_df_h1,
+  staff_forecast_df_h4,
+  staff_forecast_df_h8) %>% 
+  bind_rows() %>% 
+  mutate(Date = as.yearqtr(Date)) %>% 
+  inner_join(., staff_forecast_conversion_table,
+             by = c("Date","Horizon")) %>% 
+  mutate(Staff_Forecast = Staff_Forecast + Conversion_Coeff) %>% 
+  mutate(Quantile = str_replace_all(Quantile,"0.5","0.50")) %>% 
+  select(-Conversion_Coeff) %>% 
+  select(Date, Horizon, Quantile, Forecast_Period, Staff_Forecast)
+
+rm(list = str_subset(ls(),"staff"))
+
+
+
+```
+
+
+```{r staff_r2}
+
+temp_bench = forecast_benchmarks %>% 
+  reduce(left_join,
+         by = "Forecast_Period")
+
+temp_forecast = forecast_data_list %>% 
+  reduce(inner_join,by = c("Date","Quantile","Horizon")) %>% 
+  mutate(Forecast_Period = paste(
+    Date + as.numeric(Horizon) * 0.25 - 1,
+    Date + as.numeric(Horizon) * 0.25,
+    sep = "-")) %>% 
+  select(-Date)
+  
+forecast_model_fit$staff_r2 = inner_join(
+  temp_bench,
+  temp_forecast,
+  by = c("Forecast_Period", "Horizon", "Quantile")) %>% 
+  select(-Forecast_Period) %>% 
+  group_by(Horizon, Quantile) %>% 
+  summarise(across(contains("Forecast") & !"Intercept_Forecast",
+                   ~quantile.r2.score(
+                     realized_values = GDP_actual,
+                     forecast_values = .,
+                     quantile = as.numeric(Quantile[1]),
+                     benchmark_values = Intercept_Forecast)),
+            .groups = "drop")
+
+
+rm(list = str_subset(ls(), "temp"))
+
+```
+
+
 ```{r r_2}
 
 forecast_model_fit$r2 = forecast_data_list %>% 
@@ -258,6 +395,22 @@ forecast_model_fit$r2 %>%
   theme(legend.position = "bottom", legend.title = element_blank())
 
 ```
+
+
+
+```{r plot_staff_r_2}
+
+forecast_model_fit$staff_r2 %>% 
+  pivot_longer(cols = -c("Horizon","Quantile")) %>% 
+  ggplot(aes(x = Quantile, y = value, fill = name)) + 
+  geom_col(position = "dodge") + 
+  scale_fill_viridis_d() + 
+  facet_wrap(~Horizon, scales = "free") + 
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+```
+
+
 
 
 ```{r plot_pit}

@@ -38,7 +38,9 @@ raw_df = import.from.fame.template(
 
 # Use Inustrial Production without seasonal adjustment
 
-partiton_in_env = "current_partition" %in% ls()
+# partiton_in_env = "current_partition" %in% ls()
+
+partiton_in_env = FALSE
 
 df = raw_df %>%
   mutate(Ind_Prod_Israel = Ind_Prod_Israel_NSA) %>%

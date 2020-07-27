@@ -100,6 +100,20 @@ partitions_list$real_fin_glob_three = list(
   )
 )
 
+
+partitions_list$real_fin_glob_extended = list(
+  Dom_Macro = list(
+    "GDP"
+    ),
+  FinCycle = list(
+    "Credit"
+  ),
+  Global = list(
+    "gdp_us",
+    "gdp_euro"
+  )
+)
+
 ```
 
 

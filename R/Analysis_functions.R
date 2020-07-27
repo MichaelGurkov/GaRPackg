@@ -36,7 +36,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
-                            method = "inner_join_PCA",
+                            method = "inner_join_pca",
                             run_ols_reg = FALSE,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){

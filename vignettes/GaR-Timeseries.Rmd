@@ -24,7 +24,7 @@ predict_df = lapply(names(results$qreg_result),
 }) %>% 
   bind_rows() %>% 
   mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  mutate(Horizon = factor(Horizon, unique(Horizon))) %>% 
   mutate(Quantile = str_replace(Quantile,"0.50","0.5"))
 
 

@@ -120,7 +120,7 @@ current_partition = lapply(current_partition, function(temp_part){
 
 ```{r Analysis}
 
-current_partition = partitions_list$basic_fin_united
+current_partition = partitions_list$basic_no_global_inf
 
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
@@ -171,27 +171,27 @@ nowcast_results = run.GaR.analysis(
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 

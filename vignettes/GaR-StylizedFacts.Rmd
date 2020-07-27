@@ -23,13 +23,15 @@ dist_quantile_df = lapply(names(results$qreg_result),
                    }) %>% 
   bind_rows() %>% 
   mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  mutate(Horizon = factor(Horizon,
+                          levels = unique(Horizon))) %>% 
   spread(key = Quantile,value = GaR) %>% 
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
             .funs = list(~paste0("Q_",.))) %>% 
   group_by(Horizon) %>% 
   mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
-           (0.5 * Q_0.75 - 0.5 * Q_0.25))
+           (0.5 * Q_0.75 - 0.5 * Q_0.25)) %>% 
+  mutate(IQR = Q_0.75 - Q_0.25)
 
 
 factor_quantiles_df = lapply(names(results$qreg_result),
@@ -49,7 +51,7 @@ factor_quantiles_df = lapply(names(results$qreg_result),
   
 }) %>% 
   bind_rows() %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
+  mutate(Horizon = factor(Horizon, unique(Horizon))) %>% 
   filter(!Factor == "(Intercept)")
 
 
