@@ -20,7 +20,7 @@ get.gar.forecast = function(partitions_list,
                             horizon_list,
                             quantile_vec,
                             pca.align.list = NULL,
-                            method,
+                            method = "inner_join_pca",
                             win_len = 30,
                             win_type_expanding = FALSE){
 
@@ -83,7 +83,8 @@ run.cross.validation = function(reg_df,
                                 horizon,
                                 quantile_vec,
                                 win_len = 30,
-                                win_type_expanding = FALSE){
+                                win_type_expanding = FALSE,
+                                ...){
 
 
 roll_cv_list = reg_df %>%
@@ -105,7 +106,8 @@ predict_df = map(roll_cv_list$splits,
     reg_df = analysis_set,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
-    horizon_list = list(horizon)
+    horizon_list = list(horizon),
+    ...
   )
 
   temp_predict = map(names(qreg_result), function(temp_name){

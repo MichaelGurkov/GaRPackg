@@ -322,7 +322,10 @@ make.quant.reg.df = function(partitions_list, vars_df,
 
     reg_df = vars_df %>%
       select(Date, all_of(target_var_name)) %>%
-      inner_join(preproc_df_list$xreg_df, by = c("Date" = "Date")) %>%
+      inner_join(
+        preproc_df_list$xreg_df %>%
+          rename_at(vars(-Date),~paste0(.,"_xreg")),
+                 by = c("Date" = "Date")) %>%
       filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
@@ -469,7 +472,8 @@ fix.quantile.crossing = function(prediction_df){
 #'
 #' @param  leads_vector
 #'
-add_leads_to_target_var = function(df, target_var_name,leads_vector){
+add_leads_to_target_var = function(df,
+                                   target_var_name,leads_vector){
 
 
   for(temp_lead in unlist(leads_vector)){

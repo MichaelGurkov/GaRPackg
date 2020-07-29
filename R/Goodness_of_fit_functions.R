@@ -268,7 +268,9 @@ quantile.r2.score = function(realized_values, forecast_values,
 #' @title Calculate PIT score
 #'
 #' @details This function calculates the Probability Integral
-#' Transformation to evaluate goodness of fit
+#' Transformation to evaluate goodness of fit.
+#' The value represents the relative frequency of the
+#' data points in the sample
 #'
 #' @param prediction_df data frame with actual values and
 #' predicted values by horizon, quantile and date

@@ -35,7 +35,8 @@ test_pred_df = map(
   quantile_vec = test_params$quantile_vec,
   win_len = test_params$win_len
   ) %>%
-  bind_rows()
+  bind_rows() %>%
+  arrange(Date,Horizon,Quantile)
 
 test_that("get.gar.forecast returns proper predictions",
           expect_equal(
@@ -45,5 +46,6 @@ test_that("get.gar.forecast returns proper predictions",
               target_var_name = test_params$target_var,
               horizon_list = test_params$horizon_list,
               quantile_vec = test_params$quantile_vec,
-              win_len = test_params$win_len),
+              win_len = test_params$win_len) %>%
+              arrange(Date,Horizon,Quantile),
             expected = test_pred_df))

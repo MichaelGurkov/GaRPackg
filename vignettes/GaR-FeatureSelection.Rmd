@@ -15,6 +15,19 @@ current_partitions_list = partitions_list[!names(partitions_list) %in%
 ```
 
 
+```{r make_reg_df}
+
+reg_df = make.quant.reg.df(
+  partitions_list = partitions_list$basic_no_global_inf,
+  vars_df = df,
+  target_var_name = "GDP",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec)
+
+```
+
+
+
 ```{r lasso}
 
 temp_df = df %>% 
@@ -64,4 +77,18 @@ lasso_coef %>%
 ```
 
 
+
+```{r cross_validation}
+
+temp_cv = run.cross.validation(
+  reg_df = reg_df,
+  target_var_name = "GDP",
+  horizon = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  win_len = 40,
+  win_type_expanding = TRUE,
+  reg_type = "quantile",
+  lambda = 2)
+
+```
 

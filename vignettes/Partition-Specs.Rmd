@@ -50,6 +50,23 @@ partitions_list$real_fin_three = list(
 
 ```
 
+
+```{r temp}
+
+partitions_list$temp = list(
+  GDP = list(
+    "GDP"
+    ),
+  HousePrice = list(
+    "House_Price"
+  )
+)
+
+
+
+```
+
+
 <!-- Real + Financial  + Global-->
 
 ```{r real_fin_glob}

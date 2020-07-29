@@ -13,6 +13,7 @@ load_all()
 
 ```{r set_forecast_parameters}
 
+
 theme_set(theme_bw())
 
 forecast_parameters = list(
@@ -28,9 +29,8 @@ forecast_data_list = list()
 forecast_model_fit = list()
 
 models_list = list(
-  GaR_Forecast = partitions_list$basic_no_global_inf,
-  Macro_Forecast = partitions_list$macro,
   One_Forecast = partitions_list$real_fin_one,
+  Temp_Forecast = partitions_list$temp,
   Intercept_Forecast = NULL
   )
 

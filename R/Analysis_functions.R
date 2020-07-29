@@ -105,27 +105,70 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
 #' This function runs quantile regression
 #'
-#'@import quantreg
+#' @import quantreg
+#'
+#' @param reg_df data for quantile regression
+#'
+#' @param target_var_name string
+#'
+#' @param quantile_vec
+#'
+#' @return list of quantile reg objects
 #'
 run.quant.reg = function(reg_df,
                          target_var_name,
                          quantile_vec,
-                         horizon_list){
-
-  qreg_result = map(horizon_list, function(temp_horizon){
-
-    dep_var = paste(target_var_name, temp_horizon, sep = "_")
-
-    qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
-                   tau = quantile_vec,
-                   data = reg_df %>%
-                     select(-Date) %>%
-                     select(-contains(target_var_name), all_of(dep_var)))
-
-    return(qreg_list)
+                         horizon_list,
+                         reg_type = "quantile",
+                         ...){
 
 
-  })
+  if(reg_type == "quantile"){
+
+    qreg_result = map(horizon_list, function(temp_horizon){
+
+      dep_var = paste(target_var_name, temp_horizon, sep = "_")
+
+      qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
+                     tau = quantile_vec,
+                     data = reg_df %>%
+                       select(ends_with("_xreg"),
+                              all_of(dep_var)))
+
+      return(qreg_list)
+
+
+    })
+
+  }
+
+  if(reg_type == "lasso"){
+
+    qreg_result = map(horizon_list, function(temp_horizon){
+
+      dep_var = paste(target_var_name, temp_horizon, sep = "_")
+
+      y_mat = reg_df %>%
+        select(dep_var) %>%
+        filter(complete.cases(.))
+
+      x_mat = reg_df %>%
+        select(ends_with("_xreg"),
+               all_of(dep_var)) %>%
+        filter(complete.cases(.)) %>%
+        select(ends_with("_xreg"))
+
+      qreg_list = rq.fit.lasso(x = as.matrix(x_mat),
+                               y = as.matrix(y_mat),
+                               tau = quantile_vec,
+                               ...)
+
+      return(qreg_list)
+
+
+    })
+
+  }
 
   names(qreg_result) = horizon_list
 
