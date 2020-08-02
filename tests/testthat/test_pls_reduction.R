@@ -26,5 +26,24 @@ result_temp_part = pls_reduction(
     select(Date,unlist(temp_part)),
   target_var_name = "GDP")
 
+pls_form = formula("GDP ~ Ind_Prod_Israel")
 
-expect_equal()
+scale = TRUE
+
+center = TRUE
+
+
+test_df = gar_data %>%
+  select(-Date) %>%
+  plsr(
+    formula = pls_form,
+    validation = "none",
+    scale = scale,
+    center = center,
+    data = .
+  )
+
+
+
+expect_equal(object = result_temp_part$pls_obj,
+             expected = test_df)

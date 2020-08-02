@@ -278,12 +278,11 @@ quantile.r2.score = function(realized_values, forecast_values,
 
 quantile.pit.score = function(prediction_df){
 
-  T_sample = length(unique(prediction_df$Date))
 
   pit_score_df = prediction_df %>%
+    group_by(Horizon, Quantile) %>%
     mutate(pit = if_else(actual_values < predicted_values,
-                         1 /T_sample,0)) %>%
-    group_by(Horizon,Quantile) %>%
+                         1 /length(Date),0)) %>%
     summarise(pit = sum(pit), .groups = "drop")
 
   return(pit_score_df)
