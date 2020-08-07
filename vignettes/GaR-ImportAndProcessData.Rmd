@@ -36,7 +36,7 @@ raw_df = import.from.fame.template(
   filter(Date >= as.yearqtr("1995 Q1"))
 
 
-# Use Inustrial Production without seasonal adjustment
+# Use Industrial Production without seasonal adjustment
 
 # partiton_in_env = "current_partition" %in% ls()
 
