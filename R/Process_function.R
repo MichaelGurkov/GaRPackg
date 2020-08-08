@@ -492,3 +492,38 @@ add_leads_to_target_var = function(df,
 
 
 }
+
+#' This helper function calculates YoY rates of return
+#'
+#' @param variable_vec
+#'
+#' @import slider
+#'
+calculate.YoY.returns = function(variable_vec){
+
+  yoy_vec = slide_dbl(.x = variable_vec,
+                         .f = ~.[5]/.[1]-1,
+                         .before = 4,
+                         .complete = TRUE)
+
+  return(yoy_vec)
+
+}
+
+
+#' This helper function calculates 4
+#'
+#' @param variable_vec
+#'
+#' @import slider
+#'
+calculate.four.quarters.ma = function(variable_vec){
+
+  ma_vec = slide_dbl(.x = variable_vec,
+                      .f = mean,
+                      .before = 3,
+                      .complete = TRUE)
+
+  return(ma_vec)
+
+}
