@@ -1,7 +1,10 @@
 #' This is a convinience functions that plots the coefficients of
 #' quantile regression
 #'
+#'
 #'@param quantile_reg
+#'
+#'@import ggplot2
 #'
 plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
                             add.significance = FALSE){

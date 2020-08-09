@@ -452,7 +452,7 @@ fix.quantile.crossing = function(prediction_df){
   prediction_df = prediction_df %>%
     group_by(Horizon,Date) %>%
     arrange(Quantile) %>%
-    mutate(GaR_forecast = sort(GaR_forecast)) %>%
+    mutate(across(contains("GaR"),~sort(.))) %>%
     ungroup()
 
 

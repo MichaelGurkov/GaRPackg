@@ -1,6 +1,7 @@
 
 ```{r get_predict_df}
 
+
 predict_df = lapply(names(results$qreg_result),
                                function(temp_name){
 
@@ -32,7 +33,7 @@ gar_factors_df = lapply(
   names(results$qreg_result),function(temp_name){
     
     gar_factors_df = results$reg_df %>%
-      select(names(current_partition)) %>%
+      select(paste0(names(current_partition),"_xreg")) %>%
       as.matrix() * coefficients(
         results$qreg_result[[temp_name]])[-1,1]
     

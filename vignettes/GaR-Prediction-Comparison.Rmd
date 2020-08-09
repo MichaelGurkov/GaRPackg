@@ -257,15 +257,15 @@ forecast_model_fit$gar_macro_r2 = gar_macro_r2_df %>%
   group_by(Horizon, Quantile) %>% 
   summarise(
     gar_r2_score = quantile.r2.score(
-    realized_estimates = GDP_actual,
-    forecast_values = GaR_Forecast,
-    quantile = as.numeric(Quantile[1]),
-    benchmark_values = Intercept_Forecast),
+      realized_values = GDP_actual,
+      forecast_values = GaR_Forecast,
+      quantile = as.numeric(Quantile[1]),
+      benchmark_values = Intercept_Forecast),
     macro_r2_score = quantile.r2.score(
-    realized_estimates = GDP_actual,
-    forecast_values = Macro_Forecast,
-    quantile = as.numeric(Quantile[1]),
-    benchmark_values = Intercept_Forecast))
+      realized_values = GDP_actual,
+      forecast_values = Macro_Forecast,
+      quantile = as.numeric(Quantile[1]),
+      benchmark_values = Intercept_Forecast))
 
 rm(gar_macro_r2_df)
 
@@ -289,12 +289,12 @@ forecast_model_fit$gar_staff_r2 = gar_staff_r2_df %>%
   group_by(Horizon, Quantile) %>% 
   summarise(
     gar_r2_score = quantile.r2.score(
-    realized_estimates = GDP_actual,
+      realized_values = GDP_actual,
     forecast_values = GaR_Forecast,
     quantile = as.numeric(Quantile[1]),
     benchmark_values = Intercept_Forecast),
     staff_r2_score = quantile.r2.score(
-    realized_estimates = GDP_actual,
+      realized_values =  GDP_actual,
     forecast_values = Staff_Forecast,
     quantile = as.numeric(Quantile[1]),
     benchmark_values = Intercept_Forecast))
@@ -446,7 +446,7 @@ forecast_data_list$GaR_Forecast %>%
 ```
 
 
-```{r plot_staff_forecast}
+```{r plot_staff_forecast, eval=FALSE}
 
 forecast_data_list$staff_forecast %>% 
   ggplot(aes(x = Date, y =Staff_Forecast)) + 
@@ -460,7 +460,7 @@ forecast_data_list$staff_forecast %>%
 ```
 
 
-```{r plot_intercept_forecast}
+```{r plot_intercept_forecast, eval=FALSE}
 
 forecast_data_list$Intercept_Forecast %>% 
   ggplot(aes(x = Date, y = Intercept_Forecast)) + 
@@ -474,7 +474,7 @@ forecast_data_list$Intercept_Forecast %>%
 ```
 
 
-```{r plot_gar_vs_staff}
+```{r plot_gar_vs_staff, eval=FALSE}
 
 forecast_data_list[c("GaR_Forecast","staff_forecast")] %>% 
   reduce(inner_join, by = c("Date",

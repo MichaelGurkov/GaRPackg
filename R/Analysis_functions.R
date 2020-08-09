@@ -63,6 +63,26 @@ run.GaR.analysis = function(partitions_list, vars_df,
   )
 
 
+  gar_fitted_df = map2_dfr(qreg_result, names(qreg_result),
+                  function(temp_obj,temp_name){
+
+                   temp_fitted_df =  temp_obj$fitted.values %>%
+                     as.data.frame() %>%
+                     setNames(quantile_vec) %>%
+                     mutate(Date = reg_df_list$reg_df$Date[
+                       1:nrow(temp_obj$model)]) %>%
+                      pivot_longer(cols = -Date,
+                                   names_to = "Quantile",
+                                   values_to = "GaR_fitted") %>%
+                      mutate(Horizon = temp_name)
+
+
+
+
+                  }) %>%
+    fix.quantile.crossing()
+
+
 
   # Run OLS regresion
 
@@ -92,6 +112,8 @@ run.GaR.analysis = function(partitions_list, vars_df,
   return_list$reg_df = reg_df_list$reg_df
 
   return_list$qreg_result = qreg_result
+
+  return_list$gar_fitted_df = gar_fitted_df
 
   if(length(reg_df_list) == 2){
     return_list$pca_obj = reg_df_list$pca_obj}

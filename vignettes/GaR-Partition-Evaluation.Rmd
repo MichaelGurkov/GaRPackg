@@ -20,14 +20,6 @@ pca_variance = lapply(names(pca_list), function(temp_name){
 }) %>%
   bind_rows()
 
-# ggplot(pca_variance, aes(x = reorder(Name, Variance), y = Variance)) + 
-#   geom_bar(stat = "identity", width = 0.6) + 
-#   geom_text(label = Variance) + 
-#   labs(title = "Variance explained \n (by first PCA component)",
-#        x = "", y = "") + 
-#   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
-#   theme_bw() + 
-#   theme(plot.title = element_text(hjust = 0.5))
 
 ```
 

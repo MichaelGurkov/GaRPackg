@@ -1,74 +1,50 @@
 
+
 ```{r initialize_list}
 
-fixed_parts = list(
-  FinCycle = c(
-    "Credit",
-    "House_Price",
-    "TA125_Close"
+
+partitions_list  = list()
+
+
+
+```
+
+
+```{r basic}
+
+partitions_list$basic = list(
+  Dom_Macro = list(
+    "GDP",
+    "state_of_economy_ind",
+    "ue_gap"),
+  Global = list(
+    "gdp_us",
+    "gdp_euro",
+    "rate_euro",
+    "rate_us",
+    "US_term_spread",
+    "SP500",
+    "eurostoxx600",
+    "VIX",
+    "oecd_imp",
+    "oil_p",
+    "non_energy_p"
   ),
-  Dom_FCI =  c(
+  Dom_FCI =  list(
     "Spread_CPI_corp",
     "Sovereigh_spread",
     "Term_spread",
     "ILS_USD_impl_vol",
     "TA_35_impl_vol",
     "BOI_rate"
-  ))
+  ),
+  FinCycle = list(
+    "Credit",
+    "House_Price",
+    "TA125_Close"
+  )
+)
 
 
 
 ```
-
-
-```{r get_all_combinations_test}
-
-category_params_df = list(
-  Dom_Macro = list(
-  optional = c("state_of_economy_ind","ue_gap"),
-  required = c("GDP")),
-  Global = list(
-  optional = c("rate_us","rate_euro",
-                "US_term_spread","SP500","eurostoxx600",
-                "VIX","oecd_imp","oil_p","non_energy_p"),
-  required = c("gdp_us","gdp_euro"))
-  ) %>% 
-  enframe(name = "category",value = "params") %>% 
-  mutate(part_comb_df = map2(category,params,function(x,y){
-    
-    temp_part_df = get_partition_combs(
-      optional_vars_vec = y$optional,
-      required_vars_vec = y$required,
-      partition_name = x)
-
-  }))
-
-
-feature_select_df = map(
-  category_params_df$category,function(temp_cat){
-    
-    temp_df = category_params_df %>% 
-      filter(category == temp_cat) %>% 
-      select(part_comb_df) %>% 
-      unnest(cols = c(part_comb_df))
-    
-    return(temp_df)
-                          
-                        }
-  ) %>% 
-  reduce(full_join, by = character()) %>% 
-  unite(col = name,starts_with("name"),sep = "-") %>% 
-  mutate(Fin = map(1:nrow(.),~fixed_parts)) %>% 
-  mutate(temp_part = pmap(list(Dom_Macro,Global,Fin), c))
-
-rm(fixed_parts)
-
-```
-
-
-```{r get_predictions}
-
-
-```
-
-
