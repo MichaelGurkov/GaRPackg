@@ -12,54 +12,56 @@
 #' @import tibble
 #'
 
-get_partition_combs = function(optional_vars_vec,
-                               required_vars_vec = NULL,
-                               partition_name = NULL){
+get_partition_combs = function(partition_list,
+                               partition_name){
 
-  comb_df = map(seq_along(optional_vars_vec),
+  if(all(length(names(partition_list)) == 1 &
+         names(partition_list) == "required")){
+
+    temp_comb_df = partition_list %>%
+      enframe %>%
+      mutate(name = paste(partition_name,1, sep = "-")) %>%
+      rename(!!sym(partition_name) := value)
+
+    return(temp_comb_df)
+  }
+
+  comb_df = map(seq_along(partition_list$optional),
                   function(temp_ind){
 
-    comb_list =  combn(optional_vars_vec,temp_ind,simplify = FALSE)
-
-    if(!is.null(required_vars_vec)){
-
-
-      comb_list = map(comb_list, function(temp_part){
-
-        temp_part = c(temp_part, required_vars_vec)
-
-      })
-
-
-    }
-
-    comb_list = map(comb_list, function(temp_vec){
-
-      temp_list = list(temp_vec)
-
-      names(temp_list) = partition_name
-
-      return(temp_list)
-
-
-    })
-
-    names(comb_list) = rep(partition_name, length(comb_list))
+    comb_list =  combn(partition_list$optional,temp_ind,simplify = FALSE)
 
     temp_comb_df = comb_list %>%
       enframe %>%
-      mutate(name = paste(temp_ind,name, sep = "-"))
+      mutate(name = paste(partition_name,temp_ind, sep = "-"))
 
 
                   }) %>%
     bind_rows()
 
-  if(!is.null(partition_name)){
+  if("required" %in% names(partition_list)){
 
     comb_df = comb_df %>%
-      rename(!!sym(partition_name) := value)
+      mutate(value = map(value, ~ c(.,partition_list$required)))
+
 
   }
+
+
+  comb_df = comb_df %>%
+    mutate(value = map(value, function(temp_vec){
+
+    temp_list = list(temp_vec)
+
+    names(temp_list) = partition_name
+
+    return(temp_list)
+
+
+  }))
+
+  comb_df = comb_df %>%
+    rename(!!sym(partition_name) := value)
 
   return(comb_df)
 

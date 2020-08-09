@@ -4,9 +4,10 @@
 ```
 
 
+
 ```{r get_all_combinations_test}
 
-category_params_df = list(
+category_list = list(
   Dom_Macro = list(
   optional = c("state_of_economy_ind","ue_gap"),
   required = c("GDP")),
@@ -15,19 +16,49 @@ category_params_df = list(
                 "US_term_spread","SP500","eurostoxx600",
                 "VIX","oecd_imp","oil_p","non_energy_p"),
   required = c("gdp_us","gdp_euro")),
-  FinCycle = list(
+  Fin_cycle = list(
   optional = c("TA125_Close","House_Price"),
-  required = c("Credit"))
-  ) %>% 
+  required = c("Credit")),
+    Dom_FCI =  list(
+      required = c(
+        "Spread_CPI_corp",
+        "Sovereigh_spread",
+        "Term_spread",
+        "ILS_USD_impl_vol",
+        "TA_35_impl_vol",
+        "BOI_rate"))
+  )
+
+category_params_df =  %>% 
   enframe(name = "category",value = "params") %>% 
-  mutate(part_comb_df = map2(category,params,
-                             function(part_name,part_list){
+  mutate(part_comb_df = map2(category,params,function(x,y){
     
     temp_part_df = get_partition_combs(
-      partition_list = part_list,
-      partition_name = part_name)
+      optional_vars_vec = y$optional,
+      required_vars_vec = y$required,
+      partition_name = x)
 
   }))
+
+
+# feature_select_df = map(
+#   category_params_df$category,function(temp_cat){
+#     
+#     temp_df = category_params_df %>% 
+#       filter(category == temp_cat) %>% 
+#       select(part_comb_df) %>% 
+#       unnest(cols = c(part_comb_df))
+#     
+#     return(temp_df)
+#                           
+#                         }
+#   ) %>% 
+#   reduce(full_join, by = character()) %>% 
+#   unite(col = name,starts_with("name"),sep = "-") %>% 
+#   mutate(Fin = map(1:nrow(.),~fixed_parts)) %>% 
+#   mutate(temp_part = pmap(list(Dom_Macro,Global,Fin), c))
+
+rm(fixed_parts)
 
 
 
@@ -44,8 +75,7 @@ feature_select_df = map(
                         }
   ) %>% 
   reduce(full_join, by = character()) %>% 
-  unite(col = name,starts_with("name"),sep = "-") %>% 
-  mutate(temp_part = pmap(list(Dom_Macro,Global,FinCycle), c))
+  unite(col = name,starts_with("name"),sep = "-")
 
 ```
 
