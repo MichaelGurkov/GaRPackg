@@ -75,14 +75,21 @@ fit_df = feature_select_df %>%
       vars_df = df,
       target_var_name = "GDP",
       horizon_list = parameters_list$horizon_list,
-      quantile_vec = parameters_list$quantile_vec))
+      quantile_vec = parameters_list$quantile_vec,
+      pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "GDP"),
+                     Global = list(var_name = "rate_euro"),
+                     FinCycle = list(var_name = "Credit"))))
 
 
 ```
 
 ```{r import_data,eval=FALSE}
 
-fit_df = readRDS(paste0(
+fit_df = read_rds(paste0(
   "C:\\Users\\Misha\\OneDrive - Bank Of",
   " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
@@ -92,13 +99,35 @@ fit_df = readRDS(paste0(
 
 ```{r get_coeffs}
 
-coeffs_df = fit_df %>% 
-  rownames_to_column() %>% 
-  mutate(temp_coeff_df = map(gar_model,
-                             extract.coeffs.from.gar.model,
-                             partition_names = "FinCycle_xreg")) %>% 
-  select(rowname, temp_coeff_df) %>% 
-  unnest(cols = temp_coeff_df)
+coeffs_df = read_rds(paste0(
+  "C:\\Users\\Misha\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\coeffs_df.RDS"))
+
+# coeffs_df = fit_df %>%
+#   rownames_to_column() %>%
+#   mutate(temp_coeff_df = map(gar_model,
+#                              extract.coeffs.from.gar.model,
+#                              partition_names = "FinCycle_xreg")) %>%
+#   select(rowname, temp_coeff_df) %>%
+#   unnest(cols = temp_coeff_df)
+
+
+
+```
+
+
+```{r plot_coeffs}
+
+coeffs_df %>% 
+  filter(Tau == 0.05) %>% 
+  ggplot(aes(x = Coeff)) +
+  geom_histogram() + 
+  geom_vline(xintercept = 0,
+             linetype = "dashed", color = "blue") + 
+  facet_wrap(~Horizon, scales = "free") + 
+  theme_bw() + 
+  theme(legend.position = "bottom")
+  
 
 ```
 

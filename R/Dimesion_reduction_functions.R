@@ -20,12 +20,14 @@
 #'  (x component of the PCA object list). The loadings are left unchaged.
 
 
-align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
+align.pca = function(pca_obj, var_name,
+                     positive_direction = TRUE){
 
 
   if(length(var_name) > 1){
 
-    sign_vec = sapply(as.data.frame(pca_obj$x), function(temp_col){
+    sign_vec = sapply(as.data.frame(pca_obj$x),
+                      function(temp_col){
 
       return(sign(cor(x = temp_col, y = var_name,
                       use = "pairwise.complete.obs")))
@@ -46,7 +48,9 @@ align.pca = function(pca_obj, var_name,  positive_direction = TRUE){
 
   if(length(sign_vec) == 0){
 
-    message("align.pca: Aligning coefficient missing")
+    message(paste0("align.pca: ",
+                   "Aligning coefficient missing ",
+                   "for ", var_name))
 
     return(pca_obj)
 
