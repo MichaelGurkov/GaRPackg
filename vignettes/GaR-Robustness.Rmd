@@ -1,0 +1,187 @@
+
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
+
+
+```{r get_all_combinations_test,eval=FALSE}
+
+category_params_df = list(
+  Dom_Macro = list(
+    optional = c("state_of_economy_ind", "ue_gap"),
+    required = c("GDP")
+  ),
+  Global = list(
+    optional = c(
+      "rate_us",
+      "rate_euro",
+      "US_term_spread",
+      "SP500",
+      "eurostoxx600",
+      "VIX",
+      "oecd_imp",
+      "oil_p",
+      "non_energy_p"
+    ),
+    required = c("gdp_us", "gdp_euro")
+  ),
+  FinCycle = list(
+    optional = c("TA125_Close", "House_Price"),
+    required = c("Credit")
+  ),
+  Dom_FCI =  list(
+    required = c(
+      "Spread_CPI_corp",
+      "Sovereigh_spread",
+      "Term_spread",
+      "ILS_USD_impl_vol",
+      "TA_35_impl_vol",
+      "BOI_rate"
+    )
+  )
+) %>%
+  enframe(name = "category", value = "params") %>%
+  mutate(part_comb_df = map2(category, params,
+                             function(temp_name, temp_part) {
+                               temp_part_df = get_partition_combs(partition_list = temp_part,
+                                                                  partition_name = temp_name)
+                             }))
+
+
+feature_select_df = map(
+  category_params_df$category,function(temp_cat){
+    
+    temp_df = category_params_df %>% 
+      filter(category == temp_cat) %>% 
+      select(part_comb_df) %>% 
+      unnest(cols = c(part_comb_df))
+    
+    return(temp_df)
+                          
+                        }
+  ) %>% 
+  reduce(full_join, by = character()) %>% 
+  unite(col = name,starts_with("name"),sep = "-") %>% 
+  mutate(temp_part = pmap(list(Dom_Macro,Global,FinCycle,Dom_FCI),c))
+
+```
+
+
+```{r get_in_sample_fit,eval=FALSE}
+
+
+fit_df = feature_select_df %>% 
+  mutate(gar_model = map(temp_part, run.GaR.analysis,
+      vars_df = df,
+      target_var_name = "GDP",
+      horizon_list = parameters_list$horizon_list,
+      quantile_vec = parameters_list$quantile_vec))
+
+
+```
+
+```{r import_data,eval=FALSE}
+
+fit_df = readRDS(paste0(
+  "C:\\Users\\Misha\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
+
+
+```
+
+
+```{r get_coeffs}
+
+coeffs_df = fit_df %>% 
+  rownames_to_column() %>% 
+  mutate(temp_coeff_df = map(gar_model,
+                             extract.coeffs.from.gar.model,
+                             partition_names = "FinCycle_xreg")) %>% 
+  select(rowname, temp_coeff_df) %>% 
+  unnest(cols = temp_coeff_df)
+
+```
+
+
+
+```{r get_skew}
+
+
+fit_df = fit_df %>% 
+  mutate(part_fit_df = map(part_fit_df,function(temp_df){
+    temp_df = temp_df %>% 
+      pivot_wider(
+        names_from = Quantile,
+        values_from = GaR_fitted) %>% 
+      rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
+                .funs = list(~paste0("Q_",.))) %>% 
+      group_by(Horizon) %>% 
+      mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
+               (0.5 * Q_0.75 - 0.5 * Q_0.25)) %>% 
+      mutate(IQR = Q_0.75 - Q_0.25) %>% 
+      ungroup() %>% 
+      mutate(Horizon = forcats::as_factor(Horizon))
+    
+    return(temp_df)
+           
+           
+         }))
+
+
+```
+
+
+```{r plot_skew}
+
+skew_df = fit_df %>% 
+  rownames_to_column() %>% 
+  unnest(cols = part_fit_df) %>% 
+  select(rowname, Date, Horizon,Skew)
+
+skew_df %>% 
+  ggplot(aes(x = Date, y = Skew, group = rowname)) + 
+  geom_line(alpha = 0.01) +
+  geom_hline(yintercept = c(-0.5,0.5),
+             linetype = "dashed", color = "blue") + 
+  facet_wrap(~Horizon) + 
+  theme_bw()
+
+
+```
+
+
+```{r plot_gar}
+
+fit_df %>% 
+  rownames_to_column() %>% 
+  unnest(cols = part_fit_df) %>% 
+  select(rowname, Date, Horizon, Q_0.05) %>% 
+  ggplot(aes(x = Date, y = Q_0.05, group = rowname)) + 
+  geom_line(alpha = 0.01) +
+  # geom_hline(yintercept = c(-0.5,0.5),
+  #            linetype = "dashed", color = "blue") + 
+  facet_wrap(~Horizon) + 
+  theme_bw()
+
+
+```
+
+
+```{r median_iqr}
+
+med_iqr_df = fit_df %>% 
+  rownames_to_column() %>% 
+  unnest(cols = part_fit_df) %>% 
+  group_by(rowname, Horizon) %>% 
+  summarise(med_vol_cor = cor(IQR,Q_0.5), .groups = "drop")
+
+
+med_iqr_df %>% 
+  ggplot(aes(x = med_vol_cor)) + 
+  geom_histogram() + 
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + 
+  facet_wrap(~Horizon, scales = "free") + 
+  theme_bw()
+
+```
+

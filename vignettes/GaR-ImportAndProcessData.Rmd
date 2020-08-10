@@ -1,11 +1,4 @@
 
-```{r load_libraries}
-
-library(slider)
-
-```
-
-
 
 ```{r Set_parameters}
 

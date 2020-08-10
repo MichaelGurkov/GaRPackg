@@ -2,9 +2,11 @@
 
 export(interpolate)
 import(dplyr)
+import(ggplot2)
 import(purrr)
 import(quantreg)
 import(rsample)
+import(slider)
 import(stringr)
 import(tibble)
 import(tidyr)

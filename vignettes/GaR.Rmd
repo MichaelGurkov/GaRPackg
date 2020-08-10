@@ -120,7 +120,7 @@ current_partition = lapply(current_partition, function(temp_part){
 
 ```{r Analysis}
 
-current_partition = partitions_list$basic_no_global_inf
+current_partition = partitions_list$basic
 
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
@@ -135,6 +135,9 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Global = list(var_name = "rate_euro"),
                      FinCycle = list(var_name = "Credit")))
 
+
+results$reg_df = results$reg_df %>% 
+  rename_all(~str_remove_all(.,pattern = "_xreg"))
 
 ```
 
@@ -163,7 +166,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
 
 
 ```

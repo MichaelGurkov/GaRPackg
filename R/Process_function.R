@@ -361,47 +361,6 @@ make.quant.reg.df = function(partitions_list, vars_df,
 
 
 
-#' This function extracts the coefficients from quantile regression
-#'
-#'
-#'
-#' @param qreg_object quantile regression object
-#'
-#'
-extract.qreg.coeff.table = function(qreg_obj){
-
-  coef_table = lapply(suppressWarnings(summary(qreg_obj)),
-                      function(temp_list){
-
-                        temp_df = as.data.frame(temp_list$coefficients)
-
-                        temp_df$tau = temp_list$tau
-
-                        temp_df$Name = rownames(temp_df)
-
-                        rownames(temp_df) = NULL
-
-                        return(temp_df)
-
-                      }) %>%
-    bind_rows() %>%
-    rename(Coeff = coefficients, Low = `lower bd`,
-           High = `upper bd`, Tau = tau) %>%
-    mutate(Tau = as.character(Tau)) %>%
-    mutate(Name = gsub("(Intercept)","Intercept",Name, fixed = TRUE)) %>%
-    mutate(Significant = factor(ifelse(High <= 0 | Low >= 0,"Significant",
-                                       "Non Significant"),
-                                levels = c("Significant","Non Significant")))
-
-  return(coef_table)
-
-
-
-
-
-}
-
-
 #' @title Fill na with average of k previous observations
 #'
 #' @param data_vec vector of data
@@ -452,7 +411,7 @@ fix.quantile.crossing = function(prediction_df){
   prediction_df = prediction_df %>%
     group_by(Horizon,Date) %>%
     arrange(Quantile) %>%
-    mutate(GaR_forecast = sort(GaR_forecast)) %>%
+    mutate(across(contains("GaR"),~sort(.))) %>%
     ungroup()
 
 

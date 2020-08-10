@@ -32,6 +32,14 @@
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #' Default is TRUE
 #'
+#' @return reg_df data frame with training set data
+#'
+#' @return qreg_result a quantile regression model object
+#'
+#' @return gar_fitted_df a data frame with fitted values
+#'
+#' @return pca_obj (optional) PCA object
+#'
 run.GaR.analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
@@ -63,6 +71,26 @@ run.GaR.analysis = function(partitions_list, vars_df,
   )
 
 
+  gar_fitted_df = map2_dfr(qreg_result, names(qreg_result),
+                  function(temp_obj,temp_name){
+
+                   temp_fitted_df =  temp_obj$fitted.values %>%
+                     as.data.frame() %>%
+                     setNames(quantile_vec) %>%
+                     mutate(Date = reg_df_list$reg_df$Date[
+                       1:nrow(temp_obj$model)]) %>%
+                      pivot_longer(cols = -Date,
+                                   names_to = "Quantile",
+                                   values_to = "GaR_fitted") %>%
+                      mutate(Horizon = temp_name)
+
+
+
+
+                  }) %>%
+    fix.quantile.crossing()
+
+
 
   # Run OLS regresion
 
@@ -92,6 +120,8 @@ run.GaR.analysis = function(partitions_list, vars_df,
   return_list$reg_df = reg_df_list$reg_df
 
   return_list$qreg_result = qreg_result
+
+  return_list$gar_fitted_df = gar_fitted_df
 
   if(length(reg_df_list) == 2){
     return_list$pca_obj = reg_df_list$pca_obj}
