@@ -61,7 +61,8 @@ coeff_df = lapply(names(results$qreg_result),
 }) %>% 
   bind_rows() %>% 
   mutate(Horizon = factor(Horizon, levels = c(1,8,12))) %>% 
-  filter(!Partition == "(Intercept)")
+  filter(!Partition == "(Intercept)") %>% 
+  mutate(Partition = str_remove_all(Partition,"_xreg"))
   
 my_lab = function(string){
   
@@ -84,7 +85,8 @@ dom_macro_plot = ggplot(coeff_df %>%
 
 fin_cycle_plot = ggplot(coeff_df %>% 
          filter(Partition == "FinCycle") %>% 
-         filter(Horizon %in% c(1,12)), aes(x = Quantile, y= Coeff)) + 
+         filter(Horizon %in% c(1,12)),
+         aes(x = Quantile, y= Coeff)) + 
   geom_col(width = 0.5) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
   labs(x = "Quantile", y = "",
@@ -114,13 +116,15 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 pca_plots = lapply(names(pca_list), function(name){
   
-  pca_var = round(pca_variance$Variance[pca_variance$Name == name] * 100,0)
+  pca_var = round(pca_variance$Variance
+                  [pca_variance$Name == name] * 100,0)
   
   bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = paste0(plot_names_list[[name]], " (" ,pca_var, "%)")) +
+  labs(x = "", y = "", title = paste0(
+    plot_names_list[[name]], " (" ,pca_var, "%)")) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, size = 40),
@@ -150,8 +154,9 @@ save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 pca_timeseries_plots = lapply(names(pca_list), function(name){
   
-  ggplot(data.frame(x = pca_list[[name]]$date_index,
-                  y = pca_list[[name]]$pca$x[,1]), aes(x = x, y = y)) + 
+  ggplot(data.frame(x = pca_list[[name]]$time_index,
+                  y = pca_list[[name]]$pca_obj$x[,1]),
+         aes(x = x, y = y)) + 
     geom_line() + 
     labs(title = plot_names_list[name], x = "", y = "") + 
     scale_x_yearqtr() + 
@@ -174,30 +179,8 @@ save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 
 ```{r risk_assymetry}
 
-dist_quantile_df = lapply(names(results$qreg_result),
-                   function(temp_name){
-                     
-                     date_vec = results$reg_df$Date
-                     
-                     date_vec = date_vec[1:(length(date_vec) - 
-                                              as.numeric(temp_name))]
-                     
-                     temp_df = results$qreg_result[[
-                       temp_name]]$fitted.values %>% 
-                       as.data.frame() %>% 
-                       setNames(unlist(parameters_list$quantile_vec)) %>% 
-                       mutate(Date = date_vec) %>% 
-                       mutate(OLS = results$ols_reg[[temp_name]]$fitted.values) %>% 
-                       gather(key = Quantile,value = GaR,-Date) %>% 
-                       mutate(Horizon = temp_name)
-                   
-                       return(temp_df)
-                     
-                   }) %>% 
-  bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
-  spread(key = Quantile,value = GaR) %>% 
+dist_quantile_df = results$gar_fitted_df %>% 
+  spread(key = Quantile,value = GaR_fitted) %>% 
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
             .funs = list(~paste0("Q_",.))) %>% 
   group_by(Horizon) %>% 
@@ -421,31 +404,45 @@ write.csv(summary_table, paste0(file.path(Sys.getenv("USERPROFILE"),
 
 ```{r events_plot}
 
-recessions = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),
-                                       fsep="\\"),
-                         "\\OneDrive - Bank Of Israel\\",
-                         "Data\\BoI\\GaR_Data","\\recessions.csv")) %>% 
+recessions = read.csv(paste0(
+  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+  "\\OneDrive - Bank Of Israel\\",
+  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>% 
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
-events = read.csv(paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   fsep="\\"),
-                         "\\OneDrive - Bank Of Israel\\",
-                         "Data\\BoI\\GaR_Data","\\events.csv")) %>% 
+events = read.csv(paste0(
+  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+  "\\OneDrive - Bank Of Israel\\",
+  "Data\\BoI\\GaR_Data","\\events.csv")) %>% 
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
-gar_df =  data.frame(Date = results$reg_df$Date,
-                     GaR = predict(results$qreg_result$`1`,
-                                   newdata = results$reg_df)[,1])
+predict_df =  data.frame(
+  Date = results$reg_df$Date,
+  Horizon_1 = predict(results$qreg_result$`1`,
+                newdata = results$reg_df %>% 
+                  rename_at(vars(-Date, -starts_with("GDP")),
+                            ~paste0(.,"_xreg")))[,1],
+  Horizon_12 = predict(results$qreg_result$`12`,
+                newdata = results$reg_df %>% 
+                  rename_at(vars(-Date, -starts_with("GDP")),
+                            ~paste0(.,"_xreg")))[,1]) %>% 
+  pivot_longer(cols = -Date,
+               names_to = "Horizon",
+               values_to = "GaR")
 
 
 events_plot = ggplot() + 
-  ylim(c(-0.08,0.08)) + 
-  geom_point(data = gar_df, mapping = aes(x = Date, y = GaR)) + 
-  geom_line(data = gar_df, mapping = aes(x = Date, y = GaR)) + 
-  geom_rect(data = recessions,mapping = aes(xmin = Start, xmax = End,
-                                            ymin = -Inf, ymax = Inf),
+  ylim(c(-0.12,0.08)) + 
+  geom_point(data = predict_df,
+             mapping = aes(x = Date, y = GaR, color = Horizon)) + 
+  geom_line(data = predict_df,
+            mapping = aes(x = Date, y = GaR, color = Horizon)) + 
+  geom_rect(data = recessions,
+            mapping = aes(xmin = Start, xmax = End,
+                          ymin = -Inf, ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
-  theme_bw()
+  theme_bw() + 
+  theme(legend.position = "bottom", legend.title = element_blank())
 
 events_plot = events_plot + 
   geom_point(data = gar_df %>% 
