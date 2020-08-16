@@ -138,8 +138,8 @@ coeffs_df %>%
 
 
 fit_df = fit_df %>% 
-  mutate(part_fit_df = map(part_fit_df,function(temp_df){
-    temp_df = temp_df %>% 
+  mutate(part_fit_df = map(gar_model,function(temp_mod){
+    temp_df = temp_mod$gar_fitted_df %>% 
       pivot_wider(
         names_from = Quantile,
         values_from = GaR_fitted) %>% 

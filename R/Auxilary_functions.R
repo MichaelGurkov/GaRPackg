@@ -158,3 +158,37 @@ extract.coeffs.from.gar.model = function(gar_model,
 
 
 }
+
+#' This function calculates quantile r2 score for prediction df
+#'
+#' @import dplyr
+#'
+#' @param pred_df
+#'
+#' @param actual_df
+#'
+#' @param benchmark_df
+#'
+collect_quantile_r2_score = function(pred_df,realized_df,
+                                     benchmark_df){
+
+  prediction_df = pred_df %>%
+    inner_join(benchmark_df,
+               by = c("Quantile","Horizon","Forecast_Period")) %>%
+    left_join(realized_df, by = "Forecast_Period")
+
+  score_df = prediction_df %>%
+    select(realized, prediction, benchmark, Quantile, Horizon) %>%
+    filter(complete.cases(.)) %>%
+    group_by(Quantile, Horizon) %>%
+    summarise(score = quantile.r2.score(
+      realized_values = realized,
+      forecast_values = prediction,
+      quantile = as.numeric(Quantile)[1],
+      benchmark_values = benchmark), .groups = "drop")
+
+
+  return(score_df)
+
+
+}
