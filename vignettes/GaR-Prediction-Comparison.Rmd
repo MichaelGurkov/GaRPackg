@@ -120,16 +120,29 @@ models_df = models_df %>%
 ```
 
 
-```{r calculate_r_2}
+```{r calculate_scores}
 
 models_df = models_df %>% 
-  mutate(r2_score = pmap(.l = list(pred_df,realized, benchmark),
+  mutate(
+    r2_score = pmap(.l = list(pred_df,realized, benchmark),
                      .f = function(pred_df,realized, benchmark){
-
                        temp_score = collect_quantile_r2_score(
                          pred_df = pred_df,
                          realized_df = realized,
                          benchmark_df = benchmark)
+                       return(temp_score)
+                     })
+    ) %>% 
+  mutate(
+    pit_score = pmap(.l = list(pred_df,realized),
+                     .f = function(pred_df,realized){
+                       temp_score = pred_df %>% 
+                         inner_join(realized_df,
+                                    by = "Forecast_Period") %>% 
+                         rename(actual_values = realized,
+                                predicted_values = prediction) %>% 
+                         quantile.pit.score()
+                       
                        return(temp_score)
                      }))
 
@@ -146,8 +159,7 @@ The first stage is to obtain out of sample forecast which is calculated in the f
 The model fit evaluation which is performed according to quantile $R^{2}$.
 
 
-```{r plot_goodness_of_fit}
-
+```{r plot_r2_goodness_of_fit}
 
 models_df %>% 
   select(name, r2_score) %>% 
@@ -155,176 +167,30 @@ models_df %>%
   mutate(name = map_chr(name,~.)) %>% 
   ggplot(aes(x = Quantile, y = score, fill = name)) + 
   geom_col(position = "dodge") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Quantile R2 score") + 
   scale_fill_viridis_d(option = "plasma") + 
   facet_wrap(~Horizon) + 
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom", legend.title = element_blank())
 
 ```
 
 
-<!-- Comparisons: gar vs actual, gar vs macro (rmse and quantile fit), gar vs staff -->
+```{r plot_pit_goodness_of_fit}
 
-
-```{r gar_actual_comparison, eval=FALSE}
-
-forecast_comparisons$gar_actual = forecast_data_list$GaR_Forecast %>% 
-  filter(Quantile == "0.50") %>% 
-  select(-Quantile) %>% 
-  inner_join(.,forecast_data_list$actual_gdp_df,
-             by = "Forecast_Period") %>% 
-  mutate(Error = GDP_actual - GaR_Forecast)
-
-
-
-```
-
-
-```{r gar_staff_comparison, eval=FALSE}
-
-forecast_comparisons$gar_staff = forecast_data_list[
-  c("GaR_Forecast","staff_forecast")] %>% 
-  reduce(inner_join,
-         by = c("Date","Forecast_Period", "Horizon", "Quantile")) %>% 
-  inner_join(forecast_data_list$actual_gdp_df,
-             by = "Forecast_Period") %>% 
-  mutate(across(.cols = c(GaR_Forecast, Staff_Forecast),
-                .fns = ~ GDP_actual - .,
-                .names = "{col}_error"))
-
-```
-
-
-```{r gar_macro_comparison, eval=FALSE}
-
-forecast_comparisons$gar_macro = forecast_data_list[
-  c("GaR_Forecast","Macro_Forecast")] %>% 
-  reduce(inner_join,
-         by = c("Date","Forecast_Period", "Horizon",
-                "Quantile")) %>% 
-  inner_join(forecast_data_list$actual_gdp_df,
-             by = "Forecast_Period") %>% 
-  mutate(across(.cols = c(GaR_Forecast, Macro_Forecast),
-                .fns = ~ GDP_actual - .,
-                .names = "{col}_error"))
-
-```
-
-
-In the next stage we compare the forecasts of the different models by matching them on Horizon, Forecast Period, Forecast Status and Win Type (where appropriate). The actual GDP growth is matched on Forecast Period only, staff forecast is matched on Forecast Period and Horizon.
-
-
-\subsection{Comparison to actual GDP}
-
-We take actual GDP YoY growth rates and compare them with the predicted median YoY GDP growth rates. The matching between the actual and forecasted values is based on
-forecasted period
-
-```{r plot_gar_actual_rmse, eval=FALSE}
-
-ggplot(forecast_model_fit$gar_actual_rmse,
-       aes(x = reorder(Horizon, as.numeric(Horizon)), y = RMSE, fill = Horizon)) + 
-  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
-  geom_col(width = 0.5) + 
-  labs(x = "", y = "", title = "Forecast fit - RMSE") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  theme_bw() + 
-  theme(legend.position = "bottom")
-
-```
-
-
-```{r plot_actual_quantile_fit_score, eval=FALSE}
-
-
-ggplot(forecast_model_fit$gar_actual_fit_score %>% 
-  group_by(Horizon,Win_Type,Forecast_Status) %>% 
-  summarise(SD = mean(Score, na.rm = TRUE), .groups = "drop"),
-  aes(x = Horizon, y = SD, fill = Horizon)) + 
-  facet_grid(rows = vars(Forecast_Status), cols = vars(Win_Type), scales = "free_y") + 
-  geom_col(width = 0.5) + 
-  labs(x = "", y = "",
-       title = "Forecast fit - average quantile fit score") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  theme_bw() + 
-  theme(legend.position = "bottom")
-
-
-```
-
-
-
-\section{Residuals analysis}
-
-```{r plot_gar_forecast, eval=FALSE}
-
-forecast_data_list$GaR_Forecast %>% 
-  ggplot(aes(x = Date, y = GaR_Forecast)) + 
-  geom_line() + 
-  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
-  xlab(NULL) + 
-  ylab(NULL) + 
-  labs(title = "GaR Predictions (out of sample)") + 
-  scale_y_continuous(labels = scales::percent_format()) + 
-  facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
-
-
-forecast_data_list$GaR_Forecast %>% 
-  ggplot(aes(x = Date, y = GaR_Forecast, color = Quantile)) + 
-  geom_line() + 
-  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
-  xlab(NULL) + 
-  ylab(NULL) + 
-  labs(title = "GaR Predictions (out of sample)") + 
-  scale_y_continuous(labels = scales::percent_format()) + 
-  facet_wrap(~Horizon, scales = "free")
-```
-
-
-```{r plot_staff_forecast, eval=FALSE}
-
-forecast_data_list$staff_forecast %>% 
-  ggplot(aes(x = Date, y =Staff_Forecast)) + 
-  geom_line() + 
-  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
-  xlab(NULL) + 
-  ylab(NULL) + 
-  labs(title = "Staff Predictions") + 
-  scale_y_continuous(labels = scales::percent_format()) + 
-  facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
-```
-
-
-```{r plot_intercept_forecast, eval=FALSE}
-
-forecast_data_list$Intercept_Forecast %>% 
-  ggplot(aes(x = Date, y = Intercept_Forecast)) + 
-  geom_line() + 
-  geom_hline(yintercept = 0, color = "blue", linetype = "dashed") + 
-  xlab(NULL) + 
-  ylab(NULL) + 
-  labs(title = "Intercept GaR Predictions (out of sample)") + 
-  scale_y_continuous(labels = scales::percent_format()) + 
-  facet_grid(rows = vars(Horizon), cols = vars(Quantile), scales = "free")
-```
-
-
-```{r plot_gar_vs_staff, eval=FALSE}
-
-forecast_data_list[c("GaR_Forecast","staff_forecast")] %>% 
-  reduce(inner_join, by = c("Date",
-                            "Horizon",
-                            "Quantile",
-                            "Forecast_Period")) %>% 
-  select(-Forecast_Period) %>% 
-  pivot_longer(cols = ends_with("Forecast")) %>% 
-  mutate(name = str_remove_all(name,"_Forecast")) %>% 
-  ggplot(aes(x = Date, y = value, color = name)) + 
-  geom_line() + 
-  facet_grid(rows = vars(Horizon),cols = vars(Quantile)) + 
-  labs(x = "", y = "") + 
-  theme_bw() + 
-  theme(legend.position = "bottom",
-        legend.title = element_blank(),
-        axis.text.x = element_text(angle = 90, vjust = 0.5))
+models_df %>% 
+  select(name, pit_score) %>% 
+  unnest(pit_score) %>% 
+  mutate(name = map_chr(name,~.)) %>% 
+  mutate(Quantile = as.numeric(Quantile)) %>% 
+  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) + 
+  geom_line() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("PIT score") + 
+  scale_color_viridis_d(option = "plasma") + 
+  scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
+                   labels = c(0.05,0.25,0.5,0.75,0.95)) +
+  facet_wrap(~Horizon) + 
+  theme(legend.position = "bottom", legend.title = element_blank())
 
 ```
 

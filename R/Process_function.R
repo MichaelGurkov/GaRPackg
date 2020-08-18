@@ -486,3 +486,41 @@ calculate.four.quarters.ma = function(variable_vec){
   return(ma_vec)
 
 }
+
+
+#' This function returns a data frame with predicted values
+#'
+#' @title Make prediction df
+#'
+#' @details The default is in sample prediction (fitted values),
+#' otherwise predict according to supplied xreg data
+#'
+#' @param gar_model
+#'
+#' @param xreg_df xreg data
+#'
+make_prediction_df = function(gar_model, xreg_df){
+
+  prediction_df = map2_dfr(gar_model,names(gar_model),
+           function(temp_mod, temp_name){
+
+             temp_pred_df = xreg_df %>%
+               select(Date) %>%
+               cbind(predict(temp_mod, xreg_df)) %>%
+               pivot_longer(-Date,
+                            names_to = "Quantile",
+                            values_to = "GaR_fitted") %>%
+               mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
+               mutate(Horizon = temp_name)
+
+
+
+  }) %>%
+    fix.quantile.crossing() %>%
+    select(Date,Horizon,Quantile,GaR_fitted)
+
+  return(prediction_df)
+
+
+
+}

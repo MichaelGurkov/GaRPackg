@@ -192,3 +192,30 @@ collect_quantile_r2_score = function(pred_df,realized_df,
 
 
 }
+
+#' @title Calculate skew and IQR measures
+#'
+#' @details This function takes gar object and
+#' reg df and calculates skew and
+#'
+#' @param gar_model
+#'
+calculate.skew.and.iqr = function(gar_obj){
+
+  prediction_df = make_prediction_df(
+    gar_model = gar_obj$qreg_result,
+    xreg_df = gar_obj$reg_df)
+
+  skew_df = prediction_df %>%
+    pivot_wider(names_from = Quantile,
+                values_from = GaR_fitted,
+                names_prefix = "q") %>%
+    mutate(Skew = (0.5 * q0.75 + 0.5 * q0.25 - q0.50) /
+             (0.5 * q0.75 - 0.5 * q0.25)) %>%
+    mutate(IQR = q0.75 - q0.25) %>%
+    select(Date,Horizon,Skew,IQR)
+
+  return(skew_df)
+
+
+}
