@@ -91,7 +91,8 @@ fit_df = feature_select_df %>%
 ```{r import_data,eval=FALSE}
 
 fit_df = read_rds(paste0(
-  "C:\\Users\\Misha\\OneDrive - Bank Of",
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
   " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
 
@@ -133,7 +134,6 @@ coeffs_df %>%
 ```
 
 
-
 ```{r get_skew}
 
 
@@ -159,23 +159,50 @@ fit_df = fit_df %>%
          }))
 
 
+
+
 ```
 
 
 ```{r plot_skew}
 
-skew_df = fit_df %>% 
-  rownames_to_column() %>% 
-  unnest(cols = part_fit_df) %>% 
-  select(rowname, Date, Horizon,Skew)
+# skew_df = fit_df %>% 
+#   rownames_to_column() %>% 
+#   unnest(cols = part_fit_df) %>% 
+#   select(rowname, Date, Horizon,Skew)
 
-skew_df %>% 
-  ggplot(aes(x = Date, y = Skew, group = rowname)) + 
+skew_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\skew_df.RDS"))
+
+
+skew_df %>%
+  ggplot(aes(x = Date, y = Skew, group = rowname)) +
   geom_line(alpha = 0.01) +
   geom_hline(yintercept = c(-0.5,0.5),
-             linetype = "dashed", color = "blue") + 
-  facet_wrap(~Horizon) + 
+             linetype = "dashed", color = "blue") +
+  facet_wrap(~Horizon) +
   theme_bw()
+
+
+skew_df %>%
+  ggplot(aes(x = Date, y = Skew, group = rowname)) +
+  geom_line() +
+  geom_hline(yintercept = c(-0.5,0.5),
+             linetype = "dashed", color = "blue") +
+  ggtitle("The skewness measure for each partition") + 
+  facet_wrap(~Horizon) +
+  gghighlight(rowname == 4599,
+              use_group_by = FALSE,
+              use_direct_label = FALSE,
+              unhighlighted_params = list(alpha = 0.1)) + 
+  theme_bw()
+
+
+
+
+
 
 
 ```
