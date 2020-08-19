@@ -118,7 +118,7 @@ current_partition = lapply(current_partition, function(temp_part){
 ```
 
 
-```{r Analysis, eval=FALSE}
+```{r Analysis}
 
 current_partition = partitions_list$basic
 
@@ -194,7 +194,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 

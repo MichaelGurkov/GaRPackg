@@ -16,7 +16,6 @@ corrplot(cor_mat,order = "hclust",addrect = 5)
 ```
 
 
-
 ```{r descriptive_plots}
 
 
@@ -51,7 +50,9 @@ names(plot_list) = names(current_partition)
 ```{r descriptive_table, results='asis'}
 
 stargazer(df %>% 
-            select(-Date),summary = TRUE, header = FALSE)
+            select(-Date,-starts_with("staff|dsge")) %>% 
+            as.data.frame(),
+          summary = TRUE, header = FALSE)
 
 ```
 

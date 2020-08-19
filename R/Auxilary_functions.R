@@ -212,8 +212,7 @@ calculate.skew.and.iqr = function(gar_obj){
                 names_prefix = "q") %>%
     mutate(Skew = (0.5 * q0.75 + 0.5 * q0.25 - q0.50) /
              (0.5 * q0.75 - 0.5 * q0.25)) %>%
-    mutate(IQR = q0.75 - q0.25) %>%
-    select(Date,Horizon,Skew,IQR)
+    mutate(IQR = q0.75 - q0.25)
 
   return(skew_df)
 

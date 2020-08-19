@@ -103,17 +103,10 @@ fit_df = read_rds(paste0(
 
 ```{r get_coeffs}
 
-coeffs_df = read_rds(paste0(
-  "C:\\Users\\Misha\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\coeffs_df.RDS"))
-
-# coeffs_df = fit_df %>%
-#   rownames_to_column() %>%
-#   mutate(temp_coeff_df = map(gar_model,
-#                              extract.coeffs.from.gar.model,
-#                              partition_names = "FinCycle_xreg")) %>%
-#   select(rowname, temp_coeff_df) %>%
-#   unnest(cols = temp_coeff_df)
+fit_df = fit_df %>% 
+  mutate(coeff_df = map(gar_model,
+                             extract.coeffs.from.gar.model,
+                             partition_names = "FinCycle_xreg"))
 
 
 
@@ -122,27 +115,37 @@ coeffs_df = read_rds(paste0(
 
 ```{r plot_coeffs}
 
-coeffs_df %>% 
-  filter(Tau == 0.05) %>% 
-  ggplot(aes(x = Coeff)) +
+fit_df %>% 
+  rownames_to_column() %>% 
+  select(rowname, coeff_df) %>% 
+  unnest(coeff_df) %>% 
+  select(rowname, Coeff, Horizon, Tau) %>% 
+  pivot_wider(id_cols = -Horizon,
+              names_from = Horizon,
+              values_from = Coeff,
+              names_prefix = "h_") %>% 
+  mutate(across(c("h_1","h_4","h_8","h_12"), ~ . - h_1)) %>% 
+  pivot_longer(cols = c(-rowname,-Tau),
+               names_to = "Horizon",
+               values_to = "NormCoeff") %>% 
+  filter(!Horizon == "h_1") %>% 
+  mutate(Horizon = str_remove_all(Horizon,"h_")) %>% 
+  mutate(Horizon = factor(Horizon,c(4,8,12))) %>% 
+  ggplot(aes(x = NormCoeff, fill = Tau)) + 
   geom_histogram() + 
-  geom_vline(xintercept = 0,
-             linetype = "dashed", color = "blue") + 
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  ylab(NULL) + xlab(NULL) +  ggtitle(" Normalized coefficients") + 
   facet_wrap(~Horizon, scales = "free") + 
-  theme_bw() + 
   theme(legend.position = "bottom")
-  
+
 
 ```
 
 
 ```{r get_skew}
 
-
 fit_df = fit_df %>% 
   mutate(skew_df = map(gar_model,calculate.skew.and.iqr))
-
-
 
 
 ```
@@ -150,31 +153,7 @@ fit_df = fit_df %>%
 
 ```{r plot_skew}
 
-# skew_df = fit_df %>% 
-#   rownames_to_column() %>% 
-#   unnest(cols = part_fit_df) %>% 
-#   select(rowname, Date, Horizon,Skew)
-
-skew_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\skew_df.RDS"))
-
-
-fit_df %>% 
-  slice(1:2) %>% 
-  rownames_to_column() %>% 
-  select(rowname,skew_df) %>% 
-  unnest(skew_df) %>% 
-  ggplot(aes(x = Date, y = Skew, group = rowname)) +
-  geom_line(alpha = 0.01) +
-  geom_hline(yintercept = c(-0.5,0.5),
-             linetype = "dashed", color = "blue") +
-  facet_wrap(~Horizon) +
-  theme_bw()
-
-
-fit_df %>% 
+skew_plot = fit_df %>% 
   rownames_to_column() %>% 
   select(rowname,skew_df) %>% 
   unnest(skew_df) %>%
@@ -191,6 +170,10 @@ fit_df %>%
   theme_bw()
 
 
+write_rds(skew_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\skew_plot.rds"))
 
 
 
@@ -199,17 +182,33 @@ fit_df %>%
 ```
 
 
+```{r get_gar}
+
+fit_df =  fit_df %>% 
+  mutate(pred_df = map(gar_model,function(temp_mod){
+    make_prediction_df(temp_mod$qreg_result, xreg_df = temp_mod$reg_df)
+  }))
+
+```
+
+
 ```{r plot_gar}
 
-fit_df %>% 
+gar_plot = fit_df %>% 
   rownames_to_column() %>% 
-  unnest(cols = part_fit_df) %>% 
-  select(rowname, Date, Horizon, Q_0.05) %>% 
-  ggplot(aes(x = Date, y = Q_0.05, group = rowname)) + 
-  geom_line(alpha = 0.01) +
-  # geom_hline(yintercept = c(-0.5,0.5),
-  #            linetype = "dashed", color = "blue") + 
-  facet_wrap(~Horizon) + 
+  select(rowname, pred_df) %>% 
+  unnest(cols = pred_df) %>% 
+  filter(Quantile == "0.05") %>% 
+  ggplot(aes(x = Date, y = GaR_fitted, group = rowname)) + 
+  geom_line() +
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("5th percentile of predictive distribution") + 
+  facet_wrap(~Horizon, scales = "free") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  gghighlight(rowname == 4599,
+              use_group_by = FALSE,
+              use_direct_label = FALSE,
+              unhighlighted_params = list(alpha = 0.1)) +
   theme_bw()
 
 
@@ -218,16 +217,18 @@ fit_df %>%
 
 ```{r median_iqr}
 
-med_iqr_df = fit_df %>% 
+fit_df %>% 
   rownames_to_column() %>% 
-  unnest(cols = part_fit_df) %>% 
+  select(rowname, skew_df) %>% 
+  unnest(cols = skew_df) %>% 
   group_by(rowname, Horizon) %>% 
-  summarise(med_vol_cor = cor(IQR,Q_0.5), .groups = "drop")
-
-
-med_iqr_df %>% 
+  summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>% 
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%  
   ggplot(aes(x = med_vol_cor)) + 
   geom_histogram() + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle(paste0("Correlaltion between the median",
+                 " and IQR of the predictive distribution")) + 
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + 
   facet_wrap(~Horizon, scales = "free") + 
   theme_bw()

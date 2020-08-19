@@ -149,10 +149,6 @@ models_df = models_df %>%
 ```
 
 
-
-The first stage is to obtain out of sample forecast which is calculated in the following manner : first a model is fitted on a subset of the data (the window) and then the outcome is predicted based on new data that is determined by the out of sample step.
-
-
 <!-- Model fit evaluation -->
 
 
