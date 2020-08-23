@@ -2,7 +2,7 @@ context("Quantile_fit_score")
 
 test_that("Different length of quantile values and quantiles throws an error",
           {
-            expect_error(quantile.fit.score(
+            expect_error(quantile_fit_score(
               realized_value = 3,
               quantile_values = c(1, 2),
               quantiles = c(0.25, 0.5, 0.75)
@@ -12,7 +12,7 @@ test_that("Different length of quantile values and quantiles throws an error",
 test_that("Realized value of 0 returns maximum value",
           {
             expect_equal(
-              quantile.fit.score(
+              quantile_fit_score(
                 realized_value = 0,
                 quantile_values = c(1, 2, 3),
                 quantiles = c(0.25, 0.5, 0.75)),
@@ -23,7 +23,7 @@ test_that("Realized value of 0 returns maximum value",
 test_that("Numeric example",
           {
             expect_equal(
-              quantile.fit.score(
+              quantile_fit_score(
                 realized_value = 1.5,
                 quantile_values = c(1, 2),
                 quantiles = c(0.25, 0.75)

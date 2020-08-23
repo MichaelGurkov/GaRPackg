@@ -12,14 +12,14 @@ linear_part = list(
   )
 )
 
-result_df = make.quant.reg.df(
+result_df = GaRPackg::make_quant_reg_df(
   partitions_list = linear_part,
   vars_df = gar_data,
   target_var_name = "GDP",
   horizon_list = list(1,4),
   quantile_vec = c(0.05,0.5))
 
-test_that(paste("make.quant.reg.df return proper names"),
+test_that(paste("make_quant_reg_df return proper names"),
           expect_equal(
             object = names(result_df$reg_df),
             expected = c("Date","GDP","GDP_xreg",

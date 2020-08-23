@@ -18,7 +18,7 @@ test_params$target_var = "GDP"
 
 test_params$win_len = 30
 
-reg_df = make.quant.reg.df(
+reg_df = make_quant_reg_df(
   partitions_list = test_params$partition,
   vars_df = gar_data,
   target_var_name = test_params$target_var,
@@ -29,7 +29,7 @@ reg_df = make.quant.reg.df(
 
 test_pred_df = map(
   test_params$horizon_list,
-  run.cross.validation,
+  run_cross_validation,
   reg_df = reg_df,
   target_var_name = test_params$target_var,
   quantile_vec = test_params$quantile_vec,
@@ -38,9 +38,9 @@ test_pred_df = map(
   bind_rows() %>%
   arrange(Date,Horizon,Quantile)
 
-test_that("get.gar.forecast returns proper predictions",
+test_that("get_gar_forecast returns proper predictions",
           expect_equal(
-            object = get.gar.forecast(
+            object = get_gar_forecast(
               partitions_list = test_params$partition,
               vars_df = gar_data,
               target_var_name = test_params$target_var,

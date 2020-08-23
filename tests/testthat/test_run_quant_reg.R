@@ -20,7 +20,7 @@ test_params$quantile_vec = c(0.05,0.5)
 
 test_params$target_var_name = "GDP"
 
-xreg_df = make.quant.reg.df(
+xreg_df = make_quant_reg_df(
   partitions_list = test_params$linear_part,
   vars_df = gar_data,
   target_var_name = test_params$target_var_name,
@@ -58,7 +58,7 @@ test_reg = map(test_params$horizon_list,
 
 names(test_reg) = test_params$horizon_list
 
-result_reg = run.quant.reg(
+result_reg = run_quant_reg(
   reg_df = xreg_df,
   target_var_name = test_params$target_var_name,
   quantile_vec = test_params$quantile_vec,
@@ -66,6 +66,6 @@ result_reg = run.quant.reg(
   reg_type = "lasso",
   lambda = 2)
 
-test_that("run.quant.reg returns quantile lasso",
+test_that("run_quant_reg returns quantile lasso",
           expect_equal(object = result_reg,
                        expected = test_reg))

@@ -5,7 +5,7 @@
 #'
 #' @param data_vec
 #'
-identify.endpoints.NA = function(data_vec){
+identify_endpoints_NA = function(data_vec){
 
   na_ind = which(is.na(data_vec))
 
@@ -74,7 +74,7 @@ interpolate = function(data_vec, direction = "forward"){
 
   if(length(na_ind) == 0){return(data_vec)}
 
-  na_endpoints_list = identify.endpoints.NA(data_vec)
+  na_endpoints_list = identify_endpoints_NA(data_vec)
 
   clean_data = na.approx(data_vec)
 
@@ -124,7 +124,7 @@ interpolate = function(data_vec, direction = "forward"){
 #'
 #' @param df dataframe
 #'
-get.time.indices.list = function(df){
+get_time_indices_list = function(df){
 
   time_index_name = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -156,7 +156,7 @@ chain_index = function(df, method = "PCA", ...){
 
   # Get list range
 
-  time_indices_list = get.time.indices.list(df)
+  time_indices_list = get_time_indices_list(df)
 
   # Get reduced diff series
 
@@ -243,7 +243,7 @@ chain_index = function(df, method = "PCA", ...){
 #'  is between current point and its lag) looking.
 #'
 
-calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
+calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
   Date_varname = grep("[Dd]ate",names(df),value = TRUE)
 
@@ -295,8 +295,9 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
+#' @export
 #'
-make.quant.reg.df = function(partitions_list, vars_df,
+make_quant_reg_df = function(partitions_list, vars_df,
                              target_var_name,
                              horizon_list,
                              quantile_vec,
@@ -368,7 +369,7 @@ make.quant.reg.df = function(partitions_list, vars_df,
 #' @param k window size
 #'
 
-fill.na.average = function(data_vec, k = 4){
+fill_na_average = function(data_vec, k = 4){
 
   na_ind = which(is.na(data_vec))
 
@@ -406,7 +407,7 @@ fill.na.average = function(data_vec, k = 4){
 #'
 #' @param prediction_df
 #'
-fix.quantile.crossing = function(prediction_df){
+fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
     group_by(Horizon,Date) %>%
@@ -458,7 +459,7 @@ add_leads_to_target_var = function(df,
 #'
 #' @import slider
 #'
-calculate.YoY.returns = function(variable_vec){
+calculate_YoY_returns = function(variable_vec){
 
   yoy_vec = slide_dbl(.x = variable_vec,
                          .f = ~.[5]/.[1]-1,
@@ -476,7 +477,7 @@ calculate.YoY.returns = function(variable_vec){
 #'
 #' @import slider
 #'
-calculate.four.quarters.ma = function(variable_vec){
+calculate_four_quarters_ma = function(variable_vec){
 
   ma_vec = slide_dbl(.x = variable_vec,
                       .f = mean,
@@ -516,7 +517,7 @@ make_prediction_df = function(gar_model, xreg_df){
 
 
   }) %>%
-    fix.quantile.crossing() %>%
+    fix_quantile_crossing() %>%
     select(Date,Horizon,Quantile,GaR_fitted)
 
   return(prediction_df)

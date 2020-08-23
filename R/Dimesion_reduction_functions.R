@@ -20,7 +20,7 @@
 #'  (x component of the PCA object list). The loadings are left unchaged.
 
 
-align.pca = function(pca_obj, var_name,
+align_pca = function(pca_obj, var_name,
                      positive_direction = TRUE){
 
 
@@ -48,7 +48,7 @@ align.pca = function(pca_obj, var_name,
 
   if(length(sign_vec) == 0){
 
-    message(paste0("align.pca: ",
+    message(paste0("align_pca: ",
                    "Aligning coefficient missing ",
                    "for ", var_name))
 
@@ -124,12 +124,12 @@ pca_reduction = function(df,center = TRUE,
 
     if(length(sign_align_params) == 2){
 
-      temp_pca = align.pca(pca_obj = temp_pca,
+      temp_pca = align_pca(pca_obj = temp_pca,
                            var_name = sign_align_params[[1]],
                            positive_direction = sign_align_params[[2]])
     } else {
 
-      temp_pca = align.pca(pca_obj = temp_pca,
+      temp_pca = align_pca(pca_obj = temp_pca,
                            var_name = sign_align_params[[1]])
 
     }

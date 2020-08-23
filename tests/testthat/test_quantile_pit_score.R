@@ -12,7 +12,7 @@ test_prediction_df = expand.grid(
 test_that(paste0("quantile_pit_score survives",
                  " balanced numeric example"),
           expect_equal(
-            object = quantile.pit.score(test_prediction_df),
+            object = quantile_pit_score(test_prediction_df),
             expected = test_prediction_df %>%
               mutate(pit = if_else(
                 actual_values < predicted_values,

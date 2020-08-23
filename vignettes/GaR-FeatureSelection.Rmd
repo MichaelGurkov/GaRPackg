@@ -72,7 +72,7 @@ feature_select_df = map(
 
 pred_df = feature_select_df %>% 
   slice_sample(1000) %>% 
-  mutate(pred_df = map(temp_part,get.gar.forecast,
+  mutate(pred_df = map(temp_part,get_gar_forecast,
                        vars_df = df,
                        target_var_name = "GDP",
                        horizon_list = parameters_list$horizon_list,

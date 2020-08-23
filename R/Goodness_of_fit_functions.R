@@ -5,7 +5,7 @@
 #'
 #' @details
 #'
-quantile.fit.score = function(realized_value, quantile_values, quantiles){
+quantile_fit_score = function(realized_value, quantile_values, quantiles){
 
   if(length(quantile_values) != length(quantiles)){
 
@@ -39,7 +39,7 @@ quantile.fit.score = function(realized_value, quantile_values, quantiles){
 #' @description This function evaluates the goodness of fit between
 #' "realized" and to forecasted CDF by "area" method
 #'
-quantile.fit.score.area = function(realized_value,
+quantile_fit_score_area = function(realized_value,
                                    quantile_values,
                                    quantiles,
                                    min_quantile_value = -0.2,
@@ -121,7 +121,7 @@ quantile.fit.score.area = function(realized_value,
 #' @description This function evaluates the goodness of fit between
 #' "realized" and to forecasted CDF by "area" method
 #'
-quantile.crps.score = function(realized_value,
+quantile_crps_score = function(realized_value,
                                quantile_values,
                                quantiles,
                                min_quantile_value = -0.2,
@@ -227,7 +227,7 @@ quantile.crps.score = function(realized_value,
 #' @description This function evaluates the goodness of fit between
 #' "realized"  value and forecasted quantiles
 #'
-quantile.r2.score = function(realized_values, forecast_values,
+quantile_r2_score = function(realized_values, forecast_values,
                              quantile, benchmark_values){
 
   if(length(forecast_values) != length(benchmark_values)){
@@ -276,7 +276,7 @@ quantile.r2.score = function(realized_values, forecast_values,
 #' predicted values by horizon, quantile and date
 #'
 
-quantile.pit.score = function(prediction_df){
+quantile_pit_score = function(prediction_df){
 
 
   pit_score_df = prediction_df %>%

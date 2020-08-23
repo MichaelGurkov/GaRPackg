@@ -139,7 +139,7 @@ for(temp_name in names(corr_df_list)){
 forecast_data_list = map(names(models_list),
   function(temp_name){
     
-    temp_df = get.gar.forecast(
+    temp_df = get_gar_forecast(
       partitions_list = models_list[[temp_name]],
       vars_df = forecast_parameters$df,
       target_var_name = "GDP",
@@ -169,7 +169,7 @@ names(forecast_data_list) = names(models_list)
 forecast_data_list = map(names(models_list),
   function(temp_name){
     
-    temp_df = get.gar.forecast(
+    temp_df = get_gar_forecast(
       partitions_list = models_list[[temp_name]],
       vars_df = forecast_parameters$df,
       target_var_name = "GDP",
@@ -315,7 +315,7 @@ forecast_model_fit$staff_r2 = inner_join(
   select(-Forecast_Period) %>% 
   group_by(Horizon, Quantile) %>% 
   summarise(across(contains("Forecast") & !"Intercept_Forecast",
-                   ~quantile.r2.score(
+                   ~quantile_r2_score(
                      realized_values = GDP_actual,
                      forecast_values = .,
                      quantile = as.numeric(Quantile[1]),
@@ -342,7 +342,7 @@ forecast_model_fit$r2 = forecast_data_list %>%
   group_by(Quantile, Horizon) %>% 
   summarise(across(
     contains("Forecast") & !"Intercept_Forecast",
-    ~quantile.r2.score(
+    ~quantile_r2_score(
       realized_values = GDP_actual,
       forecast_values = .,
       quantile = as.numeric(Quantile[1]),
@@ -368,7 +368,7 @@ forecast_model_fit$pit = map2(
       select(-Forecast_Period) %>% 
       rename(actual_values = GDP_actual) %>% 
       rename(predicted_values = !!sym(temp_name)) %>% 
-      quantile.pit.score() %>% 
+      quantile_pit_score() %>% 
       mutate(model = temp_name)
     
     return(pit_df)

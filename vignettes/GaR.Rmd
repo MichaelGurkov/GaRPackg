@@ -122,7 +122,7 @@ current_partition = lapply(current_partition, function(temp_part){
 
 current_partition = partitions_list$basic
 
-results = run.GaR.analysis(partitions_list = current_partition,
+results = run_GaR_analysis(partitions_list = current_partition,
                    vars_df = df,
                    target_var_name = "GDP",
                    horizon_list = parameters_list$horizon_list,
@@ -144,7 +144,7 @@ results$reg_df = results$reg_df %>%
 
 ```{r Nowcast, eval=FALSE}
 
-nowcast_results = run.GaR.analysis(
+nowcast_results = run_GaR_analysis(
   partitions_list = current_partition,
   vars_df =  df %>% 
     mutate(across(c("Credit","House_Price"), interpolate)),

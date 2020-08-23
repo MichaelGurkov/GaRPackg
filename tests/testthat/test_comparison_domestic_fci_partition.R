@@ -22,7 +22,7 @@
 # df_interpolated = df %>%
 #   mutate_at(vars(-date), interpolate)
 #
-# time_indices_list = get.time.indices.list(df_interpolated)
+# time_indices_list = get_time_indices_list(df_interpolated)
 #
 # time_indices_list = time_indices_list[order(sapply(time_indices_list,
 #                                                    length))]

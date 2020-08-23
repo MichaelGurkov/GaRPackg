@@ -7,7 +7,7 @@
 #'
 #' @return df
 
-import.from.fame.template = function(template_path){
+import_from_fame_template = function(template_path){
 
   fame_df = read.csv(template_path,stringsAsFactors = FALSE) %>%
     slice(-(1:10)) %>%
@@ -63,7 +63,7 @@ import.from.fame.template = function(template_path){
 #'
 #' @import dplyr
 #'
-import.staff.forecast = function(raw_df,
+import_staff_forecast = function(raw_df,
                                  conversion_table_path = NULL){
 
   if(is.null(conversion_table_path)){

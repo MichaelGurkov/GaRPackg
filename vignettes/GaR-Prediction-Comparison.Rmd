@@ -39,7 +39,7 @@ realized_df = forecast_parameters$df %>%
   select(Forecast_Period, realized) %>% 
   as_tibble()
 
-benchmark_df = get.gar.forecast(
+benchmark_df = get_gar_forecast(
   partitions_list = NULL,
   vars_df = forecast_parameters$df,
   target_var_name = "GDP",
@@ -54,7 +54,7 @@ benchmark_df = get.gar.forecast(
   mutate(Horizon = as_factor(Horizon)) %>% 
   rename(benchmark = GaR_forecast)
 
-staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>% 
+staff_forecast_df = import_staff_forecast(raw_df = raw_df) %>% 
   as_tibble() %>% 
   rename(prediction = Staff_Forecast)
 
@@ -78,7 +78,7 @@ models_df = list(GaR_Forecast = partitions_list$basic,
 models_df = models_df %>%
   mutate(pred_df = map(partition,function(temp_part){
 
-      temp_forecast = get.gar.forecast(
+      temp_forecast = get_gar_forecast(
         partitions_list = temp_part,
         vars_df = forecast_parameters$df,
         target_var_name = "GDP",
@@ -141,7 +141,7 @@ models_df = models_df %>%
                                     by = "Forecast_Period") %>% 
                          rename(actual_values = realized,
                                 predicted_values = prediction) %>% 
-                         quantile.pit.score()
+                         quantile_pit_score()
                        
                        return(temp_score)
                      }))

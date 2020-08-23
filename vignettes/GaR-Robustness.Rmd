@@ -66,10 +66,11 @@ feature_select_df = map(
 ```
 
 
+
 ```{r get_in_sample_fit,eval=FALSE}
 
 fit_df = feature_select_df %>% 
-  mutate(gar_model = map(temp_part, run.GaR.analysis,
+  mutate(gar_model = map(temp_part, run_GaR_analysis,
       vars_df = df,
       target_var_name = "GDP",
       horizon_list = parameters_list$horizon_list,
@@ -100,7 +101,7 @@ fit_df = read_rds(paste0(
 
 fit_df = fit_df %>% 
   mutate(coeff_df = map(gar_model,
-                             extract.coeffs.from.gar.model,
+                             extract_coeffs_from_gar_model,
                              partition_names = "FinCycle_xreg"))
 
 
@@ -146,7 +147,7 @@ fit_df %>%
 ```{r get_skew}
 
 fit_df = fit_df %>% 
-  mutate(skew_df = map(gar_model,calculate.skew.and.iqr))
+  mutate(skew_df = map(gar_model,calculate_skew_and_iqr))
 
 
 ```

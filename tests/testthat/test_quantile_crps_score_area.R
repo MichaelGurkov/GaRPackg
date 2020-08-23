@@ -1,7 +1,7 @@
 test_that(desc = paste0("realized value between quantile",
                         " values with outside tails"),
           code = expect_equal(
-            round(quantile.crps.score(
+            round(quantile_crps_score(
               realized_value = 2.5,
               quantile_values = c(1,2,3),
               quantiles = c(0.25,0.5,0.75),
@@ -13,7 +13,7 @@ test_that(desc = paste0("realized value between quantile",
 
 test_that(desc = "realized value less than quantile values",
           code = expect_equal(
-            quantile.crps.score(
+            quantile_crps_score(
               realized_value = 0.5,
               quantile_values = c(1,2,3),
               quantiles = c(0.25,0.5,0.75),
@@ -23,7 +23,7 @@ test_that(desc = "realized value less than quantile values",
 
 test_that(desc = "realized value greater than quantile values",
           code = expect_equal(
-            quantile.crps.score(
+            quantile_crps_score(
               realized_value = 5.5,
               quantile_values = c(1,2,3),
               quantiles = c(0.25,0.5,0.75),

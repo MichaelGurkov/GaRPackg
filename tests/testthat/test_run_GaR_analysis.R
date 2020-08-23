@@ -6,7 +6,7 @@ test_params$horizon_list = c(4,8)
 
 test_params$quantile_vec = c(0.05,0.5)
 
-test_obj = run.GaR.analysis(
+test_obj = run_GaR_analysis(
   partitions_list = list(Dom_Macro = c("GDP"),
                          FinCycle = c("Credit")),
   vars_df = gar_data,
@@ -14,7 +14,7 @@ test_obj = run.GaR.analysis(
   horizon_list = test_params$horizon_list,
   quantile_vec = test_params$quantile_vec)
 
-test_that(desc = "run.GaR.analysis returns fitted values",
+test_that(desc = "run_GaR_analysis returns fitted values",
           expect_equal(
             object = test_obj$gar_fitted_df %>%
               select(-Date) %>%

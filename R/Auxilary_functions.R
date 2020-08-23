@@ -89,7 +89,7 @@ get_partition_combs = function(partition_list,
 #' @param qreg_object quantile regression object
 #'
 #'
-extract.qreg.coeff.table = function(qreg_obj){
+extract_qreg_coeff_table = function(qreg_obj){
 
   coef_table = lapply(suppressWarnings(summary(qreg_obj)),
                       function(temp_list){
@@ -131,7 +131,7 @@ extract.qreg.coeff.table = function(qreg_obj){
 #'
 #' @return coeffs_df
 
-extract.coeffs.from.gar.model = function(gar_model,
+extract_coeffs_from_gar_model = function(gar_model,
                                          partition_names = NULL){
 
   stopifnot("qreg_result" %in% names(gar_model))
@@ -141,7 +141,7 @@ extract.coeffs.from.gar.model = function(gar_model,
                    function(temp_mod, temp_name){
 
                      temp_df = temp_mod %>%
-                       extract.qreg.coeff.table() %>%
+                       extract_qreg_coeff_table() %>%
                        mutate(Horizon = temp_name)
 
 
@@ -182,7 +182,7 @@ collect_quantile_r2_score = function(pred_df,realized_df,
     select(realized, prediction, benchmark, Quantile, Horizon) %>%
     filter(complete.cases(.)) %>%
     group_by(Quantile, Horizon) %>%
-    summarise(score = quantile.r2.score(
+    summarise(score = quantile_r2_score(
       realized_values = realized,
       forecast_values = prediction,
       quantile = as.numeric(Quantile)[1],
@@ -201,7 +201,7 @@ collect_quantile_r2_score = function(pred_df,realized_df,
 #'
 #' @param gar_model
 #'
-calculate.skew.and.iqr = function(gar_obj){
+calculate_skew_and_iqr = function(gar_obj){
 
   prediction_df = make_prediction_df(
     gar_model = gar_obj$qreg_result,

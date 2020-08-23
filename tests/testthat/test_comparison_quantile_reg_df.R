@@ -15,7 +15,7 @@
 #
 #   var_name = paste0("gdp_growth_fwd_", temp_h)
 #
-#   temp_df = make.quant.reg.df(partitions_df = partitions_df %>%
+#   temp_df = make_quant_reg_df(partitions_df = partitions_df %>%
 #                                 select(-real_gdp_nis_y),
 #                               dep_var_df = partitions_df %>%
 #                                 select(date, real_gdp_nis_y) %>%

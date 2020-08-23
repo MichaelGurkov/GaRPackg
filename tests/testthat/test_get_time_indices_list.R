@@ -12,4 +12,4 @@ df = data.frame(Date = dates_vec,
 
 dates_list = list(dates_vec[!is.na(df$X)], dates_vec[!is.na(df$Y)])
 
-testthat::expect_equal(get.time.indices.list(df), dates_list)
+testthat::expect_equal(get_time_indices_list(df), dates_list)

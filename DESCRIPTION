@@ -17,7 +17,11 @@ Depends:
     tidyr,
     purrr,
     rsample,
-    quantreg
+    quantreg,
+    ggplot2,
+    slider,
+    readr,
+    tibble
 Suggests: 
     knitr,
     rmarkdown,

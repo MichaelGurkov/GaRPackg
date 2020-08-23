@@ -40,7 +40,9 @@
 #'
 #' @return pca_obj (optional) PCA object
 #'
-run.GaR.analysis = function(partitions_list, vars_df,
+#' @export
+#'
+run_GaR_analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
@@ -50,7 +52,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
                             return_objects_list = TRUE){
 
 
-  reg_df_list = make.quant.reg.df(
+  reg_df_list = make_quant_reg_df(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
@@ -63,7 +65,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
 
 
-  qreg_result = run.quant.reg(
+  qreg_result = run_quant_reg(
     reg_df = reg_df_list$reg_df,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
@@ -88,7 +90,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
 
                   }) %>%
-    fix.quantile.crossing()
+    fix_quantile_crossing()
 
 
 
@@ -145,7 +147,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 #'
 #' @return list of quantile reg objects
 #'
-run.quant.reg = function(reg_df,
+run_quant_reg = function(reg_df,
                          target_var_name,
                          quantile_vec,
                          horizon_list,
