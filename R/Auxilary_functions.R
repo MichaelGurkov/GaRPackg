@@ -47,7 +47,8 @@ get_partition_combs = function(partition_list,
 
 
                   }) %>%
-    bind_rows()
+    bind_rows() %>%
+    rbind(data.frame(name = paste0(partition_name,"-0"), value = ""))
 
   if("required" %in% names(partition_list)){
 
