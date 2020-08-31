@@ -1,0 +1,199 @@
+---
+title: "Growth at Risk - The Israeli Case"
+institute: "Bank of Israel \\newline Research Department"
+author: "Michael Gurkov and Osnat Zohar"
+date: "July 15, 2019"
+classoption: t
+output:
+  beamer_presentation:
+    keep_tex: true
+    includes:
+      in_header: "C:\\Users\\micha\\Documents\\GaRpckg\\vignettes\\GaR-PresentationPreamble.tex"
+    latex_engine: xelatex
+bibliography: "GaR.bib"
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE, comment = "#>"
+)
+```
+
+
+```{r, include=FALSE}
+
+
+```
+
+
+```{r setup}
+
+devtools::load_all()
+
+setwd(paste0(
+  file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
+  "\\Documents\\GaRPckg\\vignettes"))
+
+
+```
+
+
+```{r load_libraries}
+
+library(cowplot)
+
+```
+
+
+
+```{r Get_partitions, child="Partition-Specs.Rmd"}
+
+```
+
+
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
+
+
+```{r Analysis}
+
+current_partition = partitions_list$basic
+
+results = run.GaR.analysis(partitions_list = current_partition,
+                   vars_df = df,
+                   target_var_name = "GDP",
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "GDP"),
+                     Global = list(var_name = "rate_euro"),
+                     FinCycle = list(var_name = "Credit")))
+
+
+results$reg_df = results$reg_df %>%
+  rename_all(~str_remove_all(.,pattern = "_xreg"))
+
+```
+
+
+# Motivation
+
+\begin {itemize}
+\itemsep3em
+	\item
+	Assessing risks to future economic activity is essential for making knowledgeable forecasts.
+	\item
+	An important factor: financial vulnerabilities.
+	\item
+	We provide a methodological tool for assessing risks to growth in Israel using real and financial variables:
+
+	\vspace{1em}
+
+	\begin{center}
+		~
+	\begin{beamerboxesrounded}[width=0.75\linewidth]{}
+		Given current macro-financial conditions, what is the distribution of
+		expected economic growth?
+	\end{beamerboxesrounded}
+	~
+	\end{center}
+
+\end{itemize}
+
+
+
+
+
+
+
+# Motivation
+
+\centering
+Quantile Regressions of YoY GDP Growth Four Quarters Ahead
+
+\vspace{3mm}
+
+```{r plot_gdp_credit}
+
+plot_list = map(list("GDP","Credit"), function(temp_var){
+  
+  temp_df = df %>%
+  select(all_of(temp_var)) %>%
+  add_leads_to_target_var(target_var_name = temp_var,
+                          leads_vector = 4) %>%
+  filter(complete.cases(.))
+
+
+temp_qreq = rq(paste0(temp_var,"_4","~",temp_var),
+               tau = c(0.05,0.5,0.95),
+               data = temp_df) %>%
+  coefficients() %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  mutate(rowname = str_remove_all(rowname, "tau= ")) %>% 
+  rename(Quantile = rowname,
+         my_int = `(Intercept)`,
+         my_slope = !!sym(temp_var))
+
+temp_plot = temp_df %>%
+  ggplot(aes(x = !!sym(temp_var),
+             y = !!sym(paste0(temp_var,"_4")))) +
+  geom_point() +
+  geom_abline(data = temp_qreq,
+              aes(intercept = my_int,
+                  slope = my_slope,
+                  color = Quantile)) +
+  scale_x_continuous(
+    labels = scales::percent_format(accuracy = 1)) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1)) +
+  xlab(paste("YoY", temp_var, "growth")) +
+  ylab((paste("YoY", temp_var,
+              "growth 4 quarters ahead"))) +
+  ggtitle(temp_var) + 
+  theme_bw() + 
+  theme(legend.position = "none")
+
+  return(temp_plot)
+  
+})
+
+legend_p = get_legend(
+  plot_list[[1]] + theme(legend.position = "bottom"))
+
+plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
+          nrow = 2,
+          legend_p, rel_heights = c(1,0.2))
+
+```
+
+
+
+# Main Results
+
+\begin{itemize}
+\item
+In-sample properties of the predictive distribution:
+  \begin{enumerate}
+	\item
+	\textbf{Symmetric} -- upside and downside risks are balanced. 
+	\item
+	\textbf{Forecast uncertainty} rises when the median forecast decreases. 
+	\item			
+	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term GDP growth, but contributes to long-term downside risks. 
+  \end{enumerate}
+\item
+These properties are robust to variable selection.
+\item
+Out-of-sample forecast performance is impaired.
+\item
+Insights may help construct a better forecasting model  (future research).  
+\end{itemize}
+		
+
