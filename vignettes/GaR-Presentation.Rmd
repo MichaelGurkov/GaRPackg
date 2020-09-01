@@ -6,7 +6,6 @@ date: "July 15, 2019"
 classoption: t
 output:
   beamer_presentation:
-    keep_tex: true
     includes:
       in_header: "C:\\Users\\micha\\Documents\\GaRPackg\\vignettes\\GaR-PresentationPreamble.tex"
     latex_engine: xelatex
@@ -173,8 +172,9 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
+# The Growth at Risk (GaR) approach
 
-
+<!-- Proposed by [@Adrian2019] -->
 
 
 # Main Results
