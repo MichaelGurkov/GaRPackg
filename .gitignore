@@ -4,4 +4,5 @@
 .Ruserdata
 *.Rd
 *.tex
+*.log
 inst/doc

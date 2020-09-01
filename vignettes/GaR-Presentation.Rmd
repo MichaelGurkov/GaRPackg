@@ -8,7 +8,7 @@ output:
   beamer_presentation:
     keep_tex: true
     includes:
-      in_header: "C:\\Users\\micha\\Documents\\GaRpckg\\vignettes\\GaR-PresentationPreamble.tex"
+      in_header: "C:\\Users\\micha\\Documents\\GaRPackg\\vignettes\\GaR-PresentationPreamble.tex"
     latex_engine: xelatex
 bibliography: "GaR.bib"
 ---
@@ -33,7 +33,7 @@ devtools::load_all()
 
 setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
-  "\\Documents\\GaRPckg\\vignettes"))
+  "\\Documents\\GaRPackg\\vignettes"))
 
 
 ```
@@ -111,6 +111,8 @@ results$reg_df = results$reg_df %>%
 
 
 
+
+
 # Motivation
 
 \centering
@@ -120,16 +122,15 @@ Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 ```{r plot_gdp_credit}
 
-plot_list = map(list("GDP","Credit"), function(temp_var){
-  
-  temp_df = df %>%
-  select(all_of(temp_var)) %>%
-  add_leads_to_target_var(target_var_name = temp_var,
+temp_df = df %>%
+  select(all_of(c("GDP","Credit"))) %>%
+  add_leads_to_target_var(target_var_name = "GDP",
                           leads_vector = 4) %>%
   filter(complete.cases(.))
 
-
-temp_qreq = rq(paste0(temp_var,"_4","~",temp_var),
+plot_list = map(list("GDP","Credit"), function(temp_var){
+ 
+temp_qreq = rq(paste0("GDP_4","~",temp_var),
                tau = c(0.05,0.5,0.95),
                data = temp_df) %>%
   coefficients() %>%
@@ -143,7 +144,7 @@ temp_qreq = rq(paste0(temp_var,"_4","~",temp_var),
 
 temp_plot = temp_df %>%
   ggplot(aes(x = !!sym(temp_var),
-             y = !!sym(paste0(temp_var,"_4")))) +
+             y = GDP_4)) +
   geom_point() +
   geom_abline(data = temp_qreq,
               aes(intercept = my_int,
@@ -154,8 +155,7 @@ temp_plot = temp_df %>%
   scale_y_continuous(
     labels = scales::percent_format(accuracy = 1)) +
   xlab(paste("YoY", temp_var, "growth")) +
-  ylab((paste("YoY", temp_var,
-              "growth 4 quarters ahead"))) +
+  ylab((paste("YoY GDP growth 4 quarters ahead"))) +
   ggtitle(temp_var) + 
   theme_bw() + 
   theme(legend.position = "none")
@@ -172,6 +172,8 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
           legend_p, rel_heights = c(1,0.2))
 
 ```
+
+
 
 
 
