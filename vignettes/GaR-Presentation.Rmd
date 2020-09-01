@@ -6,9 +6,8 @@ date: "July 15, 2019"
 classoption: t
 output:
   beamer_presentation:
-    keep_tex: true
     includes:
-      in_header: "C:\\Users\\micha\\Documents\\GaRPackg\\vignettes\\GaR-PresentationPreamble.tex"
+      in_header: "C:\\Users\\internet\\Documents\\GaRPackg\\vignettes\\GaR-PresentationPreamble.tex"
     latex_engine: xelatex
 bibliography: "GaR.bib"
 ---
@@ -113,6 +112,7 @@ results$reg_df = results$reg_df %>%
 
 
 
+
 # Motivation
 
 \centering
@@ -120,7 +120,7 @@ Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 \vspace{3mm}
 
-```{r plot_gdp_credit}
+```{r plot_gdp_credit, cache=TRUE}
 
 temp_df = df %>%
   select(all_of(c("GDP","Credit"))) %>%
@@ -172,6 +172,16 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
           legend_p, rel_heights = c(1,0.2))
 
 ```
+
+
+# The Growth at Risk (GaR) approach
+
+- Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
+- Applied to:
+  - Italy [@Alessandri2019]
+  - UK [@Aikman2018]
+  - Advanced economies [@Aikman2018]
+  - Developed econimies [@Komatsuzaki2019]
 
 
 
