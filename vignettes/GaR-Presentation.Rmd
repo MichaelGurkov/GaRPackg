@@ -257,6 +257,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
+# The Growth at Risk (GaR) approach
 
 <!-- # The Growth at Risk (GaR) approach -->
 
@@ -276,12 +277,6 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 <!--   1. Regular assessment of risk (e.g tracking 5th percentile of forecast) -->
 <!--   2. Provide empirical evidence to support macro-financial modeling efforts  -->
 <!--   (joint projects IMF) -->
-
-
-
-
-
-
 
 
 # Main Results
