@@ -130,6 +130,39 @@ my_lab = function(string){
 
 
 
+```{r calculate_gar_contribution}
+
+factors_df = map_dfr(names(results$qreg_result),function(temp_name){
+    
+    data_mat = results$reg_df %>%
+      select(names(current_partition)) %>%
+      as.matrix()
+    
+    coef_vec = coefficients(results$qreg_result[[temp_name]])[-1,1]
+    
+    gar_factors_df =  t(t(data_mat) * coef_vec)
+    
+    gar_factors_df = cbind(Date = results$reg_df$Date,
+                           as.data.frame(gar_factors_df)) %>% 
+      mutate(Horizon = temp_name)
+    
+    return(gar_factors_df)
+ 
+                        })
+
+factors_df = factors_df %>% 
+  rename(Macro = Dom_Macro) %>% 
+  rename(`Fin. Cycle` = FinCycle) %>% 
+  rename(`Fin. Conditions` = Dom_FCI) %>% 
+  pivot_longer(cols = -c(Date,Horizon), names_to = "partition")
+  
+
+
+
+
+```
+
+
 # Motivation
 
 \begin {itemize}
@@ -249,6 +282,8 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 
 
+
+
 # Main Results
 
 \begin{itemize}
@@ -270,6 +305,7 @@ Out-of-sample forecast performance is impaired.
 Insights may help construct a better forecasting model  (future research).  
 \end{itemize}
 		
+
 
 
 
@@ -385,6 +421,7 @@ ggplot(coeff_df %>%
 ```
 
 
+
 # Quantile regression coefficients
 
 ```{r fin_cycle_plot}
@@ -430,6 +467,7 @@ plot_grid(plotlist = pca_plots)
 
 
 ```
+
 
 # Volatility Paradox
 
@@ -495,9 +533,8 @@ ggplot() +
                           ymin = -Inf, ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
   theme_bw() + 
-  ylab(NULL) + 
+  ylab(NULL) + xlab(NULL)
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") + 
-  theme(legend.position = "bottom", legend.title = element_blank()) + 
   geom_point(data = predict_df %>% 
              filter(Date %in% events$Start),
            mapping = aes(x = Date, y = GaR),
@@ -512,7 +549,56 @@ ggplot() +
   geom_text(data = events,
             mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
                                           label = Event),
-            color = "blue")
+            color = "blue") + 
+  theme(legend.position = "bottom", legend.title = element_blank())
+
+
+```
+
+
+
+# The Global factor contributes to risk idtinification in the short term, Financial Cycle -- in the long term
+
+```{r plot_factor_decomposition}
+
+factors_df %>% 
+  filter(Horizon %in% c(1,12)) %>% 
+  ggplot() + 
+  geom_col(mapping = aes(x = Date, y = value,
+                                         fill = partition),
+           position = "stack", size = 5) +
+  geom_line(data = . %>%
+              group_by(Date,Horizon) %>%
+              summarise(Total = sum(value),.groups = "drop") %>%
+              ungroup(),mapping =  aes(x = Date, y = Total), size = 1) +
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab)) + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Contribution of Factors to the Forecast of the 5th Percentile") + 
+  scale_fill_viridis_d(option = "plasma") +
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+
+```
+
+# Forecast Median and Dispersion are Negatively Correlated
+
+```{r plot_median_dispersion}
+
+results$gar_fitted_df %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  pivot_wider(id_cols = c(Date,Horizon),
+              names_from = "Quantile",
+              values_from = "GaR_fitted") %>% 
+  mutate(IQR = `0.75` - `0.25`) %>% 
+  ggplot(aes(x = IQR, y = `0.5`)) + 
+  geom_point() + 
+  stat_smooth(method = "lm") + 
+  facet_wrap(~Horizon, scales = "free") + 
+  labs(x = "Dispersion", y = "Median", title = "Dispersion vs Variance") +
+  theme_bw()
+
 
 
 ```
