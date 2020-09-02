@@ -42,6 +42,8 @@ setwd(paste0(
 
 library(cowplot)
 
+library(readr)
+
 ```
 
 
@@ -52,6 +54,16 @@ library(cowplot)
 
 
 ```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
+
+
+```{r import_robustness_data}
+
+fit_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
 ```
 
@@ -595,6 +607,82 @@ results$gar_fitted_df %>%
   theme_bw()
 
 
+
+```
+
+
+# Risks to Growth are Generally Balanced
+In contrary to other countries, \textbf{no evidence of a skewed distribution}:
+
+```{r plot_skew}
+
+results$gar_fitted_df %>% 
+  spread(key = Quantile,value = GaR_fitted) %>% 
+  rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
+            .funs = list(~paste0("Q_",.))) %>% 
+  filter(Horizon == 1) %>% 
+  mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
+           (0.5 * Q_0.75 - 0.5 * Q_0.25)) %>% 
+  ggplot(aes(x = Date, y = Skew)) + 
+  geom_line() + 
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
+             color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
+  labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead") + 
+  theme_bw()
+
+```
+
+
+# Sub-Sampling Bootstrap Analysis
+\begin{itemize}
+	\item
+	Our results might be affected by the set of variables we used to construct the four factors.
+	\item
+	For robustness, we perform a sub-sampling bootstrap procedure  \citep{politis1994stationary}:
+	\begin{itemize}
+		\item
+		We determine a minimal set of variables to be included in each group and go over all the different combinations of the other variables.
+		\item
+		In each iteration, we estimate a GaR model on the implied subset of variables.
+\end{itemize}
+	
+	
+\end{itemize}
+
+# 5th Percentile Forecast
+# Negative Correlation between Median and Variance
+
+```{r plot_median_iqr_correlations, eval=FALSE}
+
+fit_df %>% 
+  rownames_to_column() %>% 
+  select(rowname, skew_df) %>% 
+  unnest(cols = skew_df) %>% 
+  group_by(rowname, Horizon) %>% 
+  summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>% 
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%  
+  ggplot(aes(x = med_vol_cor)) + 
+  geom_histogram() + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle(paste0("Correlaltion between the median",
+                 " and IQR of the predictive distribution")) + 
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + 
+  facet_wrap(~Horizon, scales = "free")
+
+```
+
+# Symmetric Distribution
+
+```{r plot_skew_robustness, cache=TRUE}
+
+skew_plot = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\",
+  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
+
+skew_plot + 
+  ggtitle("Quartile skewness")
 
 ```
 
