@@ -621,6 +621,15 @@ results %>%
 
 Consistent with characterization of past GDP growth
 
+```{r plot_gdp_growth}
+
+df %>% 
+  select(Date,gdp_us, gdp_euro, GDP) %>% 
+  rename(US = gdp_us, Euro = gdp_us, Israel = GDP) %>% 
+  pivot
+
+```
+
 ```{r}
 
 ```
