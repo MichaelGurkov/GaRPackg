@@ -608,6 +608,7 @@ results$gar_fitted_df %>%
 
 ```
 
+
 # Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
@@ -680,6 +681,7 @@ skew_plot +
 
 ```
 
+
 Consistent with characterization of past GDP growth
 
 ```{r plot_gdp_growth, eval=FALSE}
@@ -751,3 +753,4 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 # Quantile R-Squared
 # Conclusion
 # Appendix
+
