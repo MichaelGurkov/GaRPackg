@@ -46,7 +46,6 @@ library(cowplot)
 ```
 
 
-
 ```{r Get_partitions, child="Partition-Specs.Rmd"}
 
 ```
@@ -75,17 +74,22 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      FinCycle = list(var_name = "Credit")))
 
 
-results$reg_df = results$reg_df %>%
-  rename_all(~str_remove_all(.,pattern = "_xreg"))
-
 ```
 
 
 ```{r set_params}
 
+plot_params = list()
+
+```
+
+
+```{r get_auxilary_data}
+
 pca_list = results$pca
 
-pca_variance = lapply(names(pca_list), function(temp_name){
+pca_variance = lapply(names(pca_list),
+                      function(temp_name){
 
   data.frame(Name = temp_name,
              Variance = round(pca_list[[temp_name]]$pca$sdev[1] ^ 2 /
@@ -135,6 +139,7 @@ my_lab = function(string){
 factors_df = map_dfr(names(results$qreg_result),function(temp_name){
     
     data_mat = results$reg_df %>%
+      rename_all(~str_remove_all(.,pattern = "_xreg")) %>%
       select(names(current_partition)) %>%
       as.matrix()
     
@@ -504,13 +509,9 @@ events = read.csv(paste0(
 predict_df =  data.frame(
   Date = results$reg_df$Date,
   Horizon_1 = predict(results$qreg_result$`1`,
-                newdata = results$reg_df %>%
-                  rename_at(vars(-Date, -starts_with("GDP")),
-                            ~paste0(.,"_xreg")))[,1],
+                newdata = results$reg_df)[,1],
   Horizon_12 = predict(results$qreg_result$`12`,
-                newdata = results$reg_df %>%
-                  rename_at(vars(-Date, -starts_with("GDP")),
-                            ~paste0(.,"_xreg")))[,1]) %>%
+                newdata = results$reg_df)[,1]) %>%
   pivot_longer(cols = -Date,
                names_to = "Horizon",
                values_to = "GaR")
@@ -595,3 +596,88 @@ results$gar_fitted_df %>%
 
 ```
 
+
+# Risks to Growth are generally balanced
+Contrary to other countries **no evidence of skewed distribution**
+
+```{r plot_skewness_1_quarter, fig.height=3}
+
+results %>% 
+  calculate.skew.and.iqr() %>% 
+  filter(Horizon == 1) %>% 
+  select(Date, Skew) %>% 
+  ggplot(aes(x = Date, y = Skew)) + 
+  geom_line() + 
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
+             color = "blue") +
+  geom_hline(yintercept = 0, linetype = "dashed",
+             color = "black") + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Quartile Skewness 1 quarter ahead") + 
+  theme_bw()
+
+
+```
+
+Consistent with characterization of past GDP growth
+
+```{r}
+
+```
+
+
+# Out-of-Sample Forecast Performance
+\begin{itemize}
+	\item
+	GaR model compared to two alternatives:
+	\begin{enumerate}
+		\item
+		Macro only -- partial GaR model without financial variables
+		(domestic and global)
+		\item
+		Staff forecast + DSGE fan chart (symmetric, constant width)
+	\end{enumerate}
+	\item
+	All models evaluated out of sample (expanding window)
+\end{itemize}
+
+# Probability Integral Transform (PIT)
+For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$: 
+	$$
+	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
+	$$
+\begin{itemize}
+	\item
+	A model is better fitted the closer $\varphi_{\tau,h}$ is to
+	45-degree line. 
+	\item
+	If the model perfectly fits the empirical  distribution, then
+	the fraction of observations falling below quantile $\tau$
+	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
+\end{itemize}
+
+# Probability Integral Transform (PIT)
+# Quantile R-Squared
+	Quantile R-sq. \citep{giglio2016systemic} compares forecast
+	performance to a constant quantile benchmark:
+	$$
+	R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
+	$$
+	
+	$\hat{Q}^{\tau}_{t,h}$  -- model's forecasts for quantile
+	$\tau$ at horizon $h$ 
+	
+	$\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
+
+
+\begin{itemize}
+	\item
+	higher values -- better forecast 
+	\item
+	negative values -- model inferior to the constant benchmark
+\end{itemize}
+
+
+# Quantile R-Squared
+# Conclusion
+# Appendix
