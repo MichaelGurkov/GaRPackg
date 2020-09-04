@@ -2,7 +2,7 @@
 title: "Growth at Risk - The Israeli Case"
 institute: "Bank of Israel \\newline Research Department"
 author: "Michael Gurkov and Osnat Zohar"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "XXX"
 classoption: t
 output:
   beamer_presentation:
@@ -284,24 +284,22 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 # The Growth at Risk (GaR) approach
 
-<!-- # The Growth at Risk (GaR) approach -->
+- Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
+- Applied to:
+  - Italy [@Alessandri2019]
+  - UK [@Aikman2018]
+  - Advanced economies [@Aikman2018]
+  - Developed economies [@Komatsuzaki2019; @Bespalova2019]
 
-<!-- - Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019]. -->
-<!-- - Applied to: -->
-<!--   - Italy [@Alessandri2019] -->
-<!--   - UK [@Aikman2018] -->
-<!--   - Advanced economies [@Aikman2018] -->
-<!--   - Developed econimies [@Komatsuzaki2019, @Bespalova2019] -->
+- GaR is a linear model of density forecast
+  - based on quantile regression
+  - Parsimonious
+  - Easy to interpret
 
-<!-- - GaR is a linear model of density forecast -->
-<!--   - based on quantile regression -->
-<!--   - Parsimonious -->
-<!--   - Easy to interpret -->
-
-<!-- - Possible uses: -->
-<!--   1. Regular assessment of risk (e.g tracking 5th percentile of forecast) -->
-<!--   2. Provide empirical evidence to support macro-financial modeling efforts  -->
-<!--   (joint projects IMF) -->
+- Possible uses:
+  1. Regular assessment of risk (e.g tracking 5th percentile of forecast)
+  2. Provide empirical evidence to support macro-financial modeling efforts
+  (joint projects IMF)
 
 
 # Main Results
@@ -337,7 +335,6 @@ Insights may help construct a better forecasting model  (future research).
 \begin{enumerate}
 	\item
 	\textbf{Partition data:} divide a large number of variables into $K$ groups ($K$ small).
-
 	\item
 	\textbf{Dimension reduction} to alleviate overfitting:
 	\begin{itemize}
@@ -346,7 +343,6 @@ Insights may help construct a better forecasting model  (future research).
 		\item
 		Method: first principal component
 	\end{itemize}
-
 	\item
 	\textbf{Quantile regressions --}
 	estimate a forecast equation for each quantile $\tau$ and horizon $h$:
@@ -386,9 +382,15 @@ Sample: 1996Q3-2019Q4
 								& VIX						& 						& \\
 \end{tabularx}
 
+\vspace{1em}
+
 \flushright
-\vspace{-10mm}
+
 \hyperlink{PCA_loadings}{\beamergotobutton{PCA loadings}}
+
+\vspace{-1em}
+
+\flushleft
 
 \hyperlink{PCA}{\beamergotobutton{PCA time-sereis}}
 
@@ -418,6 +420,8 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 ```
 
+
+\vspace{-1em}
 
 \flushleft
 
@@ -502,24 +506,18 @@ plot_grid(plotlist = pca_plots)
 
 # Volatility Paradox
 
-\begin{itemize}
-	\item
-	Financial cycle factor is correlated with growth in the short term, but also with
-	elevated risks in the long term.
-	\item
-	Consistent with:
-	\vspace{2mm}
-	\begin{centering}
-		~
-		\begin{beamerboxesrounded}[width=0.9\linewidth]{Volatility Paradox  \scriptsize \citep{brunnermeier2014macroeconomic}}
-			Low risks (which contribute to short-term growth), encourage the accumulation of risks in the medium to long term.
-		\end{beamerboxesrounded}
-	\end{centering}
-	\item
-	Mechanisms:
-\end{itemize}
+  - Financial cycle factor is correlated with growth in the short term,
+  but also with elevated risks in the long term.
+  
+  - Consistent with:
 
-
+\begin{block}{Volatility Paradox	@Brunnermeir2014}
+\vspace{0.5em}
+	Low risks (which contribute to short-term growth), encourage the
+	accumulation of risks in the medium to long term.
+\end{block}
+		
+ - Mechanisms:
 
 # Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
@@ -572,18 +570,18 @@ ggplot() +
             mapping = aes(x = Start + 1, y = c(0.08,0.08,-0.08),
                                           label = Event),
             color = "blue") +
-  theme(legend.position = "bottom", legend.title = element_blank())
-  # theme(plot.title = element_text(size = plot_params$title_size),
-  #       axis.title = element_text(size = plot_params$axis_labels_size),
-  #       axis.text = element_text(size = plot_params$axis_text_size),
-  #       legend.text = element_text(size = plot_params$axis_text_size))  
+theme(legend.position = "bottom", legend.title = element_blank()) + 
+theme(plot.title = element_text(size = plot_params$title_size),
+      axis.title = element_text(size = plot_params$axis_labels_size),
+      axis.text = element_text(size = plot_params$axis_text_size),
+      legend.text = element_text(size = plot_params$axis_text_size))
 
 
 ```
 
 
 
-# The Global factor contributes to risk idtinification in the short term, Financial Cycle -- in the long term
+# The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
 
 ```{r plot_factor_decomposition}
 
@@ -600,7 +598,7 @@ factors_df %>%
   facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab)) +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
-                 "forecast of the 5th percentile")) +
+                 "GaR forecast \n (5th percentile)")) +
   scale_fill_viridis_d(option = "plasma") +
   theme_bw() +
   theme(legend.position = "bottom",
@@ -765,7 +763,7 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 
 # Probability Integral Transform (PIT)
 # Quantile R-Squared
-	Quantile R-sq. \citep{giglio2016systemic} compares forecast
+	Quantile R-sq. @Giglio2016 compares forecast
 	performance to a constant quantile benchmark:
 $$
 R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
