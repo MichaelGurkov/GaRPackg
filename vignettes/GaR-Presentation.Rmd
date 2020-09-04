@@ -21,12 +21,6 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r, include=FALSE}
-
-
-```
-
-
 ```{r setup}
 
 devtools::load_all()
@@ -37,6 +31,23 @@ setwd(paste0(
 
 
 ```
+
+
+
+```{r set_params}
+
+plot_params = list()
+
+plot_params$title_size = 30
+
+plot_params$axis_labels_size = 20
+
+plot_params$axis_text_size = 15
+
+
+
+```
+
 
 
 ```{r load_libraries}
@@ -85,13 +96,6 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Global = list(var_name = "rate_euro"),
                      FinCycle = list(var_name = "Credit")))
 
-
-```
-
-
-```{r set_params}
-
-plot_params = list()
 
 ```
 
@@ -221,7 +225,7 @@ Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 \vspace{3mm}
 
-```{r plot_gdp_credit, cache=TRUE}
+```{r plot_gdp_credit}
 
 temp_df = df %>%
   select(all_of(c("GDP","Credit"))) %>%
@@ -259,7 +263,11 @@ temp_plot = temp_df %>%
   ylab((paste("YoY GDP growth 4 quarters ahead"))) +
   ggtitle(temp_var) +
   theme_bw() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") + 
+  theme(plot.title = element_text(size = plot_params$title_size),
+        axis.title = element_text(size = plot_params$axis_labels_size),
+        axis.text = element_text(size = plot_params$axis_text_size),
+        legend.text = element_text(size = plot_params$axis_labels_size))  
 
   return(temp_plot)
 
@@ -352,9 +360,9 @@ Insights may help construct a better forecasting model  (future research).
 \end{enumerate}
 
 
-# Data Partitioning{Sample: 1996Q3-2019Q4}
-
-\scriptsize
+# Data Partitioning
+Sample: 1996Q3-2019Q4
+\tiny
 \begin{tabularx}{\linewidth}{X |X |X | X}
 	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
 	\hline
@@ -399,7 +407,10 @@ pca_timeseries_plots = lapply(names(pca_list), function(name){
     geom_line() +
     labs(title = plot_names_list[name], x = "", y = "") +
     scale_x_yearqtr() +
-    theme_bw()
+    theme_bw() + 
+    theme(plot.title = element_text(size = plot_params$title_size),
+        axis.title = element_text(size = plot_params$axis_labels_size),
+        axis.text = element_text(size = plot_params$axis_text_size))  
 
   })
 
@@ -426,7 +437,11 @@ ggplot(coeff_df %>%
   labs(x = "Quantile", y = "",
        title = "Macro coefficients") +
   facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab)) +
-  theme_bw()
+  theme_bw() + 
+  theme(plot.title = element_text(size = plot_params$title_size),
+        axis.title = element_text(size = plot_params$axis_labels_size),
+        axis.text = element_text(size = plot_params$axis_text_size),
+        strip.text = element_text(size = plot_params$axis_labels_size))  
 
 
 
@@ -447,7 +462,11 @@ ggplot(coeff_df %>%
   labs(x = "Quantile", y = "",
        title = "Fin.Cycle coefficients") +
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab)) +
-  theme_bw()
+  theme_bw() + 
+  theme(plot.title = element_text(size = plot_params$title_size),
+        axis.title = element_text(size = plot_params$axis_labels_size),
+        axis.text = element_text(size = plot_params$axis_text_size),
+        strip.text = element_text(size = plot_params$axis_labels_size))  
 
 ```
 
@@ -544,17 +563,20 @@ ggplot() +
              aes(x = Date, y = GaR),
            color = "blue") +
   geom_segment(data = . %>%
-                 filter(Date %in% events$Start) %>%
-                 slice(1:2),
-               aes(x = Date, y = c(0.0745,0.0745),
+                 filter(Date %in% events$Start),
+               aes(x = Date, y = c(0.0745,0.0745,0.0745,0.0745,-0.0745,-0.0745),
                    xend = Date, yend = GaR),
                arrow = arrow(length = unit(0.1,"cm")),
                color = "blue") +
   geom_text(data = events,
-            mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
+            mapping = aes(x = Start + 1, y = c(0.08,0.08,-0.08),
                                           label = Event),
             color = "blue") +
   theme(legend.position = "bottom", legend.title = element_blank())
+  # theme(plot.title = element_text(size = plot_params$title_size),
+  #       axis.title = element_text(size = plot_params$axis_labels_size),
+  #       axis.text = element_text(size = plot_params$axis_text_size),
+  #       legend.text = element_text(size = plot_params$axis_text_size))  
 
 
 ```
@@ -577,12 +599,17 @@ factors_df %>%
             aes(x = Date, y = Total), size = 0.5) +
   facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab)) +
   xlab(NULL) + ylab(NULL) +
-  ggtitle(paste0("Contribution of Factors to the",
-                 " Forecast of the 5th Percentile")) +
+  ggtitle(paste("Factors contribution to the",
+                 "forecast of the 5th percentile")) +
   scale_fill_viridis_d(option = "plasma") +
   theme_bw() +
   theme(legend.position = "bottom",
-        legend.title = element_blank())
+        legend.title = element_blank()) + 
+  theme(plot.title = element_text(size = plot_params$title_size),
+        axis.title = element_text(size = plot_params$axis_labels_size),
+        axis.text = element_text(size = plot_params$axis_text_size),
+        strip.text = element_text(size = plot_params$axis_labels_size),
+        legend.text = element_text(size = plot_params$axis_text_size)) 
 
 
 ```
@@ -624,6 +651,23 @@ results %>%
              color = "blue") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
   labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead") + 
+  theme_bw() + 
+  theme(plot.title = element_text(size = plot_params$title_size),
+        axis.title = element_text(size = plot_params$axis_labels_size),
+        axis.text = element_text(size = plot_params$axis_text_size),
+        legend.text = element_text(size = plot_params$axis_text_size)) 
+
+```
+
+
+```{r plot_gdp_growth, eval=FALSE, fig.height=3}
+
+df %>% 
+  select(Date,gdp_us, gdp_euro, GDP) %>% 
+  rename(US = gdp_us, Euro = gdp_euro, Israel = GDP) %>% 
+  pivot_longer(-Date) %>% 
+  ggplot(aes(x = value, fill = name)) + 
+  geom_histogram(alpha = 0.5, position = "dodge") + 
   theme_bw()
 
 ```
@@ -684,15 +728,6 @@ skew_plot +
 
 Consistent with characterization of past GDP growth
 
-```{r plot_gdp_growth, eval=FALSE}
-
-df %>% 
-  select(Date,gdp_us, gdp_euro, GDP) %>% 
-  rename(US = gdp_us, Euro = gdp_us, Israel = GDP) %>% 
-  pivot
-
-```
-
 ```{r}
 
 ```
@@ -732,14 +767,14 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 # Quantile R-Squared
 	Quantile R-sq. \citep{giglio2016systemic} compares forecast
 	performance to a constant quantile benchmark:
-	$$
-	R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
-	$$
-	
-	$\hat{Q}^{\tau}_{t,h}$  -- model's forecasts for quantile
-	$\tau$ at horizon $h$ 
-	
-	$\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
+$$
+R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
+$$
+
+$\hat{Q}^{\tau}_{t,h}$  -- model's forecasts for quantile
+$\tau$ at horizon $h$ 
+
+$\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 
 \begin{itemize}
