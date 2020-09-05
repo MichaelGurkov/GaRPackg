@@ -1,8 +1,8 @@
 ---
 title: "Growth at Risk - The Israeli Case"
-institute: "Bank of Israel \\newline Research Department"
 author: "Michael Gurkov and Osnat Zohar"
-date: "XXX"
+institute: "Bank of Israel \\newline Research Department"
+date: "14 September, 2020"
 classoption: t
 output:
   beamer_presentation:
@@ -184,7 +184,7 @@ factors_df = factors_df %>%
 ```
 
 
-# Motivation
+## Motivation
 
 \begin {itemize}
 \itemsep3em
@@ -218,7 +218,7 @@ factors_df = factors_df %>%
 
 
 
-# Motivation
+## Motivation
 
 \centering
 Quantile Regressions of YoY GDP Growth Four Quarters Ahead
@@ -277,7 +277,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
-# The Growth at Risk (GaR) approach
+## The Growth at Risk (GaR) approach
 
 - Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
 * Applied to:
@@ -296,7 +296,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
   modeling efforts (joint projects IMF)
 
 
-# Main Results
+## Main Results
 
 \begin{itemize}
 \setlength\itemsep{1.5em}
@@ -324,9 +324,11 @@ Insights may help construct a better forecasting model  (future research).
 
 
 # Outline
+## Outline
 
 
-# Methodology
+# Methodology and Data
+## Methodology
 \begin{enumerate}
 	\item
 	\textbf{Partition data:} divide a large number of variables into $K$ groups ($K$ small).
@@ -352,7 +354,7 @@ Insights may help construct a better forecasting model  (future research).
 \end{enumerate}
 
 
-# Data Partitioning
+## Data Partitioning
 Sample: 1996Q3-2019Q4
 \tiny
 \begin{tabularx}{\linewidth}{X |X |X | X}
@@ -393,7 +395,8 @@ Sample: 1996Q3-2019Q4
 
 
 
-# $1^{st}$ Principal Components
+# Estimation Results
+## $1^{st}$ Principal Components
 
 ```{r plot_pca_timeseries}
 
@@ -420,7 +423,7 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 \hyperlink{MoreCoefs}{\beamergotobutton{more coefs}}
 
 
-# Quantile regression coefficients
+## Quantile regression coefficients
 
 ```{r dom_macro_plot}
 
@@ -440,7 +443,7 @@ ggplot(coeff_df %>%
 
 
 
-# Quantile regression coefficients
+## Quantile regression coefficients
 
 ```{r fin_cycle_plot}
 
@@ -485,7 +488,7 @@ plot_grid(plotlist = pca_plots)
 ```
 
 
-# Volatility Paradox
+## Volatility Paradox
 
 \begin{block}{\center{Brunnermeir and Sannikov 2014}}
 \vspace{0.5em}
@@ -499,7 +502,7 @@ plot_grid(plotlist = pca_plots)
 
 * Mechanisms:
 
-# Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
+## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
 ```{r plot_events_plot}
 
@@ -557,7 +560,7 @@ ggplot() +
 
 
 
-# The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
+## The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
 
 ```{r plot_factor_decomposition}
 
@@ -579,7 +582,7 @@ factors_df %>%
 
 ```
 
-# Forecast Median and Dispersion are Negatively Correlated
+## Forecast Median and Dispersion are Negatively Correlated
 
 ```{r plot_median_dispersion, eval=FALSE}
 
@@ -600,7 +603,7 @@ results$gar_fitted_df %>%
 ```
 
 
-# Risks to Growth are generally balanced
+## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
 ```{r plot_skewness_1_quarter, fig.height=3}
@@ -631,7 +634,7 @@ df %>%
 ```
 
 
-# Sub-Sampling Bootstrap Analysis
+## Sub-Sampling Bootstrap Analysis
 
 * Our results might be affected by the set of variables we used
 to construct the four factors.
@@ -643,8 +646,9 @@ to construct the four factors.
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
-# 5th Percentile Forecast
-# Negative Correlation between Median and Variance
+# In-sample Properties of Risks to Growth
+## 5th Percentile Forecast
+## Negative Correlation between Median and Variance
 
 ```{r plot_median_iqr_correlations, eval=FALSE}
 
@@ -665,7 +669,7 @@ fit_df %>%
 
 ```
 
-# Symmetric Distribution
+## Symmetric Distribution
 
 ```{r plot_skew_robustness, cache=TRUE, eval=FALSE}
 
@@ -687,7 +691,9 @@ Consistent with characterization of past GDP growth
 ```
 
 
+# Sensitivity to Variable Selection
 # Out-of-Sample Forecast Performance
+## Out-of-Sample Forecast Performance
 \begin{itemize}
 	\item
 	GaR model compared to two alternatives:
@@ -702,7 +708,7 @@ Consistent with characterization of past GDP growth
 	All models evaluated out of sample (expanding window)
 \end{itemize}
 
-# Probability Integral Transform (PIT)
+## Probability Integral Transform (PIT)
 For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
 	$$
 	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
@@ -717,7 +723,7 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
 \end{itemize}
 
-# Probability Integral Transform (PIT)
+## Probability Integral Transform (PIT)
 
 ```{r make_df}
 
@@ -862,7 +868,7 @@ models_df %>%
 ```
 
 
-# Quantile R-Squared
+## Quantile R-Squared
 Quantile R-sq. [@Giglio2016] compares forecast performance to a
 constant quantile benchmark:
 
@@ -885,7 +891,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 
 
-# Quantile R-Squared
+## Quantile R-Squared
 ```{r plot_r2_score}
 
 models_df %>%
@@ -903,10 +909,12 @@ models_df %>%
 
 ```
 
-# Conclusion
+## Conclusion
 # Appendix
+## Appendix
 
 
-# References {.allowframebreaks}
+# References
+## References {.allowframebreaks}
 
 <div id="refs"></div>
