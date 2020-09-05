@@ -9,6 +9,8 @@ output:
     includes:
       in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
     latex_engine: xelatex
+    slide_level: 2
+    toc: true
 bibliography: "GaR.bib"
 ---
 
@@ -277,6 +279,8 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
+## Structure
+\tableofcontents[hideallsubsections]
 ## The Growth at Risk (GaR) approach
 
 - Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
