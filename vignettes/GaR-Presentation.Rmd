@@ -10,7 +10,6 @@ output:
       in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
     latex_engine: xelatex
     slide_level: 2
-    toc: true
 bibliography: "GaR.bib"
 ---
 
@@ -279,8 +278,6 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
-## Structure
-\tableofcontents[hideallsubsections]
 ## The Growth at Risk (GaR) approach
 
 - Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
@@ -327,9 +324,8 @@ Insights may help construct a better forecasting model  (future research).
 
 
 
-# Outline
 ## Outline
-
+\tableofcontents
 
 # Methodology and Data
 ## Methodology
@@ -411,7 +407,7 @@ pca_timeseries_plots = lapply(names(pca_list), function(name){
          aes(x = x, y = y)) +
     geom_line() +
     labs(title = plot_names_list[name], x = "", y = "") +
-    scale_x_yearqtr()  
+    scale_x_yearqtr()
 
   })
 
@@ -652,22 +648,22 @@ to construct the four factors.
 
 # In-sample Properties of Risks to Growth
 ## 5th Percentile Forecast
-## Negative Correlation between Median and Variance
+## Negative Correlation between Median and Dispersion
 
-```{r plot_median_iqr_correlations, eval=FALSE}
+```{r plot_median_iqr_correlations}
 
-fit_df %>%
-  rownames_to_column() %>%
-  select(rowname, skew_df) %>%
-  unnest(cols = skew_df) %>%
-  group_by(rowname, Horizon) %>%
-  summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>%
+med_iqr_plot_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
+  "GaR_Data\\med_iqr_plot_data.RDS"))
+  
+med_iqr_plot_df %>% 
   mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = med_vol_cor)) +
+  ggplot(aes(x = cor)) +
   geom_histogram() +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste0("Correlaltion between the median",
-                 " and IQR of the predictive distribution")) +
+                 " and IQR \n of the predictive distribution")) +
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
   facet_wrap(~Horizon, scales = "free")
 
@@ -731,14 +727,14 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 
 ```{r make_df}
 
-realized_df = df %>% 
-  filter(Date < as.yearqtr("2020 Q1")) %>% 
-  select(Date, GDP) %>% 
-  filter(complete.cases(.)) %>% 
-  rename(realized = GDP) %>% 
-  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
-  select(-Date) %>% 
-  select(Forecast_Period, realized) %>% 
+realized_df = df %>%
+  filter(Date < as.yearqtr("2020 Q1")) %>%
+  select(Date, GDP) %>%
+  filter(complete.cases(.)) %>%
+  rename(realized = GDP) %>%
+  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>%
+  select(-Date) %>%
+  select(Forecast_Period, realized) %>%
   as_tibble()
 
 benchmark_df = get.gar.forecast(
@@ -754,18 +750,18 @@ benchmark_df = get.gar.forecast(
     Date + as.numeric(Horizon) * 0.25,
     sep = "-"
     )) %>%
-  mutate(Horizon = as_factor(Horizon)) %>% 
+  mutate(Horizon = as_factor(Horizon)) %>%
   rename(benchmark = GaR_forecast)
 
-staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>% 
-  as_tibble() %>% 
+staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>%
+  as_tibble() %>%
   rename(prediction = Staff_Forecast)
 
 staff_forecast_df = list(
   name = "Staff",
   partition = list(staff = NA),
-  pred_df = staff_forecast_df) %>% 
-  enframe() %>% 
+  pred_df = staff_forecast_df) %>%
+  enframe() %>%
   pivot_wider()
 
 ```
@@ -774,7 +770,7 @@ staff_forecast_df = list(
 ```{r GaR_Forecast}
 
 models_df = list(GaR_Forecast = partitions_list$basic,
-                 Macro_Forecast = partitions_list$macro) %>% 
+                 Macro_Forecast = partitions_list$macro) %>%
   enframe(value = "partition")
 
 models_df = models_df %>%
@@ -795,27 +791,27 @@ models_df = models_df %>%
         ),
         win_len = 40,
         win_type_expanding = TRUE)
-      
-      temp_forecast = temp_forecast %>% 
+
+      temp_forecast = temp_forecast %>%
         filter(complete.cases(.)) %>%
         mutate(Forecast_Period = paste(
           Date + as.numeric(Horizon) * 0.25 - 1,
           Date + as.numeric(Horizon) * 0.25,
           sep = "-"
         )) %>%
-        mutate(Horizon = as_factor(Horizon)) %>% 
+        mutate(Horizon = as_factor(Horizon)) %>%
         rename(prediction = GaR_forecast)
-        
-        
+
+
       return(temp_forecast)
-      
+
       }))
 
-models_df = models_df %>% 
+models_df = models_df %>%
   rbind(staff_forecast_df)
 
-models_df = models_df %>% 
-  mutate(realized = map(1:nrow(.),~realized_df)) %>% 
+models_df = models_df %>%
+  mutate(realized = map(1:nrow(.),~realized_df)) %>%
   mutate(benchmark = map(1:nrow(.),~benchmark_df))
 
 
@@ -824,7 +820,7 @@ models_df = models_df %>%
 
 ```{r calculate_scores}
 
-models_df = models_df %>% 
+models_df = models_df %>%
   mutate(
     r2_score = pmap(.l = list(pred_df,realized, benchmark),
                      .f = function(pred_df,realized, benchmark){
@@ -834,17 +830,17 @@ models_df = models_df %>%
                          benchmark_df = benchmark)
                        return(temp_score)
                      })
-    ) %>% 
+    ) %>%
   mutate(
     pit_score = pmap(.l = list(pred_df,realized),
                      .f = function(pred_df,realized){
-                       temp_score = pred_df %>% 
+                       temp_score = pred_df %>%
                          inner_join(realized_df,
-                                    by = "Forecast_Period") %>% 
+                                    by = "Forecast_Period") %>%
                          rename(actual_values = realized,
-                                predicted_values = prediction) %>% 
+                                predicted_values = prediction) %>%
                          quantile.pit.score()
-                       
+
                        return(temp_score)
                      }))
 
@@ -914,11 +910,11 @@ models_df %>%
 ```
 
 ## Conclusion
-# Appendix
+# Appendix {.unlisted .unnumbered}
 ## Appendix
 
 
-# References
+# References {.unlisted .unnumbered}
 ## References {.allowframebreaks}
 
 <div id="refs"></div>
