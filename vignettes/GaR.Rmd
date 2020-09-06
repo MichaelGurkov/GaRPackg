@@ -67,7 +67,7 @@ library(forcats)
 
 \section{Descriptive Stats}
 
-```{r desc_stat, child="GaR-DescriptiveStat.Rmd", eval=FALSE}
+```{r desc_stat, child="GaR-DescriptiveStat.Rmd"}
 
 ```
 

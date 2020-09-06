@@ -201,7 +201,7 @@ collect_quantile_r2_score = function(pred_df,realized_df,
 #'
 #' @param gar_model
 #'
-calculate.skew.and.iqr = function(gar_obj){
+calculate_skew_and_iqr = function(gar_obj){
 
   prediction_df = make_prediction_df(
     gar_model = gar_obj$qreg_result,

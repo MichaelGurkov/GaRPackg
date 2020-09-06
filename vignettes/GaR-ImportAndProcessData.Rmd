@@ -75,7 +75,7 @@ df = raw_df %>%
   mutate(across(any_of(parameters_list$vars_to_yoy),
                 calculate.YoY.returns)) %>% 
   mutate(across(any_of(parameters_list$vars_to_4_ma),
-                calculate.four.quarters.ma)) %>% 
+                ~ calculate.four.quarters.ma(.) * 4 / 100)) %>% 
   mutate(across(any_of(parameters_list$vars_to_diff),
                 ~c(NA,diff(.))))
 

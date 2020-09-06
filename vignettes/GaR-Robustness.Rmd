@@ -146,7 +146,7 @@ fit_df %>%
 ```{r get_skew}
 
 fit_df = fit_df %>% 
-  mutate(skew_df = map(gar_model,calculate.skew.and.iqr))
+  mutate(skew_df = map(gar_model,calculate_skew_and_iqr))
 
 
 ```

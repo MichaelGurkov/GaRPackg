@@ -16,7 +16,7 @@ corrplot(cor_mat,order = "hclust",addrect = 5)
 ```
 
 
-```{r descriptive_plots}
+```{r descriptive_plots, eval=FALSE}
 
 
 plot_list = lapply(names(current_partition), function(temp_name){

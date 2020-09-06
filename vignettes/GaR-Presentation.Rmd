@@ -1,5 +1,5 @@
 ---
-title: "Growth at Risk - The Israeli Case"
+title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
 date: "14 September, 2020"
@@ -34,11 +34,10 @@ setwd(paste0(
 ```
 
 
-
 ```{r set_plot_params}
 
 theme_set(theme_bw() + 
-            theme(title = element_text(size = 26),
+            theme(title = element_text(size = 22),
                 axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
                 strip.text = element_text(size = 15),
@@ -184,7 +183,6 @@ factors_df = factors_df %>%
 
 ```
 
-
 ## Motivation
 
 \begin {itemize}
@@ -278,7 +276,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
-## The Growth at Risk (GaR) approach
+## The Growth at Risk (GaR) Approach
 
 - Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
 * Applied to:
@@ -286,15 +284,15 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
   + Developing economies [@Komatsuzaki2019; @Bespalova2019]
 
 * GaR is a linear model of density forecast
-  + based on quantile regression
+  + Based on quantile regression
   + Parsimonious
   + Easy to interpret
 
 * Possible uses:
-  1. Regular assessment of risk (e.g tracking 5th
+  1. Regular assessment of risks (e.g., tracking 5th
   percentile of forecast)
   2. Provide empirical evidence to support macro-financial
-  modeling efforts (joint projects IMF)
+  modeling efforts (joint projects with IMF)
 
 
 ## Main Results
@@ -328,7 +326,7 @@ Insights may help construct a better forecasting model  (future research).
 \tableofcontents
 
 # Methodology and Data
-## Methodology
+## Methodology [@Prasad2019]
 \begin{enumerate}
 	\item
 	\textbf{Partition data:} divide a large number of variables into $K$ groups ($K$ small).
@@ -355,7 +353,7 @@ Insights may help construct a better forecasting model  (future research).
 
 
 ## Data Partitioning
-Sample: 1996Q3-2019Q4
+Sample: 1997Q3-2019Q4
 \tiny
 \begin{tabularx}{\linewidth}{X |X |X | X}
 	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
@@ -493,15 +491,16 @@ plot_grid(plotlist = pca_plots)
 \begin{block}{\center{Brunnermeir and Sannikov 2014}}
 \vspace{0.5em}
 	Low risks (which contribute to short-term growth), encourage the
-	accumulation of risks in the medium to long term.
+	accumulation of risks in the medium-to-long term.
 \end{block}
 
 
-* Financial cycle factor is correlated with growth in the short term,
+* Financial Cycle factor is correlated with growth in the short term,
   but also with elevated risks in the long term.
 
 * Mechanisms:
 
+# In-sample Properties of Risks to Growth
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
 ```{r plot_events_plot}
@@ -584,20 +583,16 @@ factors_df %>%
 
 ## Forecast Median and Dispersion are Negatively Correlated
 
-```{r plot_median_dispersion, eval=FALSE}
+```{r plot_median_iqr_scatter}
 
-results$gar_fitted_df %>%
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%
-  pivot_wider(id_cols = c(Date,Horizon),
-              names_from = "Quantile",
-              values_from = "GaR_fitted") %>%
-  mutate(IQR = `0.75` - `0.25`) %>%
-  ggplot(aes(x = IQR, y = `0.5`)) +
-  geom_point() +
-  stat_smooth(method = "lm") +
-  facet_wrap(~Horizon, scales = "free") +
-  labs(x = "Dispersion", y = "Median", title = "Dispersion vs Variance")
-
+results %>% 
+  calculate_skew_and_iqr() %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = IQR, y = q0.50)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  xlab("Inter quartile range") + ylab("Median") + 
+  facet_free(~Horizon, scales = "free")
 
 
 ```
@@ -621,32 +616,40 @@ results %>%
 
 ```
 
+Consistent with features of past GDP growth
 
-```{r plot_gdp_growth, eval=FALSE, fig.height=3}
+```{r plot_gdp_growth, fig.height=3}
 
 df %>%
   select(Date,gdp_us, gdp_euro, GDP) %>%
+  filter(Date < as.yearqtr("2020 Q1")) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = GDP) %>%
   pivot_longer(-Date) %>%
-  ggplot(aes(x = value, fill = name)) +
-  geom_histogram(alpha = 0.5, position = "dodge")
+  ggplot(aes(x = Date, y = value, color = name)) +
+  geom_line() + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth")
 
 ```
 
 
+# Sensitivity to Variable Selection
 ## Sub-Sampling Bootstrap Analysis
 
 * Our results might be affected by the set of variables we used
 to construct the four factors.
+
+
 * For robustness, we perform a sub-sampling bootstrap procedure
-@Politis1994
+[@Politis1994]
   + We determine a minimal set of variables to be included
   in each group and go over all the different combinations
   of the other variables.
+  
+  
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
-# In-sample Properties of Risks to Growth
 ## 5th Percentile Forecast
 ## Negative Correlation between Median and Dispersion
 
@@ -669,9 +672,11 @@ med_iqr_plot_df %>%
 
 ```
 
+
+
 ## Symmetric Distribution
 
-```{r plot_skew_robustness, cache=TRUE, eval=FALSE}
+```{r plot_skew_robustness, cache=TRUE,dev="png}
 
 skew_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -683,18 +688,34 @@ skew_plot +
 
 ```
 
+## "Volatility Paradox"
 
-Consistent with characterization of past GDP growth
+Financial Cycle coefficients at different quantiles (stacked histograms)
 
-```{r}
+```{r plot_coefs_hist}
+
+coeff_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\",
+  "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS"))
+
+coeff_df %>% 
+  rename(Quantile = Tau) %>%  
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%  
+  ggplot(aes(x = Coeff, fill = Quantile)) + 
+  geom_histogram() + 
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  xlab(NULL) + ylab(NULL) + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2) + 
+  theme(legend.title = element_text(size = 15))
 
 ```
 
 
-# Sensitivity to Variable Selection
 # Out-of-Sample Forecast Performance
 ## Out-of-Sample Forecast Performance
 \begin{itemize}
+\setlength\itemsep{1em}
 	\item
 	GaR model compared to two alternatives:
 	\begin{enumerate}
@@ -909,11 +930,29 @@ models_df %>%
 
 ```
 
+
 ## Conclusion
+
+\begin{itemize}
+\setlength\itemsep{1em}
+  \item
+  The Financial Cycle (Credit and assets prices) is correlated with higher growth
+  in the short term and elevated risks in the long term.
+  \item
+  Growth distribution in Israel is "balanced" and unskewed
+  \item
+  Forecast uncertainty rises when the median forecast decreases
+  \item
+  Future effort will be devoted to development of forecasting tool extension
+  to another fields (Inflation at Risk)
+\end{itemize}
+
+
 # Appendix {.unlisted .unnumbered}
 ## Appendix
 
 
+## 
 # References {.unlisted .unnumbered}
 ## References {.allowframebreaks}
 
