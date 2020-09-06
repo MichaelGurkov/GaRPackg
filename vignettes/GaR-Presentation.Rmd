@@ -37,7 +37,7 @@ setwd(paste0(
 ```{r set_plot_params}
 
 theme_set(theme_bw() + 
-            theme(title = element_text(size = 22),
+            theme(title = element_text(size = 20),
                 axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
                 strip.text = element_text(size = 15),
@@ -146,7 +146,7 @@ coeff_df = map_dfr(names(results$qreg_result),
   
 my_lab = function(string){
   
-  paste0("h = ", string)
+  paste0("horizon = ", string)
   
 }
 
@@ -329,8 +329,8 @@ Insights may help construct a better forecasting model  (future research).
 ## Outline
 \tableofcontents
 
-# Methodology and Data
-## Methodology \label{methodology}
+# Methodology and Data  \label{methodology}
+## Methodology
 [@Prasad2019]
 \begin{enumerate}
 	\item
@@ -577,8 +577,8 @@ results %>%
   geom_point() + 
   geom_smooth(method = "lm") + 
   xlab("Inter Quartile Range") + ylab("Median") + 
-  facet_free(~Horizon, scales = "free") + 
-  theme(axis.text = element_text(size = 12))
+  facet_free(~Horizon, scales = "free",labeller = labeller(Horizon = my_lab)) + 
+  theme(axis.text = element_text(size = 8))
 
 
 ```
@@ -622,9 +622,12 @@ df %>%
 # Sensitivity to Variable Selection
 ## Sub-Sampling Bootstrap Analysis
 
+\vspace{1em}
+
 * Our results might be affected by the set of variables we used
 to construct the four factors.
 
+\vspace{1em}
 
 * For robustness, we perform a sub-sampling bootstrap procedure
 [@Politis1994]
