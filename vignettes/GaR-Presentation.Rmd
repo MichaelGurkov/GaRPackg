@@ -56,6 +56,8 @@ library(tidyverse)
 
 library(cowplot)
 
+library(broom)
+
 ```
 
 
@@ -122,24 +124,25 @@ plot_names_list = list("Macro","Global","Fin. Conditions",
 
 names(plot_names_list) = names(pca_list)
 
-coeff_df = lapply(names(results$qreg_result),
+coeff_df = map_dfr(names(results$qreg_result),
                   function(temp_name){
-  
-  temp_coeff_df = results$qreg_result[[temp_name]]$coefficients %>% 
-    as.data.frame() %>% 
-    rename_all(.funs = list(~str_remove_all(.,"tau= "))) %>% 
-    mutate(Partition = rownames(.)) %>% 
-    gather(key = Quantile,value = Coeff, - Partition) %>% 
-    mutate(Horizon = temp_name)
-    
-  
+                    
+                    temp_coeff_df = tidy(results$qreg_result[[temp_name]]) %>% 
+                      rename(Partition = term, Coeff = estimate, Quantile = tau) %>% 
+                      select(Partition, Coeff, Quantile) %>% 
+                      mutate(Horizon = temp_name)
+
   return(temp_coeff_df)
 
 }) %>% 
-  bind_rows() %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,8,12))) %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
   filter(!Partition == "(Intercept)") %>% 
-  mutate(Partition = str_remove_all(Partition,"_xreg"))
+  mutate(Partition = str_remove_all(Partition,"_xreg")) %>% 
+  left_join(plot_names_list %>% 
+  enframe(value = "new_name") %>% 
+  mutate(new_name = unlist(new_name)),
+  by = c("Partition" = "name")) %>% 
+  select(-Partition)
   
 my_lab = function(string){
   
@@ -268,7 +271,8 @@ temp_plot = temp_df %>%
 })
 
 legend_p = get_legend(
-  plot_list[[1]] + theme(legend.position = "bottom"))
+  plot_list[[1]] + theme(legend.position = "bottom",
+                         legend.title = element_text(size = 15)))
 
 plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
           nrow = 2,
@@ -326,7 +330,8 @@ Insights may help construct a better forecasting model  (future research).
 \tableofcontents
 
 # Methodology and Data
-## Methodology [@Prasad2019]
+## Methodology \label{methodology}
+[@Prasad2019]
 \begin{enumerate}
 	\item
 	\textbf{Partition data:} divide a large number of variables into $K$ groups ($K$ small).
@@ -347,7 +352,7 @@ Insights may help construct a better forecasting model  (future research).
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em   }
 	\begin{flushright}
-		\hyperlink{quantile reg}{\beamerbutton{quantile reg}}
+		\hyperlink{quantile_reg}{\beamerbutton{quantile reg}}
 	\end{flushright}
 \end{enumerate}
 
@@ -382,19 +387,19 @@ Sample: 1997Q3-2019Q4
 
 \flushright
 
-\hyperlink{PCA_loadings}{\beamergotobutton{PCA loadings}}
+\hyperlink{pca_loadings}{\beamergotobutton{PCA loadings}}
 
 \vspace{-1em}
 
 \flushleft
 
-\hyperlink{PCA}{\beamergotobutton{PCA time-sereis}}
+\hyperlink{pca_timeseries}{\beamergotobutton{PCA time-series}}
 
 
 
 
-# Estimation Results
-## $1^{st}$ Principal Components
+# Estimation Results \label{pca_timeseries}
+## $1^{st}$ Principal Components 
 
 ```{r plot_pca_timeseries}
 
@@ -418,7 +423,7 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \flushleft
 
-\hyperlink{MoreCoefs}{\beamergotobutton{more coefs}}
+\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
 ## Quantile regression coefficients
@@ -426,10 +431,10 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 ```{r dom_macro_plot}
 
 ggplot(coeff_df %>%
-         filter(Partition == "Dom_Macro") %>%
+         filter(new_name == "Macro") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.5) +
+  geom_col(width = 0.1) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   labs(x = "Quantile", y = "",
        title = "Macro coefficients") +
@@ -446,10 +451,10 @@ ggplot(coeff_df %>%
 ```{r fin_cycle_plot}
 
 ggplot(coeff_df %>%
-         filter(Partition == "FinCycle") %>%
+         filter(new_name == "Fin. Cycle") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.5) +
+  geom_col(width = 0.1) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   labs(x = "Quantile", y = "",
        title = "Fin.Cycle coefficients") +
@@ -457,34 +462,12 @@ ggplot(coeff_df %>%
 
 ```
 
+\vspace{-1em}
 
-```{r pca_loadings, eval=FALSE}
-
-pca_plots = lapply(names(pca_list), function(name){
-
-  pca_var = round(pca_variance$Variance
-                  [pca_variance$Name == name] * 100,0)
-
-  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
-                  Val = pca_list[[name]]$pca$rotation[,1]),
-       aes(x = reorder(Name, Val), y = Val)) +
-  geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = paste0(
-    plot_names_list[[name]], " (" ,pca_var, "%)")) +
-  coord_flip()
-
-  rm(pca_var)
-
-  return(bar_plot)
+\flushleft
 
 
-})
-
-plot_grid(plotlist = pca_plots)
-
-
-```
-
+\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 ## Volatility Paradox
 
@@ -552,11 +535,13 @@ ggplot() +
             mapping = aes(x = Start + 1,
                           y = c(0.08,0.08,-0.08),
                           label = Event),
-            color = "blue")
+            color = "blue") + 
+  labs(caption = paste0("Notes: Shaded areas depict US and Euro",
+                        " recessions (NBER and CEPR recessions)")) + 
+  theme(plot.caption = element_text(hjust = 0))
 
 
 ```
-
 
 
 ## The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
@@ -591,8 +576,9 @@ results %>%
   ggplot(aes(x = IQR, y = q0.50)) + 
   geom_point() + 
   geom_smooth(method = "lm") + 
-  xlab("Inter quartile range") + ylab("Median") + 
-  facet_free(~Horizon, scales = "free")
+  xlab("Inter Quartile Range") + ylab("Median") + 
+  facet_free(~Horizon, scales = "free") + 
+  theme(axis.text = element_text(size = 12))
 
 
 ```
@@ -676,7 +662,7 @@ med_iqr_plot_df %>%
 
 ## Symmetric Distribution
 
-```{r plot_skew_robustness, cache=TRUE,dev="png}
+```{r plot_skew_robustness, cache=TRUE,dev="png"}
 
 skew_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -694,12 +680,12 @@ Financial Cycle coefficients at different quantiles (stacked histograms)
 
 ```{r plot_coefs_hist}
 
-coeff_df = read_rds(paste0(
+coeff_plot_data = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\",
   "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS"))
 
-coeff_df %>% 
+coeff_plot_data %>% 
   rename(Quantile = Tau) %>%  
   mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%  
   ggplot(aes(x = Coeff, fill = Quantile)) + 
@@ -715,7 +701,7 @@ coeff_df %>%
 # Out-of-Sample Forecast Performance
 ## Out-of-Sample Forecast Performance
 \begin{itemize}
-\setlength\itemsep{1em}
+\setlength\itemsep{2em}
 	\item
 	GaR model compared to two alternatives:
 	\begin{enumerate}
@@ -735,6 +721,7 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
 	$$
 \begin{itemize}
+\setlength\itemsep{1em}
 	\item
 	A model is better fitted the closer $\varphi_{\tau,h}$ is to
 	45-degree line.
@@ -934,7 +921,7 @@ models_df %>%
 ## Conclusion
 
 \begin{itemize}
-\setlength\itemsep{1em}
+\setlength\itemsep{2em}
   \item
   The Financial Cycle (Credit and assets prices) is correlated with higher growth
   in the short term and elevated risks in the long term.
@@ -949,10 +936,88 @@ models_df %>%
 
 
 # Appendix {.unlisted .unnumbered}
-## Appendix
+## Appendix \label{quantile_reg}
 
 
-## 
+## Quantile Regression \label{pca_loadings}
+
+Model: for quantile $\tau$ and horizon $h$, 
+$$
+Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{h,t}
+$$
+
+$\beta^{\tau}$ is  estimated by solving the minimization problem
+
+$$
+\min_{\beta^{\tau}}
+\sum_{t=1}^T 
+\max \bigg\{
+\tau \big( y_{t+h}- \beta^{\tau}X_t \big)
+\, ,\,
+(\tau-1) \big( y_{t+h}- \beta^{\tau}X_t \big)
+\bigg\}
+$$
+
+\begin{flushleft}
+
+\footnotesize
+Note: "Quantile crossing" handled using the method of @Chernozhukov2010
+
+\hyperlink{methodology}{\beamerreturnbutton{}}
+\end{flushleft}
+	
+	
+
+## 1st PC loadings  \label{coeffs_panel}
+
+```{r plot_pc_loadings}
+
+pca_plots = lapply(names(pca_list), function(name){
+  
+  pca_var = round(pca_variance$Variance
+                  [pca_variance$Name == name] * 100,0)
+  
+  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
+                               Val = pca_list[[name]]$pca$rotation[,1]),
+                    aes(x = reorder(Name, Val), y = Val)) +
+    geom_bar(stat = "identity", width = 0.5) +
+    xlab(NULL) + ylab(NULL) + ggtitle(paste0(
+    plot_names_list[[name]], " (" ,pca_var, "%)")) +
+    coord_flip()
+  
+  rm(pca_var)
+  
+  return(bar_plot)
+  
+
+})
+
+plot_grid(plotlist = pca_plots)
+
+```
+
+## Quantile Regression Coefficients
+
+```{r coeff_panel_plot}
+
+coeff_plot_list = map(unique(coeff_df$Horizon), function(temp_horizon){
+  ggplot(coeff_df %>%
+           filter(Horizon == temp_horizon),
+         aes(x = Quantile, y= Coeff)) +
+    geom_col(width = 0.1) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+    xlab("Quantile") + ylab(NULL) + ggtitle(paste(temp_horizon, "quarters ahead")) + 
+    facet_wrap(~ new_name, scales = "free") + 
+    theme(axis.text = element_text(size = 8))
+  
+})
+
+
+plot_grid(plotlist = coeff_plot_list)
+
+```
+
+
 # References {.unlisted .unnumbered}
 ## References {.allowframebreaks}
 
