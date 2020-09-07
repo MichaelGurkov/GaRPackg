@@ -334,25 +334,28 @@ Insights may help construct a better forecasting model  (future research).
 [@Prasad2019]
 \begin{enumerate}
 	\item
-	\textbf{Partition data:} divide a large number of variables into $K$ groups ($K$ small).
+	\textbf{Partition data:} divide a large number of variables
+	into $K$ groups ($K$ small).
 	\item
 	\textbf{Dimension reduction} to alleviate overfitting:
 	\begin{itemize}
 		\item
-		From each group $k\in\{1,...,K\}$, generate a single regressor $x^k_t$
+		From each group $k\in\{1,...,K\}$, generate a single
+		regressor $x^k_t$
 		\item
 		Method: first principal component
 	\end{itemize}
 	\item
 	\textbf{Quantile regressions --}
-	estimate a forecast equation for each quantile $\tau$ and horizon $h$:
+	estimate a forecast equation for each quantile $\tau$
+	and horizon $h$:
 	$$
 	Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{t,h}
 	$$
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em   }
 	\begin{flushright}
-		\hyperlink{quantile_reg}{\beamerbutton{quantile reg}}
+		\hyperlink{quantile_reg}{\beamergotobutton{Quantile reg}}
 	\end{flushright}
 \end{enumerate}
 
@@ -398,8 +401,8 @@ Sample: 1997Q3-2019Q4
 
 
 
-# Estimation Results \label{pca_timeseries}
-## $1^{st}$ Principal Components 
+# Estimation Results
+## $1^{st}$ Principal Components \label{pca_timeseries}
 
 ```{r plot_pca_timeseries}
 
@@ -426,7 +429,7 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
-## Quantile regression coefficients
+## Quantile regression coefficients  \label{selectedcoefs}
 
 ```{r dom_macro_plot}
 
@@ -444,6 +447,11 @@ ggplot(coeff_df %>%
 
 ```
 
+\vspace{-1em}
+
+\flushleft
+
+\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
 ## Quantile regression coefficients
@@ -465,7 +473,6 @@ ggplot(coeff_df %>%
 \vspace{-1em}
 
 \flushleft
-
 
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
@@ -577,7 +584,8 @@ results %>%
   geom_point() + 
   geom_smooth(method = "lm") + 
   xlab("Inter Quartile Range") + ylab("Median") + 
-  facet_free(~Horizon, scales = "free",labeller = labeller(Horizon = my_lab)) + 
+  facet_free(~Horizon, scales = "free",
+             labeller = labeller(Horizon = my_lab)) + 
   theme(axis.text = element_text(size = 8))
 
 
@@ -657,7 +665,8 @@ med_iqr_plot_df %>%
   ggtitle(paste0("Correlaltion between the median",
                  " and IQR \n of the predictive distribution")) +
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free")
+  facet_wrap(~Horizon, scales = "free",
+             labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -673,7 +682,9 @@ skew_plot = read_rds(paste0(
   "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
 
 skew_plot +
-  ggtitle("Quartile skewness")
+  ggtitle("Quartile skewness") + 
+  facet_wrap(~Horizon, scales = "free",
+             labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -695,7 +706,8 @@ coeff_plot_data %>%
   geom_histogram() + 
   geom_vline(xintercept = 0, linetype = "dashed") + 
   xlab(NULL) + ylab(NULL) + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2) + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab)) + 
   theme(legend.title = element_text(size = 15))
 
 ```
@@ -874,7 +886,8 @@ models_df %>%
   scale_color_viridis_d(option = "plasma") +
   scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon)
+  facet_wrap(~Horizon,
+             labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -903,6 +916,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 
 ## Quantile R-Squared
+
 ```{r plot_r2_score}
 
 models_df %>%
@@ -915,7 +929,8 @@ models_df %>%
   geom_col(position = "dodge") +
   xlab(NULL) + ylab(NULL) +
   scale_fill_viridis_d(option = "plasma") +
-  facet_wrap(~Horizon)
+  facet_wrap(~Horizon,
+             labeller = labeller(Horizon = my_lab))
 
 
 ```
@@ -966,7 +981,7 @@ $$
 \footnotesize
 Note: "Quantile crossing" handled using the method of @Chernozhukov2010
 
-\hyperlink{methodology}{\beamerreturnbutton{}}
+\hyperlink{methodology}{\beamerreturnbutton{Methodology}}
 \end{flushleft}
 	
 	
@@ -986,7 +1001,8 @@ pca_plots = lapply(names(pca_list), function(name){
     geom_bar(stat = "identity", width = 0.5) +
     xlab(NULL) + ylab(NULL) + ggtitle(paste0(
     plot_names_list[[name]], " (" ,pca_var, "%)")) +
-    coord_flip()
+    coord_flip() + 
+    theme(plot.title = element_text(size = 18))
   
   rm(pca_var)
   
@@ -1020,6 +1036,7 @@ plot_grid(plotlist = coeff_plot_list)
 
 ```
 
+\hyperlink{selectedcoefs}{\beamergotobutton{selectedcoefs}}
 
 # References {.unlisted .unnumbered}
 ## References {.allowframebreaks}
