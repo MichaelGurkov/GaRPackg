@@ -617,7 +617,7 @@ factors_df %>%
               summarise(Total = sum(value),.groups = "drop") %>%
               ungroup(),
             aes(x = Date, y = Total), size = 0.5) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab)) +
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab), scales = "free") +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
                  "GaR forecast \n (5th percentile)")) +
@@ -670,10 +670,10 @@ df %>%
   filter(Date < as.yearqtr("2020 Q1")) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = GDP) %>%
   pivot_longer(-Date) %>%
-  ggplot(aes(x = Date, y = value, color = name)) +
-  geom_line() + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth")
+  ggplot(aes(x = value, fill = name)) +
+  geom_density(alpha = 0.5) + 
+  scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth density")
 
 ```
 
