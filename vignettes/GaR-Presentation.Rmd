@@ -101,7 +101,6 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 ```
 
-
 ```{r get_auxilary_data}
 
 pca_list = results$pca
@@ -151,7 +150,6 @@ my_lab = function(string){
 }
 
 ```
-
 
 ```{r calculate_gar_contribution}
 
@@ -329,8 +327,11 @@ Insights may help construct a better forecasting model  (future research).
 ## Outline
 \tableofcontents
 
-# Methodology and Data  \label{methodology}
+# Methodology and Data  
 ## Methodology
+
+\label{methodology}
+
 [@Prasad2019]
 \begin{enumerate}
 	\item
@@ -352,12 +353,15 @@ Insights may help construct a better forecasting model  (future research).
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em   }
 	\begin{flushright}
-		\hyperlink{quantile_reg}{\beamerbutton{quantile reg}}
+		\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
 	\end{flushright}
 \end{enumerate}
 
 
 ## Data Partitioning
+
+\label{DataPartitioning}
+
 Sample: 1997Q3-2019Q4
 \tiny
 \begin{tabularx}{\linewidth}{X |X |X | X}
@@ -387,19 +391,21 @@ Sample: 1997Q3-2019Q4
 
 \flushright
 
-\hyperlink{pca_loadings}{\beamergotobutton{PCA loadings}}
+\hyperlink{PcaLoadings}{\beamergotobutton{PCA loadings}}
 
 \vspace{-1em}
 
 \flushleft
 
-\hyperlink{pca_timeseries}{\beamergotobutton{PCA time-series}}
+\hyperlink{PcaTimeseries}{\beamergotobutton{PCA time-series}}
 
 
 
 
-# Estimation Results \label{pca_timeseries}
+# Estimation Results 
 ## $1^{st}$ Principal Components 
+
+\label{PcaTimeseries}
 
 ```{r plot_pca_timeseries}
 
@@ -423,10 +429,21 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \flushleft
 
-\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
+\hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
+
+\vspace{-1em}
+
+\flushright
+
+\hyperlink{DataPartitioning}{\beamerreturnbutton{}}
+
+
+
 
 
 ## Quantile regression coefficients
+
+\label{MacroCoef}
 
 ```{r dom_macro_plot}
 
@@ -467,7 +484,7 @@ ggplot(coeff_df %>%
 \flushleft
 
 
-\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
+\hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
 
 ## Volatility Paradox
 
@@ -640,6 +657,12 @@ to construct the four factors.
   implied subset of	variables.
 
 ## 5th Percentile Forecast
+
+```{r}
+
+```
+
+
 ## Negative Correlation between Median and Dispersion
 
 ```{r plot_median_iqr_correlations}
@@ -657,7 +680,7 @@ med_iqr_plot_df %>%
   ggtitle(paste0("Correlaltion between the median",
                  " and IQR \n of the predictive distribution")) +
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free")
+  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -673,7 +696,9 @@ skew_plot = read_rds(paste0(
   "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
 
 skew_plot +
-  ggtitle("Quartile skewness")
+  ggtitle("Quartile skewness") + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -695,7 +720,8 @@ coeff_plot_data %>%
   geom_histogram() + 
   geom_vline(xintercept = 0, linetype = "dashed") + 
   xlab(NULL) + ylab(NULL) + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2) + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab)) + 
   theme(legend.title = element_text(size = 15))
 
 ```
@@ -874,7 +900,7 @@ models_df %>%
   scale_color_viridis_d(option = "plasma") +
   scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon)
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -915,7 +941,7 @@ models_df %>%
   geom_col(position = "dodge") +
   xlab(NULL) + ylab(NULL) +
   scale_fill_viridis_d(option = "plasma") +
-  facet_wrap(~Horizon)
+  facet_wrap(~Horizon, labeller = labeller(Horizon = my_lab))
 
 
 ```
@@ -939,10 +965,10 @@ models_df %>%
 
 
 # Appendix {.unlisted .unnumbered}
-## Appendix \label{quantile_reg}
+## Appendix 
+## Quantile Regression 
 
-
-## Quantile Regression \label{pca_loadings}
+\label{QuantileReg}
 
 Model: for quantile $\tau$ and horizon $h$, 
 $$
@@ -971,7 +997,9 @@ Note: "Quantile crossing" handled using the method of @Chernozhukov2010
 	
 	
 
-## 1st PC loadings  \label{coeffs_panel}
+## 1st PC loadings  
+
+\label{PcaLoadings}
 
 ```{r plot_pc_loadings}
 
@@ -1001,6 +1029,8 @@ plot_grid(plotlist = pca_plots)
 
 ## Quantile Regression Coefficients
 
+\label{CoeffPanel}
+
 ```{r coeff_panel_plot}
 
 coeff_plot_list = map(unique(coeff_df$Horizon), function(temp_horizon){
@@ -1020,6 +1050,7 @@ plot_grid(plotlist = coeff_plot_list)
 
 ```
 
+\hyperlink{MacroCoef}{\beamerreturnbutton{}}
 
 # References {.unlisted .unnumbered}
 ## References {.allowframebreaks}
