@@ -58,6 +58,8 @@ library(cowplot)
 
 library(broom)
 
+library(gghighlight)
+
 ```
 
 
@@ -101,7 +103,6 @@ results = run.GaR.analysis(partitions_list = current_partition,
 
 ```
 
-
 ```{r get_auxilary_data}
 
 pca_list = results$pca
@@ -135,7 +136,10 @@ coeff_df = map_dfr(names(results$qreg_result),
   return(temp_coeff_df)
 
 }) %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  mutate(Horizon = factor(Horizon,
+                          levels = unlist(parameters_list$horizon_list))) %>% 
+  mutate(Quantile = factor(Quantile,
+                           levels = parameters_list$quantile_vec)) %>% 
   filter(!Partition == "(Intercept)") %>% 
   mutate(Partition = str_remove_all(Partition,"_xreg")) %>% 
   left_join(plot_names_list %>% 
@@ -151,7 +155,6 @@ my_lab = function(string){
 }
 
 ```
-
 
 ```{r calculate_gar_contribution}
 
@@ -329,7 +332,9 @@ Insights may help construct a better forecasting model  (future research).
 ## Outline
 \tableofcontents
 
-# Methodology and Data
+
+# Methodology and Data  
+
 ## Methodology
 
 \label{methodology}
@@ -356,16 +361,17 @@ Insights may help construct a better forecasting model  (future research).
 	Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{t,h}
 	$$
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
-	\vspace{1em   }
+	\vspace{1em}
 	\begin{flushright}
-		\hyperlink{quantile_reg}{\beamergotobutton{Quantile reg}}
+		\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
 	\end{flushright}
 \end{enumerate}
 
 
-##  Data Partitioning
 
-\label{data_partitioning}
+## Data Partitioning
+
+\label{DataPartitioning}
 
 Sample: 1997Q3-2019Q4
 \tiny
@@ -396,13 +402,13 @@ Sample: 1997Q3-2019Q4
 
 \flushright
 
-\hyperlink{pca_loadings}{\beamergotobutton{PCA loadings}}
+\hyperlink{PcaLoadings}{\beamergotobutton{PCA loadings}}
 
 \vspace{-1em}
 
 \flushleft
 
-\hyperlink{pca_timeseries}{\beamergotobutton{PCA time-series}}
+\hyperlink{PcaTimeseries}{\beamergotobutton{PCA time-series}}
 
 
 
@@ -410,7 +416,9 @@ Sample: 1997Q3-2019Q4
 # Estimation Results 
 ## $1^{st}$ Principal Components 
 
-\label{pca_timeseries}
+
+\label{PcaTimeseries}
+
 
 ```{r plot_pca_timeseries}
 
@@ -434,7 +442,16 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \flushleft
 
-\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
+\hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
+
+\vspace{-2em}
+
+\flushright
+
+\hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
+
+
+
 
 \flushright
 
@@ -442,7 +459,9 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \hyperlink{data_partitioning}{\beamerreturnbutton{Data partitioning}}
 
-## Quantile regression coefficients
+## Macro shows cyclical pattern (high growth in the short term, low in the long term) 
+
+\label{MacroCoef}
 
 \label{selected_coeffs}
 
@@ -452,7 +471,7 @@ ggplot(coeff_df %>%
          filter(new_name == "Macro") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.1) +
+  geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   labs(x = "Quantile", y = "",
        title = "Macro coefficients") +
@@ -469,15 +488,15 @@ ggplot(coeff_df %>%
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
-## Quantile regression coefficients
+## Fin.Cycle contributes to growth in the short term, and to risks in the long term
 
-```{r fin_cycle_plot}
+```{r fin_cycle_plot, fig.height=6.5}
 
 ggplot(coeff_df %>%
          filter(new_name == "Fin. Cycle") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.1) +
+  geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   labs(x = "Quantile", y = "",
        title = "Fin.Cycle coefficients") +
@@ -489,9 +508,13 @@ ggplot(coeff_df %>%
 
 \flushleft
 
-\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
+
+\hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
+
 
 ## Volatility Paradox
+
+\vspace{-1em}
 
 \begin{block}{\center{Brunnermeir and Sannikov 2014}}
 \vspace{0.5em}
@@ -505,40 +528,44 @@ ggplot(coeff_df %>%
 
 * Mechanisms:
 
-\begin{figure}
-			\begin{tikzpicture}
-	[nodestyle/.style={rounded rectangle,draw=blue!50,fill=blue!20,thick,
-		inner sep=2pt,minimum width=10mm},
-	%transition/.style={rectangle,draw=black!50,fill=black!20,thick,
-	%	inner sep=0pt,minimum size=4mm}
-	greynodestyle/.style={rounded rectangle,draw=black!50,fill=black!20,thick,
-		inner sep=2pt,minimum width=10mm}]
-	
-	%Nodes
-	\node       (Risk)          	[nodestyle]							{risk today $\downarrow$};			
-	\node  	    (Spreads)       	[nodestyle, right=of Risk,xshift=-2mm]		{ spreads $\downarrow$};
-	\node       (AssetPrices)      [nodestyle,above right=of Spreads, yshift=-4mm, xshift=4mm] 	{asset prices $\uparrow$};
-	\node       (Debt)      [nodestyle,below right=of Spreads, yshift=4mm, xshift=4mm] 	{ \quad{} debt  $\uparrow$ \quad{ } };
-	\node       (FutureRisk)      [nodestyle, right=of Spreads, xshift=35mm] 	{ future risk  $\uparrow$ };
-	\node       (FinCyc)      [greynodestyle, below=of Debt, yshift=3mm] 	{ Financial Cycle };
-	\node       (FCI)      [greynodestyle, left=of FinCyc, xshift=4mm] 	{ Fin. Cond. };
-	
-	
-	
-	
-	%Lines
-	\draw[->, thick] (Risk.east) -- (Spreads.west) node[midway,above] {};
-	\draw[->, thick] (Spreads.east) -- (AssetPrices.west) node[midway,above] {};
-	\draw[->, thick] (Spreads.east) -- (Debt.west) node[midway,above] {};
-	\draw[->, thick] (AssetPrices.east) -- (FutureRisk.west) node[midway,above] {};
-	\draw[->, thick] (Debt.east) -- (FutureRisk.west) node[midway,above] {};
-	
-	
+
+\begin{tikzpicture}
+			[nodestyle/.style={rounded rectangle,draw=blue!50,fill=blue!20,thick,
+				inner sep=2pt,minimum width=10mm},
+			%transition/.style={rectangle,draw=black!50,fill=black!20,thick,
+			%	inner sep=0pt,minimum size=4mm}
+			greynodestyle/.style={rounded rectangle,draw=black!50,fill=black!20,thick,
+				inner sep=2pt,minimum width=10mm}]
+			
+			%Nodes
+			\node       (Risk)          	[nodestyle]							{risk today $\downarrow$};			
+			\node  	    (Spreads)       	[nodestyle, right=of Risk,xshift=-2mm]		{ spreads $\downarrow$};
+			\node       (AssetPrices)      [nodestyle,above right=of Spreads, yshift=-4mm, xshift=4mm] 	{asset prices $\uparrow$};
+			\node       (Debt)      [nodestyle,below right=of Spreads, yshift=4mm, xshift=4mm] 	{ \quad{} debt  $\uparrow$ \quad{ } };
+			\node       (FutureRisk)      [nodestyle, right=of Spreads, xshift=35mm] 	{ future risk  $\uparrow$ };
+			\node       (FinCyc)      [greynodestyle, below=of Debt, yshift=3mm] 	{ Financial Cycle };
+			\node       (FCI)      [greynodestyle, left=of FinCyc, xshift=4mm] 	{ Fin. Cond. };
+			
+			
+			
+			
+			%Lines
+			\draw[->, thick] (Risk.east) -- (Spreads.west) node[midway,above] {};
+			\draw[->, thick] (Spreads.east) -- (AssetPrices.west) node[midway,above] {};
+			\draw[->, thick] (Spreads.east) -- (Debt.west) node[midway,above] {};
+			\draw[->, thick] (AssetPrices.east) -- (FutureRisk.west) node[midway,above] {};
+			\draw[->, thick] (Debt.east) -- (FutureRisk.west) node[midway,above] {};
+			
+			
+			%		\onslide<2->				
+			%		%Nodes
+			%		\node       (FinCyc)        [greynodestyle, below=of Debt]		{financial cycle};
+			%		\node  	    (FCI)       	[greynodestyle, left=of FinCyc, xshift=-2mm]		{ FCI };
+			%		
+			
 \end{tikzpicture}
 
-\end{figure}
-
-
+>>>>>>> fe61bfdb70e19ac75b589029cfac1bb4525a869b
 # In-sample Properties of Risks to Growth
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
@@ -614,7 +641,7 @@ factors_df %>%
               summarise(Total = sum(value),.groups = "drop") %>%
               ungroup(),
             aes(x = Date, y = Total), size = 0.5) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab)) +
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab), scales = "free") +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
                  "GaR forecast \n (5th percentile)")) +
@@ -668,10 +695,10 @@ df %>%
   filter(Date < as.yearqtr("2020 Q1")) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = GDP) %>%
   pivot_longer(-Date) %>%
-  ggplot(aes(x = Date, y = value, color = name)) +
-  geom_line() + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth")
+  ggplot(aes(x = value, fill = name)) +
+  geom_density(alpha = 0.5) + 
+  scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth density")
 
 ```
 
@@ -697,6 +724,28 @@ to construct the four factors.
   implied subset of	variables.
 
 ## 5th Percentile Forecast
+
+```{r, cache=TRUE, dev="png"}
+
+
+gar_plot_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
+  "GaR_Data\\gar_plot_df.RDS"))
+
+gar_plot_df %>% 
+  ggplot(aes(x = Date, y = GaR_fitted, group = rowname)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + 
+  gghighlight(rowname == 4599,
+              calculate_per_facet = TRUE,
+              use_direct_label = FALSE,use_group_by = FALSE,
+              unhighlighted_params = list(alpha = 0.1)) + 
+  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab),nrow = 2)
+
+```
+
+
 ## Negative Correlation between Median and Dispersion
 
 ```{r plot_median_iqr_correlations}
@@ -714,8 +763,7 @@ med_iqr_plot_df %>%
   ggtitle(paste0("Correlaltion between the median",
                  " and IQR \n of the predictive distribution")) +
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free",
-             labeller = labeller(Horizon = my_lab))
+  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -732,15 +780,9 @@ skew_plot = read_rds(paste0(
 
 skew_plot +
   ggtitle("Quartile skewness") + 
-  facet_wrap(~Horizon, scales = "free",
-             labeller = labeller(Horizon = my_lab)) + 
-  theme(title = element_text(size = 20),
-                axis.text = element_text(size = 15),
-                axis.title = element_text(size = 15),
-                strip.text = element_text(size = 15),
-                legend.position = "bottom",
-                legend.title = element_blank(),
-                legend.text = element_text(size = 15))
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab))
+
 
 ```
 
@@ -771,6 +813,9 @@ coeff_plot_data %>%
 
 # Out-of-Sample Forecast Performance
 ## Out-of-Sample Forecast Performance
+
+\vspace{2em}
+
 \begin{itemize}
 \setlength\itemsep{2em}
 	\item
@@ -783,7 +828,8 @@ coeff_plot_data %>%
 		Staff forecast + DSGE fan chart (symmetric, constant width)
 	\end{enumerate}
 	\item
-	All models evaluated out of sample (expanding window)
+	All models evaluated out of sample (expanding window starts at
+	40 observations and adds one observation in each step)
 \end{itemize}
 
 ## Probability Integral Transform (PIT)
@@ -942,8 +988,7 @@ models_df %>%
   scale_color_viridis_d(option = "plasma") +
   scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon,
-             labeller = labeller(Horizon = my_lab))
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -985,9 +1030,7 @@ models_df %>%
   geom_col(position = "dodge") +
   xlab(NULL) + ylab(NULL) +
   scale_fill_viridis_d(option = "plasma") +
-  facet_wrap(~Horizon,
-             labeller = labeller(Horizon = my_lab))
-
+  facet_wrap(~Horizon, labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -1010,10 +1053,9 @@ models_df %>%
 
 
 # Appendix {.unlisted .unnumbered}
-## Appendix \label{quantile_reg}
-
-
+## Appendix 
 ## Quantile Regression 
+\label{QuantileReg}
 
 Model: for quantile $\tau$ and horizon $h$, 
 $$
@@ -1032,17 +1074,17 @@ $$
 \bigg\}
 $$
 
+Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
+
 \begin{flushleft}
-
-
-Note: "Quantile crossing" handled using the method of @Chernozhukov2010
-
-\hyperlink{methodology}{\beamerreturnbutton{Methodology}}
+\hyperlink{methodology}{\beamergotobutton{Methodology}}
 \end{flushleft}
 	
 	
 
-## 1st PC loadings  \label{coeffs_panel}
+## 1st PC loadings  
+
+\label{PcaLoadings}
 
 \label{pca_loadings}
 
@@ -1073,9 +1115,14 @@ plot_grid(plotlist = pca_plots)
 
 ```
 
-\hyperlink{data_partitioning}{\beamerreturnbutton{Data partitioning}}
+\vspace{-0.5em}
+
+\hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
+
 
 ## Quantile Regression Coefficients
+
+\label{CoeffPanel}
 
 ```{r coeff_panel_plot}
 
@@ -1083,7 +1130,7 @@ coeff_plot_list = map(unique(coeff_df$Horizon), function(temp_horizon){
   ggplot(coeff_df %>%
            filter(Horizon == temp_horizon),
          aes(x = Quantile, y= Coeff)) +
-    geom_col(width = 0.1) +
+    geom_col(width = 0.35) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
     xlab("Quantile") + ylab(NULL) + ggtitle(paste(temp_horizon, "quarters ahead")) + 
     facet_wrap(~ new_name, scales = "free") + 
@@ -1096,7 +1143,11 @@ plot_grid(plotlist = coeff_plot_list)
 
 ```
 
-\hyperlink{selected_coeffs}{\beamergotobutton{Selected coeffs}}
+
+\vspace{-0.5em}
+
+\hyperlink{MacroCoef}{\beamergotobutton{Macro coeff}}
+
 
 # References {.unlisted .unnumbered}
 ## References {.allowframebreaks}
