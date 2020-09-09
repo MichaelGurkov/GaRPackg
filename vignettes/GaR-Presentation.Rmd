@@ -9,7 +9,7 @@ output:
     includes:
       in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
     latex_engine: xelatex
-    slide_level: 3
+    slide_level: 2
 bibliography: "GaR.bib"
 ---
 
@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r setup}
+```{r setup, eval=TRUE}
 
 devtools::load_all()
 
@@ -313,9 +313,7 @@ models_df = models_df %>%
 
 ```
 
-
-
-### Motivation
+## Motivation
 
 \begin {itemize}
 \itemsep3em
@@ -328,28 +326,19 @@ models_df = models_df %>%
 
 	\vspace{1em}
 
-	\begin{center}
-		~
-	\begin{beamerboxesrounded}[width=0.75\linewidth]{}
-		Given current macro-financial conditions, what is the distribution of
-		expected economic growth?
-	\end{beamerboxesrounded}
-	~
-	\end{center}
+\begin{center}
+\begin{block}{}
+
+	Given current macro-financial conditions, what is the distribution of
+	expected economic growth?
+	
+\end{block}
+\end{center}
 
 \end{itemize}
 
 
-
-
-
-
-
-
-
-
-
-### Motivation
+## Motivation
 
 \centering
 Quantile Regressions of YoY GDP Growth Four Quarters Ahead
@@ -410,7 +399,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ```
 
-### The Growth at Risk (GaR) Approach
+## The Growth at Risk (GaR) Approach
 
 - Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
 * Applied to:
@@ -429,7 +418,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
   modeling efforts (joint projects with IMF)
 
 
-### Main Results
+## Main Results
 
 \begin{itemize}
 \setlength\itemsep{1.5em}
@@ -456,13 +445,13 @@ Insights may help construct a better forecasting model  (future research).
 
 
 
-### Outline
+## Outline
+
 \tableofcontents
 
 
 # Methodology and Data  
-
-### Methodology
+## Methodology
 
 
 \label{methodology}
@@ -497,7 +486,7 @@ Insights may help construct a better forecasting model  (future research).
 
 
 
-### Data Partitioning
+## Data Partitioning
 
 \label{DataPartitioning}
 
@@ -542,7 +531,7 @@ Sample: 1997Q3-2019Q4
 
 
 # Estimation Results 
-### $1^{st}$ Principal Components 
+## $1^{st}$ Principal Components 
 
 
 \label{PcaTimeseries}
@@ -572,14 +561,6 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
 
-\vspace{-2em}
-
-\flushright
-
-\hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
-
-
-
 
 \flushright
 
@@ -587,7 +568,7 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \hyperlink{data_partitioning}{\beamerreturnbutton{Data partitioning}}
 
-### Macro shows cyclical pattern (high growth in the short term, low in the long term) 
+## Macro shows cyclical pattern (high growth in the short term, low in the long term) 
 
 \label{MacroCoef}
 
@@ -616,7 +597,7 @@ ggplot(coeff_df %>%
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
-### Fin.Cycle contributes to growth in the short term, and to risks in the long term
+## Fin.Cycle contributes to growth in the short term, and to risks in the long term
 
 ```{r fin_cycle_plot, fig.height=6.5}
 
@@ -640,7 +621,7 @@ ggplot(coeff_df %>%
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
 
 
-### Volatility Paradox
+## Volatility Paradox
 
 \vspace{-1em}
 
@@ -695,7 +676,7 @@ ggplot(coeff_df %>%
 
 
 ## In-sample Properties of Risks to Growth
-### Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
+## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
 
 ```{r plot_events_plot}
@@ -756,7 +737,7 @@ ggplot() +
 ```
 
 
-### The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
+## The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
 
 ```{r plot_factor_decomposition}
 
@@ -778,7 +759,7 @@ factors_df %>%
 
 ```
 
-### Forecast Median and Dispersion are Negatively Correlated
+## Forecast Median and Dispersion are Negatively Correlated
 
 ```{r plot_median_iqr_scatter}
 
@@ -797,7 +778,7 @@ results %>%
 ```
 
 
-### Risks to Growth are generally balanced
+## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
 ```{r plot_skewness_1_quarter, fig.height=3}
@@ -833,7 +814,7 @@ df %>%
 
 
 ## Sensitivity to Variable Selection
-### Sub-Sampling Bootstrap Analysis
+## Sub-Sampling Bootstrap Analysis
 
 \vspace{1em}
 
@@ -852,7 +833,7 @@ to construct the four factors.
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
-### 5th Percentile Forecast
+## 5th Percentile Forecast
 
 ```{r, cache=TRUE, dev="png"}
 
@@ -875,7 +856,7 @@ gar_plot_df %>%
 ```
 
 
-### Symmetric Distribution
+## Symmetric Distribution
 
 ```{r plot_skew_robustness, cache=TRUE, dev="png"}
 
@@ -892,7 +873,7 @@ skew_plot +
 
 ```
 
-### "Volatility Paradox"
+## "Volatility Paradox"
 
 Financial Cycle coefficients at different quantiles (stacked histograms)
 
@@ -917,7 +898,7 @@ coeff_plot_data %>%
 ```
 
 
-### Negative Correlation between Median and Dispersion
+## Negative Correlation between Median and Dispersion
 
 ```{r plot_median_iqr_correlations}
 
@@ -941,7 +922,7 @@ med_iqr_plot_df %>%
 
 
 # Out-of-Sample Forecast Performance
-### Out-of-Sample Forecast Performance
+## Out-of-Sample Forecast Performance
 
 \vspace{2em}
 
@@ -961,7 +942,7 @@ med_iqr_plot_df %>%
 	40 observations and adds one observation in each step)
 \end{itemize}
 
-### Quantile R-Squared
+## Quantile R-Squared
 Quantile R-sq. [@Giglio2016] compares forecast performance to a
 constant quantile benchmark:
 
@@ -985,7 +966,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 
 
-### Quantile R-Squared
+## Quantile R-Squared
 
 ```{r plot_r2_score}
 
@@ -1004,7 +985,7 @@ models_df %>%
 ```
 
 
-### Conclusion
+## Conclusion
 
 \begin{itemize}
 \setlength\itemsep{2em}
@@ -1022,9 +1003,8 @@ models_df %>%
 
 
 # Appendix {.unlisted .unnumbered}
-
-### Appendix 
-### Probability Integral Transform (PIT)
+## Appendix 
+## Probability Integral Transform (PIT)
 For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
 	$$
 	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
@@ -1040,7 +1020,7 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
 \end{itemize}
 
-### Probability Integral Transform (PIT)
+## Probability Integral Transform (PIT)
 
 
 ```{r plot_pit_score}
@@ -1064,9 +1044,8 @@ models_df %>%
 ```
 
 
-### Quantile Regression 
+## Quantile Regression 
 
->>>>>>> 1679b254c97220661e8e5c50cbae78bae47f410a
 \label{QuantileReg}
 
 Model: for quantile $\tau$ and horizon $h$, 
@@ -1094,7 +1073,7 @@ Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 	
 	
 
-### 1st PC loadings  
+## 1st PC loadings  
 
 \label{PcaLoadings}
 
@@ -1132,7 +1111,7 @@ plot_grid(plotlist = pca_plots)
 \hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
 
 
-### Quantile Regression Coefficients
+## Quantile Regression Coefficients
 
 
 \label{CoeffPanel}
@@ -1163,6 +1142,6 @@ plot_grid(plotlist = coeff_plot_list)
 
 
 # References {.unlisted .unnumbered}
-### References {.allowframebreaks}
+## References {.allowframebreaks}
 
 <div id="refs"></div>
