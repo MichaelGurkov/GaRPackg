@@ -260,6 +260,7 @@ temp_plot = temp_df %>%
               aes(intercept = my_int,
                   slope = my_slope,
                   color = Quantile)) +
+  scale_color_manual(values = c("green","black","red")) + 
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1)) +
   scale_y_continuous(
@@ -285,21 +286,36 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ## The Growth at Risk (GaR) Approach
 
-- Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
-* Applied to:
-  + Advanced economies [@Aikman2018;@Alessandri2019]
-  + Developing economies [@Komatsuzaki2019; @Bespalova2019]
+\vspace{1em}
 
 * GaR is a linear model of density forecast
   + Based on quantile regression
   + Parsimonious
   + Easy to interpret
 
-* Possible uses:
-  1. Regular assessment of risks (e.g., tracking 5th
-  percentile of forecast)
-  2. Provide empirical evidence to support macro-financial
-  modeling efforts (joint projects with IMF)
+\vspace{1em}
+
+* Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
+
+\vspace{1em}
+
+* Applied to:
+  + Advanced economies [@Aikman2018;@Alessandri2019]
+  + Developing economies [@Komatsuzaki2019; @Bespalova2019]
+
+
+## Contribution
+
+\vspace{2em}
+
+* Improve understanding of macro-financial linkages in Israel:
+  + Provide empirical evidence to support macro-financial modeling
+
+\vspace{2em}
+
+* Tools for regular assessment of risks:
+  + 5th percentile of forecast
+  + fan charts
 
 
 ## Main Results
@@ -320,8 +336,6 @@ In-sample properties of the predictive distribution:
 These properties are robust to variable selection.
 \item
 Out-of-sample forecast performance is impaired.
-\item
-Insights may help construct a better forecasting model  (future research).
 \end{itemize}
 
 
@@ -465,7 +479,7 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 \label{selected_coeffs}
 
-```{r dom_macro_plot}
+```{r dom_macro_plot, fig.height=6.5}
 
 ggplot(coeff_df %>%
          filter(new_name == "Macro") %>%
@@ -473,8 +487,8 @@ ggplot(coeff_df %>%
          aes(x = Quantile, y= Coeff)) +
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-  labs(x = "Quantile", y = "",
-       title = "Macro coefficients") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab("Quantile") + ylab("GDP growth (YoY)") + ggtitle("Macro coefficients") + 
   facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab))
 
 
@@ -498,8 +512,9 @@ ggplot(coeff_df %>%
          aes(x = Quantile, y= Coeff)) +
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-  labs(x = "Quantile", y = "",
-       title = "Fin.Cycle coefficients") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab("Quantile") + ylab("GDP growth (YoY)") + 
+  ggtitle("Fin. Cycle coefficients") + 
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab))
 
 ```
@@ -693,6 +708,7 @@ df %>%
   select(Date,gdp_us, gdp_euro, GDP) %>%
   filter(Date < as.yearqtr("2020 Q1")) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = GDP) %>%
+  mutate(across(-Date, ~scale(.,center = TRUE, scale = FALSE))) %>% 
   pivot_longer(-Date) %>%
   ggplot(aes(x = value, fill = name)) +
   geom_density(alpha = 0.5) + 
@@ -745,46 +761,6 @@ gar_plot_df %>%
 ```
 
 
-## Negative Correlation between Median and Dispersion
-
-```{r plot_median_iqr_correlations}
-
-med_iqr_plot_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE")),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\med_iqr_plot_data.RDS"))
-  
-med_iqr_plot_df %>% 
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = cor)) +
-  geom_histogram() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste0("Correlaltion between the median",
-                 " and IQR \n of the predictive distribution")) +
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab))
-
-```
-
-
-
-## Symmetric Distribution
-
-```{r plot_skew_robustness, cache=TRUE,dev="png"}
-
-skew_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
-
-skew_plot +
-  ggtitle("Quartile skewness") + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab))
-
-
-```
-
 ## "Volatility Paradox"
 
 Financial Cycle coefficients at different quantiles (stacked histograms)
@@ -806,6 +782,48 @@ coeff_plot_data %>%
   facet_wrap(~Horizon,scales = "free",nrow = 2,
              labeller = labeller(Horizon = my_lab)) + 
   theme(legend.title = element_text(size = 15))
+
+```
+
+
+## Negative Correlation between Median and Dispersion
+
+```{r plot_median_iqr_correlations}
+
+med_iqr_plot_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
+  "GaR_Data\\med_iqr_plot_data.RDS"))
+  
+med_iqr_plot_df %>% 
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
+  ggplot(aes(x = cor)) +
+  geom_histogram() +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle(paste0("Correlaltion between the median",
+                 " and IQR \n of the predictive distribution")) +
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
+  facet_wrap(~Horizon, scales = "free_y",
+             labeller = labeller(Horizon = my_lab))
+
+```
+
+
+
+## Symmetric Distribution
+
+```{r plot_skew_robustness, cache=TRUE,dev="png"}
+
+skew_plot = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\",
+  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
+
+skew_plot +
+  ggtitle("Quartile skewness") + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab))
+
 
 ```
 
@@ -1039,15 +1057,15 @@ models_df %>%
 \begin{itemize}
 \setlength\itemsep{2em}
   \item
-  The Financial Cycle (Credit and assets prices) is correlated with higher growth
+  The Financial Cycle (credit and assets prices) is correlated with higher growth
   in the short term and elevated risks in the long term.
   \item
   Growth distribution in Israel is "balanced" and unskewed
   \item
   Forecast uncertainty rises when the median forecast decreases
   \item
-  Future effort will be devoted to development of forecasting tool extension
-  to another fields (Inflation at Risk)
+  Future effort will be devoted to development of a forecasting tool
+  and extension to other fields (Inflation at Risk)
 \end{itemize}
 
 
