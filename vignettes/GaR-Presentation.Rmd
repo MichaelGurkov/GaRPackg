@@ -565,7 +565,6 @@ ggplot(coeff_df %>%
 			
 \end{tikzpicture}
 
->>>>>>> fe61bfdb70e19ac75b589029cfac1bb4525a869b
 # In-sample Properties of Risks to Growth
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
