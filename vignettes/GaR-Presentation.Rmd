@@ -189,6 +189,129 @@ factors_df = factors_df %>%
 
 ```
 
+
+
+```{r make_df}
+
+realized_df = df %>%
+  filter(Date < as.yearqtr("2020 Q1")) %>%
+  select(Date, GDP) %>%
+  filter(complete.cases(.)) %>%
+  rename(realized = GDP) %>%
+  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>%
+  select(-Date) %>%
+  select(Forecast_Period, realized) %>%
+  as_tibble()
+
+benchmark_df = get.gar.forecast(
+  partitions_list = NULL,
+  vars_df = df %>% filter(Date < as.yearqtr("2020 Q1")),
+  target_var_name = "GDP",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  win_len = 40,
+  win_type_expanding = TRUE) %>%
+  mutate(Forecast_Period = paste(
+    Date + as.numeric(Horizon) * 0.25 - 1,
+    Date + as.numeric(Horizon) * 0.25,
+    sep = "-"
+    )) %>%
+  mutate(Horizon = as_factor(Horizon)) %>%
+  rename(benchmark = GaR_forecast)
+
+staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>%
+  as_tibble() %>%
+  rename(prediction = Staff_Forecast)
+
+staff_forecast_df = list(
+  name = "Staff",
+  partition = list(staff = NA),
+  pred_df = staff_forecast_df) %>%
+  enframe() %>%
+  pivot_wider()
+
+```
+
+
+```{r GaR_Forecast}
+
+models_df = list(GaR_Forecast = partitions_list$basic,
+                 Macro_Forecast = partitions_list$macro) %>%
+  enframe(value = "partition")
+
+models_df = models_df %>%
+  mutate(pred_df = map(partition,function(temp_part){
+
+      temp_forecast = get.gar.forecast(
+        partitions_list = temp_part,
+        vars_df = df %>% filter(Date < as.yearqtr("2020 Q1")),
+        target_var_name = "GDP",
+        horizon_list = parameters_list$horizon_list,
+        quantile_vec = parameters_list$quantile_vec,
+        pca.align.list = list(
+          Dom_FCI = list(var_name = "Spread_CPI_corp",
+                         positive_direction = FALSE),
+          Dom_Macro = list(var_name = "GDP"),
+          Global = list(var_name = "gdp_us"),
+          FinCycle = list(var_name = "Credit")
+        ),
+        win_len = 40,
+        win_type_expanding = TRUE)
+
+      temp_forecast = temp_forecast %>%
+        filter(complete.cases(.)) %>%
+        mutate(Forecast_Period = paste(
+          Date + as.numeric(Horizon) * 0.25 - 1,
+          Date + as.numeric(Horizon) * 0.25,
+          sep = "-"
+        )) %>%
+        mutate(Horizon = as_factor(Horizon)) %>%
+        rename(prediction = GaR_forecast)
+
+
+      return(temp_forecast)
+
+      }))
+
+models_df = models_df %>%
+  rbind(staff_forecast_df)
+
+models_df = models_df %>%
+  mutate(realized = map(1:nrow(.),~realized_df)) %>%
+  mutate(benchmark = map(1:nrow(.),~benchmark_df))
+
+
+```
+
+
+```{r calculate_scores}
+
+models_df = models_df %>%
+  mutate(
+    r2_score = pmap(.l = list(pred_df,realized, benchmark),
+                     .f = function(pred_df,realized, benchmark){
+                       temp_score = collect_quantile_r2_score(
+                         pred_df = pred_df,
+                         realized_df = realized,
+                         benchmark_df = benchmark)
+                       return(temp_score)
+                     })
+    ) %>%
+  mutate(
+    pit_score = pmap(.l = list(pred_df,realized),
+                     .f = function(pred_df,realized){
+                       temp_score = pred_df %>%
+                         inner_join(realized_df,
+                                    by = "Forecast_Period") %>%
+                         rename(actual_values = realized,
+                                predicted_values = prediction) %>%
+                         quantile.pit.score()
+
+                       return(temp_score)
+                     }))
+
+```
+
 ## Motivation
 
 \begin {itemize}
@@ -288,7 +411,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 \vspace{1em}
 
-* GaR is a linear model of density forecast
+* GaR is a linear model of density forecasts
   + Based on quantile regression
   + Parsimonious
   + Easy to interpret
@@ -306,16 +429,26 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 ## Contribution
 
-\vspace{2em}
+\vspace{3em}
 
-* Improve understanding of macro-financial linkages in Israel:
-  + Provide empirical evidence to support macro-financial modeling
-
-\vspace{2em}
-
-* Tools for regular assessment of risks:
-  + 5th percentile of forecast
-  + fan charts
+\begin{itemize}
+  \setlength\itemsep{3em}
+  \item
+  Improve understanding of macro-financial linkages in Israel:
+  \begin{itemize}
+    \item
+    Provide empirical evidence to support macro-financial modeling
+    (joint project with IMF)
+  \end{itemize}
+  \item
+  Tools for regular assessment of risks:
+  \begin{itemize}
+    \item
+    5th percentile of forecast
+    \item
+    State-dependent fan charts
+  \end{itemize}
+\end{itemize}
 
 
 ## Main Results
@@ -374,6 +507,9 @@ Out-of-sample forecast performance is impaired.
 	$$
 	Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{t,h}
 	$$
+	
+	\vspace{0.5em}
+	
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em}
 	\begin{flushright}
@@ -452,13 +588,13 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 ```
 
 
-\vspace{-2em}
+\vspace{-1em}
 
 \flushleft
 
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
 
-\vspace{-2em}
+\vspace{-1.5em}
 
 \flushright
 
@@ -672,7 +808,7 @@ results %>%
   mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
   ggplot(aes(x = IQR, y = q0.50)) + 
   geom_point() + 
-  geom_smooth(method = "lm") + 
+  geom_smooth(method = "lm",se = FALSE) + 
   xlab("Inter Quartile Range") + ylab("Median") + 
   facet_free(~Horizon, scales = "free",
              labeller = labeller(Horizon = my_lab)) + 
@@ -699,6 +835,8 @@ results %>%
   labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead")
 
 ```
+
+\pause
 
 Consistent with features of past GDP growth
 
@@ -822,7 +960,14 @@ skew_plot = read_rds(paste0(
 skew_plot +
   ggtitle("Quartile skewness") + 
   facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab))
+             labeller = labeller(Horizon = my_lab)) + 
+            theme(title = element_text(size = 20),
+                axis.text = element_text(size = 15),
+                axis.title = element_text(size = 15),
+                strip.text = element_text(size = 15),
+                legend.position = "bottom",
+                legend.title = element_blank(),
+                legend.text = element_text(size = 15))
 
 
 ```
@@ -848,167 +993,6 @@ skew_plot +
 	All models evaluated out of sample (expanding window starts at
 	40 observations and adds one observation in each step)
 \end{itemize}
-
-## Probability Integral Transform (PIT)
-For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
-	$$
-	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
-	$$
-\begin{itemize}
-\setlength\itemsep{1em}
-	\item
-	A model is better fitted the closer $\varphi_{\tau,h}$ is to
-	45-degree line.
-	\item
-	If the model perfectly fits the empirical  distribution, then
-	the fraction of observations falling below quantile $\tau$
-	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
-\end{itemize}
-
-## Probability Integral Transform (PIT)
-
-```{r make_df}
-
-realized_df = df %>%
-  filter(Date < as.yearqtr("2020 Q1")) %>%
-  select(Date, GDP) %>%
-  filter(complete.cases(.)) %>%
-  rename(realized = GDP) %>%
-  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>%
-  select(-Date) %>%
-  select(Forecast_Period, realized) %>%
-  as_tibble()
-
-benchmark_df = get.gar.forecast(
-  partitions_list = NULL,
-  vars_df = df %>% filter(Date < as.yearqtr("2020 Q1")),
-  target_var_name = "GDP",
-  horizon_list = parameters_list$horizon_list,
-  quantile_vec = parameters_list$quantile_vec,
-  win_len = 40,
-  win_type_expanding = TRUE) %>%
-  mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
-    sep = "-"
-    )) %>%
-  mutate(Horizon = as_factor(Horizon)) %>%
-  rename(benchmark = GaR_forecast)
-
-staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>%
-  as_tibble() %>%
-  rename(prediction = Staff_Forecast)
-
-staff_forecast_df = list(
-  name = "Staff",
-  partition = list(staff = NA),
-  pred_df = staff_forecast_df) %>%
-  enframe() %>%
-  pivot_wider()
-
-```
-
-
-```{r GaR_Forecast}
-
-models_df = list(GaR_Forecast = partitions_list$basic,
-                 Macro_Forecast = partitions_list$macro) %>%
-  enframe(value = "partition")
-
-models_df = models_df %>%
-  mutate(pred_df = map(partition,function(temp_part){
-
-      temp_forecast = get.gar.forecast(
-        partitions_list = temp_part,
-        vars_df = df %>% filter(Date < as.yearqtr("2020 Q1")),
-        target_var_name = "GDP",
-        horizon_list = parameters_list$horizon_list,
-        quantile_vec = parameters_list$quantile_vec,
-        pca.align.list = list(
-          Dom_FCI = list(var_name = "Spread_CPI_corp",
-                         positive_direction = FALSE),
-          Dom_Macro = list(var_name = "GDP"),
-          Global = list(var_name = "gdp_us"),
-          FinCycle = list(var_name = "Credit")
-        ),
-        win_len = 40,
-        win_type_expanding = TRUE)
-
-      temp_forecast = temp_forecast %>%
-        filter(complete.cases(.)) %>%
-        mutate(Forecast_Period = paste(
-          Date + as.numeric(Horizon) * 0.25 - 1,
-          Date + as.numeric(Horizon) * 0.25,
-          sep = "-"
-        )) %>%
-        mutate(Horizon = as_factor(Horizon)) %>%
-        rename(prediction = GaR_forecast)
-
-
-      return(temp_forecast)
-
-      }))
-
-models_df = models_df %>%
-  rbind(staff_forecast_df)
-
-models_df = models_df %>%
-  mutate(realized = map(1:nrow(.),~realized_df)) %>%
-  mutate(benchmark = map(1:nrow(.),~benchmark_df))
-
-
-```
-
-
-```{r calculate_scores}
-
-models_df = models_df %>%
-  mutate(
-    r2_score = pmap(.l = list(pred_df,realized, benchmark),
-                     .f = function(pred_df,realized, benchmark){
-                       temp_score = collect_quantile_r2_score(
-                         pred_df = pred_df,
-                         realized_df = realized,
-                         benchmark_df = benchmark)
-                       return(temp_score)
-                     })
-    ) %>%
-  mutate(
-    pit_score = pmap(.l = list(pred_df,realized),
-                     .f = function(pred_df,realized){
-                       temp_score = pred_df %>%
-                         inner_join(realized_df,
-                                    by = "Forecast_Period") %>%
-                         rename(actual_values = realized,
-                                predicted_values = prediction) %>%
-                         quantile.pit.score()
-
-                       return(temp_score)
-                     }))
-
-```
-
-
-```{r plot_pit_score}
-
-models_df %>%
-  select(name, pit_score) %>%
-  unnest(pit_score) %>%
-  mutate(name = map_chr(name,~.)) %>%
-  mutate(Quantile = as.numeric(Quantile)) %>%
-  mutate(Horizon = factor(Horizon,
-                          levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) +
-  geom_line() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  xlab(NULL) + ylab(NULL) +
-  scale_color_viridis_d(option = "plasma") +
-  scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
-                   labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
-
-```
-
 
 ## Quantile R-Squared
 Quantile R-sq. [@Giglio2016] compares forecast performance to a
@@ -1071,6 +1055,45 @@ models_df %>%
 
 # Appendix {.unlisted .unnumbered}
 ## Appendix 
+## Probability Integral Transform (PIT)
+For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
+	$$
+	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
+	$$
+\begin{itemize}
+\setlength\itemsep{1em}
+	\item
+	A model is better fitted the closer $\varphi_{\tau,h}$ is to
+	45-degree line.
+	\item
+	If the model perfectly fits the empirical  distribution, then
+	the fraction of observations falling below quantile $\tau$
+	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
+\end{itemize}
+
+## Probability Integral Transform (PIT)
+
+```{r plot_pit_score}
+
+models_df %>%
+  select(name, pit_score) %>%
+  unnest(pit_score) %>%
+  mutate(name = map_chr(name,~.)) %>%
+  mutate(Quantile = as.numeric(Quantile)) %>%
+  mutate(Horizon = factor(Horizon,
+                          levels = c("1","4","8","12"))) %>%
+  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) +
+  geom_line() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  xlab(NULL) + ylab(NULL) +
+  scale_color_viridis_d(option = "plasma") +
+  scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
+                   labels = c(0.05,0.25,0.5,0.75,0.95)) +
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
+
+```
+
+
 ## Quantile Regression 
 \label{QuantileReg}
 
