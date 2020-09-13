@@ -1,15 +1,8 @@
 ---
-title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
 date: "14 September, 2020"
 classoption: t
-output:
-  beamer_presentation:
-    includes:
-      in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
-    latex_engine: xelatex
-    slide_level: 2
 bibliography: "GaR.bib"
 ---
 
@@ -21,6 +14,33 @@ knitr::opts_chunk$set(
 )
 ```
 
+
+```{r }
+
+preamble_path = paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\Documents\\GaRPAckg\\vignettes",
+  "GaR-PresentationPreamble.tex")
+
+my_title = "Test"
+
+
+```
+
+
+---
+title: `r eval(my_title)`
+---
+
+
+---
+output:
+  beamer_presentation:
+    includes:
+      latex_engine: xelatex
+      slide_level: 2
+      in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
+---
 
 ## Motivation
 
