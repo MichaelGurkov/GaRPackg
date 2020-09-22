@@ -374,7 +374,7 @@ temp_plot = temp_df %>%
               aes(intercept = my_int,
                   slope = my_slope,
                   color = Quantile)) +
-  scale_color_manual(values = c("green","black","red")) + 
+  scale_color_manual(values = c("red","black","green")) + 
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1)) +
   scale_y_continuous(
@@ -852,7 +852,7 @@ df %>%
 ```
 
 
-## Sensitivity to Variable Selection
+# Sensitivity to Variable Selection{.unlisted .unnumbered}
 ## Sub-Sampling Bootstrap Analysis
 
 \vspace{1em}
