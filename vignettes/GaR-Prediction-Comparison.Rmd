@@ -69,6 +69,7 @@ staff_forecast_df = list(
 
 
 
+
 ```{r GaR_Forecast}
 
 models_df = list(GaR_Forecast = partitions_list$basic,
@@ -77,7 +78,6 @@ models_df = list(GaR_Forecast = partitions_list$basic,
 
 models_df = models_df %>%
   mutate(pred_df = map(partition,function(temp_part){
-
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
         vars_df = forecast_parameters$df,
@@ -151,7 +151,6 @@ models_df = models_df %>%
 
 <!-- Model fit evaluation -->
 
-
 The model fit evaluation which is performed according to quantile $R^{2}$.
 
 
@@ -167,8 +166,8 @@ models_df %>%
   scale_fill_viridis_d(option = "plasma") + 
   facet_wrap(~Horizon) + 
   theme(legend.position = "bottom", legend.title = element_blank())
-
 ```
+
 
 
 ```{r plot_pit_goodness_of_fit}

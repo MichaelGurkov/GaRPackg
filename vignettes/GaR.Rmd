@@ -8,7 +8,6 @@ output:
     number_sections: true
     includes:
             in_header: !expr here::here('vignettes/GaR-preamble.tex')
-
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
   %\VignetteEngine{knitr::rmarkdown}
@@ -51,14 +50,35 @@ library(stargazer)
 
 library(xtable)
 
-library(forcats)
+```
+
+
+```{r Set_parameters}
+
+# setwd(paste0(file.path(Sys.getenv("USERPROFILE")),
+#              "\\Documents\\GaRpckg\\vignettes"))
+
+results = list()
+
+parameters_list = list()
+
+parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
+
+parameters_list$horizon_list = list(1,8,12)
+
+parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
+                "Sovereigh_spread",
+                "Interbank_spread","LT_real_rate_change","Indus_prod_ind","ILS_EURO",
+                "breakeven_inflation_5_10_fwd")
 
 ```
 
 
 ```{r Get_partitions, child="Partition-Specs.Rmd"}
 
+
 ```
+
 
 
 ```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
@@ -70,54 +90,6 @@ library(forcats)
 ```{r desc_stat, child="GaR-DescriptiveStat.Rmd", eval=FALSE}
 
 ```
-
-
-
-```{r rename_vars, eval=FALSE}
-
-rename_list = list(old_names = c("GDP_F","Ind_Prod_Israel",
-                                 "Ind_Prod_advanced","ILS_USD_spread_pct",
-                                 "TA_35_impl_vol","ILS_USD_impl_vol",
-                                 "Credit",
-                                 "House_Price"),
-                   new_names = c("GDP","Ind_Prod","IP_adv",
-                                 "FX_spread","VIX_TA",
-                                 "FX_imp_vol","Credit","HousePrice"))
-
-existing <- match(rename_list$old_names,names(df))
-
-names(df)[na.omit(existing)] <- rename_list$new_names[which(!is.na(existing))]
-
-
-current_partition = lapply(current_partition, function(temp_part){
-  
-  lapply(temp_part, function(temp_name){
-  
-  ind = which(rename_list$old_names == temp_name)
-  
-  if(length(ind) == 0){
-    
-    return(temp_name)
-    
-  } else {
-    
-    
-    return(rename_list$new_names[ind])
-    
-  }
-  
-  
-  return(rename_list$new_names[])
-  
-  
-})
-
-
-})
-
-
-```
-
 
 
 ```{r Analysis}
@@ -137,8 +109,8 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Global = list(var_name = "rate_euro"),
                      FinCycle = list(var_name = "Credit")))
 
-
 ```
+
 
 
 ```{r Nowcast, eval=FALSE}
@@ -152,6 +124,7 @@ nowcast_results = run.GaR.analysis(
   pca.align.list = list(Dom_FCI = list(
     var_name = "Spread_CPI_corp",
     positive_direction = FALSE)))
+
 
 ```
 

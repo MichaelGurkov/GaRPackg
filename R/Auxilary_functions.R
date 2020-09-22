@@ -1,3 +1,4 @@
+
 #' This function returns a data_frame with list-column
 #' partition combs
 #'
@@ -17,17 +18,18 @@ get_partition_combs = function(partition_list,
 
   if(all(length(names(partition_list)) == 1 &
          names(partition_list) == "required")){
-
     temp_comb_df = partition_list %>%
       enframe %>%
       mutate(value = map(value, function(temp_vec){
 
-        temp_list = list(temp_vec)
+                temp_list = list(temp_vec)
+
 
         names(temp_list) = partition_name
 
         return(temp_list)
 
+  names(pca_obj) = names(partitions_list)[sapply(partitions_list,length) > 1]
 
       })) %>%
       rename(!!sym(partition_name) := value) %>%
@@ -45,7 +47,6 @@ get_partition_combs = function(partition_list,
       enframe %>%
       mutate(name = paste(partition_name,temp_ind, sep = "-"))
 
-
                   }) %>%
     bind_rows() %>%
     rbind(data.frame(name = paste0(partition_name,"-0"), value = ""))
@@ -54,7 +55,6 @@ get_partition_combs = function(partition_list,
 
     comb_df = comb_df %>%
       mutate(value = map(value, ~ c(.,partition_list$required)))
-
 
   }
 
@@ -66,8 +66,7 @@ get_partition_combs = function(partition_list,
 
     names(temp_list) = partition_name
 
-    return(temp_list)
-
+        return(temp_list)
 
   }))
 
@@ -76,8 +75,6 @@ get_partition_combs = function(partition_list,
 
   return(comb_df)
 
-
-
 }
 
 
@@ -85,12 +82,10 @@ get_partition_combs = function(partition_list,
 #' This function extracts the coefficients from quantile regression
 #'
 #'
-#'
 #' @param qreg_object quantile regression object
 #'
 #'
 extract.qreg.coeff.table = function(qreg_obj){
-
   coef_table = lapply(suppressWarnings(summary(qreg_obj)),
                       function(temp_list){
 
@@ -114,11 +109,7 @@ extract.qreg.coeff.table = function(qreg_obj){
                                        "Non Significant"),
                                 levels = c("Significant","Non Significant")))
 
-  return(coef_table)
-
-
-
-
+    return(coef_table)
 
 }
 

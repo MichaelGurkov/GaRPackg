@@ -46,7 +46,7 @@ gar_factors_df = lapply(
                         })
 
 names(gar_factors_df) = names(results$qreg_result)
-  
+
 
 ```
 
@@ -102,21 +102,16 @@ temp_plot = ggplot() +
 
 ```{r plot_gar_bounds_timeseries, fig.height=10}
 
-temp_df = predict_df %>% 
-  filter(Quantile %in% c("0.05","0.5","0.95")) %>% 
-  spread(key = Quantile,value = GaR) %>% 
-  mutate(`0.05`= `0.05`- `0.5`, `0.95` = `0.95` - `0.5`) %>% 
-  gather(key = Quantile,value = GaR,-Date, -Horizon)
-
 ggplot(predict_df %>% 
   filter(Quantile %in% c("0.05","0.5","0.95")),
        aes(x = Date, y = GaR, color = Quantile)) + 
   geom_line() + 
   scale_x_yearqtr() + 
-  labs(title = "GaR upper and lower quantile timeseries", x = "", y = "") + 
+  labs(title = "GaR normalized upper and lower quantile timeseries", x = "", y = "") + 
   facet_wrap(~Horizon,ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
 
 ```
 

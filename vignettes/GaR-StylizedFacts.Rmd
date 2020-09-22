@@ -17,7 +17,7 @@ factor_quantiles_df = lapply(names(results$qreg_result),
                              function(temp_name){
   
   temp_df = results$qreg_result[[temp_name]]$coefficients
-  
+
   temp_df = temp_df %>% 
   as.data.frame() %>% 
   rename_at(.vars = vars(grep("tau",names(.),value = TRUE)),
@@ -130,6 +130,7 @@ ggplot(dist_quantile_df, aes(x = Date, y = Skew)) +
 
 
 ```{r plot_mean_median_diff, fig.height=8, eval=FALSE}
+
 
 ggplot(dist_quantile_df, aes(x = Date, y = OLS - Q_0.5)) + 
   geom_line() + 
