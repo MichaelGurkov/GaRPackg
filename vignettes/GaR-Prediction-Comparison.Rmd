@@ -69,7 +69,6 @@ staff_forecast_df = list(
 
 
 
-
 ```{r GaR_Forecast}
 
 models_df = list(GaR_Forecast = partitions_list$basic,
@@ -112,12 +111,14 @@ models_df = models_df %>%
 models_df = models_df %>% 
   rbind(staff_forecast_df)
 
+
 models_df = models_df %>% 
   mutate(realized = map(1:nrow(.),~realized_df)) %>% 
   mutate(benchmark = map(1:nrow(.),~benchmark_df))
 
-
 ```
+
+\subsection{Fan charts}
 
 
 ```{r calculate_scores}

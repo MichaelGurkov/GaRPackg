@@ -1,5 +1,8 @@
 ---
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 title: "Growth at Risk model"
 institute: "Bank of Israel \\newline Research Department, Finance Division"
 author: "Michael Gurkov"
@@ -21,6 +24,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
   comment = "#>"
+<<<<<<< HEAD
 =======
 title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
@@ -42,11 +46,16 @@ knitr::opts_chunk$set(
   collapse = TRUE, echo = FALSE, message = FALSE,
   warning = FALSE, comment = "#>"
 >>>>>>> presentation
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 )
 ```
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 ```{r init_setup}
 
 devtools::load_all()
@@ -58,6 +67,7 @@ library(GaRPackg)
 
 # setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="/"),
 #        "/GaRPackg/vignettes"))
+<<<<<<< HEAD
 =======
 ```{r setup, eval=TRUE}
 
@@ -66,10 +76,13 @@ devtools::load_all()
 setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
   "\\Documents\\GaRPackg\\vignettes"))
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 
 
 ```
 
+<<<<<<< HEAD
 
 ```{r set_plot_params}
 
@@ -88,6 +101,8 @@ theme_set(theme_bw() +
 ```
 
 <<<<<<< HEAD
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 # Background
 
 \begin{itemize}
@@ -183,6 +198,7 @@ theme_set(theme_bw() +
 # Outline
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide] 
+<<<<<<< HEAD
 =======
 
 ```{r load_libraries}
@@ -1328,3 +1344,5 @@ plot_grid(plotlist = coeff_plot_list)
 
 <div id="refs"></div>
 >>>>>>> presentation
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa

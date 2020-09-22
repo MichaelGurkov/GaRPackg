@@ -44,12 +44,11 @@ pca_variance %>%
 
 ```{r plot_pca_loadings, fig.width = 10, fig.height=my_fig_height}
 
-
 pca_plots = map(names(pca_list), function(name){
 
   pca_var = round(pca_variance$Variance[
     pca_variance$Name == name] * 100,0)
-  
+
   bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +

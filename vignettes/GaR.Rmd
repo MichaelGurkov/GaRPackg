@@ -55,9 +55,6 @@ library(xtable)
 
 ```{r Set_parameters}
 
-# setwd(paste0(file.path(Sys.getenv("USERPROFILE")),
-#              "\\Documents\\GaRpckg\\vignettes"))
-
 results = list()
 
 parameters_list = list()
@@ -74,6 +71,7 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 ```
 
 
+
 ```{r Get_partitions, child="Partition-Specs.Rmd"}
 
 
@@ -85,11 +83,14 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 
 ```
 
+
 \section{Descriptive Stats}
+
 
 ```{r desc_stat, child="GaR-DescriptiveStat.Rmd", eval=FALSE}
 
 ```
+
 
 
 ```{r Analysis}
@@ -112,7 +113,6 @@ results = run.GaR.analysis(partitions_list = current_partition,
 ```
 
 
-
 ```{r Nowcast, eval=FALSE}
 
 nowcast_results = run.GaR.analysis(
@@ -124,7 +124,6 @@ nowcast_results = run.GaR.analysis(
   pca.align.list = list(Dom_FCI = list(
     var_name = "Spread_CPI_corp",
     positive_direction = FALSE)))
-
 
 ```
 

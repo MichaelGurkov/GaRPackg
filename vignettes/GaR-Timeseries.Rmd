@@ -1,4 +1,5 @@
 
+
 ```{r get_predict_df}
 
 
@@ -107,11 +108,11 @@ ggplot(predict_df %>%
        aes(x = Date, y = GaR, color = Quantile)) + 
   geom_line() + 
   scale_x_yearqtr() + 
-  labs(title = "GaR normalized upper and lower quantile timeseries", x = "", y = "") + 
+  labs(title = "GaR normalized upper and lower quantile timeseries",
+       x = "", y = "") + 
   facet_wrap(~Horizon,ncol = 1) + 
   theme_bw() + 
   theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
-
 
 ```
 
@@ -155,7 +156,6 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 
 rm(temp, gdp_df)
-
 
 ```
 
