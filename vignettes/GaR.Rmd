@@ -7,7 +7,7 @@ output:
     latex_engine: xelatex
     number_sections: true
     includes:
-            in_header: Preamble.tex
+            in_header: !expr here::here('vignettes/GaR-preamble.tex')
 
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
@@ -67,9 +67,10 @@ library(forcats)
 
 \section{Descriptive Stats}
 
-```{r desc_stat, child="GaR-DescriptiveStat.Rmd"}
+```{r desc_stat, child="GaR-DescriptiveStat.Rmd", eval=FALSE}
 
 ```
+
 
 
 ```{r rename_vars, eval=FALSE}
@@ -118,6 +119,7 @@ current_partition = lapply(current_partition, function(temp_part){
 ```
 
 
+
 ```{r Analysis}
 
 current_partition = partitions_list$basic
@@ -135,9 +137,6 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Global = list(var_name = "rate_euro"),
                      FinCycle = list(var_name = "Credit")))
 
-
-results$reg_df = results$reg_df %>% 
-  rename_all(~str_remove_all(.,pattern = "_xreg"))
 
 ```
 
@@ -166,7 +165,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{PCA results}
 
-```{r plot_pca, child="GaR-Partition-Evaluation.Rmd", eval=FALSE}
+```{r plot_pca, child="GaR-Partition-Evaluation.Rmd"}
 
 
 ```
@@ -174,27 +173,27 @@ nowcast_results = run.GaR.analysis(
 
 \section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd", eval=FALSE}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
 
 \section{GaR timeseries}
 
-```{r plot_gar, child="GaR-Timeseries.Rmd", eval=FALSE}
+```{r plot_gar, child="GaR-Timeseries.Rmd"}
 
 ```
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 
