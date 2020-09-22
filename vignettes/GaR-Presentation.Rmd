@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 <<<<<<< HEAD
 =======
-title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
+title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
 date: "14 September, 2020"
@@ -240,16 +240,16 @@ current_partition = partitions_list$basic
 
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
-                   target_var_name = "GDP",
+                   target_var_name = "gdp",
                    horizon_list = parameters_list$horizon_list,
                    quantile_vec = parameters_list$quantile_vec,
                    pca.align.list = list(
                      Dom_FCI = list(
                        var_name = "Spread_CPI_corp",
                        positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
+                     Dom_Macro = list(var_name = "gdp"),
                      Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit")))
+                     FinCycle = list(var_name = "credit")))
 
 
 ```
@@ -320,7 +320,7 @@ factors_df = map_dfr(names(results$qreg_result),function(temp_name){
     
     gar_factors_df =  t(t(data_mat) * coef_vec)
     
-    gar_factors_df = cbind(Date = results$reg_df$Date,
+    gar_factors_df = cbind(date = results$reg_df$date,
                            as.data.frame(gar_factors_df)) %>% 
       mutate(Horizon = temp_name)
     
@@ -332,7 +332,7 @@ factors_df = factors_df %>%
   rename(Macro = Dom_Macro) %>% 
   rename(`Fin. Cycle` = FinCycle) %>% 
   rename(`Fin. Conditions` = Dom_FCI) %>% 
-  pivot_longer(cols = -c(Date,Horizon), names_to = "partition")
+  pivot_longer(cols = -c(date,Horizon), names_to = "partition")
   
 
 
@@ -345,26 +345,26 @@ factors_df = factors_df %>%
 ```{r make_df}
 
 realized_df = df %>%
-  filter(Date < as.yearqtr("2020 Q1")) %>%
-  select(Date, GDP) %>%
+  filter(date < as.yearqtr("2020 Q1")) %>%
+  select(date, gdp) %>%
   filter(complete.cases(.)) %>%
-  rename(realized = GDP) %>%
-  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>%
-  select(-Date) %>%
+  rename(realized = gdp) %>%
+  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>%
+  select(-date) %>%
   select(Forecast_Period, realized) %>%
   as_tibble()
 
 benchmark_df = get.gar.forecast(
   partitions_list = NULL,
-  vars_df = df %>% filter(Date < as.yearqtr("2020 Q1")),
-  target_var_name = "GDP",
+  vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
+  target_var_name = "gdp",
   horizon_list = parameters_list$horizon_list,
   quantile_vec = parameters_list$quantile_vec,
   win_len = 40,
   win_type_expanding = TRUE) %>%
   mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
+    date + as.numeric(Horizon) * 0.25 - 1,
+    date + as.numeric(Horizon) * 0.25,
     sep = "-"
     )) %>%
   mutate(Horizon = as_factor(Horizon)) %>%
@@ -395,16 +395,16 @@ models_df = models_df %>%
 
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
-        vars_df = df %>% filter(Date < as.yearqtr("2020 Q1")),
-        target_var_name = "GDP",
+        vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
+        target_var_name = "gdp",
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
         pca.align.list = list(
           Dom_FCI = list(var_name = "Spread_CPI_corp",
                          positive_direction = FALSE),
-          Dom_Macro = list(var_name = "GDP"),
+          Dom_Macro = list(var_name = "gdp"),
           Global = list(var_name = "gdp_us"),
-          FinCycle = list(var_name = "Credit")
+          FinCycle = list(var_name = "credit")
         ),
         win_len = 40,
         win_type_expanding = TRUE)
@@ -412,8 +412,8 @@ models_df = models_df %>%
       temp_forecast = temp_forecast %>%
         filter(complete.cases(.)) %>%
         mutate(Forecast_Period = paste(
-          Date + as.numeric(Horizon) * 0.25 - 1,
-          Date + as.numeric(Horizon) * 0.25,
+          date + as.numeric(Horizon) * 0.25 - 1,
+          date + as.numeric(Horizon) * 0.25,
           sep = "-"
         )) %>%
         mutate(Horizon = as_factor(Horizon)) %>%
@@ -491,21 +491,21 @@ models_df = models_df %>%
 ## Motivation
 
 \centering
-Quantile Regressions of YoY GDP Growth Four Quarters Ahead
+Quantile Regressions of YoY gdp Growth Four Quarters Ahead
 
 \vspace{3mm}
 
 ```{r plot_gdp_credit}
 
 temp_df = df %>%
-  select(all_of(c("GDP","Credit"))) %>%
-  add_leads_to_target_var(target_var_name = "GDP",
+  select(all_of(c("gdp","credit"))) %>%
+  add_leads_to_target_var(target_var_name = "gdp",
                           leads_vector = 4) %>%
   filter(complete.cases(.))
 
-plot_list = map(list("GDP","Credit"), function(temp_var){
+plot_list = map(list("gdp","credit"), function(temp_var){
 
-temp_qreq = rq(paste0("GDP_4","~",temp_var),
+temp_qreq = rq(paste0("gdp_4","~",temp_var),
                tau = c(0.05,0.5,0.95),
                data = temp_df) %>%
   coefficients() %>%
@@ -519,7 +519,7 @@ temp_qreq = rq(paste0("GDP_4","~",temp_var),
 
 temp_plot = temp_df %>%
   ggplot(aes(x = !!sym(temp_var),
-             y = GDP_4)) +
+             y = gdp_4)) +
   geom_point() +
   geom_abline(data = temp_qreq,
               aes(intercept = my_int,
@@ -532,7 +532,7 @@ temp_plot = temp_df %>%
     labels = scales::percent_format(accuracy = 1)) +
   scale_color_manual(values = c("red","black","green")) + 
   xlab(paste("YoY", temp_var, "growth")) +
-  ylab((paste("YoY GDP growth 4 quarters ahead"))) +
+  ylab((paste("YoY gdp growth 4 quarters ahead"))) +
   ggtitle(temp_var) +
   theme(legend.position = "none")
 
@@ -606,7 +606,7 @@ In-sample properties of the predictive distribution:
 	\item
 	\textbf{Forecast uncertainty} rises when the median forecast decreases.
 	\item
-	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term GDP growth, but contributes to long-term downside risks.
+	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term gdp growth, but contributes to long-term downside risks.
   \end{enumerate}
 \item
 These properties are robust to variable selection.
@@ -673,7 +673,7 @@ Sample: 1997Q3-2019Q4
 	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
 	\hline
 	& & & \\
-	GDP 						& GDP - US, Euro 			& BoI rate 				& credit\\
+	gdp 						& gdp - US, Euro 			& BoI rate 				& credit\\
 	& & & \\
 	State-of-the-Economy index 	& OECD imports				& TA35 implied vol. 	& house prices \\
 	& & & \\
@@ -768,7 +768,7 @@ ggplot(coeff_df %>%
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("GDP growth (YoY)") + ggtitle("Macro coefficients") + 
+  xlab("Quantile") + ylab("gdp growth (YoY)") + ggtitle("Macro coefficients") + 
   facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab))
 
 
@@ -793,7 +793,7 @@ ggplot(coeff_df %>%
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("GDP growth (YoY)") + 
+  xlab("Quantile") + ylab("gdp growth (YoY)") + 
   ggtitle("Fin. Cycle coefficients") + 
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab))
 
@@ -881,34 +881,34 @@ events = read.csv(paste0(
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
 predict_df =  data.frame(
-  Date = results$reg_df$Date,
+  date = results$reg_df$date,
   Horizon_1 = predict(results$qreg_result$`1`,
                 newdata = results$reg_df)[,1],
   Horizon_12 = predict(results$qreg_result$`12`,
                 newdata = results$reg_df)[,1]) %>%
-  pivot_longer(cols = -Date,
+  pivot_longer(cols = -date,
                names_to = "Horizon",
                values_to = "GaR")
 
 predict_df %>%
 ggplot() +
   ylim(c(-0.12,0.08)) +
-  geom_point(aes(x = Date, y = GaR, color = Horizon)) +
-  geom_line(aes(x = Date, y = GaR, color = Horizon)) +
+  geom_point(aes(x = date, y = GaR, color = Horizon)) +
+  geom_line(aes(x = date, y = GaR, color = Horizon)) +
   geom_rect(data = recessions,
             mapping = aes(xmin = Start, xmax = End,
                           ymin = -Inf, ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
   ylab(NULL) + xlab(NULL) +
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
-  geom_point(data = . %>% filter(Date %in% events$Start),
-             aes(x = Date, y = GaR),
+  geom_point(data = . %>% filter(date %in% events$Start),
+             aes(x = date, y = GaR),
            color = "blue") +
   geom_segment(data = . %>%
-                 filter(Date %in% events$Start),
-               aes(x = Date, y = c(0.0745,0.0745,0.0745,
+                 filter(date %in% events$Start),
+               aes(x = date, y = c(0.0745,0.0745,0.0745,
                                    0.0745,-0.0745,-0.0745),
-                   xend = Date, yend = GaR),
+                   xend = date, yend = GaR),
                arrow = arrow(length = unit(0.1,"cm")),
                color = "blue") +
   geom_text(data = events,
@@ -931,13 +931,13 @@ ggplot() +
 factors_df %>%
   filter(Horizon %in% c(1,12)) %>%
   ggplot() +
-  geom_col(aes(x = Date, y = value,fill = partition),
+  geom_col(aes(x = date, y = value,fill = partition),
            position = "stack") +
   geom_line(data = . %>%
-              group_by(Date,Horizon) %>%
+              group_by(date,Horizon) %>%
               summarise(Total = sum(value),.groups = "drop") %>%
               ungroup(),
-            aes(x = Date, y = Total), size = 0.5) +
+            aes(x = date, y = Total), size = 0.5) +
   facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab), scales = "free") +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
@@ -973,8 +973,8 @@ Contrary to other countries **no evidence of skewed distribution**
 results %>%
   calculate_skew_and_iqr() %>%
   filter(Horizon == 1) %>%
-  select(Date, Skew) %>%
-  ggplot(aes(x = Date, y = Skew)) +
+  select(date, Skew) %>%
+  ggplot(aes(x = date, y = Skew)) +
   geom_line() +
   geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
              color = "blue") +
@@ -985,20 +985,20 @@ results %>%
 
 \pause
 
-Consistent with features of past GDP growth
+Consistent with features of past gdp growth
 
 ```{r plot_gdp_growth, fig.height=3}
 
 df %>%
-  select(Date,gdp_us, gdp_euro, GDP) %>%
-  filter(Date < as.yearqtr("2020 Q1")) %>% 
-  rename(US = gdp_us, Euro = gdp_euro, Israel = GDP) %>%
-  mutate(across(-Date, ~scale(.,center = TRUE, scale = FALSE))) %>% 
-  pivot_longer(-Date) %>%
+  select(date,gdp_us, gdp_euro, gdp) %>%
+  filter(date < as.yearqtr("2020 Q1")) %>% 
+  rename(US = gdp_us, Euro = gdp_euro, Israel = gdp) %>%
+  mutate(across(-date, ~scale(.,center = TRUE, scale = FALSE))) %>% 
+  pivot_longer(-date) %>%
   ggplot(aes(x = value, fill = name)) +
   geom_density(alpha = 0.5) + 
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth density")
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
 
 ```
 
@@ -1034,7 +1034,7 @@ gar_plot_df = read_rds(paste0(
   "GaR_Data\\gar_plot_df.RDS"))
 
 gar_plot_df %>% 
-  ggplot(aes(x = Date, y = GaR_fitted, group = rowname)) + 
+  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) + 
   geom_line() + 
   xlab(NULL) + ylab(NULL) + 
   gghighlight(rowname == 4599,

@@ -9,27 +9,32 @@ parameters_list$quantile_vec = c(0.05, 0.25, 0.5, 0.75, 0.95)
 parameters_list$horizon_list = list(1, 4, 8, 12)
 
 parameters_list$drop_series = c(
-  "Vacancies_Rate",
-  "Telbor_1Y",
+  "vacancies_rate",
+  "telbor_1Y",
   "STARTUP_FP",
-  "Sovereigh_spread",
-  "Interbank_spread",
-  "LT_real_rate_change",
-  "Indus_prod_ind",
-  "ILS_EURO",
+  "sovereigh_spread",
+  "interbank_spread",
+  "lt_real_rate_change",
+  "indus_prod_ind",
+  "ils_euro",
   "breakeven_inflation_5_10_fwd"
 )
 
 parameters_list$vars_to_yoy = c(
-  "Ind_Prod_us",
-  "Ind_Prod_euro",
+  "ind_prod_us",
+  "ind_prod_euro",
   "Ind_Prod_Israel",
-  "GDP",
-  "Credit",
-  "TA125_Close",
-  "House_Price",
-  "SP500",
-  "DXY",
+  "gdp",
+  "private_consumption",
+  "gov_consumption",
+  "investment",
+  "net_exports",
+  "dom_gdp",
+  "credit",
+  "ta125_close",
+  "house_price",
+  "sp500",
+  "dxy",
   "eurostoxx600",
   "state_of_economy_ind",
   "oecd_imp",
@@ -38,9 +43,10 @@ parameters_list$vars_to_yoy = c(
 )
 
 parameters_list$vars_to_diff = c(
-  "BOI_rate",
+  "boi_rate",
   "rate_us",
-  "rate_euro"
+  "rate_euro",
+  "unemployment"
   )
 
 
@@ -61,7 +67,8 @@ raw_df = import.from.fame.template(
          "\\OneDrive - Bank Of Israel\\",
          "Data\\BoI\\GaR_Data\\Working_data",
          "\\data_fame.csv")) %>% 
-  filter(Date >= as.yearqtr("1995 Q1"))
+  filter(date >= as.yearqtr("1995 Q1")) %>% 
+  rename_all(tolower)
 
 
 
@@ -72,6 +79,7 @@ raw_df = import.from.fame.template(
 ```{r Process_data}
 
 df = raw_df %>% 
+  mutate(dom_gdp = private_consumption + gov_consumption + investment) %>% 
   mutate(across(any_of(parameters_list$vars_to_yoy),
                 calculate.YoY.returns)) %>% 
   mutate(across(any_of(parameters_list$vars_to_4_ma),
@@ -83,10 +91,18 @@ df = raw_df %>%
 ```
 
 
+```{r filter_out_coronavirus}
+
+df = df %>% 
+  filter(date <= as.yearqtr("2019 Q4"))
+
+```
+
+
 ```{r fill_last_NA, eval=FALSE}
 
 df = df %>% 
-  mutate_at(vars(GDP,Credit),.funs = list(~fill.na.average(.)))
+  mutate_at(vars(gdp,credit),.funs = list(~fill.na.average(.)))
 
 ```
 

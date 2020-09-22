@@ -15,10 +15,10 @@ library(fpp3)
 
 cpi = read_csv(paste0("C:\\Users\\Misha\\OneDrive - Bank Of",
                       " Israel\\Data\\BoI\\BOI_CPI.csv"),
-               skip = 15, col_names = c("Date","CPI")) %>% 
-  mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y")) %>% 
-  filter(Date >= min(raw_df$Date)) %>% 
-  group_by(Date) %>% 
+               skip = 15, col_names = c("date","CPI")) %>% 
+  mutate(date = as.yearqtr(date, format = "%d/%m/%Y")) %>% 
+  filter(date >= min(raw_df$date)) %>% 
+  group_by(date) %>% 
   summarise(Avg_CPI = mean(CPI, na.rm = TRUE)) %>% 
   ungroup()
 
@@ -29,16 +29,16 @@ cpi = read_csv(paste0("C:\\Users\\Misha\\OneDrive - Bank Of",
 ```{r make_tsibble}
 
 temp_df = list(raw_df %>%
-                 select(Date, Credit),
+                 select(date, credit),
                cpi) %>% 
-  reduce(full_join, by = "Date")
+  reduce(full_join, by = "date")
 
 temp_df = temp_df %>% 
-  mutate(Credit_real = Credit / Avg_CPI * 
-           Avg_CPI[Date == "2000 Q1"])
+  mutate(credit_real = credit / Avg_CPI * 
+           Avg_CPI[date == "2000 Q1"])
 
 temp_df = temp_df %>%
-  as_tsibble(index = Date)
+  as_tsibble(index = date)
 
 
 ```
@@ -47,9 +47,9 @@ temp_df = temp_df %>%
 ```{r}
 
 ggplot(temp_df %>% 
-  pivot_longer(cols = c(Credit, Credit_real),
+  pivot_longer(cols = c(credit, credit_real),
                names_to = "Category", values_to = "Val"),
-  aes(x = Date, y = Val, color = Category)) + 
+  aes(x = date, y = Val, color = Category)) + 
   geom_line() + 
   theme_bw() + 
   theme(legend.position = "bottom")

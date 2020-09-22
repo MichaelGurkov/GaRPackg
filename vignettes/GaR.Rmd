@@ -99,16 +99,16 @@ current_partition = partitions_list$basic
 
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
-                   target_var_name = "GDP",
+                   target_var_name = "gdp",
                    horizon_list = parameters_list$horizon_list,
                    quantile_vec = parameters_list$quantile_vec,
                    pca.align.list = list(
                      Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
+                       var_name = "spread_cpi_corp",
                        positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
+                     Dom_Macro = list(var_name = "gdp"),
                      Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit")))
+                     FinCycle = list(var_name = "credit")))
 
 ```
 
@@ -118,7 +118,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
 nowcast_results = run.GaR.analysis(
   partitions_list = current_partition,
   vars_df =  df %>% 
-    mutate(across(c("Credit","House_Price"), interpolate)),
+    mutate(across(c("credit","house_price"), interpolate)),
   horizon_list = parameters_list$horizon_list,
   quantile_vec = parameters_list$quantile_vec,
   pca.align.list = list(Dom_FCI = list(
@@ -165,7 +165,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{Robustness}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
 
 ```
 

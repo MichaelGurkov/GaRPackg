@@ -1,9 +1,9 @@
 
 \subsection{Variable choice}
 
-Credit is an important variable, used extensively in the literature. The
+credit is an important variable, used extensively in the literature. The
 transfomation ranges from credit gap (deviation from long term trend) such as
-in @Alessandri2019 to credit to GDP ratio such as in @Aikman2019.
+in @Alessandri2019 to credit to gdp ratio such as in @Aikman2019.
 
 Financial conditions is represented either by a dedicated index (FCI) or by some
 aggregation of term spreads, interbank spreads, corporate spreads, sovereign
@@ -15,7 +15,7 @@ volatility as in [@Aikman2019]
 
 Our data includes `r ncol(df)` variables
 (at quarterly frequency) for
-`r paste(range(df$Date), collapse = "-")` period.
+`r paste(range(df$date), collapse = "-")` period.
 
 The following transformations were performed:
 
@@ -31,14 +31,14 @@ The following transformations were performed:
 ```{r plot_data_structure, fig.height=8}
 
 ggplot(df %>%
-  mutate_at(.vars = vars(-Date),
+  mutate_at(.vars = vars(-date),
             .funs = list(~is.na(.))) %>%
-  gather(key = Indicator, value = Missing, -Date) %>% 
+  gather(key = Indicator, value = Missing, -date) %>% 
     mutate(Missing = as.factor(Missing)) %>% 
     group_by(Indicator) %>% 
     mutate(Miss_count = sum(Missing == TRUE)) %>% 
     ungroup(),
-  aes(x = Date, y = reorder(Indicator, Miss_count),color = Missing)) + 
+  aes(x = date, y = reorder(Indicator, Miss_count),color = Missing)) + 
   geom_point(size = 0.6) + 
   scale_color_manual(values = c("FALSE" = "lightgray",
                                 "TRUE" = "magenta")) +

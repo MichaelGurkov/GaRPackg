@@ -282,7 +282,7 @@ quantile.pit.score = function(prediction_df){
   pit_score_df = prediction_df %>%
     group_by(Horizon, Quantile) %>%
     mutate(pit = if_else(actual_values < predicted_values,
-                         1 /length(Date),0)) %>%
+                         1 /length(date),0)) %>%
     summarise(pit = sum(pit), .groups = "drop")
 
   return(pit_score_df)

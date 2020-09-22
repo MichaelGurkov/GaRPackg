@@ -1,7 +1,7 @@
 set.seed(123)
 
 test_prediction_df = expand.grid(
-  Date = seq.Date(from = as.Date("2000-01-01"),
+  date = seq.Date(from = as.Date("2000-01-01"),
                   by = "days",
                   length.out = 5),
   Horizon = c(1,8),

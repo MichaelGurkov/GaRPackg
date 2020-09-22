@@ -13,7 +13,7 @@ theme_set(theme_bw())
 forecast_parameters = list(
   win_len = 40,
   win_type_expanding = TRUE,
-  df = df %>% filter(Date < as.yearqtr("2020Q1"))
+  df = df %>% filter(date < as.yearqtr("2020Q1"))
     )
 
 forecast_comparisons = list()
@@ -31,24 +31,24 @@ forecast_model_fit = list()
 ```{r make_df}
 
 realized_df = forecast_parameters$df %>% 
-  select(Date, GDP) %>% 
+  select(date, gdp) %>% 
   filter(complete.cases(.)) %>% 
-  rename(realized = GDP) %>% 
-  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
-  select(-Date) %>% 
+  rename(realized = gdp) %>% 
+  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>% 
+  select(-date) %>% 
   select(Forecast_Period, realized) %>% 
   as_tibble()
 
 benchmark_df = get.gar.forecast(
   partitions_list = NULL,
   vars_df = forecast_parameters$df,
-  target_var_name = "GDP",
+  target_var_name = "gdp",
   horizon_list = parameters_list$horizon_list,
   quantile_vec = parameters_list$quantile_vec,
   win_len = forecast_parameters$win_len,
   win_type_expanding = forecast_parameters$win_type_expanding) %>%          mutate(Forecast_Period = paste(
-    Date + as.numeric(Horizon) * 0.25 - 1,
-    Date + as.numeric(Horizon) * 0.25,
+    date + as.numeric(Horizon) * 0.25 - 1,
+    date + as.numeric(Horizon) * 0.25,
     sep = "-"
     )) %>%
   mutate(Horizon = as_factor(Horizon)) %>% 
@@ -80,15 +80,15 @@ models_df = models_df %>%
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
         vars_df = forecast_parameters$df,
-        target_var_name = "GDP",
+        target_var_name = "gdp",
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
         pca.align.list = list(
           Dom_FCI = list(var_name = "Spread_CPI_corp",
                          positive_direction = FALSE),
-          Dom_Macro = list(var_name = "GDP"),
+          Dom_Macro = list(var_name = "gdp"),
           Global = list(var_name = "gdp_us"),
-          FinCycle = list(var_name = "Credit")
+          FinCycle = list(var_name = "credit")
         ),
         win_len = forecast_parameters$win_len,
         win_type_expanding = forecast_parameters$win_type_expanding)
@@ -96,8 +96,8 @@ models_df = models_df %>%
       temp_forecast = temp_forecast %>% 
         filter(complete.cases(.)) %>%
         mutate(Forecast_Period = paste(
-          Date + as.numeric(Horizon) * 0.25 - 1,
-          Date + as.numeric(Horizon) * 0.25,
+          date + as.numeric(Horizon) * 0.25 - 1,
+          date + as.numeric(Horizon) * 0.25,
           sep = "-"
         )) %>%
         mutate(Horizon = as_factor(Horizon)) %>% 

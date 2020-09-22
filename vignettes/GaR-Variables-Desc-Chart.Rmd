@@ -39,7 +39,7 @@
                  left = \hp cm of volatility] {Returns};
 
 \node (fin-agg) [Header Style, draw=black,
-                 left = \hp cm of returns] {Credit};
+                 left = \hp cm of returns] {credit};
 
 
 % Domestic real branch
@@ -48,7 +48,7 @@
 
 \node (indus) [Item Style,  below =  \myvdist cm of real] {Industrial \\ production};
 
-\node (gdp) [Item Style, below = \myvdist cm of indus] {GDP};
+\node (gdp) [Item Style, below = \myvdist cm of indus] {gdp};
 
 \node (consump) [Item Style,  below =  \myvdist cm of gdp] {Consumption};
 
@@ -154,7 +154,7 @@ fill = gray!40] {Forward 5-10};
 
 \node (brent) [Item Style,  below =  \myvdist cm of non-energy-cmdty] {Brent};
 
-\node (gdp-world) [Item Style,  below =  \myvdist cm of brent] {GDP  \\
+\node (gdp-world) [Item Style,  below =  \myvdist cm of brent] {gdp  \\
   (US, Euro, Japan, UK)};
 
 \node (imp-oecd) [Item Style,  below =  \myvdist cm of gdp-world] {IMP  \\
@@ -249,7 +249,7 @@ fill = gray!40] {Forward 5-10};
 % Fin aggregates (credit) branch
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\node (credit) [Item Style,  below =  \myvdist cm of fin-agg] {Credit growth};
+\node (credit) [Item Style,  below =  \myvdist cm of fin-agg] {credit growth};
 
 
 \end{tikzpicture}

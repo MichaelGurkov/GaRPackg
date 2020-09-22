@@ -59,8 +59,8 @@ raw_data = list(osnat_list = import.osnat.data(),
 
 raw_data$raw_df = full_join(raw_data$osnat_list$osnat_df,
                             raw_data$michael_list$michael_df,
-                            by = "Date") %>% 
-  arrange(Date)
+                            by = "date") %>% 
+  arrange(date)
 
 
 ```
@@ -69,16 +69,16 @@ raw_data$raw_df = full_join(raw_data$osnat_list$osnat_df,
 ```{r Import_data}
 
 df = list(gdp_nominal = read.csv(paste0("C:\\Users\\internet\\Documents\\Data\\BOI\\",
-                              "GDP_nominal_quarterly_1995Q1-2019Q4.csv"),
+                              "gdp_nominal_quarterly_1995Q1-2019Q4.csv"),
                             stringsAsFactors = FALSE) %>% 
-       setNames(c("Date","GDP_Nominal")) %>% 
-       mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y")),
+       setNames(c("date","gdp_Nominal")) %>% 
+       mutate(date = as.yearqtr(date, format = "%d/%m/%Y")),
      gdp_real = read.csv(paste0("C:\\Users\\internet\\Documents\\Data\\BOI\\",
-                                "GDP_real_quarterly_1995Q1-2019Q4.csv"),
+                                "gdp_real_quarterly_1995Q1-2019Q4.csv"),
                          stringsAsFactors = FALSE) %>% 
-       setNames(c("Date","GDP_real")) %>% 
-       mutate(Date = as.yearqtr(Date, format = "%d/%m/%Y"))) %>% 
-  reduce(inner_join, by = "Date")
+       setNames(c("date","GDP_real")) %>% 
+       mutate(date = as.yearqtr(date, format = "%d/%m/%Y"))) %>% 
+  reduce(inner_join, by = "date")
 
 df = df %>% 
   mutate_at(.vars = vars(starts_with("GDP")),
@@ -86,9 +86,9 @@ df = df %>%
 
 df = df %>% 
   inner_join(raw_data$raw_df %>% 
-               select(Date, House_Price,Credit,BOI_rate) %>% 
-               rename(House = House_Price),
-             by = "Date")
+               select(date, house_price,credit,BOI_rate) %>% 
+               rename(House = house_price),
+             by = "date")
 
 
 ```
@@ -114,9 +114,9 @@ parameters_list$horizon_list = list(1,8,12)
 ```{r annulized_growth_rates}
 
 growth_rates = df %>% 
-  select(Date,House) %>% 
+  select(date,House) %>% 
   filter(complete.cases(.)) %>% 
-  arrange(Date) %>% 
+  arrange(date) %>% 
   mutate(Growth_1_year = (House / lag(House,4) - 1)) %>% 
   mutate(Growth_3_year = (House / lag(House,12) - 1) / 3)
 
@@ -133,7 +133,7 @@ processed_df = df %>%
             .funs = list(qoq = ~ (. / lag(.,1) - 1) * 100)) %>% 
   mutate_at(.vars = vars(GDP_Nominal,GDP_real,House),
             .funs = list(yoy = ~ (. / lag(.,4) - 1) * 100)) %>% 
-  mutate(Credit_to_GDP = GDP_Nominal / Credit) %>% 
+  mutate(credit_to_GDP = GDP_Nominal / credit) %>% 
   mutate_at(vars(House_qoq, House_yoy),.funs = list(lead = ~lead(.,4)))
 
 ```
@@ -143,7 +143,7 @@ processed_df = df %>%
 ```{r output_desc_stats, results="asis"}
 
 stargazer(processed_df %>% 
-            select_at(vars(ends_with("qoq"),ends_with("yoy"), "Credit_to_GDP")),
+            select_at(vars(ends_with("qoq"),ends_with("yoy"), "credit_to_GDP")),
           summary = TRUE, header = FALSE)
 
 ```
@@ -152,8 +152,8 @@ stargazer(processed_df %>%
 ```{r plot_house_price}
 
 ggplot(processed_df %>% 
-         select(Date, House_yoy),
-       aes(x = Date, y = House_yoy)) + 
+         select(date, House_yoy),
+       aes(x = date, y = House_yoy)) + 
   geom_line() + 
   scale_y_continuous(labels = function(x){paste0(x,"%")}) + 
   labs(x = "", y = "", title = "House price changes (YoY)") + 
@@ -169,7 +169,7 @@ ggplot(processed_df %>%
 
 ggplot(growth_rates %>% 
          select(-House) %>% 
-         gather(key = Horizon,value = Val,-Date), aes(x = Val * 100, fill = Horizon)) + 
+         gather(key = Horizon,value = Val,-date), aes(x = Val * 100, fill = Horizon)) + 
   geom_histogram(position = "dodge") + 
   scale_fill_manual(values = c(Growth_1_year = "darkgreen", Growth_3_year = "red")) + 
   theme_bw() + 

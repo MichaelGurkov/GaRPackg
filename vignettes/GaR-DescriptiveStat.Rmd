@@ -1,17 +1,26 @@
 
+```{r load_desc_libraries}
+
+library(corrplot)
+
+library(stargazer)
+
+```
+
+
 
 ```{r correlations, eval=FALSE}
 
 cor_mat = df %>% 
   select(-starts_with("staff")) %>% 
   select(-starts_with("dsge")) %>% 
-  select(-Date) %>% 
-  select(-Interbank_spread,-ILS_USD_spread_pct) %>% 
+  select(-date) %>% 
+  select(-any_of(c("interbank_spread","ils_usd_spread_pct"))) %>% 
   filter(complete.cases(.)) %>% 
   cor()
 
 
-corrplot(cor_mat,order = "hclust",addrect = 5)
+corrplot::corrplot(cor_mat,order = "hclust",addrect = 5)
 
 ```
 
@@ -22,12 +31,12 @@ corrplot(cor_mat,order = "hclust",addrect = 5)
 plot_list = lapply(names(current_partition), function(temp_name){
   
   temp_df = df %>% 
-    select(Date, unlist(current_partition[[temp_name]])) %>% 
-    gather(key = Feature, value = Val,-Date) %>% 
+    select(date, unlist(current_partition[[temp_name]])) %>% 
+    gather(key = Feature, value = Val,-date) %>% 
     mutate(Type = if_else(Feature %in% parameters_list$vars_to_rates,
                           "Rate","Level"))
   
-  temp_plot = ggplot(temp_df,aes(x = Date, y = Val, color = Feature)) + 
+  temp_plot = ggplot(temp_df,aes(x = date, y = Val, color = Feature)) + 
     geom_line() + 
     labs(x = "", y = "", title = temp_name) + 
     facet_wrap(~Type, scales = "free") + 
@@ -50,7 +59,7 @@ names(plot_list) = names(current_partition)
 ```{r descriptive_table, results='asis'}
 
 stargazer(df %>% 
-            select(-Date,-starts_with("staff|dsge")) %>% 
+            select(-date,-starts_with("staff|dsge")) %>% 
             as.data.frame(),
           summary = TRUE, header = FALSE)
 

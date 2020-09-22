@@ -11,7 +11,7 @@ partitions_list  = list()
 
 partitions_list$basic = list(
   Dom_Macro = c(
-    "GDP",
+    "gdp",
     "state_of_economy_ind",
     "ue_gap"),
   Global = c(
@@ -19,7 +19,7 @@ partitions_list$basic = list(
     "gdp_euro",
     "rate_euro",
     "rate_us",
-    "US_term_spread",
+    "us_term_spread",
     "SP500",
     "eurostoxx600",
     "VIX",
@@ -36,8 +36,8 @@ partitions_list$basic = list(
     "BOI_rate"
   ),
   FinCycle = c(
-    "Credit",
-    "House_Price",
+    "credit",
+    "house_price",
     "TA125_Close"
   )
 )
@@ -51,7 +51,7 @@ partitions_list$basic = list(
 
 partitions_list$macro = list(
   Dom_Macro = c(
-    "GDP",
+    "gdp",
     "state_of_economy_ind",
     "ue_gap"),
   Global = c(
@@ -72,3 +72,124 @@ partitions_list$macro = list(
 
 
 ```
+
+
+```{r dom_gdp}
+
+partitions_list$dom_gdp = list(
+  Dom_Macro = c(
+    "dom_gdp"
+    ),
+  Dom_Fin = c(
+    "boi_rate",
+    "ta_35_impl_vol",
+    "ils_usd_impl_vol",
+    "spread_cpi_corp",
+    "term_spread",
+    "sovereigh_spread",
+    "credit",
+    "house_price",
+    "ta125_close"
+    ),
+  Ext_Macro = c(
+    "gdp_us",
+    "gdp_euro",
+    "oecd_imp",
+    "net_exports"
+  ),
+  Ext_Fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "us_term_spread",
+    "vix",
+    "oil_p",
+    "non_energy_p"
+  )
+)
+
+```
+
+
+```{r gdp_components}
+
+partitions_list$gdp_components = list(
+  Dom_Macro = c(
+    "private_consumption",
+    "gov_consumption",
+    "investment",
+    "unemployment"),
+  Dom_Fin = c(
+    "boi_rate",
+    "ta_35_impl_vol",
+    "ils_usd_impl_vol",
+    "spread_cpi_corp",
+    "term_spread",
+    "sovereigh_spread",
+    "credit",
+    "house_price",
+    "ta125_close"
+    ),
+  Ext_Macro = c(
+    "gdp_us",
+    "gdp_euro",
+    "oecd_imp",
+    "net_exports"
+  ),
+  Ext_Fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "us_term_spread",
+    "vix",
+    "oil_p",
+    "non_energy_p"
+  )
+)
+
+```
+
+
+```{r gdp_components_fin_cycle}
+
+partitions_list$gdp_components_fin_cycle = list(
+  Dom_Macro = c(
+    "private_consumption",
+    "gov_consumption",
+    "investment",
+    "unemployment"),
+  Dom_Fin = c(
+    "boi_rate",
+    "ta_35_impl_vol",
+    "ils_usd_impl_vol",
+    "spread_cpi_corp",
+    "term_spread",
+    "sovereigh_spread"
+    ),
+  Ext_Macro = c(
+    "gdp_us",
+    "gdp_euro",
+    "oecd_imp",
+    "net_exports"
+  ),
+  Ext_Fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "us_term_spread",
+    "vix",
+    "oil_p",
+    "non_energy_p"
+  ),
+  Fin_Cycle = c(
+    "credit",
+    "house_price",
+    "ta125_close"
+  )
+)
+
+```
+

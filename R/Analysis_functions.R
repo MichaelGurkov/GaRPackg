@@ -61,6 +61,12 @@ run.GaR.analysis = function(partitions_list, vars_df,
     return_objects_list = return_objects_list
   )
 
+  if(nrow(reg_df_list$reg_df) == 0){
+
+   stop("the regression dataframe is empty")
+
+  }
+
 
 
   qreg_result = run.quant.reg(
@@ -77,9 +83,9 @@ run.GaR.analysis = function(partitions_list, vars_df,
                    temp_fitted_df =  temp_obj$fitted.values %>%
                      as.data.frame() %>%
                      setNames(quantile_vec) %>%
-                     mutate(Date = reg_df_list$reg_df$Date[
+                     mutate(date = reg_df_list$reg_df$date[
                        1:nrow(temp_obj$model)]) %>%
-                      pivot_longer(cols = -Date,
+                      pivot_longer(cols = -date,
                                    names_to = "Quantile",
                                    values_to = "GaR_fitted") %>%
                       mutate(Horizon = temp_name)
@@ -100,7 +106,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
       ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
                    data = reg_df_list$reg_df %>%
-                     select(-Date) %>%
+                     select(-date) %>%
                      select(-contains(target_var_name), all_of(dep_var)))
 
       return(ols_reg)

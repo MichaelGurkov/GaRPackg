@@ -120,7 +120,7 @@ predict_df = map(roll_cv_list$splits,
                    names_to = "Quantile",
                    values_to = "GaR_forecast") %>%
       mutate(Horizon = temp_name) %>%
-      mutate(Date = assessment_set$Date)
+      mutate(date = assessment_set$date)
 
     if(length(quantile_vec) == 1){
       temp_pred = temp_pred %>%

@@ -11,21 +11,21 @@ predict_df = lapply(names(results$qreg_result),
     
     temp_forecast  = temp_forecast %>% 
       as.data.frame() %>% 
-      mutate(Date = results$reg_df$Date) %>% 
+      mutate(date = results$reg_df$date) %>% 
       setNames(str_remove_all(names(.),"tau= "))
     
-    temp_forecast[,!colnames(temp_forecast) == "Date"] = t(apply(
-      temp_forecast[,!colnames(temp_forecast) == "Date"],1,sort))
+    temp_forecast[,!colnames(temp_forecast) == "date"] = t(apply(
+      temp_forecast[,!colnames(temp_forecast) == "date"],1,sort))
     
       temp_forecast = temp_forecast %>% 
-        gather(key = Quantile,value = GaR,-Date) %>% 
+        gather(key = Quantile,value = GaR,-date) %>% 
         mutate(Horizon = temp_name)
     
     return(temp_forecast)
   
 }) %>% 
   bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(date = as.yearqtr(date)) %>% 
   mutate(Horizon = factor(Horizon, unique(Horizon))) %>% 
   mutate(Quantile = str_replace(Quantile,"0.50","0.5"))
 
@@ -38,7 +38,7 @@ gar_factors_df = lapply(
       as.matrix() * coefficients(
         results$qreg_result[[temp_name]])[-1,1]
     
-    gar_factors_df = cbind(Date = results$reg_df$Date,
+    gar_factors_df = cbind(date = results$reg_df$date,
                            as.data.frame(gar_factors_df)) %>% 
       mutate(Horizon = temp_name)
     
@@ -56,7 +56,7 @@ names(gar_factors_df) = names(results$qreg_result)
 
 ggplot(predict_df %>% 
          filter(Quantile == "0.05"),
-       aes(x = Date, y = GaR, color = Horizon)) + 
+       aes(x = date, y = GaR, color = Horizon)) + 
   geom_line() + 
   scale_x_yearqtr() + 
   labs(title = "GaR (5% quantile) timeseries at different horizons",
@@ -73,16 +73,16 @@ gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
   
   
   plot_df = gar_factors_df[[temp_name]] %>% 
-  gather(key = Partition, value = GaR, -Date, -Horizon)
+  gather(key = Partition, value = GaR, -date, -Horizon)
 
 temp_plot = ggplot() + 
-  geom_col(data = plot_df, mapping = aes(x = Date, y = GaR,
+  geom_col(data = plot_df, mapping = aes(x = date, y = GaR,
                                          fill = Partition),
            position = "stack", size = 5) +
   geom_line(data = plot_df %>%
-              group_by(Date) %>%
+              group_by(date) %>%
               summarise(Total = sum(GaR),.groups = "drop") %>%
-              ungroup(),mapping =  aes(x = Date, y = Total)) +
+              ungroup(),mapping =  aes(x = date, y = Total)) +
   scale_fill_viridis_d(option = "plasma") +
   labs(title = paste("Growth at risk partition decomposition",
                      "\n(at", temp_name, "Horizon)"),
@@ -105,7 +105,7 @@ temp_plot = ggplot() +
 
 ggplot(predict_df %>% 
   filter(Quantile %in% c("0.05","0.5","0.95")),
-       aes(x = Date, y = GaR, color = Quantile)) + 
+       aes(x = date, y = GaR, color = Quantile)) + 
   geom_line() + 
   scale_x_yearqtr() + 
   labs(title = "GaR normalized upper and lower quantile timeseries",
@@ -120,37 +120,37 @@ ggplot(predict_df %>%
 ```{r fan_chart}
 
 gdp_df = df %>% 
-  select(Date, GDP) %>% 
+  select(date, gdp) %>% 
   filter(complete.cases(.)) %>% 
-  filter(Date >= as.yearqtr("2018 Q1"))
+  filter(date >= as.yearqtr("2018 Q1"))
 
 fan_chart_df  = predict_df %>% 
-  filter(Date == max(Date))%>% 
+  filter(date == max(date))%>% 
   spread(key = Quantile,value = GaR) %>% 
-  rename_at(vars(-Date,-Horizon),
+  rename_at(vars(-date,-Horizon),
             .funs = list(~paste0("Q_",.))) %>% 
-  mutate(Date = Date + as.numeric(as.character(Horizon)) * 0.25) %>% 
+  mutate(date = date + as.numeric(as.character(Horizon)) * 0.25) %>% 
   select(-Horizon)
  
 
 temp = fan_chart_df[nrow(fan_chart_df),]
-temp$Date = gdp_df$Date[nrow(gdp_df)]
-temp[,-1] = gdp_df$GDP[nrow(gdp_df)]
+temp$date = gdp_df$date[nrow(gdp_df)]
+temp[,-1] = gdp_df$gdp[nrow(gdp_df)]
 
 fan_chart_df = fan_chart_df %>% 
   rbind.data.frame(temp)
 
 ggplot() +
   geom_line(data = gdp_df,
-            aes(x = Date, y = GDP)) +
-  geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.05, ymax = Q_0.95),
+            aes(x = date, y = gdp)) +
+  geom_ribbon(data = fan_chart_df, aes(x = date, ymin = Q_0.05, ymax = Q_0.95),
               fill = "lightblue",
               alpha = 0.6) +
-   geom_ribbon(data = fan_chart_df, aes(x = Date, ymin = Q_0.25, ymax = Q_0.75),
+   geom_ribbon(data = fan_chart_df, aes(x = date, ymin = Q_0.25, ymax = Q_0.75),
               fill = "lightblue",
               alpha = 0.5) +
-  geom_line(data = fan_chart_df, aes(x = Date, y = Q_0.5), color = "white") +
-  labs(x = "", y = "",title = "Fan chart for GDP YoY growth rate") +
+  geom_line(data = fan_chart_df, aes(x = date, y = Q_0.5), color = "white") +
+  labs(x = "", y = "",title = "Fan chart for gdp YoY growth rate") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.5)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))

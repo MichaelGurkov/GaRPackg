@@ -2,52 +2,52 @@ data("gar_data")
 
 one_feature_part = list(
   Dom_Macro = list(
-    "GDP"
+    "gdp"
     ),
   FinCycle = list(
-    "Credit"
+    "credit"
     )
   )
 
 mix_feature_part = list(
   Dom_Macro = list(
-    "GDP",
+    "gdp",
     "Ind_Prod_Israel"
     ),
   FinCycle = list(
-    "Credit"
+    "credit"
   )
 )
 
 
 mult_feature_part = list(
   Dom_Macro = list(
-    "GDP",
+    "gdp",
     "Ind_Prod_Israel"
   ),
   FinCycle = list(
-    "Credit","House_Price"
+    "credit","house_price"
   )
 )
 
 
 test_mix_pca = gar_data %>%
-  select(Date, unlist(mix_feature_part$Dom_Macro)) %>%
+  select(date, unlist(mix_feature_part$Dom_Macro)) %>%
   pca_reduction()
 
 
 
 test_mix_df = data.frame(
-  Date = test_mix_pca$time_index,
+  date = test_mix_pca$time_index,
   Dom_Macro = test_mix_pca$pca_obj$x[,1]
   ) %>%
   inner_join(
     gar_data %>%
-      select(Date,Credit) %>%
-      mutate(FinCycle = scale(Credit)),
-    by = "Date"
+      select(date,credit) %>%
+      mutate(FinCycle = scale(credit)),
+    by = "date"
   ) %>%
-  select(Date, FinCycle, Dom_Macro)
+  select(date, FinCycle, Dom_Macro)
 
 
 
@@ -61,8 +61,8 @@ test_that("reduce_data_dimension returns one feature data",
             vars_df = gar_data,
             partition = one_feature_part)[[1]],
             expected = gar_data %>%
-              select(Date,unlist(one_feature_part)) %>%
-              mutate(across(-Date,scale))
+              select(date,unlist(one_feature_part)) %>%
+              mutate(across(-date,scale))
             )
           )
 
@@ -100,7 +100,7 @@ test_that(paste0("reduce_data_dimension skips reduction",
             partition = one_feature_part,
             return_objects_list = TRUE)[[1]],
             expected = gar_data %>%
-              select(Date,unlist(one_feature_part)) %>%
-              mutate(across(-Date,scale)))
+              select(date,unlist(one_feature_part)) %>%
+              mutate(across(-date,scale)))
 )
 

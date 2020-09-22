@@ -4,7 +4,7 @@ gar_data = gar_data %>% slice(1:40)
 
 test_params = list()
 
-test_params$target_var_name = "GDP"
+test_params$target_var_name = "gdp"
 
 test_params$horizon_list = list(4)
 
@@ -15,10 +15,10 @@ test_params$win_len = 30
 # Make reg df
 
 test_reg_df = make.quant.reg.df(
-  partitions_list = list(Macro = c("GDP","Ind_Prod_Israel"),
-                         FinCycle = c("Credit","House_Price")),
+  partitions_list = list(Macro = c("gdp","Ind_Prod_Israel"),
+                         FinCycle = c("credit","house_price")),
   vars_df = gar_data,
-  target_var_name = "GDP",
+  target_var_name = "gdp",
   horizon_list = test_params$horizon_list,
   quantile_vec = test_params$quantile_vec)[["reg_df"]]
 
@@ -93,8 +93,8 @@ test_that(
 test_that(
   "run.cross.validation produces returns correct date",
   expect_equal(
-    object = cross_validation_pred_fixed$Date[1],
-    expected = test_reg_df$Date[test_params$win_len +
+    object = cross_validation_pred_fixed$date[1],
+    expected = test_reg_df$date[test_params$win_len +
                              unlist(test_params$horizon_list)]))
 
 test_that(

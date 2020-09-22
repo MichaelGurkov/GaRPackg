@@ -21,7 +21,7 @@ if(supplied) is boolean indicator alignment direction (True means positive direc
 \item{target_var_name}{string that specifies outcome feature}
 }
 \value{
-a list with two elements : pca_obj - PCA object, time_index - Dates vector
+a list with two elements : pca_obj - PCA object, time_index - dates vector
 }
 \description{
 This function reduces dimension based on PCA method

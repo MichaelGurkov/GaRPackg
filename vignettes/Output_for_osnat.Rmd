@@ -21,16 +21,16 @@ quantile_df_osnat = lapply(names(results$qreg_result),
     
     temp_forecast  = temp_forecast %>% 
       as.data.frame() %>% 
-      mutate(Date = results$reg_df$Date) %>% 
+      mutate(date = results$reg_df$date) %>% 
       setNames(str_remove_all(names(.),"tau= ")) %>% 
-      gather(key = Quantile,value = GaR,-Date) %>% 
+      gather(key = Quantile,value = GaR,-date) %>% 
       mutate(Horizon = temp_name)
     
     return(temp_forecast)
   
 }) %>% 
   bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(date = as.yearqtr(date)) %>% 
   mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
   mutate(Quantile = str_replace(Quantile,"0.50","0.5")) %>% 
   spread(key = Quantile, value = GaR)
@@ -190,7 +190,7 @@ dist_quantile_df = results$gar_fitted_df %>%
 
 
 risk_assymetry_plot = ggplot(dist_quantile_df,
-                             aes(x = Date, y = Skew)) + 
+                             aes(x = date, y = Skew)) + 
   geom_line() + 
   geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
              color = "blue") +
@@ -217,7 +217,7 @@ ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
 dist_quantile_df = lapply(names(results$qreg_result),
                    function(temp_name){
                      
-                     date_vec = results$reg_df$Date
+                     date_vec = results$reg_df$date
                      
                      date_vec = date_vec[1:(length(date_vec) - 
                                               as.numeric(temp_name))]
@@ -226,16 +226,16 @@ dist_quantile_df = lapply(names(results$qreg_result),
                        temp_name]]$fitted.values %>% 
                        as.data.frame() %>% 
                        setNames(unlist(parameters_list$quantile_vec)) %>% 
-                       mutate(Date = date_vec) %>% 
+                       mutate(date = date_vec) %>% 
                        mutate(OLS = results$ols_reg[[temp_name]]$fitted.values) %>% 
-                       gather(key = Quantile,value = GaR,-Date) %>% 
+                       gather(key = Quantile,value = GaR,-date) %>% 
                        mutate(Horizon = temp_name)
                    
                        return(temp_df)
                      
                    }) %>% 
   bind_rows() %>% 
-  mutate(Date = as.yearqtr(Date)) %>% 
+  mutate(date = as.yearqtr(date)) %>% 
   mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
   spread(key = Quantile,value = GaR) %>% 
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
@@ -280,7 +280,7 @@ gar_factors_df = lapply(
     
     gar_factors_df =  t(t(data_mat) * coef_vec)
     
-    gar_factors_df = cbind(Date = results$reg_df$Date,
+    gar_factors_df = cbind(date = results$reg_df$date,
                            as.data.frame(gar_factors_df)) %>% 
       mutate(Horizon = temp_name)
     
@@ -304,16 +304,16 @@ gar_factors_df = lapply(gar_factors_df,function(temp_df){
 gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
   
   plot_df = gar_factors_df[[temp_name]] %>% 
-  gather(key = Partition, value = GaR, -Date, -Horizon)
+  gather(key = Partition, value = GaR, -date, -Horizon)
 
 temp_plot = ggplot() + 
-  geom_col(data = plot_df, mapping = aes(x = Date, y = GaR,
+  geom_col(data = plot_df, mapping = aes(x = date, y = GaR,
                                          fill = Partition),
            position = "stack", size = 5) +
   geom_line(data = plot_df %>%
-              group_by(Date) %>%
+              group_by(date) %>%
               summarise(Total = sum(GaR),.groups = "drop") %>%
-              ungroup(),mapping =  aes(x = Date, y = Total)) +
+              ungroup(),mapping =  aes(x = date, y = Total)) +
   scale_fill_viridis_d(option = "plasma") +
   labs(title = paste("Growth at risk partition decomposition",
                      "\n(at", temp_name, "Horizon)"),
@@ -390,7 +390,7 @@ ggsave(filename =
 ```{r summary_stat}
 
 summary_table = stargazer(df %>% 
-                select(-Date) %>% 
+                select(-date) %>% 
                 select(names(df)[names(df) %in% unlist(current_partition)]),
               summary = TRUE, header = FALSE,type = "text")
 
@@ -417,16 +417,16 @@ events = read.csv(paste0(
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
 predict_df =  data.frame(
-  Date = results$reg_df$Date,
+  date = results$reg_df$date,
   Horizon_1 = predict(results$qreg_result$`1`,
                 newdata = results$reg_df %>% 
-                  rename_at(vars(-Date, -starts_with("GDP")),
+                  rename_at(vars(-date, -starts_with("GDP")),
                             ~paste0(.,"_xreg")))[,1],
   Horizon_12 = predict(results$qreg_result$`12`,
                 newdata = results$reg_df %>% 
-                  rename_at(vars(-Date, -starts_with("GDP")),
+                  rename_at(vars(-date, -starts_with("GDP")),
                             ~paste0(.,"_xreg")))[,1]) %>% 
-  pivot_longer(cols = -Date,
+  pivot_longer(cols = -date,
                names_to = "Horizon",
                values_to = "GaR")
 
@@ -434,9 +434,9 @@ predict_df =  data.frame(
 events_plot = ggplot() + 
   ylim(c(-0.12,0.08)) + 
   geom_point(data = predict_df,
-             mapping = aes(x = Date, y = GaR, color = Horizon)) + 
+             mapping = aes(x = date, y = GaR, color = Horizon)) + 
   geom_line(data = predict_df,
-            mapping = aes(x = Date, y = GaR, color = Horizon)) + 
+            mapping = aes(x = date, y = GaR, color = Horizon)) + 
   geom_rect(data = recessions,
             mapping = aes(xmin = Start, xmax = End,
                           ymin = -Inf, ymax = Inf),
@@ -446,14 +446,14 @@ events_plot = ggplot() +
 
 events_plot = events_plot + 
   geom_point(data = gar_df %>% 
-             filter(Date %in% events$Start),
-           mapping = aes(x = Date, y = GaR),
+             filter(date %in% events$Start),
+           mapping = aes(x = date, y = GaR),
            color = "blue") + 
   geom_segment(data = gar_df %>% 
-                 filter(Date %in% events$Start) %>% 
+                 filter(date %in% events$Start) %>% 
                  slice(1:2),
-             mapping = aes(x = Date, y = c(0.0745,0.0745),
-                           xend = Date, yend = GaR),
+             mapping = aes(x = date, y = c(0.0745,0.0745),
+                           xend = date, yend = GaR),
              arrow = arrow(length = unit(0.1,"cm")),
              color = "blue") + 
   geom_text(data = events,

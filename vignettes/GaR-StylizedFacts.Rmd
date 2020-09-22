@@ -35,14 +35,14 @@ factor_quantiles_df = lapply(names(results$qreg_result),
 
 
 iqr_horizon_corr_mat = dist_quantile_df %>% 
-  select(Date,Horizon, IQR) %>% 
+  select(date,Horizon, IQR) %>% 
   spread(key = Horizon,value = IQR) %>% 
-  select(-Date) %>% 
+  select(-date) %>% 
   cor(use = "pairwise.complete.obs")
 
 
 median_iqr_corr_mat = dist_quantile_df %>% 
-  select(Date,Horizon, IQR, Q_0.5) %>%
+  select(date,Horizon, IQR, Q_0.5) %>%
   group_by(Horizon) %>% 
   summarise(Corr = cor(IQR,Q_0.5))
   
@@ -118,7 +118,7 @@ percentile from the median.
 
 ```{r plot_risk_assymetry, fig.height=8}
 
-ggplot(dist_quantile_df, aes(x = Date, y = Skew)) + 
+ggplot(dist_quantile_df, aes(x = date, y = Skew)) + 
   geom_line() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
   labs(x = "", y = "", title = "Risk asymmetry") + 
@@ -133,7 +133,7 @@ ggplot(dist_quantile_df, aes(x = Date, y = Skew)) +
 ```{r plot_mean_median_diff, fig.height=8, eval=FALSE}
 
 
-ggplot(dist_quantile_df, aes(x = Date, y = OLS - Q_0.5)) + 
+ggplot(dist_quantile_df, aes(x = date, y = OLS - Q_0.5)) + 
   geom_line() + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
   labs(x = "", y = "",

@@ -19,7 +19,7 @@ theme_set(theme_bw())
 forecast_parameters = list(
   win_len = 40,
   win_type_expanding = TRUE,
-  df = df %>% filter(Date < as.yearqtr("2020Q1"))
+  df = df %>% filter(date < as.yearqtr("2020Q1"))
     )
 
 forecast_benchmarks = list()
@@ -52,11 +52,11 @@ models_list = list(
 ```{r make_actual_gdp_df}
 
 forecast_benchmarks$actual_gdp_df = forecast_parameters$df %>% 
-  select(Date, GDP) %>% 
+  select(date, GDP) %>% 
   filter(complete.cases(.)) %>% 
   rename(GDP_actual = GDP) %>% 
-  mutate(Forecast_Period = paste(Date - 1, Date, sep = "-")) %>% 
-  select(-Date) %>% 
+  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>% 
+  select(-date) %>% 
   select(Forecast_Period, GDP_actual)
 
 
@@ -88,7 +88,7 @@ extract.comp.from.xreg.list = function(comp_name, xreg_list){
   if(comp_name %in% names(temp_df)){
     
     return(temp_df %>% 
-      select("Date", all_of(comp_name)) %>% 
+      select("date", all_of(comp_name)) %>% 
       rename(!!sym(temp_name) := !!sym(comp_name)))
     
     

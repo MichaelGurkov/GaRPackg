@@ -9,7 +9,7 @@
 category_params_df = list(
   Dom_Macro = list(
     optional = c("state_of_economy_ind", "ue_gap"),
-    required = c("GDP")
+    required = c("gdp")
   ),
   Global = list(
     optional = c(
@@ -26,8 +26,8 @@ category_params_df = list(
     required = c("gdp_us", "gdp_euro")
   ),
   FinCycle = list(
-    optional = c("TA125_Close", "House_Price"),
-    required = c("Credit")
+    optional = c("TA125_Close", "house_price"),
+    required = c("credit")
   ),
   Dom_FCI =  list(
     required = c(
@@ -71,16 +71,16 @@ feature_select_df = map(
 fit_df = feature_select_df %>% 
   mutate(gar_model = map(temp_part, run.GaR.analysis,
       vars_df = df,
-      target_var_name = "GDP",
+      target_var_name = "gdp",
       horizon_list = parameters_list$horizon_list,
       quantile_vec = parameters_list$quantile_vec,
       pca.align.list = list(
                      Dom_FCI = list(
                        var_name = "Spread_CPI_corp",
                        positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
+                     Dom_Macro = list(var_name = "gdp"),
                      Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit"))))
+                     FinCycle = list(var_name = "credit"))))
 
 ```
 
@@ -158,7 +158,7 @@ skew_plot = fit_df %>%
   rownames_to_column() %>% 
   select(rowname,skew_df) %>% 
   unnest(cols = skew_df) %>%
-  ggplot(aes(x = Date, y = Skew, group = rowname)) +
+  ggplot(aes(x = date, y = Skew, group = rowname)) +
   geom_line() +
   xlab(NULL) + ylab(NULL) + 
   ggtitle("The skewness measure for each partition") + 
@@ -203,7 +203,7 @@ gar_plot = fit_df %>%
   select(rowname, pred_df) %>% 
   unnest(cols = pred_df) %>% 
   filter(Quantile == "0.05") %>% 
-  ggplot(aes(x = Date, y = GaR_fitted, group = rowname)) + 
+  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) + 
   geom_line() +
   xlab(NULL) + ylab(NULL) + 
   ggtitle("5th percentile of predictive distribution") + 

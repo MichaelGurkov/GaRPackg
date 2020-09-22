@@ -90,9 +90,9 @@
 #                             temp_ind,".csv"),
 #                      stringsAsFactors = FALSE, header = FALSE)
 #
-#   names(temp_df) = c("Date", "PCA")
+#   names(temp_df) = c("date", "PCA")
 #
-#   temp_df$Date = as.Date(temp_df$Date)
+#   temp_df$date = as.Date(temp_df$date)
 #
 #   return(temp_df)
 #
@@ -107,9 +107,9 @@
 #                             temp_ind,".csv"),
 #                      stringsAsFactors = FALSE, header = FALSE)
 #
-#   names(temp_df) = c("Date", "PCA")
+#   names(temp_df) = c("date", "PCA")
 #
-#   temp_df$Date = as.Date(temp_df$Date)
+#   temp_df$date = as.Date(temp_df$date)
 #
 #   return(temp_df[-nrow(temp_df),])
 #
@@ -120,7 +120,7 @@
 #
 # romain_chain_df = read.csv("C:\\Users\\Misha\\Documents\\SandBox\\chain.csv",
 #                            stringsAsFactors = FALSE, header = FALSE) %>%
-#   set_names(c("Date","PCA")) %>%
+#   set_names(c("date","PCA")) %>%
 #   slice(-nrow(.))
 #
 #
@@ -128,8 +128,8 @@
 # romain_chain_df_retropolated = read.csv(
 #   "C:\\Users\\Misha\\Documents\\SandBox\\chain_retropolated.csv",
 #                                stringsAsFactors = FALSE, header = FALSE) %>%
-#   set_names(c("Date","PCA")) %>%
-#   mutate(Date = as.Date(Date)) %>%
+#   set_names(c("date","PCA")) %>%
+#   mutate(date = as.Date(date)) %>%
 #   slice(-nrow(.))
 #
 #
@@ -139,7 +139,7 @@
 #          "partitions_data.csv")) %>%
 #   select(date, domestic_fci) %>%
 #   mutate(date = as.Date(date)) %>%
-#   setNames(c("Date","PCA")) %>%
+#   setNames(c("date","PCA")) %>%
 #   slice(-nrow(.))
 #
 # # Comparison
@@ -185,11 +185,11 @@
 #
 #   target_df$PCA = target_df$PCA  * cor_signs[i]
 #
-#   temp_Date_varname = grep("[Dd]ate", names(target_df),
+#   temp_date_varname = grep("[Dd]ate", names(target_df),
 #                            value = TRUE)
 #
-#   target_ind = (!target_df[[temp_Date_varname]] %in%
-#                   chain_df [[temp_Date_varname]])
+#   target_ind = (!target_df[[temp_date_varname]] %in%
+#                   chain_df [[temp_date_varname]])
 #
 #   chain_df  = rbind.data.frame(chain_df , target_df[target_ind,])
 #
@@ -197,13 +197,13 @@
 # }
 #
 # chain_df  = chain_df  %>%
-#   arrange(Date)
+#   arrange(date)
 #
 #
 # chain_df_retropolated = chain_df %>%
-#   arrange(desc(Date)) %>%
+#   arrange(desc(date)) %>%
 #   mutate(PCA = cumsum(PCA)) %>%
-#   arrange(Date)
+#   arrange(date)
 #
 #
 # cor(chain_df$PCA, romain_chain_df$PCA)
