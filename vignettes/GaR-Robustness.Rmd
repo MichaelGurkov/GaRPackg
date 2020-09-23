@@ -16,9 +16,9 @@ category_params_df = list(
       "rate_us",
       "rate_euro",
       "US_term_spread",
-      "SP500",
+      "sp500",
       "eurostoxx600",
-      "VIX",
+      "vix",
       "oecd_imp",
       "oil_p",
       "non_energy_p"
@@ -26,19 +26,19 @@ category_params_df = list(
     required = c("gdp_us", "gdp_euro")
   ),
   FinCycle = list(
-    optional = c("TA125_Close", "house_price"),
+    optional = c("ta125_close", "house_price"),
     required = c("credit")
   ),
   Dom_FCI =  list(
     required = c(
-      "Spread_CPI_corp",
-      "BOI_rate"
+      "spread_cpi_corp",
+      "boi_rate"
     ),
     optional = c(
-      "Sovereigh_spread",
-      "Term_spread",
-      "ILS_USD_impl_vol",
-      "TA_35_impl_vol"
+      "sovereigh_spread",
+      "term_spread",
+      "ils_usd_impl_vol",
+      "ta_35_impl_vol"
     )
   )
 ) %>%
@@ -76,7 +76,7 @@ fit_df = feature_select_df %>%
       quantile_vec = parameters_list$quantile_vec,
       pca.align.list = list(
                      Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
+                       var_name = "spread_cpi_corp",
                        positive_direction = FALSE),
                      Dom_Macro = list(var_name = "gdp"),
                      Global = list(var_name = "rate_euro"),

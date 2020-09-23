@@ -20,25 +20,25 @@ partitions_list$basic = list(
     "rate_euro",
     "rate_us",
     "us_term_spread",
-    "SP500",
+    "sp500",
     "eurostoxx600",
-    "VIX",
+    "vix",
     "oecd_imp",
     "oil_p",
     "non_energy_p"
   ),
   Dom_FCI =  c(
-    "Spread_CPI_corp",
-    "Sovereigh_spread",
-    "Term_spread",
-    "ILS_USD_impl_vol",
-    "TA_35_impl_vol",
-    "BOI_rate"
+    "spread_cpi_corp",
+    "sovereigh_spread",
+    "term_spread",
+    "ils_usd_impl_vol",
+    "ta_35_impl_vol",
+    "boi_rate"
   ),
   FinCycle = c(
     "credit",
     "house_price",
-    "TA125_Close"
+    "ta125_close"
   )
 )
 
@@ -60,9 +60,9 @@ partitions_list$macro = list(
     "rate_euro",
     "rate_us",
     "US_term_spread",
-    "SP500",
+    "sp500",
     "eurostoxx600",
-    "VIX",
+    "vix",
     "oecd_imp",
     "oil_p",
     "non_energy_p"
@@ -152,9 +152,9 @@ partitions_list$gdp_components = list(
 ```
 
 
-```{r gdp_components_fin_cycle}
+```{r gdp_comp_fin_cycle_cond}
 
-partitions_list$gdp_components_fin_cycle = list(
+partitions_list$gdp_comp_fin_cycle_cond = list(
   Dom_Macro = c(
     "private_consumption",
     "gov_consumption",
@@ -193,3 +193,36 @@ partitions_list$gdp_components_fin_cycle = list(
 
 ```
 
+
+```{r gdp_comp_fin_cycle}
+
+partitions_list$gdp_comp_fin_cycle = list(
+  Dom_Macro = c(
+    "private_consumption",
+    "gov_consumption",
+    "investment",
+    "unemployment"),
+  Ext_Macro = c(
+    "gdp_us",
+    "gdp_euro",
+    "oecd_imp",
+    "net_exports"
+  ),
+  Ext_Fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "us_term_spread",
+    "vix",
+    "oil_p",
+    "non_energy_p"
+  ),
+  Fin_Cycle = c(
+    "credit",
+    "house_price",
+    "ta125_close"
+  )
+)
+
+```

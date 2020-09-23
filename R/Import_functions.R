@@ -86,7 +86,7 @@ import.staff.forecast = function(raw_df,
 
 
   staff_forecast_df_h1 = raw_df %>%
-    select(date, staff_1Q) %>%
+    select(date, staff_1q) %>%
     rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
     gather(key = Quarter, value = Forecast,-date) %>%
     filter(complete.cases(.)) %>%
@@ -101,7 +101,7 @@ import.staff.forecast = function(raw_df,
 
 
   staff_forecast_df_h4 = raw_df %>%
-    select(date, staff_1Q, staff_2Q, staff_3Q, staff_4Q) %>%
+    select(date, staff_1q, staff_2q, staff_3q, staff_4q) %>%
     rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
     gather(key = Quarter, value = Forecast,-date) %>%
     group_by(date) %>%
@@ -115,7 +115,7 @@ import.staff.forecast = function(raw_df,
 
 
   staff_forecast_df_h8 = raw_df %>%
-    select(date, staff_5Q, staff_6Q, staff_7Q, staff_8Q) %>%
+    select(date, staff_5q, staff_6q, staff_7q, staff_8q) %>%
     rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
     gather(key = Quarter, value = Forecast,-date) %>%
     group_by(date) %>%

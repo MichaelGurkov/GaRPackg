@@ -3,6 +3,8 @@
 
 library(stargazer)
 
+library(forcats)
+
 ```
 
 
@@ -71,8 +73,9 @@ staff_forecast_df = list(
 
 ```{r GaR_Forecast}
 
-models_df = list(GaR_Forecast = partitions_list$basic,
-                 Macro_Forecast = partitions_list$macro) %>% 
+models_df = list(GaR = partitions_list$basic,
+                 GDP_comp = partitions_list$gdp_components,
+                 GDP_comp_FinCycle = partitions_list$gdp_comp_fin_cycle) %>% 
   enframe(value = "partition")
 
 models_df = models_df %>%
@@ -83,13 +86,6 @@ models_df = models_df %>%
         target_var_name = "gdp",
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
-        pca.align.list = list(
-          Dom_FCI = list(var_name = "Spread_CPI_corp",
-                         positive_direction = FALSE),
-          Dom_Macro = list(var_name = "gdp"),
-          Global = list(var_name = "gdp_us"),
-          FinCycle = list(var_name = "credit")
-        ),
         win_len = forecast_parameters$win_len,
         win_type_expanding = forecast_parameters$win_type_expanding)
       
@@ -173,11 +169,26 @@ models_df %>%
 
 ```{r plot_pit_goodness_of_fit}
 
-models_df %>% 
+pit_score_df = models_df %>% 
   select(name, pit_score) %>% 
   unnest(pit_score) %>% 
   mutate(name = map_chr(name,~.)) %>% 
-  mutate(Quantile = as.numeric(Quantile)) %>% 
+  mutate(Quantile = as.numeric(Quantile))
+
+intercept_df = models_df$benchmark[[1]] %>% 
+  left_join(models_df$realized[[1]], by = "Forecast_Period") %>% 
+  rename(actual_values = realized, predicted_values = benchmark) %>% 
+  select(date,actual_values,predicted_values,Quantile, Horizon) %>% 
+  filter(complete.cases(.)) %>% 
+  quantile.pit.score() %>% 
+  mutate(name = "Intercept") %>% 
+  select(names(pit_score_df)) %>% 
+  mutate(Quantile = as.numeric(Quantile))
+
+
+pit_score_df %>% 
+  bind_rows(intercept_df) %>% 
+  filter(!name == "GaR") %>% 
   ggplot(aes(x = Quantile, y = pit, group = name, color = name)) + 
   geom_line() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
