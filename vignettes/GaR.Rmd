@@ -95,7 +95,7 @@ parameters_list$drop_series = c("Vacancies_Rate","Telbor_1Y","STARTUP_FP",
 
 ```{r Analysis}
 
-current_partition = partitions_list$basic
+current_partition = partitions_list$gdp_comp_fin_cycle
 
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
@@ -106,9 +106,10 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Dom_FCI = list(
                        var_name = "spread_cpi_corp",
                        positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "gdp"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "credit")))
+                     Dom_Macro = list(var_name = "private_consumption"),
+                     Ext_Macro = list(var_name = "gdp_us"),
+                     Ext_Fin = list(var_name = "rate_euro"),
+                     Fin_Cycle = list(var_name = "credit")))
 
 ```
 
