@@ -1,495 +1,395 @@
 
-```{r set_params}
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE, comment = "#>"
+)
+```
 
-pca_list = results$pca
 
-plot_names_list = list("Macro","Global","Fin. Conditions",
-                       "Fin. Cycle")
+```{r load_libraries}
 
-names(plot_names_list) = names(pca_list)
+library(cowplot)
+
+library(gghighlight)
+
+library(tidyselect)
+
+library(tidyverse)
+
+library(quantreg)
+
+library(corrplot)
+
+library(stargazer)
+
+library(xtable)
 
 ```
 
 
-```{r get_quantile_df_osnat}
 
-quantile_df_osnat = lapply(names(results$qreg_result),
-                               function(temp_name){
+```{r setup}
 
-    temp_forecast = predict(results$qreg_result[[temp_name]],
-                       newdata = results$reg_df)
-    
-    temp_forecast  = temp_forecast %>% 
-      as.data.frame() %>% 
-      mutate(date = results$reg_df$date) %>% 
-      setNames(str_remove_all(names(.),"tau= ")) %>% 
-      gather(key = Quantile,value = GaR,-date) %>% 
-      mutate(Horizon = temp_name)
-    
-    return(temp_forecast)
-  
-}) %>% 
-  bind_rows() %>% 
-  mutate(date = as.yearqtr(date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
-  mutate(Quantile = str_replace(Quantile,"0.50","0.5")) %>% 
-  spread(key = Quantile, value = GaR)
+devtools::load_all()
 
 
-write_csv(quantile_df_osnat, paste0(file.path(Sys.getenv("USERPROFILE"),"Desktop",fsep="\\"),
-                                    "\\quantiles.csv"))
+theme_set(theme_bw() + theme(
+  legend.position = "bottom",
+  legend.title = element_blank()))
+
+```
+
+
+
+```{r Set_parameters}
+
+results = list()
+
+parameters_list = list()
+
+parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
+
+parameters_list$horizon_list = list(1,8,12)
+
+parameters_list$drop_series = c(
+  "Vacancies_Rate",
+  "Telbor_1Y",
+  "STARTUP_FP",
+  "Sovereigh_spread",
+  "Interbank_spread",
+  "LT_real_rate_change",
+  "Indus_prod_ind",
+  "ILS_EURO",
+  "breakeven_inflation_5_10_fwd"
+)
+
+```
+
+
+```{r Get_partitions, child="Partition-Specs.Rmd"}
 
 
 ```
 
 
-```{r charts_1_vs_5}
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
 
-coeff_df = lapply(names(results$qreg_result),
-                  function(temp_name){
+```
+
+
+```{r Analysis}
+
+current_partition = partitions_list$gdp_comp_fin_cycle
+
+results = run.GaR.analysis(partitions_list = current_partition,
+                   vars_df = df,
+                   target_var_name = "gdp",
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "spread_cpi_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "private_consumption"),
+                     Ext_Macro = list(var_name = "gdp_us"),
+                     Ext_Fin = list(var_name = "rate_euro"),
+                     Fin_Cycle = list(var_name = "credit")))
+
+```
+
+
+<!-- Output -->
+
+```{r get_data}
+
+coeffs_df = results %>% 
+  extract_coeffs_from_gar_model() %>% 
+  rename_all(tolower) %>% 
+  rename(quantile = tau) %>% 
+  filter(!name == "Intercept") %>% 
+  mutate(name = str_remove_all(name, "_xreg")) %>% 
+  mutate(name = recode(name,
+                Dom_Macro = "Domestic Macro",
+                Ext_Macro = "External Macro",
+                Ext_Fin = "External Fin. Cond.",
+                Fin_Cycle = "Financial Cycle"))
   
-  temp_coeff_df = results$qreg_result[[temp_name]]$coefficients %>% 
+
+prediction_df = map_dfr(names(results$qreg_result),
+                        function(temp_name){
+  
+  temp_predict = predict(results$qreg_result[[temp_name]],
+                         newdata = results$reg_df) %>% 
     as.data.frame() %>% 
-    rename_all(.funs = list(~str_remove_all(.,"tau= "))) %>% 
-    mutate(Partition = rownames(.)) %>% 
-    gather(key = Quantile,value = Coeff, - Partition) %>% 
-    mutate(Horizon = temp_name)
-    
+    cbind(date = results$reg_df$date, horizon = temp_name) %>% 
+    rename_all(~str_remove_all(.,"tau= ")) %>% 
+    pivot_longer(-c("date", "horizon"), names_to = "quantile")
   
-  return(temp_coeff_df)
+  
+  
+})
 
-}) %>% 
-  bind_rows() %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,8,12))) %>% 
-  filter(!Partition == "(Intercept)") %>% 
-  mutate(Partition = str_remove_all(Partition,"_xreg"))
-  
-my_lab = function(string){
-  
-  paste0("h = ", string)
-  
-}
+factor_df = extract_factor_contribution_from_gar_model(results)
 
-dom_macro_plot = ggplot(coeff_df %>% 
-         filter(Partition == "Dom_Macro") %>% 
-         filter(Horizon %in% c(1,12)),
-         aes(x = Quantile, y= Coeff)) + 
+
+```
+
+```{r plot_1_12_dom_macro_fin_cycle}
+
+dom_macro_fin_cycle_plot = coeffs_df %>% 
+  filter(name %in% c("Domestic Macro", "Financial Cycle")) %>% 
+  filter(horizon %in% c(1,12)) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
+  scale_fill_manual(values = c("Significant" = "lightblue",
+                               "Non Significant" = "lightgrey")) + 
   geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "Quantile", y = "",
-       title = "Macro coefficients") + 
-  facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab)) + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-fin_cycle_plot = ggplot(coeff_df %>% 
-         filter(Partition == "FinCycle") %>% 
-         filter(Horizon %in% c(1,12)),
-         aes(x = Quantile, y= Coeff)) + 
-  geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
-  labs(x = "Quantile", y = "",
-       title = "Fin.Cycle coefficients") + 
-  facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab)) + 
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-rm(my_lab)
-
-ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   "Desktop",fsep="\\"),
-                         "\\dom_macro_plot.png"),
-       plot = dom_macro_plot,
-       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
-
-ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   "Desktop",fsep="\\"),
-                         "\\fin_cycle_plot.png"),
-       plot = fin_cycle_plot,
-       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_grid(cols = vars(name), rows = vars(horizon), scales = "free_y") + 
+  xlab("Quantile") + ylab(NULL)
 
 ```
 
-
-```{r plot_pca_loadings}
-
-pca_plots = lapply(names(pca_list), function(name){
-  
-  pca_var = round(pca_variance$Variance
-                  [pca_variance$Name == name] * 100,0)
-  
-  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
-                  Val = pca_list[[name]]$pca$rotation[,1]),
-       aes(x = reorder(Name, Val), y = Val)) +
-  geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = paste0(
-    plot_names_list[[name]], " (" ,pca_var, "%)")) +
-  coord_flip() +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5, size = 40),
-        axis.text = element_text(size = 20))
-  
-  rm(pca_var)
-  
-  return(bar_plot)
-  
-
-})
-
-panel_plot = plot_grid(plotlist = pca_plots)
-
-save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   "Desktop",fsep="\\"),
-                         "\\pca_loadings.png"),
-          plot = panel_plot, nrow = 4,ncol = 2,
-          base_height = 4,base_width = 8)
-
-
-```
-
-
-```{r plot_partiton_timeseries}
-
-
-pca_timeseries_plots = lapply(names(pca_list), function(name){
-  
-  ggplot(data.frame(x = pca_list[[name]]$time_index,
-                  y = pca_list[[name]]$pca_obj$x[,1]),
-         aes(x = x, y = y)) + 
-    geom_line() + 
-    labs(title = plot_names_list[name], x = "", y = "") + 
-    scale_x_yearqtr() + 
-    theme_bw() + 
-    theme(plot.title = element_text(hjust = 0.5, size = 40),
-          axis.text = element_text(size = 30))
-
-  })
-
-
-save_plot(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   "Desktop",fsep="\\"),
-                         "\\pca_timeseries.png"),
-          plot = plot_grid(plotlist = pca_timeseries_plots),
-          nrow = 4,ncol = 2,base_height = 4,base_width = 8)
-
-
-```
-
-
-```{r risk_assymetry}
-
-dist_quantile_df = results$gar_fitted_df %>% 
-  spread(key = Quantile,value = GaR_fitted) %>% 
-  rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
-            .funs = list(~paste0("Q_",.))) %>% 
-  group_by(Horizon) %>% 
-  mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
-           (0.5 * Q_0.75 - 0.5 * Q_0.25))
-
-
-
-risk_assymetry_plot = ggplot(dist_quantile_df,
-                             aes(x = date, y = Skew)) + 
-  geom_line() + 
-  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
-             color = "blue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
-  labs(x = "", y = "", title = "Risk asymmetry") + 
-  facet_wrap(~Horizon, scales = "free", ncol = 1) + 
-  theme_bw() + 
-  theme(legend.position = "bottom",
-        plot.title = element_text(hjust = 0.5))
-
-ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   "Desktop",fsep="\\"),
-                         "\\risk_assymetry.png"),
-       plot = risk_assymetry_plot,
-       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
-
-
-
-```
-
-
-```{r median_variance_scatter_plot}
-
-dist_quantile_df = lapply(names(results$qreg_result),
-                   function(temp_name){
-                     
-                     date_vec = results$reg_df$date
-                     
-                     date_vec = date_vec[1:(length(date_vec) - 
-                                              as.numeric(temp_name))]
-                     
-                     temp_df = results$qreg_result[[
-                       temp_name]]$fitted.values %>% 
-                       as.data.frame() %>% 
-                       setNames(unlist(parameters_list$quantile_vec)) %>% 
-                       mutate(date = date_vec) %>% 
-                       mutate(OLS = results$ols_reg[[temp_name]]$fitted.values) %>% 
-                       gather(key = Quantile,value = GaR,-date) %>% 
-                       mutate(Horizon = temp_name)
-                   
-                       return(temp_df)
-                     
-                   }) %>% 
-  bind_rows() %>% 
-  mutate(date = as.yearqtr(date)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c("1","8","12"))) %>% 
-  spread(key = Quantile,value = GaR) %>% 
-  rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
-            .funs = list(~paste0("Q_",.))) %>% 
-  group_by(Horizon) %>% 
-  mutate(IQR = Q_0.95 - Q_0.05) %>% 
-  mutate(Up_dist = Q_0.95-Q_0.5) %>% 
-  mutate(Down_dist = Q_0.5-Q_0.05) %>% 
-  mutate(RA = Up_dist - Down_dist)
-
-median_variance_plot  = ggplot(dist_quantile_df %>% 
-         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
-  geom_point() + 
-  stat_smooth(method = "lm") + 
-  facet_wrap(~Horizon) + 
-  labs(x = "Variance", y = "Median", title = "Median vs Variance") +
-  theme_bw() + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-
-ggsave(filename = paste0(file.path(Sys.getenv("USERPROFILE"),
-                                   "Desktop",fsep="\\"),
-                         "\\median_variance.png"),
-       plot = median_variance_plot,
-       device = "png",width = 5,height = 4.5,units = "in",dpi = 300)
-    
-
-```
-
-
-```{r plot_gar_factor_contribution}
-
-gar_factors_df = lapply(
-  names(results$qreg_result),function(temp_name){
-    
-    data_mat = results$reg_df %>%
-      select(names(current_partition)) %>%
-      as.matrix()
-    
-    coef_vec = coefficients(results$qreg_result[[temp_name]])[-1,1]
-    
-    gar_factors_df =  t(t(data_mat) * coef_vec)
-    
-    gar_factors_df = cbind(date = results$reg_df$date,
-                           as.data.frame(gar_factors_df)) %>% 
-      mutate(Horizon = temp_name)
-    
-    return(gar_factors_df)
- 
-                        })
-
-names(gar_factors_df) = names(results$qreg_result)
-
-gar_factors_df = lapply(gar_factors_df,function(temp_df){
-  
-  temp_df = temp_df %>% 
-    rename(Macro = Dom_Macro) %>% 
-    rename(`Fin. Cycle` = FinCycle) %>% 
-    rename(`Fin. Conditions` = Dom_FCI)
-  
-  return(temp_df)
-  
-})
-
-gar_factor_plot_list = lapply(names(gar_factors_df), function(temp_name){
-  
-  plot_df = gar_factors_df[[temp_name]] %>% 
-  gather(key = Partition, value = GaR, -date, -Horizon)
-
-temp_plot = ggplot() + 
-  geom_col(data = plot_df, mapping = aes(x = date, y = GaR,
-                                         fill = Partition),
-           position = "stack", size = 5) +
-  geom_line(data = plot_df %>%
-              group_by(date) %>%
-              summarise(Total = sum(GaR),.groups = "drop") %>%
-              ungroup(),mapping =  aes(x = date, y = Total)) +
-  scale_fill_viridis_d(option = "plasma") +
-  labs(title = paste("Growth at risk partition decomposition",
-                     "\n(at", temp_name, "Horizon)"),
-       x = "", y = "") + 
-  theme_bw() + 
-  theme(legend.position = "bottom",
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
-
-  return(temp_plot)
-
-})
-
-names(gar_factor_plot_list) = names(gar_factors_df)
-
-
-sapply(names(gar_factor_plot_list),
-       function(temp_name){
-  
-  ggsave(filename =
-           paste0(file.path(Sys.getenv("USERPROFILE"),
-                            "Desktop",fsep="\\"),
-                  "\\GaR_factor",temp_name,
-                  "_Horizon.png"),
-         plot = gar_factor_plot_list[[temp_name]],
-       device = "png",width = 5,height = 4.5,
-       units = "in",dpi = 300)
-  
-         
-         
-       })
-
-
-
-
-```
-
-
-```{r prediction_comparison}
-
-temp = forecast_model_fit[c("gar_macro_r2","gar_staff_r2")] %>% 
-  reduce(full_join,
-         by = c("Horizon","Quantile"),
-         suffix = c("_macro","_staff")) %>% 
-  rename_all(~str_remove_all(.,"_r2_score")) %>% 
-  select(-gar_staff) %>% 
-  rename_at(vars(gar_macro),.funs = ~"gar") %>% 
-  pivot_longer(cols = c(-Horizon, -Quantile),
-               names_to = "model",
-               values_to = "score")
-  
-good_fit_plot = ggplot(temp, aes(x = Quantile, y = score, fill = model)) + 
-  geom_col(position = 'dodge', width = 0.5) + 
-  scale_fill_viridis_d(labels = c("GaR", "Macro only", "Staff")) + 
-  labs(y = expression("quantile"~R^2), title = "Forecast accuracy") + 
-  facet_wrap(~Horizon,ncol = 1) + 
-  theme_bw() + 
-  theme(legend.position = "bottom",
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5))
-
-
-ggsave(filename =
-           paste0(file.path(Sys.getenv("USERPROFILE"),
-                            "Desktop",fsep="\\"),
-                  "\\good_fit_plot.png"),
-         plot = good_fit_plot,
-       device = "png",width = 5,height = 4.5,
-       units = "in",dpi = 300)
-
-```
-
-
-```{r summary_stat}
-
-summary_table = stargazer(df %>% 
-                select(-date) %>% 
-                select(names(df)[names(df) %in% unlist(current_partition)]),
-              summary = TRUE, header = FALSE,type = "text")
-
-
-write.csv(summary_table, paste0(file.path(Sys.getenv("USERPROFILE"),
-                            "Desktop",fsep="\\"),
-                  "\\summary_table.csv"))
-
-```
-
-
-```{r events_plot}
+```{r plot_historical_events}
 
 recessions = read.csv(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
   "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>% 
+  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>%
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
 events = read.csv(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
   "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\events.csv")) %>% 
+  "Data\\BoI\\GaR_Data","\\events.csv")) %>%
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
-predict_df =  data.frame(
-  date = results$reg_df$date,
-  Horizon_1 = predict(results$qreg_result$`1`,
-                newdata = results$reg_df %>% 
-                  rename_at(vars(-date, -starts_with("GDP")),
-                            ~paste0(.,"_xreg")))[,1],
-  Horizon_12 = predict(results$qreg_result$`12`,
-                newdata = results$reg_df %>% 
-                  rename_at(vars(-date, -starts_with("GDP")),
-                            ~paste0(.,"_xreg")))[,1]) %>% 
-  pivot_longer(cols = -date,
-               names_to = "Horizon",
-               values_to = "GaR")
+
+predict_df = prediction_df %>% 
+  filter(quantile == "0.05") %>% 
+  filter(horizon %in% c(1,12))
 
 
-events_plot = ggplot() + 
-  ylim(c(-0.12,0.08)) + 
+events_plot = ggplot() +
+  ylim(c(-0.12,0.08)) +
   geom_point(data = predict_df,
-             mapping = aes(x = date, y = GaR, color = Horizon)) + 
+             mapping = aes(x = date, y = value, color = horizon)) +
   geom_line(data = predict_df,
-            mapping = aes(x = date, y = GaR, color = Horizon)) + 
+            mapping = aes(x = date, y = value, color = horizon)) +
   geom_rect(data = recessions,
             mapping = aes(xmin = Start, xmax = End,
                           ymin = -Inf, ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
-  theme_bw() + 
-  theme(legend.position = "bottom", legend.title = element_blank())
+  xlab(NULL) + ylab(NULL) + 
+  scale_color_discrete(name = "Horizon") + 
+  theme_bw() +
+  theme(legend.position = "bottom")
 
-events_plot = events_plot + 
-  geom_point(data = gar_df %>% 
+events_plot = events_plot +
+  geom_point(data = predict_df %>%
              filter(date %in% events$Start),
-           mapping = aes(x = date, y = GaR),
-           color = "blue") + 
-  geom_segment(data = gar_df %>% 
-                 filter(date %in% events$Start) %>% 
-                 slice(1:2),
-             mapping = aes(x = date, y = c(0.0745,0.0745),
-                           xend = date, yend = GaR),
-             arrow = arrow(length = unit(0.1,"cm")),
-             color = "blue") + 
+           mapping = aes(x = date, y = value),
+           color = "blue") +
+  geom_segment(data = predict_df %>%
+                 filter(date %in% events$Start) %>%
+                 group_by(date) %>% 
+                 summarise(value = min(value), .groups = "drop"),
+             mapping = aes(x = date, y = c(0.0745,0.0745,0.0545),
+                           xend = date, yend = value),
+            arrow = arrow(length = unit(0.1,"cm")),
+             color = "blue") +
   geom_text(data = events,
             mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
                                           label = Event),
             color = "blue")
 
-ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
-                            "Desktop",fsep="\\"),
-                  "\\events_plot.png"),
-         plot =events_plot,
-       device = "png",width = 5,height = 4.5,
-       units = "in",dpi = 300)
+
+```
+
+```{r factor_decomposition}
+
+factor_decomposition_plot = ggplot(data = factor_df %>% 
+         mutate(Total = rowSums(across(-c("date","horizon")))) %>% 
+         pivot_longer(-c("date","horizon")) %>% 
+         filter(!name == "Total") %>% 
+         filter(horizon %in% c(1,12)),
+       aes(x = date, y = value, fill = name)) + 
+  geom_col(position = "stack") + 
+  geom_line(data = factor_df %>% 
+              mutate(Total = rowSums(across(-c("date","horizon")))) %>% 
+              pivot_longer(-c("date","horizon")) %>% 
+              filter(name == "Total") %>% 
+              filter(horizon %in% c(1,12)) %>% 
+              select(-name),inherit.aes = FALSE,aes(x = date, y = value)) + 
+  scale_fill_viridis_d(option = "plasma") + 
+  xlab(NULL) + ylab(NULL) + 
+  facet_wrap(~horizon)
+
+
+```
+
+```{r quartile_skewness_plot}
+
+quartile_skewness_plot = results %>% 
+  calculate_skew_and_iqr() %>% 
+  filter(Horizon == 1) %>% 
+  ggplot(aes(x = date, y = Skew)) + 
+  geom_line() + 
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed", color = "blue") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Quartile skewness (1Q ahead)")
+
+
+
+```
+
+<!-- Forecasts: GaR, staff, Macro -->
+
+
+```{r make_goodness_of_fit_df}
+
+realized_df = df %>% 
+  filter(date < as.yearqtr("2020Q1")) %>% 
+  select(date, gdp) %>% 
+  filter(complete.cases(.)) %>% 
+  rename(realized = gdp) %>% 
+  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>% 
+  select(-date) %>% 
+  select(Forecast_Period, realized) %>% 
+  as_tibble()
+
+benchmark_df = get.gar.forecast(
+  partitions_list = NULL,
+  vars_df = df,
+  target_var_name = "gdp",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  win_len = 40,
+  win_type_expanding = TRUE) %>%         
+  mutate(Forecast_Period = paste(
+    date + as.numeric(Horizon) * 0.25 - 1,
+    date + as.numeric(Horizon) * 0.25,
+    sep = "-"
+    )) %>%
+  mutate(Horizon = as_factor(Horizon)) %>% 
+  rename(benchmark = GaR_forecast)
+
+staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>% 
+  as_tibble() %>% 
+  rename(prediction = Staff_Forecast)
+
+staff_forecast_df = list(
+  name = "Staff",
+  partition = list(staff = NA),
+  pred_df = staff_forecast_df) %>% 
+  enframe() %>% 
+  pivot_wider()
+
+
+models_df = list(GDP_comp = partitions_list$gdp_components) %>% 
+  enframe(value = "partition") %>%
+  mutate(pred_df = map(partition,function(temp_part){
+      temp_forecast = get.gar.forecast(
+        partitions_list = temp_part,
+        vars_df = df,
+        target_var_name = "gdp",
+        horizon_list = parameters_list$horizon_list,
+        quantile_vec = parameters_list$quantile_vec,
+        win_len = 40,
+        win_type_expanding = TRUE)
+      
+      temp_forecast = temp_forecast %>% 
+        filter(complete.cases(.)) %>%
+        mutate(Forecast_Period = paste(
+          date + as.numeric(Horizon) * 0.25 - 1,
+          date + as.numeric(Horizon) * 0.25,
+          sep = "-"
+        )) %>%
+        mutate(Horizon = as_factor(Horizon)) %>% 
+        rename(prediction = GaR_forecast)
+        
+        
+      return(temp_forecast)
+      
+      })) %>% 
+  rbind(staff_forecast_df) %>% 
+  mutate(realized = map(1:nrow(.),~realized_df)) %>% 
+  mutate(benchmark = map(1:nrow(.),~benchmark_df))%>% 
+  mutate(
+    r2_score = pmap(.l = list(pred_df,realized, benchmark),
+                     .f = function(pred_df,realized, benchmark){
+                       temp_score = collect_quantile_r2_score(
+                         pred_df = pred_df,
+                         realized_df = realized,
+                         benchmark_df = benchmark)
+                       return(temp_score)
+                     })
+    ) %>% 
+  mutate(
+    pit_score = pmap(.l = list(pred_df,realized),
+                     .f = function(pred_df,realized){
+                       temp_score = pred_df %>% 
+                         inner_join(realized_df,
+                                    by = "Forecast_Period") %>% 
+                         rename(actual_values = realized,
+                                predicted_values = prediction) %>% 
+                         quantile.pit.score()
+                       
+                       return(temp_score)
+                     }))
+
+# rm(benchmark_df, realized_df)
+
 ```
 
 
-```{r plot_quant_reg_panel}
+```{r plot_r2_goodness_of_fit}
 
-sapply(names(results$qreg_result), function(temp_name){
-  
-  panel_coef_plot = plot.qreg.coeffs(results$qreg_result[temp_name],
-                               print_plot = FALSE,add.significance = TRUE)
-  
-  panel_coef_plot = panel_coef_plot + facet_wrap(~Name,
-               labeller = labeller(Name = unlist(plot_names_list)))
-  
-  ggsave(filename =   paste0(file.path(Sys.getenv("USERPROFILE"),
-                            "Desktop",fsep="\\"),
-                  "\\quantile_plot_hor_",temp_name,".png"),
-         plot = panel_coef_plot,
-       device = "png",width = 5,height = 4.5,
-       units = "in",dpi = 300)
-  
-  
-  
-})
+r2_score_plot = models_df %>% 
+  select(name, r2_score) %>% 
+  unnest(r2_score) %>% 
+  mutate(name = map_chr(name,~.)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = Quantile, y = score, fill = name)) + 
+  geom_col(position = "dodge") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Quantile R2 score") + 
+  scale_fill_viridis_d(option = "plasma") + 
+  facet_wrap(~Horizon) + 
+  theme(legend.position = "bottom", legend.title = element_blank())
+```
+
+
+
+```{r plot_pit_goodness_of_fit}
+
+pit_score_df = models_df %>% 
+  select(name, pit_score) %>% 
+  unnest(pit_score) %>% 
+  mutate(name = map_chr(name,~.)) %>% 
+  mutate(Quantile = as.numeric(Quantile)) 
+
+intercept_df = models_df$benchmark[[1]] %>% 
+  left_join(models_df$realized[[1]], by = "Forecast_Period") %>% 
+  rename(actual_values = realized, predicted_values = benchmark) %>% 
+  select(date,actual_values,predicted_values,Quantile, Horizon) %>% 
+  filter(complete.cases(.)) %>% 
+  quantile.pit.score() %>% 
+  mutate(name = "Intercept") %>% 
+  select(names(pit_score_df)) %>% 
+  mutate(Quantile = as.numeric(Quantile))
+
+
+pit_score_plot = pit_score_df %>% 
+  bind_rows(intercept_df) %>% 
+  filter(!name == "GaR") %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) + 
+  geom_line() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("PIT score") + 
+  scale_color_viridis_d(option = "plasma") + 
+  scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
+                   labels = c(0.05,0.25,0.5,0.75,0.95)) +
+  facet_wrap(~Horizon) + 
+  theme(legend.position = "bottom", legend.title = element_blank())
 
 ```
 

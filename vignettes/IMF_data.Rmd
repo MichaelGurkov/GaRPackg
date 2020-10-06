@@ -1,0 +1,193 @@
+---
+title: "Data source difference"
+---
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, error = FALSE,
+                      warning = FALSE, message = FALSE)
+
+```
+
+
+
+```{r load_libraries}
+
+library(readxl)
+
+library(lubridate)
+
+library(tidyverse)
+
+library(zoo)
+
+library(BoICredit)
+
+devtools::load_all()
+
+```
+
+
+```{r setup}
+
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+
+```
+
+
+
+```{r import_data}
+
+roman_data = read_csv(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel",
+  "\\GaR\\Data\\raw_GaR_data.csv")) %>% 
+  rename_all(tolower) %>% 
+  mutate(date = str_replace_all(date, "\\.","-")) %>% 
+  mutate(date = as.yearqtr(date, format = "%Y-%q"))
+
+df = import.from.fame.template(
+  paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+         "\\OneDrive - Bank Of Israel\\",
+         "Data\\BoI\\GaR_Data\\Working_data",
+         "\\data_fame.csv")) %>% 
+  rename_all(tolower) %>% 
+  rename(gdp_real = gdp,
+         credit_to_non_fin_sector = credit,
+         avg_cpi = infl_israel,
+         avg_house_price_index = house_price)
+
+fame_data = read_csv(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\data4IMF.csv"),
+  col_names = c("date","gdp_real","indus_prod_ind",
+                "lt_real_rate_change","interbank_spread",
+                "ils_usd","yld_imlp_cpi_bond","lt_bond_index",
+                "st_bond_index","volume_gov_bond",
+                "balance_gov_bond","ils_usd_spread_pct",
+                "inf_exp","houseprice_index"), skip = 11) %>% 
+  mutate(date = as.yearqtr(date, format = "%m/%d/%Y"))
+
+
+
+```
+
+
+
+
+```{r make_synthetic_df, eval=FALSE}
+
+df_vars = c("avg_cpi","boi_rate","spread_cpi_corp","sovereigh_spread",
+            "term_spread","ils_usd_impl_vol","ta_35_impl_vol",
+            "credit_to_non_fin_sector","avg_house_price_index",
+            "ta125_close")
+
+fame_vars = c("gdp_real","indus_prod_ind","lt_real_rate_change",
+              "ils_usd","yld_imlp_cpi_bond","lt_bond_index","st_bond_index",
+              "volume_gov_bond","balance_gov_bond","inf_exp",
+              "houseprice_index", "interbank_spread")
+
+
+new_df = inner_join(
+  x = select(df, c("date",df_vars)),
+  y = select(fame_data, c("date",fame_vars)),
+  by = "date")
+
+```
+
+
+
+```{r compare_data}
+
+compare_df = inner_join(
+  x = roman_data %>% 
+    mutate(date = as.yearqtr(date)) %>% 
+    mutate(sovereigh_spread = sovereigh_spread * 0.01) %>% 
+    mutate(avg_cpi = avg_cpi / lag(avg_cpi) - 1) %>% 
+    pivot_longer(-date),
+  y = new_df %>% 
+    pivot_longer(-date),
+  by = c("date","name"),
+  suffix = c("_roman","_osnat")
+  ) %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(percent_diff = (value_roman/value_osnat) - 1)
+
+
+
+
+```
+
+
+```{r sandox, eval=FALSE}
+
+
+  
+  
+
+```
+
+
+# Differences in data
+
+
+
+```{r plot_correl}
+
+correl_df = compare_df %>% 
+  group_by(name) %>% 
+  summarise(corr = cor(value_roman,value_osnat,
+                    use = "pairwise.complete.obs"))
+
+
+correl_df %>% 
+  ggplot(aes(x = reorder(str_to_title(name),corr), y = corr)) + 
+  geom_col() + 
+  scale_y_continuous() + 
+  coord_flip() + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Correlation between data source")
+
+
+```
+
+
+```{r plot_main_diff, eval=FALSE}
+
+compare_df %>% 
+  filter(str_detect(name,"volume_gov_bond")) %>% 
+  select(-percent_diff, -name) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(x = date, y = value, color = name)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL)
+  
+  
+
+```
+
+
+* GDP - IMF dataset is raw, BOI dataset is seasonally adjusted
+
+* Credit  - should be credit taken by business sector + households but
+  currently seems to be larger
+
+* Avg house price and houseprice index seem to be very close
+
+
+
+
+
+
+
+```{r, eval=FALSE}
+
+compare_df %>% 
+  filter(name == "sovereigh_spread") %>% 
+  pivot_longer(cols = c("value_roman","value_osnat"),
+               names_to = "source") %>% 
+  ggplot(aes(x = date, y = value, color = source)) + 
+  geom_line()
+
+```
+

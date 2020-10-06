@@ -121,7 +121,7 @@ extract.qreg.coeff.table = function(qreg_obj) {
 #'
 #' @return coeffs_df
 
-extract.coeffs.from.gar.model = function(gar_model,
+extract_coeffs_from_gar_model = function(gar_model,
                                          partition_names = NULL) {
   stopifnot("qreg_result" %in% names(gar_model))
 
@@ -144,6 +144,64 @@ extract.coeffs.from.gar.model = function(gar_model,
 
   return(coeffs_df)
 
+
+}
+
+
+#' @title Extract factor contribution from gar model
+#'
+#' This function extracts the factor contribution (coefficients
+#'  multiplied by values) data frame from gar model
+#'
+#'  @import purrr
+#'
+#'  @import magrittr
+#'
+#' @param gar_model
+#'
+#' @param partition_names optional which partitions to return
+#'
+#' @return factor_contribution_df
+
+extract_factor_contribution_from_gar_model = function(
+  gar_model, quantile = "0.05") {
+  stopifnot("qreg_result" %in% names(gar_model))
+
+  data_mat = gar_model$reg_df %>%
+    select(ends_with("_xreg")) %>%
+    as.matrix()
+
+  coeffs_df = gar_model %>%
+    extract_coeffs_from_gar_model() %>%
+    filter(!Name == "Intercept") %>%
+    filter(Tau == quantile) %>%
+    select(Coeff,Horizon, Name)
+
+
+
+  factors_df = map_dfr(
+    unique(coeffs_df$Horizon),function(temp_horizon){
+
+      coef_vec = coeffs_df %>%
+        filter(Horizon == temp_horizon) %>%
+        select(Coeff) %>%
+        unlist(use.names = FALSE)
+
+      factors_df =  t(t(data_mat) * coef_vec)
+
+      factors_df = factors_df %>%
+        as.data.frame() %>%
+        cbind(date = gar_model$reg_df$date) %>%
+        mutate(horizon = temp_horizon)
+
+      return(factors_df)
+
+    })
+
+  factors_df = factors_df %>%
+    rename_all(~str_remove_all(.,"_xreg"))
+
+  return(factors_df)
 
 }
 

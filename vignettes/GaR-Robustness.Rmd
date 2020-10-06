@@ -100,7 +100,7 @@ fit_df = read_rds(paste0(
 
 fit_df = fit_df %>% 
   mutate(coeff_df = map(gar_model,
-                             extract.coeffs.from.gar.model,
+                             extract_coeffs_from_gar_model,
                              partition_names = "FinCycle_xreg"))
 
 
