@@ -357,7 +357,6 @@ r2_score_plot = models_df %>%
 ```
 
 
-
 ```{r plot_pit_goodness_of_fit}
 
 pit_score_df = models_df %>% 
@@ -390,6 +389,20 @@ pit_score_plot = pit_score_df %>%
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
   facet_wrap(~Horizon) + 
   theme(legend.position = "bottom", legend.title = element_blank())
+
+```
+
+
+```{r save_plots}
+
+plot_names = str_subset(ls(), "_plot")
+
+walk(plot_names, function(temp_name){
+  
+  ggsave(filename = paste0("C:\\Users\\micha\\Desktop\\", temp_name, ".png"),
+         plot = get(temp_name),device = "png")
+  
+})
 
 ```
 
