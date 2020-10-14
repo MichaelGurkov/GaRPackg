@@ -1,4 +1,4 @@
-#' This is a convinience functions that plots the coefficients of
+#' This is a convenience functions that plots the coefficients of
 #' quantile regression
 #'
 #'
@@ -85,5 +85,14 @@ plot.qreg.coeffs = function(quantile_reg, print_plot = TRUE,
 
   }
 
+
+}
+
+
+#' This is a convenience function for labeling strip titles
+#'
+horizon_lab = function(string){
+
+  paste0("horizon = ", string)
 
 }

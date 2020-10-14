@@ -1,28 +1,36 @@
 
 
-```{r plot_quant_reg_long_series_1, fig.height=4}
+```{r get_coeff_df}
 
-plot.qreg.coeffs(results$qreg_result[1])
-
-```
-
-
-```{r plot_quant_reg_long_series_2, fig.height=4}
-
-plot.qreg.coeffs(results$qreg_result[2])
-
-```
-
-
-```{r plot_quant_reg_long_series_3, fig.height=4}
-
-plot.qreg.coeffs(results$qreg_result[3])
+coeffs_df = results %>% 
+  extract_coeffs_from_gar_model() %>% 
+  rename_all(tolower) %>% 
+  rename(quantile = tau) %>% 
+  filter(!name == "Intercept") %>% 
+  mutate(name = str_remove_all(name, "_xreg")) %>% 
+  mutate(name = recode(name,
+                Dom_Macro = "Domestic Macro",
+                Ext_Macro = "External Macro",
+                Ext_Fin = "External Fin. Cond.",
+                Fin_Cycle = "Financial Cycle"))
 
 ```
 
 
-```{r plot_quant_reg_long_series_4, fig.height=4}
 
-plot.qreg.coeffs(results$qreg_result[4])
+```{r plot_1_12_dom_macro_fin_cycle}
+
+coeffs_df %>% 
+  filter(name %in% c("Domestic Macro", "Financial Cycle")) %>% 
+  filter(horizon %in% c(1,12)) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
+  scale_fill_manual(values = c("Significant" = "lightblue",
+                               "Non Significant" = "lightgrey")) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_grid(cols = vars(name), rows = vars(horizon),
+             scales = "free_y") + 
+  xlab("Quantile") + ylab(NULL)
 
 ```
+

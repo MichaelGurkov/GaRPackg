@@ -117,7 +117,7 @@ partitions_list$dom_gdp = list(
 partitions_list$gdp_components = list(
   Dom_Macro = c(
     "private_consumption",
-    "gov_consumption",
+    "public_consumption",
     "investment",
     "unemployment"),
   Dom_Fin = c(
@@ -157,7 +157,7 @@ partitions_list$gdp_components = list(
 partitions_list$gdp_comp_fin_cycle_cond = list(
   Dom_Macro = c(
     "private_consumption",
-    "gov_consumption",
+    "public_consumption",
     "investment",
     "unemployment"),
   Dom_Fin = c(
@@ -199,7 +199,7 @@ partitions_list$gdp_comp_fin_cycle_cond = list(
 partitions_list$gdp_comp_fin_cycle = list(
   Dom_Macro = c(
     "private_consumption",
-    "gov_consumption",
+    "public_consumption",
     "investment",
     "unemployment"),
   Ext_Macro = c(

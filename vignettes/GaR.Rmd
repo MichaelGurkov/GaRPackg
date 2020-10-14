@@ -61,7 +61,7 @@ parameters_list = list()
 
 parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
 
-parameters_list$horizon_list = list(1,8,12)
+parameters_list$horizon_list = list(1,4,8,12)
 
 parameters_list$drop_series = c(
   "Vacancies_Rate",
@@ -75,6 +75,9 @@ parameters_list$drop_series = c(
   "breakeven_inflation_5_10_fwd"
 )
 
+theme_set(theme_bw() + theme(
+  legend.position = "bottom", legend.title = element_blank()))
+
 ```
 
 
@@ -87,14 +90,6 @@ parameters_list$drop_series = c(
 
 
 ```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
-
-```
-
-
-\section{Descriptive Stats}
-
-
-```{r desc_stat, child="GaR-DescriptiveStat.Rmd", eval=FALSE}
 
 ```
 
@@ -121,17 +116,11 @@ results = run.GaR.analysis(partitions_list = current_partition,
 ```
 
 
-```{r Nowcast, eval=FALSE}
 
-nowcast_results = run.GaR.analysis(
-  partitions_list = current_partition,
-  vars_df =  df %>% 
-    mutate(across(c("credit","house_price"), interpolate)),
-  horizon_list = parameters_list$horizon_list,
-  quantile_vec = parameters_list$quantile_vec,
-  pca.align.list = list(Dom_FCI = list(
-    var_name = "Spread_CPI_corp",
-    positive_direction = FALSE)))
+\section{Descriptive Stats}
+
+
+```{r desc_stat, child="GaR-DescriptiveStat.Rmd"}
 
 ```
 
@@ -160,7 +149,7 @@ nowcast_results = run.GaR.analysis(
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd"}
+```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
 
 ```
 
@@ -171,9 +160,9 @@ nowcast_results = run.GaR.analysis(
 
 ```
 
-\section{Robustness}
+\section{Goodness of fit}
 
-```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd", eval=FALSE}
+```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
 
 ```
 

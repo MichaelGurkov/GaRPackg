@@ -18,21 +18,14 @@ forecast_parameters = list(
   df = df %>% filter(date < as.yearqtr("2020Q1"))
     )
 
-forecast_comparisons = list()
-
-forecast_data_list = list()
-
-forecast_model_fit = list()
 
 ```
 
 
-<!-- Forecasts: GaR, staff, Macro -->
+```{r make_goodness_of_fit_df}
 
-
-```{r make_df}
-
-realized_df = forecast_parameters$df %>% 
+realized_df = df %>% 
+  filter(date < as.yearqtr("2020Q1")) %>% 
   select(date, gdp) %>% 
   filter(complete.cases(.)) %>% 
   rename(realized = gdp) %>% 
@@ -43,12 +36,13 @@ realized_df = forecast_parameters$df %>%
 
 benchmark_df = get.gar.forecast(
   partitions_list = NULL,
-  vars_df = forecast_parameters$df,
+  vars_df = df,
   target_var_name = "gdp",
   horizon_list = parameters_list$horizon_list,
   quantile_vec = parameters_list$quantile_vec,
   win_len = forecast_parameters$win_len,
-  win_type_expanding = forecast_parameters$win_type_expanding) %>%          mutate(Forecast_Period = paste(
+  win_type_expanding = forecast_parameters$win_type_expanding) %>%         
+  mutate(Forecast_Period = paste(
     date + as.numeric(Horizon) * 0.25 - 1,
     date + as.numeric(Horizon) * 0.25,
     sep = "-"
@@ -67,22 +61,14 @@ staff_forecast_df = list(
   enframe() %>% 
   pivot_wider()
 
-```
 
-
-
-```{r GaR_Forecast}
-
-models_df = list(GaR = partitions_list$basic,
-                 GDP_comp = partitions_list$gdp_components,
-                 GDP_comp_FinCycle = partitions_list$gdp_comp_fin_cycle) %>% 
-  enframe(value = "partition")
-
-models_df = models_df %>%
+models_df = list(GDP_comp = partitions_list$gdp_components,
+                 basic = partitions_list$basic) %>% 
+  enframe(value = "partition") %>%
   mutate(pred_df = map(partition,function(temp_part){
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
-        vars_df = forecast_parameters$df,
+        vars_df = df,
         target_var_name = "gdp",
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
@@ -102,27 +88,13 @@ models_df = models_df %>%
         
       return(temp_forecast)
       
-      }))
-
-models_df = models_df %>% 
-  rbind(staff_forecast_df)
-
-
-models_df = models_df %>% 
+      })) %>% 
+  rbind(staff_forecast_df) %>% 
   mutate(realized = map(1:nrow(.),~realized_df)) %>% 
-  mutate(benchmark = map(1:nrow(.),~benchmark_df))
-
-```
-
-\subsection{Fan charts}
-
-
-```{r calculate_scores}
-
-models_df = models_df %>% 
+  mutate(benchmark = map(1:nrow(.),~benchmark_df))%>% 
   mutate(
     r2_score = pmap(.l = list(pred_df,realized, benchmark),
-                     .f = function(pred_df,realized, benchmark){
+                    .f = function(pred_df,realized, benchmark){
                        temp_score = collect_quantile_r2_score(
                          pred_df = pred_df,
                          realized_df = realized,
@@ -143,20 +115,17 @@ models_df = models_df %>%
                        return(temp_score)
                      }))
 
+# rm(benchmark_df, realized_df)
+
 ```
-
-
-<!-- Model fit evaluation -->
-
-The model fit evaluation which is performed according to quantile $R^{2}$.
 
 
 ```{r plot_r2_goodness_of_fit}
 
 models_df %>% 
   select(name, r2_score) %>% 
-  unnest(r2_score) %>% 
-  mutate(name = map_chr(name,~.)) %>% 
+  unnest(c(name,r2_score)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
   ggplot(aes(x = Quantile, y = score, fill = name)) + 
   geom_col(position = "dodge") + 
   xlab(NULL) + ylab(NULL) + ggtitle("Quantile R2 score") + 
@@ -166,14 +135,13 @@ models_df %>%
 ```
 
 
-
 ```{r plot_pit_goodness_of_fit}
 
 pit_score_df = models_df %>% 
   select(name, pit_score) %>% 
   unnest(pit_score) %>% 
   mutate(name = map_chr(name,~.)) %>% 
-  mutate(Quantile = as.numeric(Quantile))
+  mutate(Quantile = as.numeric(Quantile)) 
 
 intercept_df = models_df$benchmark[[1]] %>% 
   left_join(models_df$realized[[1]], by = "Forecast_Period") %>% 
@@ -189,6 +157,7 @@ intercept_df = models_df$benchmark[[1]] %>%
 pit_score_df %>% 
   bind_rows(intercept_df) %>% 
   filter(!name == "GaR") %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
   ggplot(aes(x = Quantile, y = pit, group = name, color = name)) + 
   geom_line() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
@@ -198,6 +167,8 @@ pit_score_df %>%
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
   facet_wrap(~Horizon) + 
   theme(legend.position = "bottom", legend.title = element_blank())
+
+rm(pit_score_df, intercept_df)
 
 ```
 

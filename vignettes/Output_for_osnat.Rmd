@@ -149,62 +149,6 @@ dom_macro_fin_cycle_plot = coeffs_df %>%
 
 ```
 
-```{r plot_historical_events}
-
-recessions = read.csv(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-  "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>%
-  mutate(across(c(Start, End), ~as.yearqtr(.)))
-
-events = read.csv(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-  "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\events.csv")) %>%
-  mutate(across(c(Start, End), ~as.yearqtr(.)))
-
-
-predict_df = prediction_df %>% 
-  filter(quantile == "0.05") %>% 
-  filter(horizon %in% c(1,12))
-
-
-events_plot = ggplot() +
-  ylim(c(-0.12,0.08)) +
-  geom_point(data = predict_df,
-             mapping = aes(x = date, y = value, color = horizon)) +
-  geom_line(data = predict_df,
-            mapping = aes(x = date, y = value, color = horizon)) +
-  geom_rect(data = recessions,
-            mapping = aes(xmin = Start, xmax = End,
-                          ymin = -Inf, ymax = Inf),
-            fill = "lightblue", alpha = 0.5) +
-  xlab(NULL) + ylab(NULL) + 
-  scale_color_discrete(name = "Horizon") + 
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-events_plot = events_plot +
-  geom_point(data = predict_df %>%
-             filter(date %in% events$Start),
-           mapping = aes(x = date, y = value),
-           color = "blue") +
-  geom_segment(data = predict_df %>%
-                 filter(date %in% events$Start) %>%
-                 group_by(date) %>% 
-                 summarise(value = min(value), .groups = "drop"),
-             mapping = aes(x = date, y = c(0.0745,0.0745,0.0545),
-                           xend = date, yend = value),
-            arrow = arrow(length = unit(0.1,"cm")),
-             color = "blue") +
-  geom_text(data = events,
-            mapping = aes(x = Start + 1, y = c(0.08,0.08,0.06),
-                                          label = Event),
-            color = "blue")
-
-
-```
-
 ```{r factor_decomposition}
 
 factor_decomposition_plot = ggplot(data = factor_df %>% 

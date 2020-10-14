@@ -8,7 +8,6 @@ library(stargazer)
 ```
 
 
-
 ```{r correlations, eval=FALSE}
 
 cor_mat = df %>% 
@@ -58,10 +57,12 @@ names(plot_list) = names(current_partition)
 
 ```{r descriptive_table, results='asis'}
 
-stargazer(df %>% 
-            select(-date,-starts_with("staff|dsge")) %>% 
-            as.data.frame(),
-          summary = TRUE, header = FALSE)
+df %>% 
+  select(date, unlist(current_partition, use.names = FALSE)) %>% 
+  as.data.frame() %>% 
+  stargazer(summary = TRUE, header = FALSE)
+  
+
 
 ```
 
