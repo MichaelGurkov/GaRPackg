@@ -406,7 +406,7 @@ fill.na.average = function(data_vec, k = 4){
 #'
 #' @param prediction_df
 #'
-fix.quantile.crossing = function(prediction_df){
+fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
     group_by(Horizon,date) %>%
@@ -516,7 +516,7 @@ make_prediction_df = function(gar_model, xreg_df){
 
 
   }) %>%
-    fix.quantile.crossing() %>%
+    fix_quantile_crossing() %>%
     select(date,Horizon,Quantile,GaR_fitted)
 
   return(prediction_df)

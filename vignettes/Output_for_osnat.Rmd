@@ -93,7 +93,7 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Dom_Macro = list(var_name = "private_consumption"),
                      Ext_Macro = list(var_name = "gdp_us"),
                      Ext_Fin = list(var_name = "rate_euro"),
-                     Fin_Cycle = list(var_name = "credit")))
+                     Dom_Fin_Cycle = list(var_name = "credit")))
 
 ```
 
@@ -112,7 +112,7 @@ coeffs_df = results %>%
                 Dom_Macro = "Domestic Macro",
                 Ext_Macro = "External Macro",
                 Ext_Fin = "External Fin. Cond.",
-                Fin_Cycle = "Financial Cycle"))
+                Dom_Fin_Cycle = "Financial Cycle"))
   
 
 prediction_df = map_dfr(names(results$qreg_result),

@@ -43,7 +43,7 @@ get.gar.forecast = function(partitions_list,
                     win_len = win_len,
                     win_type_expanding = win_type_expanding) %>%
     bind_rows() %>%
-    fix.quantile.crossing()
+    fix_quantile_crossing()
 
   return(prediction_df)
 
