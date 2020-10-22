@@ -1,32 +1,5 @@
 ---
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
-title: "Growth at Risk model"
-institute: "Bank of Israel \\newline Research Department, Finance Division"
-author: "Michael Gurkov"
-# date: "August 15, 2018"
-classoption: t
-output:
-  beamer_presentation:
-    keep_tex: true
-    includes:
-      in_header: GaR-preamble-presentation.tex
-    latex_engine: xelatex
-vignette: >
-  %\VignetteIndexEntry{GlobalFinCycle-Presentation}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
-  comment = "#>"
-<<<<<<< HEAD
-=======
-title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
+title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
 date: "14 September, 2020"
@@ -45,30 +18,10 @@ bibliography: "GaR.bib"
 knitr::opts_chunk$set(
   collapse = TRUE, echo = FALSE, message = FALSE,
   warning = FALSE, comment = "#>"
->>>>>>> presentation
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 )
 ```
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
-```{r init_setup}
-
-devtools::load_all()
-
-library(GaRPackg)
-
-# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="\\"),
-#        "\\GaRPackg\\vignettes"))
-
-# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="/"),
-#        "/GaRPackg/vignettes"))
-<<<<<<< HEAD
-=======
 ```{r setup, eval=TRUE}
 
 devtools::load_all()
@@ -76,13 +29,10 @@ devtools::load_all()
 setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
   "\\Documents\\GaRPackg\\vignettes"))
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 
 
 ```
 
-<<<<<<< HEAD
 
 ```{r set_plot_params}
 
@@ -95,111 +45,10 @@ theme_set(theme_bw() +
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15)))
 
->>>>>>> presentation
 
 
 ```
 
-<<<<<<< HEAD
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
-# Background
-
-\begin{itemize}
-	\item
-	Macro-financial model  developed by {adrian2019vulnerable}.
-	
-	
-	\begin{itemize}
-		\item Operationalized by IMF {prasad2019growth}.
-		\item
-		Applied for: 
-		\begin{itemize}
-			\item[] Italy {\scriptsize{Alessandri2019}}
-			\item[] UK {\scriptsize{Aikman2018}}
-			\item[] advanced economies {\scriptsize{Aikman2019}}
-			\item[] developing economies {\scriptsize{Komatsuzaki2019,Bespalova2019}}
-		\end{itemize}
-		 
-		\item
-		First run in Israel (based on IMF modelling): box in  Financial Stability Report 2019(1)
-	\end{itemize}
-	
-	\item
-	Today: 
-	\begin{itemize}
-		\item
-		Further adjustments of the model to Israel
-		\item
-		Discussion of main findings (corresponding to {adrian2019monetary})
-		
-	\end{itemize}
-\end{itemize}	
-	
-
-
-
-# Motivation
-
-\begin{itemize}
-	
-	\item
-	Goal: Estimate risks to growth using real and financial variables:	
-	
-	\begin{center}	
-		~
-	\begin{beamerboxesrounded}[width=0.75\linewidth]{}
-		Given current macro-financial conditions, what is the distribution of
-		expected economic growth?		
-	\end{beamerboxesrounded}
-	~
-	\end{center}
-	
-
-	
-	\item
-	Tool: Linear  model of
-	density forecasts. 
-	
-	\begin{itemize}
-		\item
-		Based on quantile regressions
-		\item
-		Parsimonious
-		\item
-		Easy to interpret
-		
-				
-	\end{itemize}
-	
-	\item
-	Possible uses:
-	\begin{enumerate}
-		
-		\item
-		Tool for regular assessment of risks:
-		\begin{itemize}
-			\item
-			Financial Stability Report
-			\item
-			Staff forecast fan chart
-		\end{itemize}
-		
-		\item
-		Provide empirical evidence to support macro-financial  modelling efforts (joint project with IMF)
-		
-		
-		
-	\end{enumerate}
-		
-\end{itemize}
-
-
-# Outline
-
-\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide] 
-<<<<<<< HEAD
-=======
 
 ```{r load_libraries}
 
@@ -236,8 +85,6 @@ fit_df = read_rds(paste0(
 
 ```{r Analysis}
 
-current_partition = partitions_list$basic
-
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
                    target_var_name = "gdp",
@@ -245,12 +92,12 @@ results = run.GaR.analysis(partitions_list = current_partition,
                    quantile_vec = parameters_list$quantile_vec,
                    pca.align.list = list(
                      Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
+                       var_name = "spread_cpi_corp",
                        positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "gdp"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "credit")))
-
+                     Dom_Macro = list(var_name = "private_consumption"),
+                     Ext_Macro = list(var_name = "gdp_us"),
+                     Ext_Fin = list(var_name = "rate_euro"),
+                     Dom_Fin_Cycle = list(var_name = "credit")))
 
 ```
 
@@ -271,8 +118,10 @@ pca_variance = lapply(names(pca_list),
 }) %>%
   bind_rows()
 
-plot_names_list = list("Macro","Global","Fin. Conditions",
-                       "Fin. Cycle")
+plot_names_list = list("Dom. Macro",
+                       "Ext. Macro",
+                       "Ext. Fin. Conditions",
+                       "Dom. Fin. Cycle")
 
 names(plot_names_list) = names(pca_list)
 
@@ -329,9 +178,10 @@ factors_df = map_dfr(names(results$qreg_result),function(temp_name){
                         })
 
 factors_df = factors_df %>% 
-  rename(Macro = Dom_Macro) %>% 
-  rename(`Fin. Cycle` = FinCycle) %>% 
-  rename(`Fin. Conditions` = Dom_FCI) %>% 
+  rename(`Dom. Macro` = Dom_Macro) %>% 
+  rename(`Ext. Macro` = Ext_Macro) %>%
+  rename(`Ext. Fin. Conditions` = Ext_Fin) %>%
+  rename(`Dom. Fin. Cycle` = Dom_Fin_Cycle) %>% 
   pivot_longer(cols = -c(date,Horizon), names_to = "partition")
   
 
@@ -386,7 +236,7 @@ staff_forecast_df = list(
 
 ```{r GaR_Forecast}
 
-models_df = list(GaR_Forecast = partitions_list$basic,
+models_df = list(GaR_Forecast = current_partition,
                  Macro_Forecast = partitions_list$macro) %>%
   enframe(value = "partition")
 
@@ -400,7 +250,7 @@ models_df = models_df %>%
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
         pca.align.list = list(
-          Dom_FCI = list(var_name = "Spread_CPI_corp",
+          Dom_FCI = list(var_name = "spread_cpi_corp",
                          positive_direction = FALSE),
           Dom_Macro = list(var_name = "gdp"),
           Global = list(var_name = "gdp_us"),
@@ -491,7 +341,7 @@ models_df = models_df %>%
 ## Motivation
 
 \centering
-Quantile Regressions of YoY gdp Growth Four Quarters Ahead
+Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 \vspace{3mm}
 
@@ -532,7 +382,7 @@ temp_plot = temp_df %>%
     labels = scales::percent_format(accuracy = 1)) +
   scale_color_manual(values = c("red","black","green")) + 
   xlab(paste("YoY", temp_var, "growth")) +
-  ylab((paste("YoY gdp growth 4 quarters ahead"))) +
+  ylab((paste("YoY GDP growth 4 quarters ahead"))) +
   ggtitle(temp_var) +
   theme(legend.position = "none")
 
@@ -606,7 +456,7 @@ In-sample properties of the predictive distribution:
 	\item
 	\textbf{Forecast uncertainty} rises when the median forecast decreases.
 	\item
-	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term gdp growth, but contributes to long-term downside risks.
+	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term GDP growth, but contributes to long-term downside risks.
   \end{enumerate}
 \item
 These properties are robust to variable selection.
@@ -673,7 +523,7 @@ Sample: 1997Q3-2019Q4
 	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
 	\hline
 	& & & \\
-	gdp 						& gdp - US, Euro 			& BoI rate 				& credit\\
+	GDP 						& GDP - US, Euro 			& BoI rate 				& credit\\
 	& & & \\
 	State-of-the-Economy index 	& OECD imports				& TA35 implied vol. 	& house prices \\
 	& & & \\
@@ -762,13 +612,13 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 ```{r dom_macro_plot, fig.height=6.5}
 
 ggplot(coeff_df %>%
-         filter(new_name == "Macro") %>%
+         filter(new_name == "Dom. Macro") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("gdp growth (YoY)") + ggtitle("Macro coefficients") + 
+  xlab("Quantile") + ylab("GDP growth (YoY)") + ggtitle("Macro coefficients") + 
   facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab))
 
 
@@ -787,13 +637,13 @@ ggplot(coeff_df %>%
 ```{r fin_cycle_plot, fig.height=6.5}
 
 ggplot(coeff_df %>%
-         filter(new_name == "Fin. Cycle") %>%
+         filter(new_name == "Dom. Fin. Cycle") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("gdp growth (YoY)") + 
+  xlab("Quantile") + ylab("GDP growth (YoY)") + 
   ggtitle("Fin. Cycle coefficients") + 
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab))
 
@@ -985,7 +835,7 @@ results %>%
 
 \pause
 
-Consistent with features of past gdp growth
+Consistent with features of past GDP growth
 
 ```{r plot_gdp_growth, fig.height=3}
 
@@ -998,125 +848,125 @@ df %>%
   ggplot(aes(x = value, fill = name)) +
   geom_density(alpha = 0.5) + 
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth density")
 
 ```
 
 
-# Sensitivity to Variable Selection{.unlisted .unnumbered}
-## Sub-Sampling Bootstrap Analysis
+<!-- # Sensitivity to Variable Selection{.unlisted .unnumbered} -->
+<!-- ## Sub-Sampling Bootstrap Analysis -->
 
-\vspace{1em}
+<!-- \vspace{1em} -->
 
-* Our results might be affected by the set of variables we used
-to construct the four factors.
+<!-- * Our results might be affected by the set of variables we used -->
+<!-- to construct the four factors. -->
 
-\vspace{1em}
+<!-- \vspace{1em} -->
 
-* For robustness, we perform a sub-sampling bootstrap procedure
-[@Politis1994]
-  + We determine a minimal set of variables to be included
-  in each group and go over all the different combinations
-  of the other variables.
-  
-  
-  + In each iteration, we estimate a GaR model on the
-  implied subset of	variables.
-
-## 5th Percentile Forecast
-
-```{r, cache=TRUE, dev="png"}
+<!-- * For robustness, we perform a sub-sampling bootstrap procedure -->
+<!-- [@Politis1994] -->
+<!--   + We determine a minimal set of variables to be included -->
+<!--   in each group and go over all the different combinations -->
+<!--   of the other variables. -->
 
 
-gar_plot_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE")),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\gar_plot_df.RDS"))
+<!--   + In each iteration, we estimate a GaR model on the -->
+<!--   implied subset of	variables. -->
 
-gar_plot_df %>% 
-  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) + 
-  geom_line() + 
-  xlab(NULL) + ylab(NULL) + 
-  gghighlight(rowname == 4599,
-              calculate_per_facet = TRUE,
-              use_direct_label = FALSE,use_group_by = FALSE,
-              unhighlighted_params = list(alpha = 0.1)) + 
-  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab),nrow = 2)
+<!-- ## 5th Percentile Forecast -->
 
-```
+<!-- ```{r, cache=TRUE, dev="png"} -->
 
 
+<!-- gar_plot_df = read_rds(paste0( -->
+<!--   file.path(Sys.getenv("USERPROFILE")), -->
+<!--   "\\OneDrive - Bank Of Israel\\Data\\BoI\\", -->
+<!--   "GaR_Data\\gar_plot_df.RDS")) -->
 
-## "Volatility Paradox"
+<!-- gar_plot_df %>%  -->
+<!--   ggplot(aes(x = Date, y = GaR_fitted, group = rowname)) +  -->
+<!--   geom_line() +  -->
+<!--   xlab(NULL) + ylab(NULL) +  -->
+<!--   gghighlight(rowname == 4599, -->
+<!--               calculate_per_facet = TRUE, -->
+<!--               use_direct_label = FALSE,use_group_by = FALSE, -->
+<!--               unhighlighted_params = list(alpha = 0.1)) +  -->
+<!--   facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab),nrow = 2) -->
 
-Financial Cycle coefficients at different quantiles (stacked histograms)
-
-```{r plot_coefs_hist}
-
-coeff_plot_data = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS"))
-
-coeff_plot_data %>% 
-  rename(Quantile = Tau) %>%  
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%  
-  ggplot(aes(x = Coeff, fill = Quantile)) + 
-  geom_histogram() + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  xlab(NULL) + ylab(NULL) + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) + 
-  theme(legend.title = element_text(size = 15))
-
-```
+<!-- ``` -->
 
 
-## Negative Correlation between Median and Dispersion
 
-```{r plot_median_iqr_correlations}
+<!-- ## "Volatility Paradox" -->
 
-med_iqr_plot_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE")),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\med_iqr_plot_data.RDS"))
-  
-med_iqr_plot_df %>% 
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = cor)) +
-  geom_histogram() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste0("Correlaltion between the median",
-                 " and IQR \n of the predictive distribution")) +
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free_y",
-             labeller = labeller(Horizon = my_lab))
+<!-- Financial Cycle coefficients at different quantiles (stacked histograms) -->
 
-```
+<!-- ```{r plot_coefs_hist} -->
 
-## Symmetric Distribution
+<!-- coeff_plot_data = read_rds(paste0( -->
+<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
+<!--   "\\OneDrive - Bank Of Israel\\Data\\", -->
+<!--   "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS")) -->
 
-```{r plot_skew_robustness, cache=TRUE, dev="png"}
+<!-- coeff_plot_data %>%  -->
+<!--   rename(Quantile = Tau) %>%   -->
+<!--   mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%   -->
+<!--   ggplot(aes(x = Coeff, fill = Quantile)) +  -->
+<!--   geom_histogram() +  -->
+<!--   geom_vline(xintercept = 0, linetype = "dashed") +  -->
+<!--   xlab(NULL) + ylab(NULL) +  -->
+<!--   facet_wrap(~Horizon,scales = "free",nrow = 2, -->
+<!--              labeller = labeller(Horizon = my_lab)) +  -->
+<!--   theme(legend.title = element_text(size = 15)) -->
 
-skew_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
-
-skew_plot +
-  ggtitle("Quartile skewness") + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) + 
-            theme(title = element_text(size = 20),
-                axis.text = element_text(size = 15),
-                axis.title = element_text(size = 15),
-                strip.text = element_text(size = 15),
-                legend.position = "bottom",
-                legend.title = element_blank(),
-                legend.text = element_text(size = 15))
+<!-- ``` -->
 
 
-```
+<!-- ## Negative Correlation between Median and Dispersion -->
+
+<!-- ```{r plot_median_iqr_correlations} -->
+
+<!-- med_iqr_plot_df = read_rds(paste0( -->
+<!--   file.path(Sys.getenv("USERPROFILE")), -->
+<!--   "\\OneDrive - Bank Of Israel\\Data\\BoI\\", -->
+<!--   "GaR_Data\\med_iqr_plot_data.RDS")) -->
+
+<!-- med_iqr_plot_df %>%  -->
+<!--   mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>% -->
+<!--   ggplot(aes(x = cor)) + -->
+<!--   geom_histogram() + -->
+<!--   xlab(NULL) + ylab(NULL) + -->
+<!--   ggtitle(paste0("Correlaltion between the median", -->
+<!--                  " and IQR \n of the predictive distribution")) + -->
+<!--   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + -->
+<!--   facet_wrap(~Horizon, scales = "free_y", -->
+<!--              labeller = labeller(Horizon = my_lab)) -->
+
+<!-- ``` -->
+
+<!-- ## Symmetric Distribution -->
+
+<!-- ```{r plot_skew_robustness, cache=TRUE, dev="png"} -->
+
+<!-- skew_plot = read_rds(paste0( -->
+<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
+<!--   "\\OneDrive - Bank Of Israel\\Data\\", -->
+<!--   "BoI\\GaR_Data\\Old_data\\skew_plot.RDS")) -->
+
+<!-- skew_plot + -->
+<!--   ggtitle("Quartile skewness") +  -->
+<!--   facet_wrap(~Horizon,scales = "free",nrow = 2, -->
+<!--              labeller = labeller(Horizon = my_lab)) +  -->
+<!--             theme(title = element_text(size = 20), -->
+<!--                 axis.text = element_text(size = 15), -->
+<!--                 axis.title = element_text(size = 15), -->
+<!--                 strip.text = element_text(size = 15), -->
+<!--                 legend.position = "bottom", -->
+<!--                 legend.title = element_blank(), -->
+<!--                 legend.text = element_text(size = 15)) -->
+
+
+<!-- ``` -->
 
 
 # Out-of-Sample Forecast Performance
@@ -1343,6 +1193,3 @@ plot_grid(plotlist = coeff_plot_list)
 ## References {.allowframebreaks}
 
 <div id="refs"></div>
->>>>>>> presentation
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
