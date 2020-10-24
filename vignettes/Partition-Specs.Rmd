@@ -165,8 +165,7 @@ partitions_list$gdp_comp_fin_cycle_cond = list(
     "ta_35_impl_vol",
     "ils_usd_impl_vol",
     "spread_cpi_corp",
-    "term_spread",
-    "sovereigh_spread"
+    "term_spread"
     ),
   Ext_Macro = c(
     "gdp_us",
@@ -184,7 +183,7 @@ partitions_list$gdp_comp_fin_cycle_cond = list(
     "oil_p",
     "non_energy_p"
   ),
-  Fin_Cycle = c(
+  Dom_Fin_Cycle = c(
     "credit",
     "house_price",
     "ta125_close"
@@ -218,7 +217,7 @@ partitions_list$gdp_comp_fin_cycle = list(
     "oil_p",
     "non_energy_p"
   ),
-  Fin_Cycle = c(
+  Dom_Fin_Cycle = c(
     "credit",
     "house_price",
     "ta125_close"
@@ -226,3 +225,5 @@ partitions_list$gdp_comp_fin_cycle = list(
 )
 
 ```
+
+

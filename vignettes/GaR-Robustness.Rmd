@@ -8,46 +8,43 @@
 
 category_params_df = list(
   Dom_Macro = list(
-    optional = c("state_of_economy_ind", "ue_gap"),
-    required = c("gdp")
+    optional = c("public_consumption", "unemployment"),
+    required = c("investment","private_consumption")
   ),
-  Global = list(
+  Ext_Macro = list(
+    optional = c("gdp_euro","gdp_us"),
+    required = c("oecd_imp", "net_exports")
+  ),
+  Dom_Fin =  list(
+    required = c("term_spread","boi_rate"),
     optional = c(
-      "rate_us",
-      "rate_euro",
-      "US_term_spread",
-      "sp500",
-      "eurostoxx600",
-      "vix",
-      "oecd_imp",
-      "oil_p",
-      "non_energy_p"
-    ),
-    required = c("gdp_us", "gdp_euro")
-  ),
-  FinCycle = list(
-    optional = c("ta125_close", "house_price"),
-    required = c("credit")
-  ),
-  Dom_FCI =  list(
-    required = c(
       "spread_cpi_corp",
-      "boi_rate"
-    ),
-    optional = c(
-      "sovereigh_spread",
-      "term_spread",
       "ils_usd_impl_vol",
       "ta_35_impl_vol"
     )
+  ),
+  Ext_Fin = list(
+    required = c("us_term_spread"),
+    optional = c("rate_euro",
+                 "rate_us",
+                 "oil_p",
+                 "non_energy_p",
+                 "vix",
+                 "sp500",
+                 "eurostoxx600")
+  ),
+  Dom_Fin_Cycle = list(
+    optional = c("ta125_close", "house_price"),
+    required = c("credit")
   )
 ) %>%
   enframe(name = "category", value = "params") %>%
-  mutate(part_comb_df = map2(category, params,
-                             function(temp_name, temp_part) {
-                               temp_part_df = get_partition_combs(partition_list = temp_part,
-                                                                  partition_name = temp_name)
-                             }))
+  mutate(part_comb_df = map2(
+    category, params,
+    function(temp_name, temp_part) {
+      temp_part_df = get_partition_combs(partition_list = temp_part,
+                                         partition_name = temp_name)
+      }))
 
 
 feature_select_df = map(
@@ -61,14 +58,16 @@ feature_select_df = map(
   ) %>% 
   reduce(full_join, by = character()) %>% 
   unite(col = name,starts_with("name"),sep = "-") %>% 
-  mutate(temp_part = pmap(list(Dom_Macro,Global,FinCycle,Dom_FCI),c))
+  mutate(temp_part = pmap(list(Dom_Macro,Ext_Macro,
+                               Dom_Fin,Ext_Fin,Dom_Fin_Cycle),c))
 
 ```
 
 
-```{r get_in_sample_fit,eval=FALSE}
+```{r get_in_sample_fit}
 
 fit_df = feature_select_df %>% 
+  slice_sample(n = 1) %>% 
   mutate(gar_model = map(temp_part, run.GaR.analysis,
       vars_df = df,
       target_var_name = "gdp",
@@ -85,7 +84,7 @@ fit_df = feature_select_df %>%
 ```
 
 
-```{r import_data,eval=FALSE}
+```{r import_data}
 
 fit_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -100,8 +99,7 @@ fit_df = read_rds(paste0(
 
 fit_df = fit_df %>% 
   mutate(coeff_df = map(gar_model,
-                             extract_coeffs_from_gar_model,
-                             partition_names = "FinCycle_xreg"))
+                             extract_coeffs_from_gar_model))
 
 
 

@@ -199,8 +199,7 @@ map_pca_reduction = function(multi_feature_partitions,
 
                         data_df = reduction_objects_list[[temp_name]]$pca_obj$x[, 1:n_components]
 
-                        if(is.null(data_df)){
-
+                        if (is.null(data_df)) {
                           data_df = matrix(nrow = length(date_vec),
                                            ncol = n_components)
 

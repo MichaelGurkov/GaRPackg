@@ -28,6 +28,10 @@
 #'
 #' @param pca.align.list A list that specifies the PCA aligning variable for
 #' each partition and alignment direction (default is positive direction).
+#' The first element in the list is the aligning (axis) variable, the
+#' value is either character (variable's name) or numeric
+#' (variable's position index). The second element if(supplied)
+#' is a boolean indicator of alignment direction (True means positive direction)
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #' Default is TRUE

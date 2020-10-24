@@ -12,7 +12,7 @@ coeffs_df = results %>%
                 Dom_Macro = "Domestic Macro",
                 Ext_Macro = "External Macro",
                 Ext_Fin = "External Fin. Cond.",
-                Fin_Cycle = "Financial Cycle"))
+                Dom_Fin_Cycle = "Financial Cycle"))
 
 ```
 
