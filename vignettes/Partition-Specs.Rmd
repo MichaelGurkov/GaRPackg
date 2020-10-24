@@ -51,22 +51,16 @@ partitions_list$basic = list(
 
 partitions_list$macro = list(
   Dom_Macro = c(
-    "gdp",
-    "state_of_economy_ind",
-    "ue_gap"),
-  Global = c(
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "unemployment"),
+  Ext_Macro = c(
     "gdp_us",
     "gdp_euro",
-    "rate_euro",
-    "rate_us",
-    "US_term_spread",
-    "sp500",
-    "eurostoxx600",
-    "vix",
     "oecd_imp",
-    "oil_p",
-    "non_energy_p"
-    )
+    "net_exports"
+  )
 )
 
 
@@ -135,7 +129,8 @@ partitions_list$gdp_components = list(
     "gdp_us",
     "gdp_euro",
     "oecd_imp",
-    "net_exports"
+    "exports",
+    "imports"
   ),
   Ext_Fin = c(
     "rate_euro",
@@ -171,7 +166,8 @@ partitions_list$gdp_comp_fin_cycle_cond = list(
     "gdp_us",
     "gdp_euro",
     "oecd_imp",
-    "net_exports"
+    "exports",
+    "imports"
   ),
   Ext_Fin = c(
     "rate_euro",
@@ -205,7 +201,8 @@ partitions_list$gdp_comp_fin_cycle = list(
     "gdp_us",
     "gdp_euro",
     "oecd_imp",
-    "net_exports"
+    "exports",
+    "imports"
   ),
   Ext_Fin = c(
     "rate_euro",

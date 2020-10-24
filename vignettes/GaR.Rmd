@@ -7,7 +7,7 @@ output:
     latex_engine: xelatex
     number_sections: true
     includes:
-            in_header: !expr here::here('vignettes/GaR-preamble.tex')
+            in_header: !expr here::here('GaR-preamble.tex')
 vignette: >
   %\VignetteIndexEntry{GaR analysis}
   %\VignetteEngine{knitr::rmarkdown}
@@ -97,8 +97,6 @@ theme_set(theme_bw() + theme(
 
 ```{r Analysis}
 
-current_partition = partitions_list$gdp_comp_fin_cycle_cond
-
 results = run.GaR.analysis(partitions_list = current_partition,
                    vars_df = df,
                    target_var_name = "gdp",
@@ -111,8 +109,6 @@ results = run.GaR.analysis(partitions_list = current_partition,
                      Dom_Macro = list(var_name = "private_consumption"),
                      Ext_Macro = list(var_name = "gdp_us"),
                      Ext_Fin = list(var_name = "rate_euro"),
-                     Dom_Fin = list(var_name = "spread_cpi_corp",
-                                    direction = FALSE),
                      Dom_Fin_Cycle = list(var_name = "credit")))
 
 ```

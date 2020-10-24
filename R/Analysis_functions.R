@@ -98,7 +98,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
 
                   }) %>%
-    fix.quantile.crossing()
+    fix_quantile_crossing()
 
 
 

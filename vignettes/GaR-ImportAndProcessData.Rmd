@@ -28,7 +28,8 @@ parameters_list$vars_to_yoy = c(
   "private_consumption",
   "public_consumption",
   "investment",
-  "net_exports",
+  "exports",
+  "imports",
   "dom_gdp",
   "credit",
   "ta125_close",
@@ -67,7 +68,6 @@ raw_df = import.from.fame.template(
          "\\OneDrive - Bank Of Israel\\",
          "Data\\BoI\\GaR_Data\\Working_data",
          "\\data_fame.csv")) %>% 
-  filter(date >= as.yearqtr("1995 Q1")) %>% 
   rename_all(tolower) %>% 
   rename(public_consumption = gov_consumption)
 
@@ -93,10 +93,21 @@ df = raw_df %>%
 ```
 
 
-```{r filter_out_coronavirus}
+```{r set_current_partition}
+
+current_partition = partitions_list$gdp_comp_fin_cycle
+
+
+```
+
+
+```{r df_filters}
 
 df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4"))
+  filter(across(unlist(current_partition, use.names = FALSE), ~!is.na(.))) %>% 
+  filter(date <= as.yearqtr("2019 Q4")) %>%
+  identity()
+
 
 ```
 

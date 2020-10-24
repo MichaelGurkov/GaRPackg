@@ -14,7 +14,7 @@ test_that(
   desc = "quantile crossing is fixed",
   code = expect_equal(
     object = test_df %>%
-      fix.quantile.crossing() %>%
+      fix_quantile_crossing() %>%
       arrange(date, Horizon,Quantile),
     expected = result_df
     )

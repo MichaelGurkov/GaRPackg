@@ -115,11 +115,14 @@ gdp_df = df %>%
 
 fan_chart_df  = prediction_df %>% 
   filter(date == max(date))%>% 
-  spread(key = quantile,value = value) %>% 
+  rename(Horizon = horizon, Quantile = quantile, GaR = value) %>% 
+  fix_quantile_crossing() %>% 
+  rename_all(tolower) %>% 
+  pivot_wider(names_from = quantile,values_from = gar) %>% 
   rename_at(vars(-date,-horizon),
             .funs = list(~paste0("Q_",.))) %>% 
-  mutate(date = date + as.numeric(as.character(horizon)) * 0.25) %>% 
-  select(-horizon)
+  mutate(date = date + as.numeric(as.character(horizon)) * 0.25)
+  
  
 
 temp = fan_chart_df[nrow(fan_chart_df),]

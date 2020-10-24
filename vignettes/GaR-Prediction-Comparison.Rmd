@@ -70,9 +70,8 @@ staff_forecast_df = list(
 
 ```{r make_models_df}
 
-models_df = list(
-  GDP_comp_fin_cycle_cond = partitions_list$gdp_comp_fin_cycle_cond,
-  basic = partitions_list$basic) %>% 
+models_df = list(GaR = current_partition,
+                 Macro = partitions_list$macro) %>% 
   enframe(value = "partition") %>%
   mutate(pred_df = map(partition,function(temp_part){
       temp_forecast = get.gar.forecast(
