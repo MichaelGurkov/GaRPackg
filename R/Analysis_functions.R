@@ -26,12 +26,14 @@
 #' @param run_ols_reg boolean indicator that adds an OLS regression
 #'
 #'
-#' @param pca.align.list A list that specifies the PCA aligning variable for
+#' @param pca.align.list (Optional) A list that specifies the PCA aligning variable for
 #' each partition and alignment direction (default is positive direction).
 #' The first element in the list is the aligning (axis) variable, the
 #' value is either character (variable's name) or numeric
 #' (variable's position index). The second element if(supplied)
-#' is a boolean indicator of alignment direction (True means positive direction)
+#' is a boolean indicator of alignment direction
+#' (True means positive direction).
+#' If no list is supplied then no alignment takes place
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #' Default is TRUE

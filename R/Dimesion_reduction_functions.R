@@ -37,7 +37,8 @@ align.pca = function(pca_obj, var_name,
     sign_vec = sign(pca_obj[["rotation"]][var_name, ])
 
   } else {
-    sign_vec = sign(pca_obj[["rotation"]][rownames(pca_obj[["rotation"]]) == var_name, ])
+    sign_vec = sign(pca_obj[["rotation"]][
+      rownames(pca_obj[["rotation"]]) == var_name, ])
 
   }
 
@@ -168,57 +169,59 @@ map_pca_reduction = function(multi_feature_partitions,
                              vars_df,
                              n_components,
                              pca_align_list = NULL) {
-  reduction_objects_list = map2(names(multi_feature_partitions),
-                                multi_feature_partitions,
-                                function(temp_name, temp_part) {
-                                  temp_df = vars_df %>%
-                                    select(any_of(c(unlist(temp_part), "date")))
 
-                                  # Set alignment params
+  reduction_objects_list = map2(
+    names(multi_feature_partitions),
+    multi_feature_partitions, function(temp_name, temp_part) {
+      temp_df = vars_df %>%
+        select(any_of(c(unlist(temp_part, use.names = FALSE), "date")))
 
-                                  if (temp_name %in% names(pca_align_list)) {
-                                    temp_sign_align_params = pca_align_list[[temp_name]]
+      # Set alignment params
 
-                                  } else {
-                                    temp_sign_align_params = NULL
+      if (temp_name %in% names(pca_align_list)) {
 
-                                  }
-                                  temp_pca = pca_reduction(df = temp_df,
-                                                           sign_align_params = temp_sign_align_params)
+        temp_sign_align_params = pca_align_list[[temp_name]]
 
+        } else {
 
-                                  return(temp_pca)
+          temp_sign_align_params = NULL
 
-                                })
+        }
+
+      temp_pca = pca_reduction(df = temp_df,
+                               sign_align_params = temp_sign_align_params)
+      return(temp_pca)
+
+      })
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
-  xreg_df_multi = map(names(reduction_objects_list),
-                      function(temp_name) {
-                        date_vec = reduction_objects_list[[temp_name]]$time_index
+  xreg_df_multi = map(names(reduction_objects_list),function(temp_name) {
+    date_vec = reduction_objects_list[[temp_name]]$time_index
 
-                        data_df = reduction_objects_list[[temp_name]]$pca_obj$x[, 1:n_components]
+    data_df = reduction_objects_list[[temp_name]]$pca_obj$x[, 1:n_components]
 
-                        if (is.null(data_df)) {
-                          data_df = matrix(nrow = length(date_vec),
-                                           ncol = n_components)
+    if (is.null(data_df)) {
 
-                        }
+      data_df = matrix(nrow = length(date_vec),
+                       ncol = n_components)
+      }
 
-                        temp_df = cbind.data.frame(date_vec, data_df)
+    temp_df = cbind.data.frame(date_vec, data_df)
 
-                        if (n_components > 1) {
-                          names(temp_df) = c("date",
-                                             paste(rep(temp_name, n_components),
-                                                   seq(1, n_components), sep = "_"))
+    if (n_components > 1) {
+      names(temp_df) = c("date",
+                         paste(rep(temp_name, n_components),
+                               seq(1, n_components), sep = "_"))
+      }
 
-                        } else {
-                          names(temp_df) = c("date", temp_name)
+    else {
 
-                        }
+      names(temp_df) = c("date", temp_name)
 
+      }
 
-                        return(temp_df)
+    return(temp_df)
 
                       }) %>%
     reduce(full_join, by = "date")
@@ -230,9 +233,6 @@ map_pca_reduction = function(multi_feature_partitions,
   return_list$reduction_objects_list = reduction_objects_list
 
   return(return_list)
-
-
-
 
 
 }
