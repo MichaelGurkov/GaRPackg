@@ -1,31 +1,4 @@
 ---
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
-title: "Growth at Risk model"
-institute: "Bank of Israel \\newline Research Department, Finance Division"
-author: "Michael Gurkov"
-# date: "August 15, 2018"
-classoption: t
-output:
-  beamer_presentation:
-    keep_tex: true
-    includes:
-      in_header: GaR-preamble-presentation.tex
-    latex_engine: xelatex
-vignette: >
-  %\VignetteIndexEntry{GlobalFinCycle-Presentation}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
-  comment = "#>"
-<<<<<<< HEAD
-=======
 title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
@@ -45,30 +18,11 @@ bibliography: "GaR.bib"
 knitr::opts_chunk$set(
   collapse = TRUE, echo = FALSE, message = FALSE,
   warning = FALSE, comment = "#>"
->>>>>>> presentation
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 )
 ```
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
-```{r init_setup}
 
-devtools::load_all()
-
-library(GaRPackg)
-
-# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="\\"),
-#        "\\GaRPackg\\vignettes"))
-
-# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="/"),
-#        "/GaRPackg/vignettes"))
-<<<<<<< HEAD
-=======
 ```{r setup, eval=TRUE}
 
 devtools::load_all()
@@ -76,13 +30,9 @@ devtools::load_all()
 setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
   "\\Documents\\GaRPackg\\vignettes"))
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 
 
 ```
-
-<<<<<<< HEAD
 
 ```{r set_plot_params}
 
@@ -95,14 +45,9 @@ theme_set(theme_bw() +
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15)))
 
->>>>>>> presentation
-
-
 ```
 
-<<<<<<< HEAD
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
+
 # Background
 
 \begin{itemize}
@@ -198,8 +143,6 @@ theme_set(theme_bw() +
 # Outline
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide] 
-<<<<<<< HEAD
-=======
 
 ```{r load_libraries}
 
@@ -224,33 +167,32 @@ library(gghighlight)
 ```
 
 
-```{r import_robustness_data,eval=FALSE}
+```{r import_robustness_data}
 
 fit_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
 
 ```
 
 
 ```{r Analysis}
 
-current_partition = partitions_list$basic
-
-results = run.GaR.analysis(partitions_list = current_partition,
-                   vars_df = df,
-                   target_var_name = "gdp",
-                   horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(
-                     Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
-                       positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "gdp"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "credit")))
-
+results = run.GaR.analysis(
+  partitions_list = current_partition,
+  vars_df = df,
+  target_var_name = "gdp",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec,
+  pca.align.list = list(
+    Dom_Macro = list(var_name = "private_consumption"),
+    Dom_Fin = list("spread_cpi_corp"),
+    Ext_Macro = list(var_name = "gdp_us"),
+    Ext_Fin = list(var_name = "rate_euro"),
+    Dom_Fin_Cycle = list("credit")
+  )
+)
 
 ```
 
@@ -271,33 +213,26 @@ pca_variance = lapply(names(pca_list),
 }) %>%
   bind_rows()
 
-plot_names_list = list("Macro","Global","Fin. Conditions",
-                       "Fin. Cycle")
+plot_names_list = list("Dom. Macro",
+                       "Dom. Fin. Conditions",
+                       "Ext. Macro",
+                       "Dom. Fin. Conditions",
+                       "Ext. Fin. Conditions",
+                       "Dom. Fin. Cycle")
 
 names(plot_names_list) = names(pca_list)
 
-coeff_df = map_dfr(names(results$qreg_result),
-                  function(temp_name){
-                    
-                    temp_coeff_df = tidy(results$qreg_result[[temp_name]]) %>% 
-                      rename(Partition = term, Coeff = estimate, Quantile = tau) %>% 
-                      select(Partition, Coeff, Quantile) %>% 
-                      mutate(Horizon = temp_name)
-
-  return(temp_coeff_df)
-
-}) %>% 
-  mutate(Horizon = factor(Horizon,
-                          levels = unlist(parameters_list$horizon_list))) %>% 
-  mutate(Quantile = factor(Quantile,
-                           levels = parameters_list$quantile_vec)) %>% 
-  filter(!Partition == "(Intercept)") %>% 
-  mutate(Partition = str_remove_all(Partition,"_xreg")) %>% 
-  left_join(plot_names_list %>% 
-  enframe(value = "new_name") %>% 
-  mutate(new_name = unlist(new_name)),
-  by = c("Partition" = "name")) %>% 
-  select(-Partition)
+coeffs_df = results %>% 
+  extract_coeffs_from_gar_model() %>% 
+  rename_all(tolower) %>% 
+  rename(quantile = tau) %>% 
+  filter(!name == "Intercept") %>% 
+  mutate(name = str_remove_all(name, "_xreg")) %>% 
+  mutate(name = recode(name,
+                Dom_Macro = "Domestic Macro",
+                Ext_Macro = "External Macro",
+                Ext_Fin = "External Fin. Cond.",
+                Dom_Fin_Cycle = "Financial Cycle"))
   
 my_lab = function(string){
   
@@ -309,28 +244,12 @@ my_lab = function(string){
 
 ```{r calculate_gar_contribution}
 
-factors_df = map_dfr(names(results$qreg_result),function(temp_name){
-    
-    data_mat = results$reg_df %>%
-      rename_all(~str_remove_all(.,pattern = "_xreg")) %>%
-      select(names(current_partition)) %>%
-      as.matrix()
-    
-    coef_vec = coefficients(results$qreg_result[[temp_name]])[-1,1]
-    
-    gar_factors_df =  t(t(data_mat) * coef_vec)
-    
-    gar_factors_df = cbind(date = results$reg_df$date,
-                           as.data.frame(gar_factors_df)) %>% 
-      mutate(Horizon = temp_name)
-    
-    return(gar_factors_df)
- 
-                        })
+factor_df = extract_factor_contribution_from_gar_model(results) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12)))
 
 factors_df = factors_df %>% 
   rename(Macro = Dom_Macro) %>% 
-  rename(`Fin. Cycle` = FinCycle) %>% 
+  rename(`Fin. Cycle` = Dom_Fin_Cycle) %>% 
   rename(`Fin. Conditions` = Dom_FCI) %>% 
   pivot_longer(cols = -c(date,Horizon), names_to = "partition")
   
@@ -386,7 +305,7 @@ staff_forecast_df = list(
 
 ```{r GaR_Forecast}
 
-models_df = list(GaR_Forecast = partitions_list$basic,
+models_df = list(GaR_Forecast = current_partition,
                  Macro_Forecast = partitions_list$macro) %>%
   enframe(value = "partition")
 
@@ -400,12 +319,12 @@ models_df = models_df %>%
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
         pca.align.list = list(
-          Dom_FCI = list(var_name = "Spread_CPI_corp",
-                         positive_direction = FALSE),
-          Dom_Macro = list(var_name = "gdp"),
-          Global = list(var_name = "gdp_us"),
-          FinCycle = list(var_name = "credit")
-        ),
+          Dom_Macro = list(var_name = "private_consumption"),
+          Dom_Fin = list("spread_cpi_corp"),
+          Ext_Macro = list(var_name = "gdp_us"),
+          Ext_Fin = list(var_name = "rate_euro"),
+          Dom_Fin_Cycle = list("credit")
+          ),
         win_len = 40,
         win_type_expanding = TRUE)
 
@@ -761,15 +680,17 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 ```{r dom_macro_plot, fig.height=6.5}
 
-ggplot(coeff_df %>%
-         filter(new_name == "Macro") %>%
-         filter(Horizon %in% c(1,12)),
-         aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("gdp growth (YoY)") + ggtitle("Macro coefficients") + 
-  facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab))
+coeffs_df %>% 
+  filter(name %in% c("Domestic Macro", "Financial Cycle")) %>% 
+  filter(horizon %in% c(1,12)) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
+  scale_fill_manual(values = c("Significant" = "lightblue",
+                               "Non Significant" = "lightgrey")) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_grid(cols = vars(name), rows = vars(horizon),
+             scales = "free_y") + 
+  xlab("Quantile") + ylab(NULL)
 
 
 
@@ -1028,20 +949,12 @@ to construct the four factors.
 ```{r, cache=TRUE, dev="png"}
 
 
-gar_plot_df = read_rds(paste0(
+gar_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE")),
   "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\gar_plot_df.RDS"))
+  "GaR_Data\\Working_data\\gar_plot.RDS"))
 
-gar_plot_df %>% 
-  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) + 
-  geom_line() + 
-  xlab(NULL) + ylab(NULL) + 
-  gghighlight(rowname == 4599,
-              calculate_per_facet = TRUE,
-              use_direct_label = FALSE,use_group_by = FALSE,
-              unhighlighted_params = list(alpha = 0.1)) + 
-  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab),nrow = 2)
+print(gar_plot)
 
 ```
 
@@ -1053,21 +966,25 @@ Financial Cycle coefficients at different quantiles (stacked histograms)
 
 ```{r plot_coefs_hist}
 
-coeff_plot_data = read_rds(paste0(
+fit_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS"))
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
 
-coeff_plot_data %>% 
-  rename(Quantile = Tau) %>%  
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%  
-  ggplot(aes(x = Coeff, fill = Quantile)) + 
+fit_df %>% 
+  rownames_to_column() %>% 
+  select(rowname, coeff_df) %>% 
+  unnest(coeff_df) %>% 
+  filter(Name == "Dom_Fin_Cycle_xreg") %>% 
+  select(rowname, Coeff, Horizon, Tau) %>% 
+  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
+  ggplot(aes(x = Coeff, fill = Tau)) + 
   geom_histogram() + 
   geom_vline(xintercept = 0, linetype = "dashed") + 
-  xlab(NULL) + ylab(NULL) + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) + 
-  theme(legend.title = element_text(size = 15))
+  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
+  facet_wrap(~Horizon, scales = "free") + 
+  theme(legend.position = "bottom")
+
 
 ```
 
@@ -1076,21 +993,12 @@ coeff_plot_data %>%
 
 ```{r plot_median_iqr_correlations}
 
-med_iqr_plot_df = read_rds(paste0(
+med_iqr_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE")),
   "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\med_iqr_plot_data.RDS"))
+  "GaR_Data\\Working_date\\med_plot.RDS"))
   
-med_iqr_plot_df %>% 
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = cor)) +
-  geom_histogram() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste0("Correlaltion between the median",
-                 " and IQR \n of the predictive distribution")) +
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free_y",
-             labeller = labeller(Horizon = my_lab))
+print(med_iqr_plot)
 
 ```
 
@@ -1101,7 +1009,7 @@ med_iqr_plot_df %>%
 skew_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
+  "BoI\\GaR_Data\Working_data\\skew_plot.RDS"))
 
 skew_plot +
   ggtitle("Quartile skewness") + 
