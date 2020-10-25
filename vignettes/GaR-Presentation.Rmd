@@ -1,5 +1,5 @@
 ---
-title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
+title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
 date: "14 September, 2020"
@@ -20,7 +20,6 @@ knitr::opts_chunk$set(
   warning = FALSE, comment = "#>"
 )
 ```
-
 
 
 ```{r setup, eval=TRUE}
@@ -196,6 +195,7 @@ results = run.GaR.analysis(
 
 ```
 
+
 ```{r get_auxilary_data}
 
 pca_list = results$pca
@@ -216,7 +216,6 @@ pca_variance = lapply(names(pca_list),
 plot_names_list = list("Dom. Macro",
                        "Dom. Fin. Conditions",
                        "Ext. Macro",
-                       "Dom. Fin. Conditions",
                        "Ext. Fin. Conditions",
                        "Dom. Fin. Cycle")
 
@@ -248,9 +247,11 @@ factor_df = extract_factor_contribution_from_gar_model(results) %>%
   mutate(horizon = factor(horizon, levels = c(1,4,8,12)))
 
 factors_df = factors_df %>% 
-  rename(Macro = Dom_Macro) %>% 
-  rename(`Fin. Cycle` = Dom_Fin_Cycle) %>% 
-  rename(`Fin. Conditions` = Dom_FCI) %>% 
+  rename(`Dom. Fin. Conditions` = Dom_Fin) %>% 
+  rename(`Dom. Macro` = Dom_Macro) %>% 
+  rename(`Ext. Macro` = Ext_Macro) %>%
+  rename(`Ext. Fin. Conditions` = Ext_Fin) %>%
+  rename(`Dom. Fin. Cycle` = Dom_Fin_Cycle) %>% 
   pivot_longer(cols = -c(date,Horizon), names_to = "partition")
   
 
@@ -311,7 +312,6 @@ models_df = list(GaR_Forecast = current_partition,
 
 models_df = models_df %>%
   mutate(pred_df = map(partition,function(temp_part){
-
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
         vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
@@ -410,7 +410,7 @@ models_df = models_df %>%
 ## Motivation
 
 \centering
-Quantile Regressions of YoY gdp Growth Four Quarters Ahead
+Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 \vspace{3mm}
 
@@ -451,7 +451,7 @@ temp_plot = temp_df %>%
     labels = scales::percent_format(accuracy = 1)) +
   scale_color_manual(values = c("red","black","green")) + 
   xlab(paste("YoY", temp_var, "growth")) +
-  ylab((paste("YoY gdp growth 4 quarters ahead"))) +
+  ylab((paste("YoY GDP growth 4 quarters ahead"))) +
   ggtitle(temp_var) +
   theme(legend.position = "none")
 
@@ -525,7 +525,7 @@ In-sample properties of the predictive distribution:
 	\item
 	\textbf{Forecast uncertainty} rises when the median forecast decreases.
 	\item
-	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term gdp growth, but contributes to long-term downside risks.
+	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term GDP growth, but contributes to long-term downside risks.
   \end{enumerate}
 \item
 These properties are robust to variable selection.
@@ -592,7 +592,7 @@ Sample: 1997Q3-2019Q4
 	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
 	\hline
 	& & & \\
-	gdp 						& gdp - US, Euro 			& BoI rate 				& credit\\
+	GDP 						& GDP - US, Euro 			& BoI rate 				& credit\\
 	& & & \\
 	State-of-the-Economy index 	& OECD imports				& TA35 implied vol. 	& house prices \\
 	& & & \\
@@ -680,6 +680,7 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 ```{r dom_macro_plot, fig.height=6.5}
 
+
 coeffs_df %>% 
   filter(name %in% c("Domestic Macro", "Financial Cycle")) %>% 
   filter(horizon %in% c(1,12)) %>% 
@@ -708,13 +709,13 @@ coeffs_df %>%
 ```{r fin_cycle_plot, fig.height=6.5}
 
 ggplot(coeff_df %>%
-         filter(new_name == "Fin. Cycle") %>%
+         filter(new_name == "Dom. Fin. Cycle") %>%
          filter(Horizon %in% c(1,12)),
          aes(x = Quantile, y= Coeff)) +
   geom_col(width = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("gdp growth (YoY)") + 
+  xlab("Quantile") + ylab("GDP growth (YoY)") + 
   ggtitle("Fin. Cycle coefficients") + 
   facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab))
 
@@ -906,7 +907,7 @@ results %>%
 
 \pause
 
-Consistent with features of past gdp growth
+Consistent with features of past GDP growth
 
 ```{r plot_gdp_growth, fig.height=3}
 
@@ -919,7 +920,7 @@ df %>%
   ggplot(aes(x = value, fill = name)) +
   geom_density(alpha = 0.5) + 
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth density")
 
 ```
 
@@ -939,15 +940,15 @@ to construct the four factors.
   + We determine a minimal set of variables to be included
   in each group and go over all the different combinations
   of the other variables.
-  
-  
+
+
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
 ## 5th Percentile Forecast
 
-```{r, cache=TRUE, dev="png"}
 
+```{r, cache=TRUE, dev="png"}
 
 gar_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE")),
@@ -962,14 +963,7 @@ print(gar_plot)
 
 ## "Volatility Paradox"
 
-Financial Cycle coefficients at different quantiles (stacked histograms)
-
-```{r plot_coefs_hist}
-
-fit_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+```{r plot_coeffs}
 
 fit_df %>% 
   rownames_to_column() %>% 
@@ -988,6 +982,14 @@ fit_df %>%
 
 ```
 
+Financial Cycle coefficients at different quantiles (stacked histograms)
+
+
+```{r t}
+
+
+```
+
 
 ## Negative Correlation between Median and Dispersion
 
@@ -999,7 +1001,6 @@ med_iqr_plot = read_rds(paste0(
   "GaR_Data\\Working_date\\med_plot.RDS"))
   
 print(med_iqr_plot)
-
 ```
 
 ## Symmetric Distribution
@@ -1009,12 +1010,12 @@ print(med_iqr_plot)
 skew_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\Working_data\\skew_plot.RDS"))
+  "BoI\\GaR_Data\\Working_data\\skew_plot.RDS"))
 
 skew_plot +
-  ggtitle("Quartile skewness") + 
+  ggtitle("Quartile skewness") +
   facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) + 
+             labeller = labeller(Horizon = my_lab)) +
             theme(title = element_text(size = 20),
                 axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
@@ -1022,8 +1023,6 @@ skew_plot +
                 legend.position = "bottom",
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15))
-
-
 ```
 
 
@@ -1251,6 +1250,3 @@ plot_grid(plotlist = coeff_plot_list)
 ## References {.allowframebreaks}
 
 <div id="refs"></div>
->>>>>>> presentation
-=======
->>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
