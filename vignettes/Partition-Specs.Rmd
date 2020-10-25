@@ -224,3 +224,43 @@ partitions_list$gdp_comp_fin_cycle = list(
 ```
 
 
+
+```{r gdp_comp_fin_cycle_united}
+
+partitions_list$gdp_comp_fin_cycle_united = list(
+  Dom_Macro = c(
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "unemployment"),
+  Dom_Fin = c(
+    "boi_rate",
+    "ta_35_impl_vol",
+    "ils_usd_impl_vol",
+    "spread_cpi_corp",
+    "term_spread",
+    "credit",
+    "house_price",
+    "ta125_close"
+    ),
+  Ext_Macro = c(
+    "gdp_us",
+    "gdp_euro",
+    "oecd_imp",
+    "exports",
+    "imports"
+  ),
+  Ext_Fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "us_term_spread",
+    "vix",
+    "oil_p",
+    "non_energy_p"
+  )
+)
+
+```
+

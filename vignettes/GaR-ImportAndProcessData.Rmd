@@ -95,7 +95,7 @@ df = raw_df %>%
 
 ```{r set_current_partition}
 
-current_partition = partitions_list$gdp_comp_fin_cycle
+current_partition = partitions_list$gdp_comp_fin_cycle_cond
 
 
 ```

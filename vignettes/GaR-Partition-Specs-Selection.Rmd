@@ -1,25 +1,87 @@
+---
+title : "Partition specs comparison"
 
-```{r load_prediction_libraries}
+output: pdf_document
+---
+
+
+
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, error = FALSE, warning = FALSE,
+                      message = FALSE)
+
+```
+
+
+
+In this document we compare the following partitions:
+
+\begin{itemize}
+  \item
+  Full spec - (Dom Macro, Ext Macro, Dom Fin, Ext Fin, Dom Din Cycle)
+  \item
+  Short spec - (Dom Macro, Ext Macro, Ext Fin, Dom Din Cycle)
+  \item
+  United spec - (Dom Macro, Ext Macro, Ext Fin, Dom Fin + Dom Din Cycle)
+
+\end{itemize}
+
+
+```{r load_libraries}
+
+devtools::load_all()
+
+library(tidyverse)
+
+library(quantreg)
+
+library(corrplot)
 
 library(stargazer)
 
 library(forcats)
 
+
 ```
 
 
-```{r set_forecast_parameters}
+```{r Set_parameters}
 
-theme_set(theme_bw())
+results = list()
+
+parameters_list = list()
+
+parameters_list$quantile_vec = c(0.05,0.25,0.5,0.75,0.95)
+
+parameters_list$horizon_list = list(1,4,8,12)
 
 forecast_parameters = list(
   win_len = 40,
   win_type_expanding = TRUE,
-  df = df %>% filter(date < as.yearqtr("2020Q1"))
+  df = df
     )
 
 
+
+theme_set(theme_bw() + theme(
+  legend.position = "bottom", legend.title = element_blank()))
+
 ```
+
+
+
+```{r Get_partitions, child="Partition-Specs.Rmd"}
+
+
+```
+
+
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
+
 
 
 ```{r make_benchmark_and_realizied_df}
@@ -68,11 +130,138 @@ staff_forecast_df = list(
 ```
 
 
+
 ```{r make_models_df}
 
-models_df = list(GaR = current_partition,
-                 Macro = partitions_list$macro) %>% 
-  enframe(value = "partition") %>%
+models_df = list(Full = partitions_list$gdp_comp_fin_cycle_cond,
+                 Short = partitions_list$gdp_comp_fin_cycle,
+                 United = partitions_list$gdp_comp_fin_cycle_united) %>% 
+  enframe(value = "partition")
+
+
+```
+
+
+```{r add_pca_align_list}
+
+models_df = models_df %>%
+  mutate(pca_align_list = list(
+    list(
+      Dom_Macro = list(var_name = "private_consumption"),
+      Dom_Fin = list("spread_cpi_corp"),
+      Ext_Macro = list(var_name = "gdp_us"),
+      Ext_Fin = list(var_name = "rate_euro"),
+      Dom_Fin_Cycle = list(var_name = "credit")
+    ),
+    list(
+      Dom_Macro = list(var_name = "private_consumption"),
+      Ext_Macro = list(var_name = "gdp_us"),
+      Ext_Fin = list(var_name = "rate_euro"),
+      Dom_Fin_Cycle = list(var_name = "credit")
+    ),
+    list(
+      Dom_Macro = list(var_name = "private_consumption"),
+      Dom_Fin = list("credit"),
+      Ext_Macro = list(var_name = "gdp_us"),
+      Ext_Fin = list(var_name = "rate_euro")
+    )
+  ))
+
+
+models_df = models_df %>% 
+  mutate(gar_model = map2(
+    partition, pca_align_list,function(temp_part, temp_align){
+      
+      temp_gar = run.GaR.analysis(
+        partitions_list = temp_part,
+        vars_df = df,
+        target_var_name = "gdp",
+        horizon_list = parameters_list$horizon_list,
+        quantile_vec = parameters_list$quantile_vec,
+        pca.align.list = temp_align
+  )
+      
+      return(temp_gar)
+      
+    }))
+
+
+```
+
+
+```{r get_fin_coeffs}
+
+models_df = models_df %>% 
+  mutate(coeff_df = map(gar_model, extract_coeffs_from_gar_model))
+
+
+```
+
+
+```{r get_pca_loadings}
+
+models_df = models_df %>% 
+  mutate(pca_loadings = map(gar_model, extract_pca_loadings_from_gar_model))
+
+```
+
+
+
+\section{Fin coeffs}
+
+
+```{r plot_fin_coeffs, fig.height=8}
+
+
+models_df %>% 
+  select(name, coeff_df) %>% 
+  unnest(cols = c(name, coeff_df)) %>% 
+  filter(str_detect(Name, "Dom_Fin")) %>% 
+  mutate(Name = str_remove_all(Name, "_xreg")) %>% 
+  unite(name, c(Name,name)) %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = Tau, y = Coeff, fill = Significant)) + 
+  geom_col(width = 0.5) + 
+  scale_fill_manual(values = c("Significant" = "lightblue",
+                               "Non Significant" = "lightgrey")) + 
+  facet_grid(cols = vars(Horizon), rows = vars(name), scales = "free") + 
+  xlab(NULL) + ylab(NULL) + 
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+
+```
+
+
+Short and Full support volatility paradox. United doesn't.
+
+
+\section{PCA loadings}
+
+```{r plot_pca_loadings, fig.height=7}
+
+models_df %>% 
+  select(name, pca_loadings) %>% 
+  unnest(c(name, pca_loadings)) %>% 
+  ggplot(aes(x = rowname, y = coeff)) + 
+  geom_col() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  coord_flip() + 
+  facet_grid(cols = vars(name),rows = vars(partition), scales = "free") + 
+  ylab(NULL) + xlab(NULL) + 
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank())
+  
+
+```
+
+United assigns opposite signs to houseprice and credit
+
+\section{Goodness of fit}
+
+
+```{r add_pred_models_df}
+
+models_df = models_df %>%
+  select(name, partition) %>% 
   mutate(pred_df = map(partition,function(temp_part){
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
@@ -179,3 +368,9 @@ rm(pit_score_df, intercept_df)
 
 ```
 
+
+Short seem to give better results relative to Full but not significantly.
+
+\section{Conclusion}
+
+We discard United spec for not supporting volatility paradox and discard Short spec for absence of spread features. That leaves FUll spec to work with

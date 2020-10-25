@@ -267,3 +267,103 @@ calculate_skew_and_iqr = function(gar_obj) {
 
 
 }
+
+
+
+extract_coeffs_from_gar_model = function(gar_model,
+                                         partition_names = NULL) {
+  stopifnot("qreg_result" %in% names(gar_model))
+
+  coeffs_df = map2_dfr(gar_model[["qreg_result"]],
+                       names(gar_model[["qreg_result"]]),
+                       function(temp_mod, temp_name) {
+                         temp_df = temp_mod %>%
+                           extract.qreg.coeff.table() %>%
+                           mutate(Horizon = temp_name)
+
+
+                       })
+
+  if (!is.null(partition_names)) {
+    coeffs_df = coeffs_df %>%
+      filter(Name %in% partition_names)
+
+
+  }
+
+  return(coeffs_df)
+
+
+}
+
+
+#' @title Extract factor contribution from gar model
+#'
+#' This function extracts the factor contribution (coefficients
+#'  multiplied by values) data frame from gar model
+#'
+#'  @import purrr
+#'
+#'  @import magrittr
+#'
+#' @param gar_model
+#'
+#' @param partition_names optional which partitions to return
+#'
+#' @return factor_contribution_df
+
+extract_pca_loadings_from_gar_model = function(gar_model) {
+
+  stopifnot("pca_obj" %in% names(gar_model))
+
+  pca_loadings_df = map_dfr(gar_model$pca_obj, function(temp_pca){
+
+    temp_coeffs = temp_pca$pca_obj$rotation[,1] %>%
+      as.data.frame() %>%
+      setNames("coeff") %>%
+      rownames_to_column()
+
+
+  },
+  .id = "partition")
+
+  return(pca_loadings_df)
+
+}
+
+
+#' This function comapares two partitions
+#'
+#' @param source_partition
+#'
+#' @param target_partition
+
+is_partition_identical = function(source_partition, target_partition){
+
+  names_diff = union(
+    setdiff(names(source_partition),names(target_partition)),
+    setdiff(names(target_partition),names(source_partition)))
+
+  if(!length(names_diff) == 0){return(FALSE)}
+
+  target_partition = target_partition[names(source_partition)]
+
+  for(temp_name in names(source_partition)){
+
+    if(!length(source_partition[[temp_name]]) ==
+       length(target_partition[[temp_name]])){return(FALSE)}
+
+    comp_diff = union(
+      setdiff(source_partition[[temp_name]],target_partition[[temp_name]]),
+      setdiff(target_partition[[temp_name]],source_partition[[temp_name]]))
+
+
+    if(!length(comp_diff) == 0){return(FALSE)}
+
+
+  }
+
+  return(TRUE)
+
+
+}

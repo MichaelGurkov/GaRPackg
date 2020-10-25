@@ -6,7 +6,6 @@
 ```
 
 
-
 ```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
 
 ```
@@ -21,7 +20,7 @@ category_params_df = list(
   ),
   Ext_Macro = list(
     optional = c("gdp_euro","gdp_us"),
-    required = c("oecd_imp", "net_exports")
+    required = c("oecd_imp", "imports", "exports")
   ),
   Dom_Fin =  list(
     required = c("term_spread","boi_rate"),
@@ -75,35 +74,40 @@ feature_select_df = map(
 ```{r get_in_sample_fit}
 
 
-fit_df = feature_select_df %>% 
-  slice_sample(n = 5000) %>% 
-  mutate(gar_model = map(temp_part,  run.GaR.analysis,
+fit_df = feature_select_df %>%
+  slice_sample(n = 6500) %>%
+  rbind(feature_select_df %>% 
+          mutate(ind = map_lgl(feature_select_df$temp_part,
+                               ~is_partition_identical(
+                                 source_partition = current_partition,
+                                 target_partition = .))) %>% 
+          filter(ind == TRUE) %>% 
+          select(-ind)) %>% 
+  mutate(
+    gar_model = map(
+      temp_part,
+      run.GaR.analysis,
       vars_df = df,
       target_var_name = "gdp",
       horizon_list = parameters_list$horizon_list,
-      quantile_vec = parameters_list$quantile_vec))
+      quantile_vec = parameters_list$quantile_vec,
+      pca.align.list = list(
+        Dom_FCI = list(var_name = "spread_cpi_corp",
+                       positive_direction = FALSE),
+        Dom_Macro = list(var_name = "private_consumption"),
+        Ext_Macro = list(var_name = "gdp_us"),
+        Ext_Fin = list(var_name = "rate_euro"),
+        Dom_Fin_Cycle = list(var_name = "credit")
+      )
+    )
+  )
 
-# write_rds(x = fit_df,paste0(
-#   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-#   "\\OneDrive - Bank Of",
-#   " Israel\\Data\\BoI\\GaR_Data\\fit_df-",Sys.Date(),".RDS"))
-
-
-```
-
-
-```{r import_data, eval=FALSE}
-
-fit_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
 
 ```
 
 
-```{r get_coeffs, eval=FALSE}
+```{r get_coeffs}
 
 fit_df = fit_df %>% 
   mutate(coeff_df = map(gar_model,
@@ -112,6 +116,7 @@ fit_df = fit_df %>%
 
 
 ```
+
 
 ```{r get_skew}
 
@@ -132,6 +137,28 @@ fit_df =  fit_df %>%
 ```
 
 
+```{r export_data}
+
+write_rds(x = fit_df,paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+
+
+```
+
+
+```{r import_data, eval=FALSE}
+
+fit_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+
+
+```
+
+
 
 ```{r plot_coeffs}
 
@@ -139,6 +166,7 @@ fit_df %>%
   rownames_to_column() %>% 
   select(rowname, coeff_df) %>% 
   unnest(coeff_df) %>% 
+  filter(Name == "Dom_Fin_Cycle_xreg") %>% 
   select(rowname, Coeff, Horizon, Tau) %>% 
   mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
   ggplot(aes(x = Coeff, fill = Tau)) + 
@@ -149,20 +177,20 @@ fit_df %>%
   theme(legend.position = "bottom")
 
 
-fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname, coeff_df) %>% 
-  unnest(coeff_df) %>% 
-  select(rowname, Coeff, Horizon, Tau) %>% 
-  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
-  filter(Tau %in% c(0.05,0.95)) %>%  
-  ggplot(aes(x = Coeff, fill = Tau)) + 
-  geom_histogram() + 
-  # gghighlight(Tau == 0.05,calculate_per_facet = TRUE) + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
-  facet_wrap(~Horizon, scales = "free") + 
-  theme(legend.position = "bottom")
+# fit_df %>% 
+#   rownames_to_column() %>% 
+#   select(rowname, coeff_df) %>% 
+#   unnest(coeff_df) %>% 
+#   select(rowname, Coeff, Horizon, Tau) %>% 
+#   mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
+#   filter(Tau %in% c(0.05,0.95)) %>%  
+#   ggplot(aes(x = Coeff, fill = Tau)) + 
+#   geom_histogram() + 
+#   # gghighlight(Tau == 0.05,calculate_per_facet = TRUE) + 
+#   geom_vline(xintercept = 0, linetype = "dashed") + 
+#   ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
+#   facet_wrap(~Horizon, scales = "free") + 
+#   theme(legend.position = "bottom")
 
 
 ```
@@ -170,6 +198,12 @@ fit_df %>%
 
 
 ```{r plot_skew}
+
+library(gghighlight)
+
+current_partition_ind = map_lgl(fit_df$temp_part, ~is_partition_identical(
+  source_partition = current_partition,target_partition = .))
+
 
 skew_plot = fit_df %>% 
   rownames_to_column() %>% 
@@ -186,15 +220,13 @@ skew_plot = fit_df %>%
               unhighlighted_params = list(alpha = 0.1),
               calculate_per_facet = TRUE) + 
   geom_hline(yintercept = c(-0.5,0.5),
-             linetype = "dashed", color = "blue") +
-
-  theme_bw()
+             linetype = "dashed", color = "blue")
 
 
 write_rds(skew_plot, paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\skew_plot.rds"))
+  "\\GaR_Data\\Working_data\\skew_plot.rds"))
 
 
 
