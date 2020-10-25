@@ -201,9 +201,6 @@ fit_df %>%
 
 library(gghighlight)
 
-current_partition_ind = map_lgl(fit_df$temp_part, ~is_partition_identical(
-  source_partition = current_partition,target_partition = .))
-
 
 skew_plot = fit_df %>% 
   rownames_to_column() %>% 
@@ -214,7 +211,7 @@ skew_plot = fit_df %>%
   xlab(NULL) + ylab(NULL) + 
   ggtitle("The skewness measure for each partition") + 
   facet_wrap(~Horizon, scales = "free") +
-  gghighlight(rowname == 4599,
+  gghighlight(rowname == 6501,
               use_group_by = FALSE,
               use_direct_label = FALSE,
               unhighlighted_params = list(alpha = 0.1),
@@ -248,12 +245,17 @@ gar_plot = fit_df %>%
   ggtitle("5th percentile of predictive distribution") + 
   facet_wrap(~Horizon, scales = "free") + 
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  gghighlight(rowname == 4599,
+  gghighlight(rowname == 6501,
               use_group_by = FALSE,
               use_direct_label = FALSE,
               unhighlighted_params = list(alpha = 0.1),
               calculate_per_facet = TRUE) +
   theme_bw()
+
+write_rds(gar_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\gar_plot.rds"))
 
 
 ```
@@ -261,7 +263,7 @@ gar_plot = fit_df %>%
 
 ```{r plot_median_iqr}
 
-fit_df %>% 
+med_plot = fit_df %>% 
   rownames_to_column() %>% 
   select(rowname, skew_df) %>% 
   unnest(cols = skew_df) %>% 
@@ -276,6 +278,13 @@ fit_df %>%
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + 
   facet_wrap(~Horizon, scales = "free") + 
   theme_bw()
+
+
+write_rds(med_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\med_plot.rds"))
+
 
 ```
 
