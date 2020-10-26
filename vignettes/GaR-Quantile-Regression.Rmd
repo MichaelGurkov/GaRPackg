@@ -8,20 +8,35 @@ coeffs_df = results %>%
   rename(quantile = tau) %>% 
   filter(!name == "Intercept") %>% 
   mutate(name = str_remove_all(name, "_xreg")) %>% 
-  mutate(name = recode(name,
-                Dom_Macro = "Domestic Macro",
-                Ext_Macro = "External Macro",
-                Ext_Fin = "External Fin. Cond.",
-                Dom_Fin_Cycle = "Financial Cycle"))
+  mutate(
+    name = recode(
+      name,
+      Dom_Macro = "Dom. Macro",
+      Dom_Fin = "Dom. Fin. Cond.",
+      Ext_Macro = "Ext. Macro",
+      Ext_Fin = "Ext. Fin. Cond.",
+      Dom_Fin_Cycle = "Dom. Fin. Cycle"
+    )
+  ) %>%
+  mutate(name = factor(
+    name,
+    levels = c(
+      "Dom. Macro",
+      "Dom. Fin. Cond.",
+      "Dom. Fin. Cycle",
+      "Ext. Macro",
+      "Ext. Fin. Cond."
+    )
+  ))
 
 ```
 
 
 
-```{r plot_1_12_dom_macro_fin_cycle, eval=FALSE}
+```{r plot_1_12_dom_macro_fin_cycle}
 
 coeffs_df %>% 
-  filter(name %in% c("Domestic Macro", "Financial Cycle")) %>% 
+  filter(name %in% c("Dom. Macro", "Dom. Fin. Cycle")) %>% 
   filter(horizon %in% c(1,12)) %>% 
   ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
   scale_fill_manual(values = c("Significant" = "lightblue",
@@ -35,6 +50,7 @@ coeffs_df %>%
 ```
 
 
+
 ```{r plot_coeffs, fig.height=8}
 
 coeffs_df %>% 
@@ -46,8 +62,7 @@ coeffs_df %>%
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(rows = vars(name), cols = vars(horizon),
              scales = "free") + 
-  xlab("Quantile") + ylab(NULL) + 
-  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+  xlab("Quantile") + ylab(NULL)
 
 ```
 

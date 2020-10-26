@@ -6,3 +6,4 @@
 *.tex
 *.log
 inst/doc
+vignettes/GaR-Presentation_cache

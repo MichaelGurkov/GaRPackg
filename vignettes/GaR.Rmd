@@ -148,7 +148,7 @@ results = run.GaR.analysis(
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
+```{r child="GaR-StylizedFacts.Rmd"}
 
 ```
 
@@ -162,6 +162,13 @@ results = run.GaR.analysis(
 \section{Goodness of fit}
 
 ```{r compare_predictions, child="GaR-Prediction-Comparison.Rmd"}
+
+```
+
+
+\section{Robustness}
+
+```{r child="GaR-Robustness.Rmd"}
 
 ```
 
