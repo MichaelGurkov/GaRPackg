@@ -1,48 +1,180 @@
 
+```{r Get_partitions, child="Partition-Specs.Rmd"}
 
 
+```
 
 
-```{r import plots}
+```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+
+```
 
 
-coeff_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\coeff_plot.rds"))
+```{r get_all_combinations_test}
+
+category_params_df = list(
+  Dom_Macro = list(
+    optional = c("public_consumption", "unemployment"),
+    required = c("investment","private_consumption")
+  ),
+  Ext_Macro = list(
+    optional = c("gdp_euro","gdp_us"),
+    required = c("oecd_imp", "imports", "exports")
+  ),
+  Dom_Fin =  list(
+    required = c("term_spread","boi_rate"),
+    optional = c(
+      "spread_cpi_corp",
+      "ils_usd_impl_vol",
+      "ta_35_impl_vol"
+    )
+  ),
+  Ext_Fin = list(
+    required = c("us_term_spread"),
+    optional = c("rate_euro",
+                 "rate_us",
+                 "oil_p",
+                 "non_energy_p",
+                 "vix",
+                 "sp500",
+                 "eurostoxx600")
+  ),
+  Dom_Fin_Cycle = list(
+    optional = c("ta125_close", "house_price"),
+    required = c("credit")
+  )
+) %>%
+  enframe(name = "category", value = "params") %>%
+  mutate(part_comb_df = map2(
+    category, params,
+    function(temp_name, temp_part) {
+      temp_part_df = get_partition_combs(partition_list = temp_part,
+                                         partition_name = temp_name)
+      }))
 
 
+feature_select_df = map(
+  category_params_df$category,function(temp_cat){
+    temp_df = category_params_df %>%
+      filter(category == temp_cat) %>%
+      select(part_comb_df) %>%
+      unnest(cols = c(part_comb_df))
+    return(temp_df)
+                        }
+  ) %>%
+  reduce(full_join, by = character()) %>%
+  unite(col = name,starts_with("name"),sep = "-") %>%
+  mutate(temp_part = pmap(list(Dom_Macro,Ext_Macro,
+                               Dom_Fin,Ext_Fin,Dom_Fin_Cycle),c))
 
-skew_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\skew_plot.rds"))
-
-
-
-gar_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\gar_plot.rds"))
-
-
-
-med_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\med_plot.rds"))
+```
 
 
+```{r get_in_sample_fit}
 
+
+fit_df = feature_select_df %>%
+  slice_sample(n = 6500) %>%
+  rbind(feature_select_df %>%
+          mutate(ind = map_lgl(feature_select_df$temp_part,
+                               ~is_partition_identical(
+                                 source_partition = current_partition,
+                                 target_partition = .))) %>%
+          filter(ind == TRUE) %>%
+          select(-ind)) %>%
+  mutate(
+    gar_model = map(
+      temp_part,
+      run.GaR.analysis,
+      vars_df = df,
+      target_var_name = "gdp",
+      horizon_list = parameters_list$horizon_list,
+      quantile_vec = parameters_list$quantile_vec,
+      pca.align.list = list(
+        Dom_FCI = list(var_name = "spread_cpi_corp",
+                       positive_direction = FALSE),
+        Dom_Macro = list(var_name = "private_consumption"),
+        Ext_Macro = list(var_name = "gdp_us"),
+        Ext_Fin = list(var_name = "rate_euro"),
+        Dom_Fin_Cycle = list(var_name = "credit")
+      )
+    )
+  )
 
 
 
 ```
 
 
-```{r plot_coeff}
+```{r get_coeffs}
 
-print(coeff_plot)
+fit_df = fit_df %>%
+  mutate(coeff_df = map(gar_model,
+                             extract_coeffs_from_gar_model))
+
+
+
+```
+
+
+```{r get_skew}
+
+fit_df = fit_df %>%
+  mutate(skew_df = map(gar_model,calculate_skew_and_iqr))
+
+
+```
+
+
+```{r get_gar}
+
+fit_df =  fit_df %>%
+  mutate(pred_df = map(gar_model,function(temp_mod){
+    make_prediction_df(temp_mod$qreg_result, xreg_df = temp_mod$reg_df)
+  }))
+
+```
+
+
+```{r export_data}
+
+write_rds(x = fit_df,paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+
+
+```
+
+
+```{r import_data, eval=FALSE}
+
+fit_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+
+
+```
+
+
+
+```{r plot_coeffs}
+
+fit_df %>%
+  rownames_to_column() %>%
+  select(rowname, coeff_df) %>%
+  unnest(coeff_df) %>%
+  filter(Name == "Dom_Fin_Cycle_xreg") %>%
+  select(rowname, Coeff, Horizon, Tau) %>%
+  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>%
+  ggplot(aes(x = Coeff, fill = Tau)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +
+  facet_wrap(~Horizon, scales = "free") +
+  theme(legend.position = "bottom")
+
 
 ```
 
@@ -50,299 +182,92 @@ print(coeff_plot)
 
 ```{r plot_skew}
 
-print(skew_plot)
+library(gghighlight)
+
+
+skew_plot = fit_df %>%
+  rownames_to_column() %>%
+  select(rowname,skew_df) %>%
+  unnest(cols = skew_df) %>%
+  ggplot(aes(x = date, y = Skew, group = rowname)) +
+  geom_line() +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle("The skewness measure for each partition") +
+  facet_wrap(~Horizon, scales = "free") +
+  gghighlight(rowname == 6501,
+              use_group_by = FALSE,
+              use_direct_label = FALSE,
+              unhighlighted_params = list(alpha = 0.1),
+              calculate_per_facet = TRUE) +
+  geom_hline(yintercept = c(-0.5,0.5),
+             linetype = "dashed", color = "blue")
+
+
+write_rds(skew_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\skew_plot.rds"))
+
+
+
+
 
 ```
 
 
-```{r plot_gar_df}
+```{r plot_gar}
 
-print(gar_plot)
+gar_plot = fit_df %>%
+  rownames_to_column() %>%
+  select(rowname, pred_df) %>%
+  unnest(cols = pred_df) %>%
+  filter(Quantile == "0.05") %>%
+  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) +
+  geom_line() +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle("5th percentile of predictive distribution") +
+  facet_wrap(~Horizon, scales = "free") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
+  gghighlight(rowname == 6501,
+              use_group_by = FALSE,
+              use_direct_label = FALSE,
+              unhighlighted_params = list(alpha = 0.1),
+              calculate_per_facet = TRUE) +
+  theme_bw()
+
+write_rds(gar_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\gar_plot.rds"))
+
 
 ```
 
 
+```{r plot_median_iqr}
 
-```{r plot_med}
+med_plot = fit_df %>%
+  rownames_to_column() %>%
+  select(rowname, skew_df) %>%
+  unnest(cols = skew_df) %>%
+  group_by(rowname, Horizon) %>%
+  summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>%
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
+  ggplot(aes(x = med_vol_cor)) +
+  geom_histogram() +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle(paste0("Correlaltion between the median",
+                 " and IQR of the predictive distribution")) +
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
+  facet_wrap(~Horizon, scales = "free") +
+  theme_bw()
 
-read_rds(paste0(
+
+write_rds(med_plot, paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\BoI",
   "\\GaR_Data\\Working_data\\med_plot.rds"))
 
 
 ```
-
-
-<!-- ```{r Get_partitions, child="Partition-Specs.Rmd"} -->
-
-
-<!-- ``` -->
-
-
-<!-- ```{r import_data, child="GaR-ImportAndProcessData.Rmd"} -->
-
-<!-- ``` -->
-
-
-<!-- ```{r get_all_combinations_test} -->
-
-<!-- category_params_df = list( -->
-<!--   Dom_Macro = list( -->
-<!--     optional = c("public_consumption", "unemployment"), -->
-<!--     required = c("investment","private_consumption") -->
-<!--   ), -->
-<!--   Ext_Macro = list( -->
-<!--     optional = c("gdp_euro","gdp_us"), -->
-<!--     required = c("oecd_imp", "imports", "exports") -->
-<!--   ), -->
-<!--   Dom_Fin =  list( -->
-<!--     required = c("term_spread","boi_rate"), -->
-<!--     optional = c( -->
-<!--       "spread_cpi_corp", -->
-<!--       "ils_usd_impl_vol", -->
-<!--       "ta_35_impl_vol" -->
-<!--     ) -->
-<!--   ), -->
-<!--   Ext_Fin = list( -->
-<!--     required = c("us_term_spread"), -->
-<!--     optional = c("rate_euro", -->
-<!--                  "rate_us", -->
-<!--                  "oil_p", -->
-<!--                  "non_energy_p", -->
-<!--                  "vix", -->
-<!--                  "sp500", -->
-<!--                  "eurostoxx600") -->
-<!--   ), -->
-<!--   Dom_Fin_Cycle = list( -->
-<!--     optional = c("ta125_close", "house_price"), -->
-<!--     required = c("credit") -->
-<!--   ) -->
-<!-- ) %>% -->
-<!--   enframe(name = "category", value = "params") %>% -->
-<!--   mutate(part_comb_df = map2( -->
-<!--     category, params, -->
-<!--     function(temp_name, temp_part) { -->
-<!--       temp_part_df = get_partition_combs(partition_list = temp_part, -->
-<!--                                          partition_name = temp_name) -->
-<!--       })) -->
-
-
-<!-- feature_select_df = map( -->
-<!--   category_params_df$category,function(temp_cat){ -->
-<!--     temp_df = category_params_df %>%  -->
-<!--       filter(category == temp_cat) %>%  -->
-<!--       select(part_comb_df) %>%  -->
-<!--       unnest(cols = c(part_comb_df)) -->
-<!--     return(temp_df) -->
-<!--                         } -->
-<!--   ) %>%  -->
-<!--   reduce(full_join, by = character()) %>%  -->
-<!--   unite(col = name,starts_with("name"),sep = "-") %>%  -->
-<!--   mutate(temp_part = pmap(list(Dom_Macro,Ext_Macro, -->
-<!--                                Dom_Fin,Ext_Fin,Dom_Fin_Cycle),c)) -->
-
-<!-- ``` -->
-
-
-<!-- ```{r get_in_sample_fit} -->
-
-
-<!-- fit_df = feature_select_df %>% -->
-<!--   slice_sample(n = 6500) %>% -->
-<!--   rbind(feature_select_df %>%  -->
-<!--           mutate(ind = map_lgl(feature_select_df$temp_part, -->
-<!--                                ~is_partition_identical( -->
-<!--                                  source_partition = current_partition, -->
-<!--                                  target_partition = .))) %>%  -->
-<!--           filter(ind == TRUE) %>%  -->
-<!--           select(-ind)) %>%  -->
-<!--   mutate( -->
-<!--     gar_model = map( -->
-<!--       temp_part, -->
-<!--       run.GaR.analysis, -->
-<!--       vars_df = df, -->
-<!--       target_var_name = "gdp", -->
-<!--       horizon_list = parameters_list$horizon_list, -->
-<!--       quantile_vec = parameters_list$quantile_vec, -->
-<!--       pca.align.list = list( -->
-<!--         Dom_FCI = list(var_name = "spread_cpi_corp", -->
-<!--                        positive_direction = FALSE), -->
-<!--         Dom_Macro = list(var_name = "private_consumption"), -->
-<!--         Ext_Macro = list(var_name = "gdp_us"), -->
-<!--         Ext_Fin = list(var_name = "rate_euro"), -->
-<!--         Dom_Fin_Cycle = list(var_name = "credit") -->
-<!--       ) -->
-<!--     ) -->
-<!--   ) -->
-
-
-
-<!-- ``` -->
-
-
-<!-- ```{r get_coeffs} -->
-
-<!-- fit_df = fit_df %>%  -->
-<!--   mutate(coeff_df = map(gar_model, -->
-<!--                              extract_coeffs_from_gar_model)) -->
-
-
-
-<!-- ``` -->
-
-
-<!-- ```{r get_skew} -->
-
-<!-- fit_df = fit_df %>%  -->
-<!--   mutate(skew_df = map(gar_model,calculate_skew_and_iqr)) -->
-
-
-<!-- ``` -->
-
-
-<!-- ```{r get_gar} -->
-
-<!-- fit_df =  fit_df %>%  -->
-<!--   mutate(pred_df = map(gar_model,function(temp_mod){ -->
-<!--     make_prediction_df(temp_mod$qreg_result, xreg_df = temp_mod$reg_df) -->
-<!--   })) -->
-
-<!-- ``` -->
-
-
-<!-- ```{r export_data} -->
-
-<!-- write_rds(x = fit_df,paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
-<!--   "\\OneDrive - Bank Of", -->
-<!--   " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS")) -->
-
-
-<!-- ``` -->
-
-
-<!-- ```{r import_data, eval=FALSE} -->
-
-<!-- fit_df = read_rds(paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
-<!--   "\\OneDrive - Bank Of", -->
-<!--   " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS")) -->
-
-
-<!-- ``` -->
-
-
-
-<!-- ```{r plot_coeffs} -->
-
-<!-- fit_df %>%  -->
-<!--   rownames_to_column() %>%  -->
-<!--   select(rowname, coeff_df) %>%  -->
-<!--   unnest(coeff_df) %>%  -->
-<!--   filter(Name == "Dom_Fin_Cycle_xreg") %>%  -->
-<!--   select(rowname, Coeff, Horizon, Tau) %>%  -->
-<!--   mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>%  -->
-<!--   ggplot(aes(x = Coeff, fill = Tau)) +  -->
-<!--   geom_histogram() +  -->
-<!--   geom_vline(xintercept = 0, linetype = "dashed") +  -->
-<!--   ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +  -->
-<!--   facet_wrap(~Horizon, scales = "free") +  -->
-<!--   theme(legend.position = "bottom") -->
-
-
-<!-- ``` -->
-
-
-
-<!-- ```{r plot_skew} -->
-
-<!-- library(gghighlight) -->
-
-
-<!-- skew_plot = fit_df %>%  -->
-<!--   rownames_to_column() %>%  -->
-<!--   select(rowname,skew_df) %>%  -->
-<!--   unnest(cols = skew_df) %>% -->
-<!--   ggplot(aes(x = date, y = Skew, group = rowname)) + -->
-<!--   geom_line() + -->
-<!--   xlab(NULL) + ylab(NULL) +  -->
-<!--   ggtitle("The skewness measure for each partition") +  -->
-<!--   facet_wrap(~Horizon, scales = "free") + -->
-<!--   gghighlight(rowname == 6501, -->
-<!--               use_group_by = FALSE, -->
-<!--               use_direct_label = FALSE, -->
-<!--               unhighlighted_params = list(alpha = 0.1), -->
-<!--               calculate_per_facet = TRUE) +  -->
-<!--   geom_hline(yintercept = c(-0.5,0.5), -->
-<!--              linetype = "dashed", color = "blue") -->
-
-
-<!-- write_rds(skew_plot, paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
-<!--   "\\OneDrive - Bank Of Israel\\Data\\BoI", -->
-<!--   "\\GaR_Data\\Working_data\\skew_plot.rds")) -->
-
-
-
-
-
-<!-- ``` -->
-
-
-<!-- ```{r plot_gar} -->
-
-<!-- gar_plot = fit_df %>%  -->
-<!--   rownames_to_column() %>%  -->
-<!--   select(rowname, pred_df) %>%  -->
-<!--   unnest(cols = pred_df) %>%  -->
-<!--   filter(Quantile == "0.05") %>%  -->
-<!--   ggplot(aes(x = date, y = GaR_fitted, group = rowname)) +  -->
-<!--   geom_line() + -->
-<!--   xlab(NULL) + ylab(NULL) +  -->
-<!--   ggtitle("5th percentile of predictive distribution") +  -->
-<!--   facet_wrap(~Horizon, scales = "free") +  -->
-<!--   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +  -->
-<!--   gghighlight(rowname == 6501, -->
-<!--               use_group_by = FALSE, -->
-<!--               use_direct_label = FALSE, -->
-<!--               unhighlighted_params = list(alpha = 0.1), -->
-<!--               calculate_per_facet = TRUE) + -->
-<!--   theme_bw() -->
-
-<!-- write_rds(gar_plot, paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
-<!--   "\\OneDrive - Bank Of Israel\\Data\\BoI", -->
-<!--   "\\GaR_Data\\Working_data\\gar_plot.rds")) -->
-
-
-<!-- ``` -->
-
-
-<!-- ```{r plot_median_iqr} -->
-
-<!-- med_plot = fit_df %>%  -->
-<!--   rownames_to_column() %>%  -->
-<!--   select(rowname, skew_df) %>%  -->
-<!--   unnest(cols = skew_df) %>%  -->
-<!--   group_by(rowname, Horizon) %>%  -->
-<!--   summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>%  -->
-<!--   mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%   -->
-<!--   ggplot(aes(x = med_vol_cor)) +  -->
-<!--   geom_histogram() +  -->
-<!--   xlab(NULL) + ylab(NULL) +  -->
-<!--   ggtitle(paste0("Correlaltion between the median", -->
-<!--                  " and IQR of the predictive distribution")) +  -->
-<!--   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +  -->
-<!--   facet_wrap(~Horizon, scales = "free") +  -->
-<!--   theme_bw() -->
-
-
-<!-- write_rds(med_plot, paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"), -->
-<!--   "\\OneDrive - Bank Of Israel\\Data\\BoI", -->
-<!--   "\\GaR_Data\\Working_data\\med_plot.rds")) -->
-
-
-<!-- ``` -->
 

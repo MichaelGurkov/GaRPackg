@@ -166,13 +166,6 @@ results = run.GaR.analysis(
 ```
 
 
-\section{Robustness}
-
-```{r child="GaR-Robustness.Rmd"}
-
-```
-
-
 
 \section{Bibliography}
 
