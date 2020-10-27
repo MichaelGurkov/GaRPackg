@@ -117,14 +117,14 @@ predict_df = map(roll_cv_list$splits,
       as.data.frame() %>%
       rename_all(~str_remove(.,"tau= ")) %>%
       pivot_longer(cols = everything(),
-                   names_to = "Quantile",
-                   values_to = "GaR_forecast") %>%
-      mutate(Horizon = temp_name) %>%
+                   names_to = "quantile",
+                   values_to = "gar_forecast") %>%
+      mutate(horizon = temp_name) %>%
       mutate(date = assessment_set$date)
 
     if(length(quantile_vec) == 1){
       temp_pred = temp_pred %>%
-        mutate(Quantile = quantile_vec)
+        mutate(quantile = quantile_vec)
       }
 
     return(temp_pred)

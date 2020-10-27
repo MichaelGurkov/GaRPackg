@@ -145,7 +145,7 @@ dom_macro_fin_cycle_plot = coeffs_df %>%
   geom_col(width = 0.5) + 
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(cols = vars(name), rows = vars(horizon), scales = "free_y") + 
-  xlab("Quantile") + ylab(NULL)
+  xlab("quantile") + ylab(NULL)
 
 ```
 
@@ -175,7 +175,7 @@ factor_decomposition_plot = ggplot(data = factor_df %>%
 
 quartile_skewness_plot = results %>% 
   calculate_skew_and_iqr() %>% 
-  filter(Horizon == 1) %>% 
+  filter(horizon == 1) %>% 
   ggplot(aes(x = date, y = Skew)) + 
   geom_line() + 
   geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed", color = "blue") + 
@@ -195,9 +195,9 @@ realized_df = df %>%
   select(date, gdp) %>% 
   filter(complete.cases(.)) %>% 
   rename(realized = gdp) %>% 
-  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>% 
+  mutate(forecast_period = paste(date - 1, date, sep = "-")) %>% 
   select(-date) %>% 
-  select(Forecast_Period, realized) %>% 
+  select(forecast_period, realized) %>% 
   as_tibble()
 
 benchmark_df = get.gar.forecast(
@@ -208,17 +208,17 @@ benchmark_df = get.gar.forecast(
   quantile_vec = parameters_list$quantile_vec,
   win_len = 40,
   win_type_expanding = TRUE) %>%         
-  mutate(Forecast_Period = paste(
-    date + as.numeric(Horizon) * 0.25 - 1,
-    date + as.numeric(Horizon) * 0.25,
+  mutate(forecast_period = paste(
+    date + as.numeric(horizon) * 0.25 - 1,
+    date + as.numeric(horizon) * 0.25,
     sep = "-"
     )) %>%
-  mutate(Horizon = as_factor(Horizon)) %>% 
-  rename(benchmark = GaR_forecast)
+  mutate(horizon = as_factor(horizon)) %>% 
+  rename(benchmark = gar_forecast)
 
 staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>% 
   as_tibble() %>% 
-  rename(prediction = Staff_Forecast)
+  rename(prediction = staff_forecast)
 
 staff_forecast_df = list(
   name = "Staff",
@@ -242,13 +242,13 @@ models_df = list(GDP_comp = partitions_list$gdp_components) %>%
       
       temp_forecast = temp_forecast %>% 
         filter(complete.cases(.)) %>%
-        mutate(Forecast_Period = paste(
-          date + as.numeric(Horizon) * 0.25 - 1,
-          date + as.numeric(Horizon) * 0.25,
+        mutate(forecast_period = paste(
+          date + as.numeric(horizon) * 0.25 - 1,
+          date + as.numeric(horizon) * 0.25,
           sep = "-"
         )) %>%
-        mutate(Horizon = as_factor(Horizon)) %>% 
-        rename(prediction = GaR_forecast)
+        mutate(horizon = as_factor(horizon)) %>% 
+        rename(prediction = gar_forecast)
         
         
       return(temp_forecast)
@@ -272,7 +272,7 @@ models_df = list(GDP_comp = partitions_list$gdp_components) %>%
                      .f = function(pred_df,realized){
                        temp_score = pred_df %>% 
                          inner_join(realized_df,
-                                    by = "Forecast_Period") %>% 
+                                    by = "forecast_period") %>% 
                          rename(actual_values = realized,
                                 predicted_values = prediction) %>% 
                          quantile.pit.score()
@@ -291,12 +291,12 @@ r2_score_plot = models_df %>%
   select(name, r2_score) %>% 
   unnest(r2_score) %>% 
   mutate(name = map_chr(name,~.)) %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
-  ggplot(aes(x = Quantile, y = score, fill = name)) + 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = score, fill = name)) + 
   geom_col(position = "dodge") + 
-  xlab(NULL) + ylab(NULL) + ggtitle("Quantile R2 score") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("quantile R2 score") + 
   scale_fill_viridis_d(option = "plasma") + 
-  facet_wrap(~Horizon) + 
+  facet_wrap(~horizon) + 
   theme(legend.position = "bottom", legend.title = element_blank())
 ```
 
@@ -307,31 +307,31 @@ pit_score_df = models_df %>%
   select(name, pit_score) %>% 
   unnest(pit_score) %>% 
   mutate(name = map_chr(name,~.)) %>% 
-  mutate(Quantile = as.numeric(Quantile)) 
+  mutate(quantile = as.numeric(quantile)) 
 
 intercept_df = models_df$benchmark[[1]] %>% 
-  left_join(models_df$realized[[1]], by = "Forecast_Period") %>% 
+  left_join(models_df$realized[[1]], by = "forecast_period") %>% 
   rename(actual_values = realized, predicted_values = benchmark) %>% 
-  select(date,actual_values,predicted_values,Quantile, Horizon) %>% 
+  select(date,actual_values,predicted_values,quantile, horizon) %>% 
   filter(complete.cases(.)) %>% 
   quantile.pit.score() %>% 
   mutate(name = "Intercept") %>% 
   select(names(pit_score_df)) %>% 
-  mutate(Quantile = as.numeric(Quantile))
+  mutate(quantile = as.numeric(quantile))
 
 
 pit_score_plot = pit_score_df %>% 
   bind_rows(intercept_df) %>% 
   filter(!name == "GaR") %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
-  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) + 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = pit, group = name, color = name)) + 
   geom_line() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") + 
   xlab(NULL) + ylab(NULL) + ggtitle("PIT score") + 
   scale_color_viridis_d(option = "plasma") + 
   scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon) + 
+  facet_wrap(~horizon) + 
   theme(legend.position = "bottom", legend.title = element_blank())
 
 ```

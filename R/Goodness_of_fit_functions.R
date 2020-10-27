@@ -9,7 +9,7 @@ quantile.fit.score = function(realized_value, quantile_values, quantiles){
 
   if(length(quantile_values) != length(quantiles)){
 
-    stop("Quantile values and quantiles must be of same length ")
+    stop("quantile values and quantiles must be of same length ")
 
   }
 
@@ -49,7 +49,7 @@ quantile.fit.score.area = function(realized_value,
 
   if(length(quantile_values) != length(quantiles)){
 
-    stop("Quantile values and quantiles must be of same length ")
+    stop("quantile values and quantiles must be of same length ")
 
   }
 
@@ -131,7 +131,7 @@ quantile.crps.score = function(realized_value,
 
   if(length(quantile_values) != length(quantiles)){
 
-    stop("Quantile values and quantiles must be of same length ")
+    stop("quantile values and quantiles must be of same length ")
 
   }
 
@@ -280,7 +280,7 @@ quantile.pit.score = function(prediction_df){
 
 
   pit_score_df = prediction_df %>%
-    group_by(Horizon, Quantile) %>%
+    group_by(horizon, quantile) %>%
     mutate(pit = if_else(actual_values < predicted_values,
                          1 /length(date),0)) %>%
     summarise(pit = sum(pit), .groups = "drop")

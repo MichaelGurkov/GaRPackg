@@ -2,15 +2,15 @@
 ```{r get_quantiles_df}
 
 dist_quantile_df = results$gar_fitted_df %>% 
-  pivot_wider(names_from = Quantile, values_from = GaR_fitted) %>% 
+  pivot_wider(names_from = quantile, values_from = GaR_fitted) %>% 
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
             .funs = list(~paste0("Q_",.))) %>% 
-  group_by(Horizon) %>% 
+  group_by(horizon) %>% 
   mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
            (0.5 * Q_0.75 - 0.5 * Q_0.25)) %>% 
   mutate(IQR = Q_0.75 - Q_0.25) %>% 
   ungroup() %>% 
-  mutate(Horizon = forcats::as_factor(Horizon))
+  mutate(horizon = forcats::as_factor(horizon))
 
 
 factor_quantiles_df = lapply(names(results$qreg_result),
@@ -24,26 +24,26 @@ factor_quantiles_df = lapply(names(results$qreg_result),
             .funs = list(~str_replace(.,"tau= ","Q_"))) %>% 
   mutate(Factor = rownames(.)) %>% 
   mutate(IQR = Q_0.95 - Q_0.05) %>% 
-  mutate(Horizon = temp_name)
+  mutate(horizon = temp_name)
 
   return(temp_df)
   
 }) %>% 
   bind_rows() %>% 
-  mutate(Horizon = factor(Horizon, unique(Horizon))) %>% 
+  mutate(horizon = factor(horizon, unique(horizon))) %>% 
   filter(!Factor == "(Intercept)")
 
 
 iqr_horizon_corr_mat = dist_quantile_df %>% 
-  select(date,Horizon, IQR) %>% 
-  spread(key = Horizon,value = IQR) %>% 
+  select(date,horizon, IQR) %>% 
+  spread(key = horizon,value = IQR) %>% 
   select(-date) %>% 
   cor(use = "pairwise.complete.obs")
 
 
 median_iqr_corr_mat = dist_quantile_df %>% 
-  select(date,Horizon, IQR, Q_0.5) %>%
-  group_by(Horizon) %>% 
+  select(date,horizon, IQR, Q_0.5) %>%
+  group_by(horizon) %>% 
   summarise(Corr = cor(IQR,Q_0.5))
   
 
@@ -58,10 +58,10 @@ median_iqr_corr_mat = dist_quantile_df %>%
 ```{r median_variance_scatter_plot}
 
 ggplot(dist_quantile_df %>% 
-         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
+         select(horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
   geom_point() + 
   stat_smooth(method = "lm") + 
-  facet_wrap(~Horizon) + 
+  facet_wrap(~horizon) + 
   labs(x = "Variance", y = "Median", title = "Median vs Variance") +
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))

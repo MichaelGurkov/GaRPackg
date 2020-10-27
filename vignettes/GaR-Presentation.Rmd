@@ -270,9 +270,9 @@ realized_df = df %>%
   select(date, gdp) %>%
   filter(complete.cases(.)) %>%
   rename(realized = gdp) %>%
-  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>%
+  mutate(forecast_period = paste(date - 1, date, sep = "-")) %>%
   select(-date) %>%
-  select(Forecast_Period, realized) %>%
+  select(forecast_period, realized) %>%
   as_tibble()
 
 benchmark_df = get.gar.forecast(
@@ -283,17 +283,17 @@ benchmark_df = get.gar.forecast(
   quantile_vec = parameters_list$quantile_vec,
   win_len = 40,
   win_type_expanding = TRUE) %>%
-  mutate(Forecast_Period = paste(
-    date + as.numeric(Horizon) * 0.25 - 1,
-    date + as.numeric(Horizon) * 0.25,
+  mutate(forecast_period = paste(
+    date + as.numeric(horizon) * 0.25 - 1,
+    date + as.numeric(horizon) * 0.25,
     sep = "-"
     )) %>%
-  mutate(Horizon = as_factor(Horizon)) %>%
-  rename(benchmark = GaR_forecast)
+  mutate(horizon = as_factor(horizon)) %>%
+  rename(benchmark = gar_forecast)
 
 staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>%
   as_tibble() %>%
-  rename(prediction = Staff_Forecast)
+  rename(prediction = staff_forecast)
 
 staff_forecast_df = list(
   name = "Staff",
@@ -331,13 +331,13 @@ models_df = models_df %>%
 
       temp_forecast = temp_forecast %>%
         filter(complete.cases(.)) %>%
-        mutate(Forecast_Period = paste(
-          date + as.numeric(Horizon) * 0.25 - 1,
-          date + as.numeric(Horizon) * 0.25,
+        mutate(forecast_period = paste(
+          date + as.numeric(horizon) * 0.25 - 1,
+          date + as.numeric(horizon) * 0.25,
           sep = "-"
         )) %>%
-        mutate(Horizon = as_factor(Horizon)) %>%
-        rename(prediction = GaR_forecast)
+        mutate(horizon = as_factor(horizon)) %>%
+        rename(prediction = gar_forecast)
 
 
       return(temp_forecast)
@@ -373,7 +373,7 @@ models_df = models_df %>%
                      .f = function(pred_df,realized){
                        temp_score = pred_df %>%
                          inner_join(realized_df,
-                                    by = "Forecast_Period") %>%
+                                    by = "forecast_period") %>%
                          rename(actual_values = realized,
                                 predicted_values = prediction) %>%
                          quantile.pit.score()
@@ -411,7 +411,7 @@ models_df = models_df %>%
 ## Motivation
 
 \centering
-Quantile Regressions of YoY GDP Growth Four Quarters Ahead
+quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 \vspace{3mm}
 
@@ -433,7 +433,7 @@ temp_qreq = rq(paste0("gdp_4","~",temp_var),
   as.data.frame() %>%
   rownames_to_column() %>%
   mutate(rowname = str_remove_all(rowname, "tau= ")) %>%
-  rename(Quantile = rowname,
+  rename(quantile = rowname,
          my_int = `(Intercept)`,
          my_slope = !!sym(temp_var))
 
@@ -444,7 +444,7 @@ temp_plot = temp_df %>%
   geom_abline(data = temp_qreq,
               aes(intercept = my_int,
                   slope = my_slope,
-                  color = Quantile)) +
+                  color = quantile)) +
   scale_color_manual(values = c("red","black","green")) + 
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1)) +
@@ -565,7 +565,7 @@ Out-of-sample forecast performance is impaired.
 		Method: first principal component
 	\end{itemize}
 	\item
-	\textbf{Quantile regressions --}
+	\textbf{quantile regressions --}
 	estimate a forecast equation for each quantile $\tau$
 	and horizon $h$:
 	$$
@@ -577,7 +577,7 @@ Out-of-sample forecast performance is impaired.
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em}
 	\begin{flushright}
-		\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
+		\hyperlink{quantileReg}{\beamerbutton{quantile reg}}
 	\end{flushright}
 \end{enumerate}
 
@@ -691,7 +691,7 @@ coeffs_df %>%
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(cols = vars(name), rows = vars(horizon),
              scales = "free_y") + 
-  xlab("Quantile") + ylab(NULL)
+  xlab("quantile") + ylab(NULL)
 
 
 
@@ -718,7 +718,7 @@ coeffs_df %>%
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(cols = vars(name), rows = vars(horizon),
              scales = "free_y") + 
-  xlab("Quantile") + ylab(NULL)
+  xlab("quantile") + ylab(NULL)
 
 ```
 
@@ -805,19 +805,19 @@ events = read.csv(paste0(
 
 predict_df =  data.frame(
   date = results$reg_df$date,
-  Horizon_1 = predict(results$qreg_result$`1`,
+  horizon_1 = predict(results$qreg_result$`1`,
                 newdata = results$reg_df)[,1],
-  Horizon_12 = predict(results$qreg_result$`12`,
+  horizon_12 = predict(results$qreg_result$`12`,
                 newdata = results$reg_df)[,1]) %>%
   pivot_longer(cols = -date,
-               names_to = "Horizon",
+               names_to = "horizon",
                values_to = "GaR")
 
 predict_df %>%
 ggplot() +
   ylim(c(-0.12,0.08)) +
-  geom_point(aes(x = date, y = GaR, color = Horizon)) +
-  geom_line(aes(x = date, y = GaR, color = Horizon)) +
+  geom_point(aes(x = date, y = GaR, color = horizon)) +
+  geom_line(aes(x = date, y = GaR, color = horizon)) +
   geom_rect(data = recessions,
             mapping = aes(xmin = Start, xmax = End,
                           ymin = -Inf, ymax = Inf),
@@ -875,13 +875,13 @@ factors_df %>%
 
 results %>% 
   calculate_skew_and_iqr() %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
   ggplot(aes(x = IQR, y = q0.50)) + 
   geom_point() + 
   geom_smooth(method = "lm",se = FALSE) + 
   xlab("Inter Quartile Range") + ylab("Median") + 
-  facet_free(~Horizon, scales = "free",
-             labeller = labeller(Horizon = my_lab)) + 
+  facet_free(~horizon, scales = "free",
+             labeller = labeller(horizon = my_lab)) + 
   theme(axis.text = element_text(size = 8))
 
 
@@ -895,7 +895,7 @@ Contrary to other countries **no evidence of skewed distribution**
 
 results %>%
   calculate_skew_and_iqr() %>%
-  filter(Horizon == 1) %>%
+  filter(horizon == 1) %>%
   select(date, Skew) %>%
   ggplot(aes(x = date, y = Skew)) +
   geom_line() +
@@ -971,13 +971,13 @@ fit_df %>%
   select(rowname, coeff_df) %>% 
   unnest(coeff_df) %>% 
   filter(Name == "Dom_Fin_Cycle_xreg") %>% 
-  select(rowname, Coeff, Horizon, Tau) %>% 
-  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
+  select(rowname, Coeff, horizon, Tau) %>% 
+  mutate(horizon = factor(horizon,c(1,4,8,12))) %>% 
   ggplot(aes(x = Coeff, fill = Tau)) + 
   geom_histogram() + 
   geom_vline(xintercept = 0, linetype = "dashed") + 
   ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
-  facet_wrap(~Horizon, scales = "free") + 
+  facet_wrap(~horizon, scales = "free") + 
   theme(legend.position = "bottom")
 
 
@@ -1016,8 +1016,8 @@ skew_plot = read_rds(paste0(
 
 skew_plot +
   ggtitle("Quartile skewness") +
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) +
+  facet_wrap(~horizon,scales = "free",nrow = 2,
+             labeller = labeller(horizon = my_lab)) +
             theme(title = element_text(size = 20),
                 axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
@@ -1049,8 +1049,8 @@ skew_plot +
 	40 observations and adds one observation in each step)
 \end{itemize}
 
-## Quantile R-Squared
-Quantile R-sq. [@Giglio2016] compares forecast performance to a
+## quantile R-Squared
+quantile R-sq. [@Giglio2016] compares forecast performance to a
 constant quantile benchmark:
 
 $$
@@ -1073,7 +1073,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 
 
-## Quantile R-Squared
+## quantile R-Squared
 
 ```{r plot_r2_score}
 
@@ -1081,13 +1081,13 @@ models_df %>%
   select(name, r2_score) %>%
   unnest(r2_score) %>%
   mutate(name = map_chr(name,~.)) %>%
-  mutate(Horizon = factor(Horizon,
+  mutate(horizon = factor(horizon,
                           levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = Quantile, y = score, fill = name)) +
+  ggplot(aes(x = quantile, y = score, fill = name)) +
   geom_col(position = "dodge") +
   xlab(NULL) + ylab(NULL) +
   scale_fill_viridis_d(option = "plasma") +
-  facet_wrap(~Horizon, labeller = labeller(Horizon = my_lab))
+  facet_wrap(~horizon, labeller = labeller(horizon = my_lab))
 
 ```
 
@@ -1136,24 +1136,24 @@ models_df %>%
   select(name, pit_score) %>%
   unnest(pit_score) %>%
   mutate(name = map_chr(name,~.)) %>%
-  mutate(Quantile = as.numeric(Quantile)) %>%
-  mutate(Horizon = factor(Horizon,
+  mutate(quantile = as.numeric(quantile)) %>%
+  mutate(horizon = factor(horizon,
                           levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) +
+  ggplot(aes(x = quantile, y = pit, group = name, color = name)) +
   geom_line() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   xlab(NULL) + ylab(NULL) +
   scale_color_viridis_d(option = "plasma") +
   scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
+  facet_wrap(~horizon,labeller = labeller(horizon = my_lab))
 
 ```
 
 
-## Quantile Regression 
+## quantile Regression 
 
-\label{QuantileReg}
+\label{quantileReg}
 
 Model: for quantile $\tau$ and horizon $h$, 
 $$
@@ -1172,7 +1172,7 @@ $$
 \bigg\}
 $$
 
-Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
+Note: "quantile crossing" handled using the method of [@Chernozhukov2010]
 
 \begin{flushleft}
 \hyperlink{methodology}{\beamergotobutton{Methodology}}
@@ -1218,7 +1218,7 @@ plot_grid(plotlist = pca_plots)
 \hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
 
 
-## Quantile Regression Coefficients
+## quantile Regression Coefficients
 
 
 \label{CoeffPanel}
@@ -1234,7 +1234,7 @@ coeffs_df %>%
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(rows = vars(name), cols = vars(horizon),
              scales = "free") + 
-  xlab("Quantile") + ylab(NULL) + 
+  xlab("quantile") + ylab(NULL) + 
   theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
         strip.text = element_text(size = 12))
 

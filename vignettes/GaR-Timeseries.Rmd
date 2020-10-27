@@ -115,7 +115,7 @@ gdp_df = df %>%
 
 fan_chart_df  = prediction_df %>% 
   filter(date == max(date))%>% 
-  rename(Horizon = horizon, Quantile = quantile, GaR = value) %>% 
+  rename(horizon = horizon, quantile = quantile, GaR = value) %>% 
   fix_quantile_crossing() %>% 
   rename_all(tolower) %>% 
   pivot_wider(names_from = quantile,values_from = gar) %>% 
@@ -184,7 +184,7 @@ ggplot(data = factor_df %>%
 
 results %>% 
   calculate_skew_and_iqr() %>% 
-  filter(Horizon == 1) %>% 
+  filter(horizon == 1) %>% 
   ggplot(aes(x = date, y = Skew)) + 
   geom_line() + 
   geom_hline(yintercept = c(-0.5,0.5),

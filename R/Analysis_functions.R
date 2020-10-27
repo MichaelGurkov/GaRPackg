@@ -92,9 +92,9 @@ run.GaR.analysis = function(partitions_list, vars_df,
                      mutate(date = reg_df_list$reg_df$date[
                        1:nrow(temp_obj$model)]) %>%
                       pivot_longer(cols = -date,
-                                   names_to = "Quantile",
+                                   names_to = "quantile",
                                    values_to = "GaR_fitted") %>%
-                      mutate(Horizon = temp_name)
+                      mutate(horizon = temp_name)
 
 
 

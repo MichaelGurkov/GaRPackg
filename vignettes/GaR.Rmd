@@ -139,9 +139,9 @@ results = run.GaR.analysis(
 ```
 
 
-\section{Quantile regression results}
+\section{quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-quantile-Regression.Rmd"}
 
 ```
 

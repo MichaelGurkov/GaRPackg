@@ -1,4 +1,4 @@
-context("Quantile_fit_score")
+context("quantile_fit_score")
 
 test_that("Different length of quantile values and quantiles throws an error",
           {

@@ -1,5 +1,5 @@
 
-```{r }
+```{r , dev='pdf'}
 
 coeff_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -12,7 +12,7 @@ print(coeff_plot)
 ```
 
 
-```{r }
+```{r dev='pdf'}
 
 skew_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -28,7 +28,7 @@ print(skew_plot)
 ```
 
 
-```{r }
+```{r dev='pdf'}
 
 gar_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -41,7 +41,7 @@ print(gar_plot)
 ```
 
 
-```{r }
+```{r dev='pdf'}
 
 med_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),

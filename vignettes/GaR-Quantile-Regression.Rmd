@@ -27,17 +27,18 @@ coeffs_df = results %>%
       "Ext. Macro",
       "Ext. Fin. Cond."
     )
-  ))
+  )) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12)))
 
 ```
 
 
 
-```{r plot_1_12_dom_macro_fin_cycle}
+```{r plot_1_4_12_dom_macro_fin_cycle}
 
 coeffs_df %>% 
   filter(name %in% c("Dom. Macro", "Dom. Fin. Cycle")) %>% 
-  filter(horizon %in% c(1,12)) %>% 
+  filter(horizon %in% c(1,4,12)) %>% 
   ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
   scale_fill_manual(values = c("Significant" = "lightblue",
                                "Non Significant" = "lightgrey")) + 
@@ -45,7 +46,7 @@ coeffs_df %>%
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(cols = vars(name), rows = vars(horizon),
              scales = "free_y") + 
-  xlab("Quantile") + ylab(NULL)
+  xlab("quantile") + ylab(NULL)
 
 ```
 
@@ -62,7 +63,7 @@ coeffs_df %>%
   geom_hline(yintercept = 0, linetype = "dashed") + 
   facet_grid(rows = vars(name), cols = vars(horizon),
              scales = "free") + 
-  xlab("Quantile") + ylab(NULL)
+  xlab("quantile") + ylab(NULL)
 
 ```
 
