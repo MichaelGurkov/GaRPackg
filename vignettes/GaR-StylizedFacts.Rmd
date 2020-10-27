@@ -2,15 +2,15 @@
 ```{r get_quantiles_df}
 
 dist_quantile_df = results$gar_fitted_df %>% 
-  pivot_wider(names_from = quantile, values_from = GaR_fitted) %>% 
+  pivot_wider(names_from = Quantile, values_from = GaR_fitted) %>% 
   rename_at(.vars = vars(grep("\\d",names(.),value = TRUE)),
             .funs = list(~paste0("Q_",.))) %>% 
-  group_by(horizon) %>% 
+  group_by(Horizon) %>% 
   mutate(Skew = (0.5 * Q_0.75 + 0.5 * Q_0.25 - Q_0.5) /
            (0.5 * Q_0.75 - 0.5 * Q_0.25)) %>% 
   mutate(IQR = Q_0.75 - Q_0.25) %>% 
   ungroup() %>% 
-  mutate(horizon = forcats::as_factor(horizon))
+  mutate(Horizon = forcats::as_factor(Horizon))
 
 
 factor_quantiles_df = lapply(names(results$qreg_result),
@@ -24,31 +24,32 @@ factor_quantiles_df = lapply(names(results$qreg_result),
             .funs = list(~str_replace(.,"tau= ","Q_"))) %>% 
   mutate(Factor = rownames(.)) %>% 
   mutate(IQR = Q_0.95 - Q_0.05) %>% 
-  mutate(horizon = temp_name)
+  mutate(Horizon = temp_name)
 
   return(temp_df)
   
 }) %>% 
   bind_rows() %>% 
-  mutate(horizon = factor(horizon, unique(horizon))) %>% 
+  mutate(Horizon = factor(Horizon, unique(Horizon))) %>% 
   filter(!Factor == "(Intercept)")
 
 
 iqr_horizon_corr_mat = dist_quantile_df %>% 
-  select(date,horizon, IQR) %>% 
-  spread(key = horizon,value = IQR) %>% 
+  select(date,Horizon, IQR) %>% 
+  spread(key = Horizon,value = IQR) %>% 
   select(-date) %>% 
   cor(use = "pairwise.complete.obs")
 
 
 median_iqr_corr_mat = dist_quantile_df %>% 
-  select(date,horizon, IQR, Q_0.5) %>%
-  group_by(horizon) %>% 
+  select(date,Horizon, IQR, Q_0.5) %>%
+  group_by(Horizon) %>% 
   summarise(Corr = cor(IQR,Q_0.5))
   
 
 
 ```
+
 
 
 
@@ -58,10 +59,10 @@ median_iqr_corr_mat = dist_quantile_df %>%
 ```{r median_variance_scatter_plot}
 
 ggplot(dist_quantile_df %>% 
-         select(horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
+         select(Horizon, IQR, Q_0.5), aes(x = IQR, y = Q_0.5)) + 
   geom_point() + 
   stat_smooth(method = "lm") + 
-  facet_wrap(~horizon) + 
+  facet_wrap(~Horizon) + 
   labs(x = "Variance", y = "Median", title = "Median vs Variance") +
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
@@ -69,4 +70,77 @@ ggplot(dist_quantile_df %>%
 
 ```
 
+
+```{r plot_median_variance_corr}
+
+ggplot(median_iqr_corr_mat, aes(x = Horizon, y = Corr)) + 
+  geom_col(width = 0.5) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  theme_bw()
+
+```
+
+
+
+\subsection{Volatility Paradox}
+The volatility paradox describes a phenomenon where stable conditions today allow risk accumulation
+that realize in the future. The empirical representation of this phenomenon is a negative
+correlation between IQR (Inter Quartile Range) in the short and long term
+
+```{r output_VP_corr_mat, results='asis'}
+
+print(xtable(iqr_horizon_corr_mat), comment = FALSE)
+  
+```
+
+We can also try to asses the contribution of each factor to the volatility paradox. A factor will decrease the distribution volatility if the effect of
+The volatility paradox suggest that the 
+
+```{r factors_IQR}
+
+ggplot(factor_quantiles_df, aes(x = Horizon, y = IQR, group = 1)) + 
+  geom_path() + 
+  geom_point() + 
+  labs(y = "") + 
+  facet_wrap(~Factor) + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+\subsection{Risk Asymmetry}
+The "risk asymmetry" phenomenon refers to the fact that the left tail of the forecasted growth distribution (the depressed growth scenarios) is quite volatile relative to the right
+tail of the distribution meaning that the downside growth risk is much more
+severe than upside risk. The empirical representation of this phenomenon is that a distance between
+of the 5th percentile from the median should be larger relative to the distance of the 95th 
+percentile from the median.
+
+
+```{r plot_risk_assymetry, fig.height=8}
+
+ggplot(dist_quantile_df, aes(x = date, y = Skew)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "", title = "Risk asymmetry") + 
+  facet_wrap(~Horizon, scales = "free", ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
+```{r plot_mean_median_diff, fig.height=8, eval=FALSE}
+
+
+ggplot(dist_quantile_df, aes(x = date, y = OLS - Q_0.5)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") + 
+  labs(x = "", y = "",
+       title = "Difference between mean (OLS) and median (quantile) regressions ") + 
+  facet_wrap(~Horizon, scales = "free", ncol = 1) + 
+  theme_bw() + 
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+
+```
 

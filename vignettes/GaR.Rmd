@@ -139,16 +139,16 @@ results = run.GaR.analysis(
 ```
 
 
-\section{quantile regression results}
+\section{Quantile regression results}
 
-```{r plot_quantile_reg, child="GaR-quantile-Regression.Rmd"}
+```{r plot_quantile_reg, child="GaR-Quantile-Regression.Rmd"}
 
 ```
 
 
 \section{Stylized facts}
 
-```{r child="GaR-StylizedFacts.Rmd"}
+```{r child="GaR-StylizedFacts.Rmd", eval=FALSE}
 
 ```
 

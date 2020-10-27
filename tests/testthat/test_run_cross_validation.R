@@ -77,7 +77,7 @@ cross_validation_pred_expanding = run.cross.validation(
 test_that(
   "run.cross.validation produces correct prediction in fixed window",
   expect_equal(
-    object = cross_validation_pred_fixed$gar_forecast[1],
+    object = cross_validation_pred_fixed$GaR_forecast[1],
     expected = test_pred_fixed)
   )
 
@@ -85,7 +85,7 @@ test_that(
 test_that(
   desc = "run.cross.validation produces correct prediction in expanding window",
   code =  expect_equal(
-    object = cross_validation_pred_expanding$gar_forecast[
+    object = cross_validation_pred_expanding$GaR_forecast[
       nrow(cross_validation_pred_expanding)],
     expected = test_pred_expanding)
 )
@@ -100,6 +100,6 @@ test_that(
 test_that(
   "run.cross.validation returns scalar quantile vec",
   expect_equal(
-    object = unique(cross_validation_pred_fixed$quantile),
+    object = unique(cross_validation_pred_fixed$Quantile),
     expected = test_params$quantile_vec))
 

@@ -1,5 +1,32 @@
 ---
-title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
+title: "Growth at Risk model"
+institute: "Bank of Israel \\newline Research Department, Finance Division"
+author: "Michael Gurkov"
+# date: "August 15, 2018"
+classoption: t
+output:
+  beamer_presentation:
+    keep_tex: true
+    includes:
+      in_header: GaR-preamble-presentation.tex
+    latex_engine: xelatex
+vignette: >
+  %\VignetteIndexEntry{GlobalFinCycle-Presentation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,warning = FALSE,
+  comment = "#>"
+<<<<<<< HEAD
+=======
+title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
 date: "14 September, 2020"
@@ -18,10 +45,30 @@ bibliography: "GaR.bib"
 knitr::opts_chunk$set(
   collapse = TRUE, echo = FALSE, message = FALSE,
   warning = FALSE, comment = "#>"
+>>>>>>> presentation
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 )
 ```
 
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
+```{r init_setup}
+
+devtools::load_all()
+
+library(GaRPackg)
+
+# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="\\"),
+#        "\\GaRPackg\\vignettes"))
+
+# setwd(paste0(file.path(Sys.getenv("USERPROFILE"),"Documents",fsep="/"),
+#        "/GaRPackg/vignettes"))
+<<<<<<< HEAD
+=======
 ```{r setup, eval=TRUE}
 
 devtools::load_all()
@@ -29,14 +76,18 @@ devtools::load_all()
 setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
   "\\Documents\\GaRPackg\\vignettes"))
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 
 
 ```
 
+<<<<<<< HEAD
+
 ```{r set_plot_params}
 
 theme_set(theme_bw() + 
-            theme(title = element_text(size = 18),
+            theme(title = element_text(size = 20),
                 axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
                 strip.text = element_text(size = 15),
@@ -44,9 +95,14 @@ theme_set(theme_bw() +
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15)))
 
+>>>>>>> presentation
+
+
 ```
 
-
+<<<<<<< HEAD
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
 # Background
 
 \begin{itemize}
@@ -142,6 +198,8 @@ theme_set(theme_bw() +
 # Outline
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide] 
+<<<<<<< HEAD
+=======
 
 ```{r load_libraries}
 
@@ -166,35 +224,35 @@ library(gghighlight)
 ```
 
 
-```{r import_robustness_data}
+```{r import_robustness_data,eval=FALSE}
 
 fit_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
 ```
 
 
 ```{r Analysis}
 
-results = run.GaR.analysis(
-  partitions_list = current_partition,
-  vars_df = df,
-  target_var_name = "gdp",
-  horizon_list = parameters_list$horizon_list,
-  quantile_vec = parameters_list$quantile_vec,
-  pca.align.list = list(
-    Dom_Macro = list(var_name = "private_consumption"),
-    Dom_Fin = list("spread_cpi_corp"),
-    Ext_Macro = list(var_name = "gdp_us"),
-    Ext_Fin = list(var_name = "rate_euro"),
-    Dom_Fin_Cycle = list("credit")
-  )
-)
+current_partition = partitions_list$basic
+
+results = run.GaR.analysis(partitions_list = current_partition,
+                   vars_df = df,
+                   target_var_name = "gdp",
+                   horizon_list = parameters_list$horizon_list,
+                   quantile_vec = parameters_list$quantile_vec,
+                   pca.align.list = list(
+                     Dom_FCI = list(
+                       var_name = "Spread_CPI_corp",
+                       positive_direction = FALSE),
+                     Dom_Macro = list(var_name = "gdp"),
+                     Global = list(var_name = "rate_euro"),
+                     FinCycle = list(var_name = "credit")))
+
 
 ```
-
 
 ```{r get_auxilary_data}
 
@@ -213,26 +271,33 @@ pca_variance = lapply(names(pca_list),
 }) %>%
   bind_rows()
 
-plot_names_list = list("Dom. Macro",
-                       "Dom. Fin. Cond.",
-                       "Ext. Macro",
-                       "Ext. Fin. Cond.",
-                       "Dom. Fin. Cycle")
+plot_names_list = list("Macro","Global","Fin. Conditions",
+                       "Fin. Cycle")
 
 names(plot_names_list) = names(pca_list)
 
-coeffs_df = results %>% 
-  extract_coeffs_from_gar_model() %>% 
-  rename_all(tolower) %>% 
-  rename(quantile = tau) %>% 
-  filter(!name == "Intercept") %>% 
-  mutate(name = str_remove_all(name, "_xreg")) %>% 
-  mutate(name = recode(name,
-                Dom_Macro = "Dom. Macro",
-                Dom_Fin = "Dom. Fin. Cond.",
-                Ext_Macro = "Ext. Macro",
-                Ext_Fin = "Ext. Fin. Cond.",
-                Dom_Fin_Cycle = "Dom. Fin. Cycle"))
+coeff_df = map_dfr(names(results$qreg_result),
+                  function(temp_name){
+                    
+                    temp_coeff_df = tidy(results$qreg_result[[temp_name]]) %>% 
+                      rename(Partition = term, Coeff = estimate, Quantile = tau) %>% 
+                      select(Partition, Coeff, Quantile) %>% 
+                      mutate(Horizon = temp_name)
+
+  return(temp_coeff_df)
+
+}) %>% 
+  mutate(Horizon = factor(Horizon,
+                          levels = unlist(parameters_list$horizon_list))) %>% 
+  mutate(Quantile = factor(Quantile,
+                           levels = parameters_list$quantile_vec)) %>% 
+  filter(!Partition == "(Intercept)") %>% 
+  mutate(Partition = str_remove_all(Partition,"_xreg")) %>% 
+  left_join(plot_names_list %>% 
+  enframe(value = "new_name") %>% 
+  mutate(new_name = unlist(new_name)),
+  by = c("Partition" = "name")) %>% 
+  select(-Partition)
   
 my_lab = function(string){
   
@@ -244,16 +309,30 @@ my_lab = function(string){
 
 ```{r calculate_gar_contribution}
 
-factors_df = extract_factor_contribution_from_gar_model(results) %>% 
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12)))
+factors_df = map_dfr(names(results$qreg_result),function(temp_name){
+    
+    data_mat = results$reg_df %>%
+      rename_all(~str_remove_all(.,pattern = "_xreg")) %>%
+      select(names(current_partition)) %>%
+      as.matrix()
+    
+    coef_vec = coefficients(results$qreg_result[[temp_name]])[-1,1]
+    
+    gar_factors_df =  t(t(data_mat) * coef_vec)
+    
+    gar_factors_df = cbind(date = results$reg_df$date,
+                           as.data.frame(gar_factors_df)) %>% 
+      mutate(Horizon = temp_name)
+    
+    return(gar_factors_df)
+ 
+                        })
 
 factors_df = factors_df %>% 
-  rename(`Dom. Fin. Conditions` = Dom_Fin) %>% 
-  rename(`Dom. Macro` = Dom_Macro) %>% 
-  rename(`Ext. Macro` = Ext_Macro) %>%
-  rename(`Ext. Fin. Conditions` = Ext_Fin) %>%
-  rename(`Dom. Fin. Cycle` = Dom_Fin_Cycle) %>% 
-  pivot_longer(cols = -c(date,horizon), names_to = "partition")
+  rename(Macro = Dom_Macro) %>% 
+  rename(`Fin. Cycle` = FinCycle) %>% 
+  rename(`Fin. Conditions` = Dom_FCI) %>% 
+  pivot_longer(cols = -c(date,Horizon), names_to = "partition")
   
 
 
@@ -270,9 +349,9 @@ realized_df = df %>%
   select(date, gdp) %>%
   filter(complete.cases(.)) %>%
   rename(realized = gdp) %>%
-  mutate(forecast_period = paste(date - 1, date, sep = "-")) %>%
+  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>%
   select(-date) %>%
-  select(forecast_period, realized) %>%
+  select(Forecast_Period, realized) %>%
   as_tibble()
 
 benchmark_df = get.gar.forecast(
@@ -283,17 +362,17 @@ benchmark_df = get.gar.forecast(
   quantile_vec = parameters_list$quantile_vec,
   win_len = 40,
   win_type_expanding = TRUE) %>%
-  mutate(forecast_period = paste(
-    date + as.numeric(horizon) * 0.25 - 1,
-    date + as.numeric(horizon) * 0.25,
+  mutate(Forecast_Period = paste(
+    date + as.numeric(Horizon) * 0.25 - 1,
+    date + as.numeric(Horizon) * 0.25,
     sep = "-"
     )) %>%
-  mutate(horizon = as_factor(horizon)) %>%
-  rename(benchmark = gar_forecast)
+  mutate(Horizon = as_factor(Horizon)) %>%
+  rename(benchmark = GaR_forecast)
 
 staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>%
   as_tibble() %>%
-  rename(prediction = staff_forecast)
+  rename(prediction = Staff_Forecast)
 
 staff_forecast_df = list(
   name = "Staff",
@@ -307,12 +386,13 @@ staff_forecast_df = list(
 
 ```{r GaR_Forecast}
 
-models_df = list(GaR_Forecast = current_partition,
+models_df = list(GaR_Forecast = partitions_list$basic,
                  Macro_Forecast = partitions_list$macro) %>%
   enframe(value = "partition")
 
 models_df = models_df %>%
   mutate(pred_df = map(partition,function(temp_part){
+
       temp_forecast = get.gar.forecast(
         partitions_list = temp_part,
         vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
@@ -320,24 +400,24 @@ models_df = models_df %>%
         horizon_list = parameters_list$horizon_list,
         quantile_vec = parameters_list$quantile_vec,
         pca.align.list = list(
-          Dom_Macro = list(var_name = "private_consumption"),
-          Dom_Fin = list("spread_cpi_corp"),
-          Ext_Macro = list(var_name = "gdp_us"),
-          Ext_Fin = list(var_name = "rate_euro"),
-          Dom_Fin_Cycle = list("credit")
-          ),
+          Dom_FCI = list(var_name = "Spread_CPI_corp",
+                         positive_direction = FALSE),
+          Dom_Macro = list(var_name = "gdp"),
+          Global = list(var_name = "gdp_us"),
+          FinCycle = list(var_name = "credit")
+        ),
         win_len = 40,
         win_type_expanding = TRUE)
 
       temp_forecast = temp_forecast %>%
         filter(complete.cases(.)) %>%
-        mutate(forecast_period = paste(
-          date + as.numeric(horizon) * 0.25 - 1,
-          date + as.numeric(horizon) * 0.25,
+        mutate(Forecast_Period = paste(
+          date + as.numeric(Horizon) * 0.25 - 1,
+          date + as.numeric(Horizon) * 0.25,
           sep = "-"
         )) %>%
-        mutate(horizon = as_factor(horizon)) %>%
-        rename(prediction = gar_forecast)
+        mutate(Horizon = as_factor(Horizon)) %>%
+        rename(prediction = GaR_forecast)
 
 
       return(temp_forecast)
@@ -373,7 +453,7 @@ models_df = models_df %>%
                      .f = function(pred_df,realized){
                        temp_score = pred_df %>%
                          inner_join(realized_df,
-                                    by = "forecast_period") %>%
+                                    by = "Forecast_Period") %>%
                          rename(actual_values = realized,
                                 predicted_values = prediction) %>%
                          quantile.pit.score()
@@ -411,7 +491,7 @@ models_df = models_df %>%
 ## Motivation
 
 \centering
-quantile Regressions of YoY GDP Growth Four Quarters Ahead
+Quantile Regressions of YoY gdp Growth Four Quarters Ahead
 
 \vspace{3mm}
 
@@ -433,7 +513,7 @@ temp_qreq = rq(paste0("gdp_4","~",temp_var),
   as.data.frame() %>%
   rownames_to_column() %>%
   mutate(rowname = str_remove_all(rowname, "tau= ")) %>%
-  rename(quantile = rowname,
+  rename(Quantile = rowname,
          my_int = `(Intercept)`,
          my_slope = !!sym(temp_var))
 
@@ -444,7 +524,7 @@ temp_plot = temp_df %>%
   geom_abline(data = temp_qreq,
               aes(intercept = my_int,
                   slope = my_slope,
-                  color = quantile)) +
+                  color = Quantile)) +
   scale_color_manual(values = c("red","black","green")) + 
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1)) +
@@ -452,7 +532,7 @@ temp_plot = temp_df %>%
     labels = scales::percent_format(accuracy = 1)) +
   scale_color_manual(values = c("red","black","green")) + 
   xlab(paste("YoY", temp_var, "growth")) +
-  ylab((paste("YoY GDP growth 4 quarters ahead"))) +
+  ylab((paste("YoY gdp growth 4 quarters ahead"))) +
   ggtitle(temp_var) +
   theme(legend.position = "none")
 
@@ -526,7 +606,7 @@ In-sample properties of the predictive distribution:
 	\item
 	\textbf{Forecast uncertainty} rises when the median forecast decreases.
 	\item
-	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term GDP growth, but contributes to long-term downside risks.
+	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term gdp growth, but contributes to long-term downside risks.
   \end{enumerate}
 \item
 These properties are robust to variable selection.
@@ -565,7 +645,7 @@ Out-of-sample forecast performance is impaired.
 		Method: first principal component
 	\end{itemize}
 	\item
-	\textbf{quantile regressions --}
+	\textbf{Quantile regressions --}
 	estimate a forecast equation for each quantile $\tau$
 	and horizon $h$:
 	$$
@@ -577,7 +657,7 @@ Out-of-sample forecast performance is impaired.
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em}
 	\begin{flushright}
-		\hyperlink{quantileReg}{\beamerbutton{quantile reg}}
+		\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
 	\end{flushright}
 \end{enumerate}
 
@@ -593,7 +673,7 @@ Sample: 1997Q3-2019Q4
 	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
 	\hline
 	& & & \\
-	GDP 						& GDP - US, Euro 			& BoI rate 				& credit\\
+	gdp 						& gdp - US, Euro 			& BoI rate 				& credit\\
 	& & & \\
 	State-of-the-Economy index 	& OECD imports				& TA35 implied vol. 	& house prices \\
 	& & & \\
@@ -681,17 +761,15 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 ```{r dom_macro_plot, fig.height=6.5}
 
-coeffs_df %>% 
-  filter(name %in% c("Dom. Macro")) %>% 
-  filter(horizon %in% c(1,12)) %>% 
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
-  scale_fill_manual(values = c("Significant" = "lightblue",
-                               "Non Significant" = "lightgrey")) + 
-  geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  facet_grid(cols = vars(name), rows = vars(horizon),
-             scales = "free_y") + 
-  xlab("quantile") + ylab(NULL)
+ggplot(coeff_df %>%
+         filter(new_name == "Macro") %>%
+         filter(Horizon %in% c(1,12)),
+         aes(x = Quantile, y= Coeff)) +
+  geom_col(width = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab("Quantile") + ylab("gdp growth (YoY)") + ggtitle("Macro coefficients") + 
+  facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab))
 
 
 
@@ -708,17 +786,16 @@ coeffs_df %>%
 
 ```{r fin_cycle_plot, fig.height=6.5}
 
-coeffs_df %>% 
-  filter(name %in% c("Dom. Fin. Cycle")) %>% 
-  filter(horizon %in% c(1,12)) %>% 
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
-  scale_fill_manual(values = c("Significant" = "lightblue",
-                               "Non Significant" = "lightgrey")) + 
-  geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  facet_grid(cols = vars(name), rows = vars(horizon),
-             scales = "free_y") + 
-  xlab("quantile") + ylab(NULL)
+ggplot(coeff_df %>%
+         filter(new_name == "Fin. Cycle") %>%
+         filter(Horizon %in% c(1,12)),
+         aes(x = Quantile, y= Coeff)) +
+  geom_col(width = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  xlab("Quantile") + ylab("gdp growth (YoY)") + 
+  ggtitle("Fin. Cycle coefficients") + 
+  facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -805,19 +882,19 @@ events = read.csv(paste0(
 
 predict_df =  data.frame(
   date = results$reg_df$date,
-  horizon_1 = predict(results$qreg_result$`1`,
+  Horizon_1 = predict(results$qreg_result$`1`,
                 newdata = results$reg_df)[,1],
-  horizon_12 = predict(results$qreg_result$`12`,
+  Horizon_12 = predict(results$qreg_result$`12`,
                 newdata = results$reg_df)[,1]) %>%
   pivot_longer(cols = -date,
-               names_to = "horizon",
+               names_to = "Horizon",
                values_to = "GaR")
 
 predict_df %>%
 ggplot() +
   ylim(c(-0.12,0.08)) +
-  geom_point(aes(x = date, y = GaR, color = horizon)) +
-  geom_line(aes(x = date, y = GaR, color = horizon)) +
+  geom_point(aes(x = date, y = GaR, color = Horizon)) +
+  geom_line(aes(x = date, y = GaR, color = Horizon)) +
   geom_rect(data = recessions,
             mapping = aes(xmin = Start, xmax = End,
                           ymin = -Inf, ymax = Inf),
@@ -852,16 +929,16 @@ ggplot() +
 ```{r plot_factor_decomposition}
 
 factors_df %>%
-  filter(horizon %in% c(1,12)) %>%
+  filter(Horizon %in% c(1,12)) %>%
   ggplot() +
   geom_col(aes(x = date, y = value,fill = partition),
            position = "stack") +
   geom_line(data = . %>%
-              group_by(date,horizon) %>%
+              group_by(date,Horizon) %>%
               summarise(Total = sum(value),.groups = "drop") %>%
               ungroup(),
             aes(x = date, y = Total), size = 0.5) +
-  facet_wrap(~horizon,labeller = labeller(horizon = my_lab), scales = "free") +
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab), scales = "free") +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
                  "GaR forecast \n (5th percentile)")) +
@@ -875,13 +952,13 @@ factors_df %>%
 
 results %>% 
   calculate_skew_and_iqr() %>% 
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
   ggplot(aes(x = IQR, y = q0.50)) + 
   geom_point() + 
   geom_smooth(method = "lm",se = FALSE) + 
   xlab("Inter Quartile Range") + ylab("Median") + 
-  facet_free(~horizon, scales = "free",
-             labeller = labeller(horizon = my_lab)) + 
+  facet_free(~Horizon, scales = "free",
+             labeller = labeller(Horizon = my_lab)) + 
   theme(axis.text = element_text(size = 8))
 
 
@@ -895,7 +972,7 @@ Contrary to other countries **no evidence of skewed distribution**
 
 results %>%
   calculate_skew_and_iqr() %>%
-  filter(horizon == 1) %>%
+  filter(Horizon == 1) %>%
   select(date, Skew) %>%
   ggplot(aes(x = date, y = Skew)) +
   geom_line() +
@@ -908,7 +985,7 @@ results %>%
 
 \pause
 
-Consistent with features of past GDP growth
+Consistent with features of past gdp growth
 
 ```{r plot_gdp_growth, fig.height=3}
 
@@ -921,7 +998,7 @@ df %>%
   ggplot(aes(x = value, fill = name)) +
   geom_density(alpha = 0.5) + 
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth density")
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
 
 ```
 
@@ -941,22 +1018,30 @@ to construct the four factors.
   + We determine a minimal set of variables to be included
   in each group and go over all the different combinations
   of the other variables.
-
-
+  
+  
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
 ## 5th Percentile Forecast
 
-
 ```{r, cache=TRUE, dev="png"}
 
-gar_plot = read_rds(paste0(
+
+gar_plot_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE")),
   "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\Working_data\\gar_plot.RDS"))
+  "GaR_Data\\gar_plot_df.RDS"))
 
-print(gar_plot)
+gar_plot_df %>% 
+  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + 
+  gghighlight(rowname == 4599,
+              calculate_per_facet = TRUE,
+              use_direct_label = FALSE,use_group_by = FALSE,
+              unhighlighted_params = list(alpha = 0.1)) + 
+  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab),nrow = 2)
 
 ```
 
@@ -964,30 +1049,25 @@ print(gar_plot)
 
 ## "Volatility Paradox"
 
-```{r plot_coeffs}
-
-fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname, coeff_df) %>% 
-  unnest(coeff_df) %>% 
-  filter(Name == "Dom_Fin_Cycle_xreg") %>% 
-  select(rowname, Coeff, horizon, Tau) %>% 
-  mutate(horizon = factor(horizon,c(1,4,8,12))) %>% 
-  ggplot(aes(x = Coeff, fill = Tau)) + 
-  geom_histogram() + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
-  facet_wrap(~horizon, scales = "free") + 
-  theme(legend.position = "bottom")
-
-
-```
-
 Financial Cycle coefficients at different quantiles (stacked histograms)
 
+```{r plot_coefs_hist}
 
-```{r }
+coeff_plot_data = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\",
+  "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS"))
 
+coeff_plot_data %>% 
+  rename(Quantile = Tau) %>%  
+  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%  
+  ggplot(aes(x = Coeff, fill = Quantile)) + 
+  geom_histogram() + 
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  xlab(NULL) + ylab(NULL) + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab)) + 
+  theme(legend.title = element_text(size = 15))
 
 ```
 
@@ -996,12 +1076,21 @@ Financial Cycle coefficients at different quantiles (stacked histograms)
 
 ```{r plot_median_iqr_correlations}
 
-med_iqr_plot = read_rds(paste0(
+med_iqr_plot_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE")),
   "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\Working_data\\med_plot.RDS"))
+  "GaR_Data\\med_iqr_plot_data.RDS"))
   
-print(med_iqr_plot)
+med_iqr_plot_df %>% 
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
+  ggplot(aes(x = cor)) +
+  geom_histogram() +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle(paste0("Correlaltion between the median",
+                 " and IQR \n of the predictive distribution")) +
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
+  facet_wrap(~Horizon, scales = "free_y",
+             labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -1012,12 +1101,12 @@ print(med_iqr_plot)
 skew_plot = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Working_data\\skew_plot.RDS"))
+  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
 
 skew_plot +
-  ggtitle("Quartile skewness") +
-  facet_wrap(~horizon,scales = "free",nrow = 2,
-             labeller = labeller(horizon = my_lab)) +
+  ggtitle("Quartile skewness") + 
+  facet_wrap(~Horizon,scales = "free",nrow = 2,
+             labeller = labeller(Horizon = my_lab)) + 
             theme(title = element_text(size = 20),
                 axis.text = element_text(size = 15),
                 axis.title = element_text(size = 15),
@@ -1025,6 +1114,8 @@ skew_plot +
                 legend.position = "bottom",
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15))
+
+
 ```
 
 
@@ -1049,8 +1140,8 @@ skew_plot +
 	40 observations and adds one observation in each step)
 \end{itemize}
 
-## quantile R-Squared
-quantile R-sq. [@Giglio2016] compares forecast performance to a
+## Quantile R-Squared
+Quantile R-sq. [@Giglio2016] compares forecast performance to a
 constant quantile benchmark:
 
 $$
@@ -1073,7 +1164,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 
 
-## quantile R-Squared
+## Quantile R-Squared
 
 ```{r plot_r2_score}
 
@@ -1081,13 +1172,13 @@ models_df %>%
   select(name, r2_score) %>%
   unnest(r2_score) %>%
   mutate(name = map_chr(name,~.)) %>%
-  mutate(horizon = factor(horizon,
+  mutate(Horizon = factor(Horizon,
                           levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = quantile, y = score, fill = name)) +
+  ggplot(aes(x = Quantile, y = score, fill = name)) +
   geom_col(position = "dodge") +
   xlab(NULL) + ylab(NULL) +
   scale_fill_viridis_d(option = "plasma") +
-  facet_wrap(~horizon, labeller = labeller(horizon = my_lab))
+  facet_wrap(~Horizon, labeller = labeller(Horizon = my_lab))
 
 ```
 
@@ -1136,24 +1227,24 @@ models_df %>%
   select(name, pit_score) %>%
   unnest(pit_score) %>%
   mutate(name = map_chr(name,~.)) %>%
-  mutate(quantile = as.numeric(quantile)) %>%
-  mutate(horizon = factor(horizon,
+  mutate(Quantile = as.numeric(Quantile)) %>%
+  mutate(Horizon = factor(Horizon,
                           levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = quantile, y = pit, group = name, color = name)) +
+  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) +
   geom_line() +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   xlab(NULL) + ylab(NULL) +
   scale_color_viridis_d(option = "plasma") +
   scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
                    labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~horizon,labeller = labeller(horizon = my_lab))
+  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
 
 ```
 
 
-## quantile Regression 
+## Quantile Regression 
 
-\label{quantileReg}
+\label{QuantileReg}
 
 Model: for quantile $\tau$ and horizon $h$, 
 $$
@@ -1172,7 +1263,7 @@ $$
 \bigg\}
 $$
 
-Note: "quantile crossing" handled using the method of [@Chernozhukov2010]
+Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 
 \begin{flushleft}
 \hyperlink{methodology}{\beamergotobutton{Methodology}}
@@ -1218,25 +1309,27 @@ plot_grid(plotlist = pca_plots)
 \hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
 
 
-## quantile Regression Coefficients
+## Quantile Regression Coefficients
 
 
 \label{CoeffPanel}
 
 ```{r coeff_panel_plot}
 
-coeffs_df %>% 
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
-  scale_fill_manual(values = c("Significant" = "lightblue",
-                               "Non Significant" = "lightgrey")) + 
-  geom_col(width = 0.5) + 
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  facet_grid(rows = vars(name), cols = vars(horizon),
-             scales = "free") + 
-  xlab("quantile") + ylab(NULL) + 
-  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-        strip.text = element_text(size = 12))
+coeff_plot_list = map(unique(coeff_df$Horizon), function(temp_horizon){
+  ggplot(coeff_df %>%
+           filter(Horizon == temp_horizon),
+         aes(x = Quantile, y= Coeff)) +
+    geom_col(width = 0.35) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+    xlab("Quantile") + ylab(NULL) + ggtitle(paste(temp_horizon, "quarters ahead")) + 
+    facet_wrap(~ new_name, scales = "free") + 
+    theme(axis.text = element_text(size = 8))
+  
+})
+
+
+plot_grid(plotlist = coeff_plot_list)
 
 ```
 
@@ -1250,3 +1343,6 @@ coeffs_df %>%
 ## References {.allowframebreaks}
 
 <div id="refs"></div>
+>>>>>>> presentation
+=======
+>>>>>>> 4e20ddab41b1eec80de3199d654fe97188a92eaa
