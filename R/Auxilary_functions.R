@@ -130,11 +130,10 @@ extract_coeffs_from_gar_model = function(gar_model,
                        function(temp_mod, temp_name) {
                          temp_df = temp_mod %>%
                            extract.qreg.coeff.table() %>%
-                           mutate(horizon = temp_name)
+                           mutate(Horizon = temp_name)
 
 
                        })
-
 
   if (!is.null(partition_names)) {
     coeffs_df = coeffs_df %>%
@@ -176,15 +175,15 @@ extract_factor_contribution_from_gar_model = function(
     extract_coeffs_from_gar_model() %>%
     filter(!Name == "Intercept") %>%
     filter(Tau == quantile) %>%
-    select(Coeff,horizon, Name)
+    select(Coeff,Horizon, Name)
 
 
 
   factors_df = map_dfr(
-    unique(coeffs_df$horizon),function(temp_horizon){
+    unique(coeffs_df$Horizon),function(temp_horizon){
 
       coef_vec = coeffs_df %>%
-        filter(horizon == temp_horizon) %>%
+        filter(Horizon == temp_horizon) %>%
         select(Coeff) %>%
         unlist(use.names = FALSE)
 
@@ -220,18 +219,18 @@ collect_quantile_r2_score = function(pred_df, realized_df,
                                      benchmark_df) {
   prediction_df = pred_df %>%
     inner_join(benchmark_df,
-               by = c("quantile", "horizon", "forecast_period")) %>%
-    left_join(realized_df, by = "forecast_period")
+               by = c("Quantile", "Horizon", "Forecast_Period")) %>%
+    left_join(realized_df, by = "Forecast_Period")
 
   score_df = prediction_df %>%
-    select(realized, prediction, benchmark, quantile, horizon) %>%
+    select(realized, prediction, benchmark, Quantile, Horizon) %>%
     filter(complete.cases(.)) %>%
-    group_by(quantile, horizon) %>%
+    group_by(Quantile, Horizon) %>%
     summarise(
       score = quantile.r2.score(
         realized_values = realized,
         forecast_values = prediction,
-        quantile = as.numeric(quantile)[1],
+        quantile = as.numeric(Quantile)[1],
         benchmark_values = benchmark
       ),
       .groups = "drop"
@@ -256,7 +255,7 @@ calculate_skew_and_iqr = function(gar_obj) {
 
   skew_df = prediction_df %>%
     pivot_wider(
-      names_from = quantile,
+      names_from = Quantile,
       values_from = GaR_fitted,
       names_prefix = "q"
     ) %>%
@@ -280,7 +279,7 @@ extract_coeffs_from_gar_model = function(gar_model,
                        function(temp_mod, temp_name) {
                          temp_df = temp_mod %>%
                            extract.qreg.coeff.table() %>%
-                           mutate(horizon = temp_name)
+                           mutate(Horizon = temp_name)
 
 
                        })

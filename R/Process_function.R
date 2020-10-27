@@ -409,8 +409,8 @@ fill.na.average = function(data_vec, k = 4){
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
-    group_by(horizon,date) %>%
-    arrange(quantile) %>%
+    group_by(Horizon,date) %>%
+    arrange(Quantile) %>%
     mutate(across(contains("GaR"),~sort(.))) %>%
     ungroup()
 
@@ -508,16 +508,16 @@ make_prediction_df = function(gar_model, xreg_df){
                select(date) %>%
                cbind(predict(temp_mod, xreg_df)) %>%
                pivot_longer(-date,
-                            names_to = "quantile",
+                            names_to = "Quantile",
                             values_to = "GaR_fitted") %>%
-               mutate(quantile = str_remove_all(quantile,"tau= ")) %>%
-               mutate(horizon = temp_name)
+               mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
+               mutate(Horizon = temp_name)
 
 
 
   }) %>%
     fix_quantile_crossing() %>%
-    select(date,horizon,quantile,GaR_fitted)
+    select(date,Horizon,Quantile,GaR_fitted)
 
   return(prediction_df)
 

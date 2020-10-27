@@ -69,17 +69,16 @@ import.staff.forecast = function(raw_df,
 
   }
 
-  staff_forecast_conversion_table = read_csv(conversion_table_path) %>%
-    rename_all(tolower)
+  staff_forecast_conversion_table = read_csv(conversion_table_path)
 
   staff_forecast_conversion_table = staff_forecast_conversion_table %>%
-    filter(type == "YoY") %>%
-    select(-type) %>%
-    mutate(horizon = as_factor(horizon)) %>%
-    pivot_longer(cols = c(-horizon),
-                 names_to = "quantile",
-                 values_to = "conversion_coeff") %>%
-    mutate(conversion_coeff = conversion_coeff * 0.01)
+    filter(Type == "YoY") %>%
+    select(-Type) %>%
+    mutate(Horizon = as_factor(Horizon, )) %>%
+    pivot_longer(cols = c(-Horizon),
+                 names_to = "Quantile",
+                 values_to = "Conversion_Coeff") %>%
+    mutate(Conversion_Coeff = Conversion_Coeff * 0.01)
 
   staff_forecast_conversion_table = full_join(staff_forecast_conversion_table,
                                               select(raw_df, date),
@@ -94,11 +93,11 @@ import.staff.forecast = function(raw_df,
     left_join(., raw_df %>%
                 select(date, gdp) %>%
                 mutate(gdp = gdp / lag(gdp, 3) - 1)) %>%
-    mutate(staff_forecast = Forecast * 0.25 * 0.01 + gdp) %>%
-    select(date, staff_forecast) %>%
-    mutate(forecast_period = paste(date - 0.75, date + 0.25,
+    mutate(Staff_Forecast = Forecast * 0.25 * 0.01 + gdp) %>%
+    select(date, Staff_Forecast) %>%
+    mutate(Forecast_Period = paste(date - 0.75, date + 0.25,
                                    sep = "-")) %>%
-    mutate(horizon = "1")
+    mutate(Horizon = "1")
 
 
   staff_forecast_df_h4 = raw_df %>%
@@ -106,12 +105,12 @@ import.staff.forecast = function(raw_df,
     rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
     gather(key = Quarter, value = Forecast,-date) %>%
     group_by(date) %>%
-    summarise(staff_forecast = mean(Forecast) * 0.01) %>%
+    summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
     ungroup() %>%
     filter(complete.cases(.)) %>%
-    mutate(forecast_period = paste(date, (date + 1),
+    mutate(Forecast_Period = paste(date, (date + 1),
                                    sep = "-")) %>%
-    mutate(horizon = "4")
+    mutate(Horizon = "4")
 
 
 
@@ -120,12 +119,12 @@ import.staff.forecast = function(raw_df,
     rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
     gather(key = Quarter, value = Forecast,-date) %>%
     group_by(date) %>%
-    summarise(staff_forecast = mean(Forecast) * 0.01) %>%
+    summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
     ungroup() %>%
     filter(complete.cases(.)) %>%
-    mutate(forecast_period = paste((date + 1), (date + 2),
+    mutate(Forecast_Period = paste((date + 1), (date + 2),
                                    sep = "-")) %>%
-    mutate(horizon = "8")
+    mutate(Horizon = "8")
 
   staff_forecast = list(staff_forecast_df_h1,
                         staff_forecast_df_h4,
@@ -133,11 +132,11 @@ import.staff.forecast = function(raw_df,
     bind_rows() %>%
     mutate(date = as.yearqtr(date)) %>%
     inner_join(., staff_forecast_conversion_table,
-               by = c("date", "horizon")) %>%
-    mutate(staff_forecast = staff_forecast + conversion_coeff) %>%
-    mutate(quantile = str_replace_all(quantile, "0.5", "0.50")) %>%
-    select(-conversion_coeff) %>%
-    select(date, horizon, quantile, forecast_period, staff_forecast)
+               by = c("date", "Horizon")) %>%
+    mutate(Staff_Forecast = Staff_Forecast + Conversion_Coeff) %>%
+    mutate(Quantile = str_replace_all(Quantile, "0.5", "0.50")) %>%
+    select(-Conversion_Coeff) %>%
+    select(date, Horizon, Quantile, Forecast_Period, Staff_Forecast)
 
 
   return(staff_forecast)
