@@ -9,10 +9,11 @@ coeffs_df = results %>%
   filter(!name == "Intercept") %>% 
   mutate(name = str_remove_all(name, "_xreg")) %>% 
   mutate(name = recode(name,
-                Dom_Macro = "Domestic Macro",
-                Ext_Macro = "External Macro",
-                Ext_Fin = "External Fin. Cond.",
-                Dom_Fin_Cycle = "Financial Cycle"))
+                Dom_Fin = "Dom. Fin. Cond.",
+                Dom_Macro = "Dom. Macro",
+                Ext_Macro = "Ext. Macro",
+                Ext_Fin = "Ext. Fin. Cond.",
+                Dom_Fin_Cycle = "Dom. Fin. Cycle"))
 
 ```
 
