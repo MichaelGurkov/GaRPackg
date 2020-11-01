@@ -91,7 +91,7 @@ fit_df = feature_select_df %>%
       horizon_list = parameters_list$horizon_list,
       quantile_vec = parameters_list$quantile_vec,
       pca.align.list = list(
-        Dom_FCI = list(var_name = "spread_cpi_corp",
+        Dom_Fin = list(var_name = "spread_cpi_corp",
                        positive_direction = FALSE),
         Dom_Macro = list(var_name = "private_consumption"),
         Ext_Macro = list(var_name = "gdp_us"),

@@ -22,14 +22,16 @@ prediction_df = map_dfr(names(results$qreg_result),
 ```{r plot_gar_timeseries}
 
 prediction_df %>% 
-  filter(quantile == "0.05") %>% 
-  ggplot(aes(x = date, y = value, color = horizon)) + 
+  mutate(horizon  = factor(horizon, levels = c(1,4,8,12))) %>% 
+  filter(quantile %in% c("0.05","0.50","0.95")) %>% 
+  ggplot(aes(x = date, y = value, color = quantile)) + 
   geom_line() + 
+  facet_grid(rows = vars(horizon)) + 
   scale_x_yearqtr() + 
-  labs(title = "GaR (5% quantile) timeseries at different horizons",
-       x = "", y = "") + 
+  xlab(NULL) + ylab(NULL) + 
   theme_bw() + 
-  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5), legend.title = element_blank())
 
 ```
 
