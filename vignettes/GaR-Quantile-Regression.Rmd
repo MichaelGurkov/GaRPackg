@@ -13,7 +13,8 @@ coeffs_df = results %>%
                 Dom_Macro = "Dom. Macro",
                 Ext_Macro = "Ext. Macro",
                 Ext_Fin = "Ext. Fin. Cond.",
-                Dom_Fin_Cycle = "Dom. Fin. Cycle"))
+                Dom_Fin_Cycle = "Dom. Fin. Cycle")) %>% 
+  mutate(name = factor(name, levels = plot_names$plot_name))
 
 ```
 

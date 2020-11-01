@@ -75,6 +75,16 @@ parameters_list$drop_series = c(
   "breakeven_inflation_5_10_fwd"
 )
 
+
+plot_names = tribble(
+  ~partition_name, ~plot_name,
+  "Dom_Macro", "Dom. Macro",
+  "Dom_Fin", "Dom. Fin. Cond.",
+  "Dom_Fin_Cycle", "Dom. Fin. Cycle",
+  "Ext_Macro", "Ext. Macro",
+  "Ext_Fin", "Ext. Fin. Cond.",
+)
+
 theme_set(theme_bw() + theme(
   legend.position = "bottom", legend.title = element_blank()))
 

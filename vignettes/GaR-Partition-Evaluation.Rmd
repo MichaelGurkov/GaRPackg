@@ -1,10 +1,6 @@
 
 ```{r set_plot_parameters}
 
-plot_names = c("Domestic Macro","Global Conditions",
-               "Financial Conditions \n (up = accomodating)",
-               "Financial Cycle \n (credit, houseprice)")
-
 my_fig_height = 6
 
 theme_set(theme_bw() + theme(
@@ -17,6 +13,8 @@ theme_set(theme_bw() + theme(
 ```{r set_pca_list}
 
 pca_list = results$pca_obj
+
+pca_list = pca_list[plot_names$partition_name]
 
 pca_variance = map_dfr(names(pca_list), function(temp_name){
 
@@ -53,7 +51,11 @@ pca_plots = map(names(pca_list), function(name){
                   Val = pca_list[[name]]$pca$rotation[,1]),
        aes(x = reorder(Name, Val), y = Val)) +
   geom_bar(stat = "identity", width = 0.5) +
-  labs(x = "", y = "", title = paste0(name, " (" ,pca_var, "%)")) +
+  labs(x = "", y = "", title = paste0(plot_names %>% 
+                                        filter(partition_name == name) %>% 
+                                        select(plot_name) %>% 
+                                        pull(),
+                                      " (" ,pca_var, "%)")) +
   coord_flip() +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -78,7 +80,10 @@ pca_timeseries_plots = lapply(names(pca_list), function(name){
   ggplot(data.frame(x = pca_list[[name]]$time_index,
                   y = pca_list[[name]]$pca$x[,1]), aes(x = x, y = y)) + 
     geom_line() + 
-    labs(title = name, x = "", y = "") + 
+    labs(title = plot_names %>% 
+           filter(partition_name == name) %>% 
+           select(plot_name) %>% 
+           pull(), x = "", y = "") + 
     scale_x_yearqtr() + 
     theme_bw() + 
     theme(plot.title = element_text(hjust = 0.5))
