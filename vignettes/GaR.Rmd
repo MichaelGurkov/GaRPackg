@@ -85,6 +85,8 @@ plot_names = tribble(
   "Ext_Fin", "Ext. Fin. Cond.",
 )
 
+robust_plot_output = TRUE
+
 theme_set(theme_bw() + theme(
   legend.position = "bottom", legend.title = element_blank()))
 
@@ -175,6 +177,11 @@ results = run.GaR.analysis(
 
 ```
 
+\section{Robustness}
+
+```{r child="GaR-Robustness-Plots.Rmd"}
+
+```
 
 
 \section{Bibliography}

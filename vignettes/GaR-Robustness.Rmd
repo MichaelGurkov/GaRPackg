@@ -136,48 +136,27 @@ fit_df =  fit_df %>%
 ```
 
 
-```{r export_data}
-
-write_rds(x = fit_df,paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
-
-
-```
-
-
-```{r import_data, eval=FALSE}
-
-fit_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
-
-
-```
-
-
-
 ```{r plot_coeffs}
 
 fit_df %>%
   rownames_to_column() %>%
   select(rowname, coeff_df) %>%
   unnest(coeff_df) %>%
-  filter(Name == "Dom_Fin_Cycle_xreg") %>%
-  select(rowname, Coeff, Horizon, Tau) %>%
+  mutate(Name = str_remove_all(Name, "_xreg")) %>% 
+  filter(Name %in% c("Dom_Fin_Cycle","Dom_Fin","Ext_Fin")) %>%
+  left_join(plot_names, by = c("Name" = "partition_name")) %>% 
+  select(rowname, plot_name, Coeff, Horizon, Tau) %>%
   mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>%
   ggplot(aes(x = Coeff, fill = Tau)) +
   geom_histogram() +
   geom_vline(xintercept = 0, linetype = "dashed") +
   ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +
-  facet_wrap(~Horizon, scales = "free") +
+  facet_grid(cols = vars(Horizon), rows = vars(plot_name),
+             scales = "free") +
   theme(legend.position = "bottom")
 
 
 ```
-
 
 
 ```{r plot_skew}
@@ -189,6 +168,7 @@ skew_plot = fit_df %>%
   rownames_to_column() %>%
   select(rowname,skew_df) %>%
   unnest(cols = skew_df) %>%
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
   ggplot(aes(x = date, y = Skew, group = rowname)) +
   geom_line() +
   xlab(NULL) + ylab(NULL) +
@@ -203,14 +183,6 @@ skew_plot = fit_df %>%
              linetype = "dashed", color = "blue")
 
 
-write_rds(skew_plot, paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\skew_plot.rds"))
-
-
-
-
 
 ```
 
@@ -222,6 +194,7 @@ gar_plot = fit_df %>%
   select(rowname, pred_df) %>%
   unnest(cols = pred_df) %>%
   filter(Quantile == "0.05") %>%
+  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
   ggplot(aes(x = date, y = GaR_fitted, group = rowname)) +
   geom_line() +
   xlab(NULL) + ylab(NULL) +
@@ -235,10 +208,6 @@ gar_plot = fit_df %>%
               calculate_per_facet = TRUE) +
   theme_bw()
 
-write_rds(gar_plot, paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\gar_plot.rds"))
 
 
 ```
@@ -262,6 +231,40 @@ med_plot = fit_df %>%
   facet_wrap(~Horizon, scales = "free") +
   theme_bw()
 
+
+
+```
+
+
+```{r import_data, eval=FALSE}
+
+fit_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+
+
+
+
+```
+
+
+```{r export_data, eval=FALSE}
+
+write_rds(x = fit_df,paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
+
+write_rds(skew_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\skew_plot.rds"))
+
+write_rds(gar_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\gar_plot.rds"))
 
 write_rds(med_plot, paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
