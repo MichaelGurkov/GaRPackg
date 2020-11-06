@@ -91,11 +91,12 @@ fit_df = feature_select_df %>%
       horizon_list = parameters_list$horizon_list,
       quantile_vec = parameters_list$quantile_vec,
       pca.align.list = list(
-        Dom_Fin = list(var_name = "spread_cpi_corp",
+        Dom_Fin = list(var_name = "term_spread",
                        positive_direction = FALSE),
         Dom_Macro = list(var_name = "private_consumption"),
-        Ext_Macro = list(var_name = "gdp_us"),
-        Ext_Fin = list(var_name = "rate_euro"),
+        Ext_Macro = list(var_name = "exports"),
+        Ext_Fin = list(var_name = "us_term_spread",
+                       positive_direction = FALSE),
         Dom_Fin_Cycle = list(var_name = "credit")
       )
     )
