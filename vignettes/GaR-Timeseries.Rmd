@@ -2,19 +2,12 @@
 
 ```{r get_predict_df}
 
-prediction_df = map_dfr(names(results$qreg_result),
-                        function(temp_name){
-  
-  temp_predict = predict(results$qreg_result[[temp_name]],
-                         newdata = results$reg_df) %>% 
-    as.data.frame() %>% 
-    cbind(date = results$reg_df$date, horizon = temp_name) %>% 
-    rename_all(~str_remove_all(.,"tau= ")) %>% 
-    pivot_longer(-c("date", "horizon"), names_to = "quantile")
-  
-  
-  
-})
+prediction_df = make_prediction_df(gar_model = results$qreg_result,
+                          xreg_df = results$reg_df) %>% 
+  rename_all(tolower) %>% 
+  rename(value = gar_fitted)
+
+
 
 ```
 

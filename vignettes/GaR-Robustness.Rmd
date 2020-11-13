@@ -275,3 +275,33 @@ write_rds(med_plot, paste0(
 
 ```
 
+
+```{r make_plot_coeffs}
+
+coeffs_plot = fit_df %>%
+  rownames_to_column() %>%
+  select(rowname, coeff_df) %>%
+  unnest(coeff_df) %>%
+  mutate(Name = str_remove_all(Name, "_xreg")) %>% 
+  filter(Name %in% c("Dom_Fin_Cycle","Dom_Fin","Ext_Fin")) %>%
+  left_join(plot_names, by = c("Name" = "partition_name")) %>% 
+  select(rowname, plot_name, Coeff, Horizon, Tau) %>%
+  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>%
+  filter(Horizon %in% c(8,12)) %>% 
+  ggplot(aes(x = Coeff, fill = Tau)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +
+  facet_grid(cols = vars(plot_name), rows = vars(Horizon),
+             scales = "free") +
+  theme(legend.position = "bottom")
+
+write_rds(coeffs_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\coeffs_plot.rds"))
+
+
+
+```
+

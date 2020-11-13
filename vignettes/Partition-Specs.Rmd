@@ -190,7 +190,10 @@ partitions_list$gdp_comp_fin_cycle_cond = list(
 
 
 ```{r gdp_comp_fin_cycle}
+```
 
+
+```{r gdp_comp_fin_cycle}
 partitions_list$gdp_comp_fin_cycle = list(
   Dom_Macro = c(
     "private_consumption",
