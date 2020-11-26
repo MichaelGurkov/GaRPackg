@@ -1,4 +1,4 @@
-"Date";"GDP";"Ind_Prod_Israel";"rate_euro";"rate_us";"VIX";"Ind_Prod_us";"Ind_Prod_euro";"eurostoxx600";"SP500";"DXY";"US_term_spread";"Spread_CPI_corp";"Sovereigh_spread";"Term_spread";"ILS_USD_impl_vol";"TA_35_impl_vol";"BOI_rate";"Credit";"House_Price";"TA125_Close"
+"date";"gdp";"ind_prod_israel";"rate_euro";"rate_us";"vix";"ind_prod_us";"ind_prod_euro";"eurostoxx600";"sp500";"dxy";"us_term_spread";"spread_cpi_corp";"sovereigh_spread";"term_spread";"ils_usd_impl_vol";"ta_35_impl_vol";"boi_rate";"credit";"house_price";"ta125_close"
 "1";"1997 Q1";152183.336;64.40905;4.26;5.26944;19.93131;80.65143;83.23333;185.465;784.7418;93.53032;0.53183;1.559505323;0.87928;0.11246;0.058354354;27.67358417;14.24877;338.14655;182.66667;246.75565
 "2";"1997 Q2";153038.281;65.39616;3.88;5.5;19.92297;81.80363;84.93333;201.73277;823.48875;95.59016;0.44052;1.486397207;0.58752;-0.38545;0.051664128;19.1569795;13.74;357.83446;187.76667;269.52158
 "3";"1997 Q3";153170.323;64.87793;3.91;5.5;22.445;83.68073;86.3;227.63106;929.94422;98.42894;0.35106;1.496673565;0.25495;-0.06989;0.065122677;19.67860325;12.96344;371.89632;191.4;294.87234

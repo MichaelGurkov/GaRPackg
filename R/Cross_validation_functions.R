@@ -14,7 +14,7 @@
 #' @return a data frame with out of sample predictions
 #'
 
-get.gar.forecast = function(partitions_list,
+get_gar_forecast = function(partitions_list,
                             vars_df,
                             target_var_name,
                             horizon_list,
@@ -24,7 +24,7 @@ get.gar.forecast = function(partitions_list,
                             win_len = 30,
                             win_type_expanding = FALSE){
 
-  reg_df_list = make.quant.reg.df(
+  reg_df_list = make_quant_reg_df(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
@@ -36,7 +36,7 @@ get.gar.forecast = function(partitions_list,
   )
 
 
-  prediction_df = map(horizon_list,run.cross.validation,
+  prediction_df = map(horizon_list,run_cross_validation,
                     reg_df = reg_df_list$reg_df,
                     target_var_name = target_var_name,
                     quantile_vec = quantile_vec,
@@ -78,7 +78,7 @@ get.gar.forecast = function(partitions_list,
 #' @import tidyr
 #'
 #'
-run.cross.validation = function(reg_df,
+run_cross_validation = function(reg_df,
                                 target_var_name,
                                 horizon,
                                 quantile_vec,
@@ -102,7 +102,7 @@ predict_df = map(roll_cv_list$splits,
   assessment_set = assessment(temp_split) %>%
     slice(n())
 
-  qreg_result = run.quant.reg(
+  qreg_result = run_quant_reg(
     reg_df = analysis_set,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
@@ -117,14 +117,14 @@ predict_df = map(roll_cv_list$splits,
       as.data.frame() %>%
       rename_all(~str_remove(.,"tau= ")) %>%
       pivot_longer(cols = everything(),
-                   names_to = "Quantile",
-                   values_to = "GaR_forecast") %>%
-      mutate(Horizon = temp_name) %>%
+                   names_to = "quantile",
+                   values_to = "gar_forecast") %>%
+      mutate(horizon = temp_name) %>%
       mutate(date = assessment_set$date)
 
     if(length(quantile_vec) == 1){
       temp_pred = temp_pred %>%
-        mutate(Quantile = quantile_vec)
+        mutate(quantile = quantile_vec)
       }
 
     return(temp_pred)

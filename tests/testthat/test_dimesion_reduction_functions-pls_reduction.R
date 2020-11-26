@@ -19,14 +19,14 @@ test_that("pls reduction returns complete obs date vector",
 
 data("gar_data")
 
-temp_part = list("GDP","Ind_Prod_Israel")
+temp_part = list("gdp","ind_prod_israel")
 
 result_temp_part = pls_reduction(
   df = gar_data %>%
-    select(Date,unlist(temp_part)),
-  target_var_name = "GDP")
+    select(date,unlist(temp_part)),
+  target_var_name = "gdp")
 
-pls_form = formula("GDP ~ Ind_Prod_Israel")
+pls_form = formula("gdp ~ ind_prod_israel")
 
 scale = TRUE
 
@@ -34,7 +34,7 @@ center = TRUE
 
 
 test_df = gar_data %>%
-  select(-Date) %>%
+  select(-date) %>%
   plsr(
     formula = pls_form,
     validation = "none",

@@ -12,11 +12,11 @@
 #' @import tibble
 #'
 
-get_partition_combs = function(partition_list,
+get_partition_combs = function(partitions_list,
                                partition_name) {
-  if (all(length(names(partition_list)) == 1 &
-          names(partition_list) == "required")) {
-    temp_comb_df = partition_list %>%
+  if (all(length(names(partitions_list)) == 1 &
+          names(partitions_list) == "required")) {
+    temp_comb_df = partitions_list %>%
       enframe %>%
       mutate(value = map(value, function(temp_vec) {
         temp_list = list(temp_vec)
@@ -37,9 +37,9 @@ get_partition_combs = function(partition_list,
     return(temp_comb_df)
   }
 
-  comb_df = map(seq_along(partition_list$optional),
+  comb_df = map(seq_along(partitions_list$optional),
                 function(temp_ind) {
-                  comb_list =  combn(partition_list$optional, temp_ind, simplify = FALSE)
+                  comb_list =  combn(partitions_list$optional, temp_ind, simplify = FALSE)
 
                   temp_comb_df = comb_list %>%
                     enframe %>%
@@ -48,9 +48,9 @@ get_partition_combs = function(partition_list,
     bind_rows() %>%
     rbind(data.frame(name = paste0(partition_name, "-0"), value = ""))
 
-  if ("required" %in% names(partition_list)) {
+  if ("required" %in% names(partitions_list)) {
     comb_df = comb_df %>%
-      mutate(value = map(value, ~ c(., partition_list$required)))
+      mutate(value = map(value, ~ c(., partitions_list$required)))
   }
 
 
@@ -227,7 +227,7 @@ collect_quantile_r2_score = function(pred_df, realized_df,
     filter(complete.cases(.)) %>%
     group_by(Quantile, Horizon) %>%
     summarise(
-      score = quantile.r2.score(
+      score = quantile_r2_score(
         realized_values = realized,
         forecast_values = prediction,
         quantile = as.numeric(Quantile)[1],
@@ -256,7 +256,7 @@ calculate_skew_and_iqr = function(gar_obj) {
   skew_df = prediction_df %>%
     pivot_wider(
       names_from = Quantile,
-      values_from = GaR_fitted,
+      values_from = gar_fitted,
       names_prefix = "q"
     ) %>%
     mutate(Skew = (0.5 * q0.75 + 0.5 * q0.25 - q0.50) /
@@ -332,11 +332,14 @@ extract_pca_loadings_from_gar_model = function(gar_model) {
 }
 
 
-#' This function comapares two partitions
+#' @description  This function compares two partitions
+#'
+#' @title compare two partitions
 #'
 #' @param source_partition
 #'
 #' @param target_partition
+#'
 
 is_partition_identical = function(source_partition, target_partition){
 

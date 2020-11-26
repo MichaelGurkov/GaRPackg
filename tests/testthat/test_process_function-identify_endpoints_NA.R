@@ -1,7 +1,4 @@
 
-context("identify endpoints function")
-
-
 # Complete data returns NULL
 
 testthat::expect_equal(identify_endpoints_NA(c(3,5,8)),NULL)

@@ -4,7 +4,7 @@ gar_data = gar_data %>% slice(1:40)
 
 test_params = list()
 
-test_params$target_var_name = "GDP"
+test_params$target_var_name = "gdp"
 
 test_params$horizon_list = list(4)
 
@@ -15,10 +15,10 @@ test_params$win_len = 30
 # Make reg df
 
 test_reg_df = make_quant_reg_df(
-  partitions_list = list(Macro = c("GDP","Ind_Prod_Israel"),
-                         FinCycle = c("Credit","House_Price")),
+  partitions_list = list(macro = c("gdp","ind_prod_israel"),
+                         fin_cycle = c("credit","house_price")),
   vars_df = gar_data,
-  target_var_name = "GDP",
+  target_var_name = "gdp",
   horizon_list = test_params$horizon_list,
   quantile_vec = test_params$quantile_vec)[["reg_df"]]
 
@@ -77,7 +77,7 @@ cross_validation_pred_expanding = run_cross_validation(
 test_that(
   "run_cross_validation produces correct prediction in fixed window",
   expect_equal(
-    object = cross_validation_pred_fixed$GaR_forecast[1],
+    object = cross_validation_pred_fixed$gar_forecast[1],
     expected = test_pred_fixed)
   )
 
@@ -85,7 +85,7 @@ test_that(
 test_that(
   desc = "run_cross_validation produces correct prediction in expanding window",
   code =  expect_equal(
-    object = cross_validation_pred_expanding$GaR_forecast[
+    object = cross_validation_pred_expanding$gar_forecast[
       nrow(cross_validation_pred_expanding)],
     expected = test_pred_expanding)
 )
@@ -93,13 +93,13 @@ test_that(
 test_that(
   "run_cross_validation produces returns correct date",
   expect_equal(
-    object = cross_validation_pred_fixed$Date[1],
-    expected = test_reg_df$Date[test_params$win_len +
+    object = cross_validation_pred_fixed$date[1],
+    expected = test_reg_df$date[test_params$win_len +
                              unlist(test_params$horizon_list)]))
 
 test_that(
   "run_cross_validation returns scalar quantile vec",
   expect_equal(
-    object = unique(cross_validation_pred_fixed$Quantile),
+    object = unique(cross_validation_pred_fixed$quantile),
     expected = test_params$quantile_vec))
 

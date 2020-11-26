@@ -1,6 +1,3 @@
-
-context("align pca function")
-
 set.seed(123)
 
 test_data = matrix(data = rnorm(100),ncol = 5)
