@@ -26,8 +26,14 @@
 #' @param run_ols_reg boolean indicator that adds an OLS regression
 #'
 #'
-#' @param pca.align.list A list that specifies the PCA aligning variable for
+#' @param pca.align.list (Optional) A list that specifies the PCA aligning variable for
 #' each partition and alignment direction (default is positive direction).
+#' The first element in the list is the aligning (axis) variable, the
+#' value is either character (variable's name) or numeric
+#' (variable's position index). The second element if(supplied)
+#' is a boolean indicator of alignment direction
+#' (True means positive direction).
+#' If no list is supplied then no alignment takes place
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #' Default is TRUE
@@ -40,9 +46,7 @@
 #'
 #' @return pca_obj (optional) PCA object
 #'
-#' @export
-#'
-run_GaR_analysis = function(partitions_list, vars_df,
+run.GaR.analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
@@ -52,7 +56,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             return_objects_list = TRUE){
 
 
-  reg_df_list = make_quant_reg_df(
+  reg_df_list = make.quant.reg.df(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
@@ -63,9 +67,15 @@ run_GaR_analysis = function(partitions_list, vars_df,
     return_objects_list = return_objects_list
   )
 
+  if(nrow(reg_df_list$reg_df) == 0){
+
+   stop("the regression dataframe is empty")
+
+  }
 
 
-  qreg_result = run_quant_reg(
+
+  qreg_result = run.quant.reg(
     reg_df = reg_df_list$reg_df,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
@@ -79,9 +89,9 @@ run_GaR_analysis = function(partitions_list, vars_df,
                    temp_fitted_df =  temp_obj$fitted.values %>%
                      as.data.frame() %>%
                      setNames(quantile_vec) %>%
-                     mutate(Date = reg_df_list$reg_df$Date[
+                     mutate(date = reg_df_list$reg_df$date[
                        1:nrow(temp_obj$model)]) %>%
-                      pivot_longer(cols = -Date,
+                      pivot_longer(cols = -date,
                                    names_to = "Quantile",
                                    values_to = "GaR_fitted") %>%
                       mutate(Horizon = temp_name)
@@ -102,7 +112,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
 
       ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
                    data = reg_df_list$reg_df %>%
-                     select(-Date) %>%
+                     select(-date) %>%
                      select(-contains(target_var_name), all_of(dep_var)))
 
       return(ols_reg)
@@ -147,7 +157,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
 #'
 #' @return list of quantile reg objects
 #'
-run_quant_reg = function(reg_df,
+run.quant.reg = function(reg_df,
                          target_var_name,
                          quantile_vec,
                          horizon_list,

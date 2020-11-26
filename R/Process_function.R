@@ -5,7 +5,7 @@
 #'
 #' @param data_vec
 #'
-identify_endpoints_NA = function(data_vec){
+identify.endpoints.NA = function(data_vec){
 
   na_ind = which(is.na(data_vec))
 
@@ -74,7 +74,7 @@ interpolate = function(data_vec, direction = "forward"){
 
   if(length(na_ind) == 0){return(data_vec)}
 
-  na_endpoints_list = identify_endpoints_NA(data_vec)
+  na_endpoints_list = identify.endpoints.NA(data_vec)
 
   clean_data = na.approx(data_vec)
 
@@ -124,7 +124,7 @@ interpolate = function(data_vec, direction = "forward"){
 #'
 #' @param df dataframe
 #'
-get_time_indices_list = function(df){
+get.time.indices.list = function(df){
 
   time_index_name = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -152,18 +152,18 @@ get_time_indices_list = function(df){
 
 chain_index = function(df, method = "PCA", ...){
 
-  Date_varname = grep("[Dd]ate", names(df), value = TRUE)
+  date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
   # Get list range
 
-  time_indices_list = get_time_indices_list(df)
+  time_indices_list = get.time.indices.list(df)
 
   # Get reduced diff series
 
   reduced_list = lapply(time_indices_list,function(temp_ind){
 
     temp_df = df %>%
-      filter(!!sym(Date_varname) %in% temp_ind) %>%
+      filter(!!sym(date_varname) %in% temp_ind) %>%
       select_if(~sum(is.na(.)) == 0)
 
     temp_agg_series = temp_df %>%
@@ -199,11 +199,11 @@ chain_index = function(df, method = "PCA", ...){
 
       target_df = reduced_list[[i]]$agg_series
 
-      temp_Date_varname = grep("[Dd]ate", names(target_df),
+      temp_date_varname = grep("[Dd]ate", names(target_df),
                                value = TRUE)
 
-      target_ind = (!target_df[[temp_Date_varname]] %in%
-                      diff_df[[temp_Date_varname]])
+      target_ind = (!target_df[[temp_date_varname]] %in%
+                      diff_df[[temp_date_varname]])
 
       diff_df = rbind.data.frame(diff_df, target_df[target_ind,])
 
@@ -215,14 +215,14 @@ chain_index = function(df, method = "PCA", ...){
   }
 
   diff_df = diff_df %>%
-    arrange(Date)
+    arrange(date)
 
   # Return cumsum result
 
   chain_df = diff_df %>%
-    arrange(desc(Date)) %>%
+    arrange(desc(date)) %>%
     mutate(PCA = cumsum(PCA)) %>%
-    arrange(Date)
+    arrange(date)
 
   return(chain_df)
 
@@ -243,11 +243,11 @@ chain_index = function(df, method = "PCA", ...){
 #'  is between current point and its lag) looking.
 #'
 
-calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
+calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
-  Date_varname = grep("[Dd]ate",names(df),value = TRUE)
+  date_varname = grep("[Dd]ate",names(df),value = TRUE)
 
-  if(!length(Date_varname) == 1){
+  if(!length(date_varname) == 1){
     stop("Couldn't identify time index variable")
   }
 
@@ -255,13 +255,13 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
   if(forward){
 
     ret_df = df %>%
-      mutate_at(vars(-Date_varname),
+      mutate_at(vars(-date_varname),
                 .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
 
   } else{
 
     ret_df = df %>%
-      mutate_at(vars(-Date_varname),
+      mutate_at(vars(-date_varname),
                 .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
 
 
@@ -269,7 +269,7 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
 
   ret_df = ret_df %>%
-    mutate_at(vars(-Date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
 
   return(ret_df)
 
@@ -295,9 +295,8 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
-#' @export
 #'
-make_quant_reg_df = function(partitions_list, vars_df,
+make.quant.reg.df = function(partitions_list, vars_df,
                              target_var_name,
                              horizon_list,
                              quantile_vec,
@@ -322,11 +321,11 @@ make_quant_reg_df = function(partitions_list, vars_df,
     # Add lead values of target var
 
     reg_df = vars_df %>%
-      select(Date, all_of(target_var_name)) %>%
+      select(date, all_of(target_var_name)) %>%
       inner_join(
         preproc_df_list$xreg_df %>%
-          rename_at(vars(-Date),~paste0(.,"_xreg")),
-                 by = c("Date" = "Date")) %>%
+          rename_at(vars(-date),~paste0(.,"_xreg")),
+                 by = c("date" = "date")) %>%
       filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
@@ -340,7 +339,7 @@ make_quant_reg_df = function(partitions_list, vars_df,
   if(is.null(partitions_list)){
 
      reg_df = vars_df %>%
-      select(Date, all_of(target_var_name)) %>%
+      select(date, all_of(target_var_name)) %>%
       filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
@@ -369,7 +368,7 @@ make_quant_reg_df = function(partitions_list, vars_df,
 #' @param k window size
 #'
 
-fill_na_average = function(data_vec, k = 4){
+fill.na.average = function(data_vec, k = 4){
 
   na_ind = which(is.na(data_vec))
 
@@ -410,7 +409,7 @@ fill_na_average = function(data_vec, k = 4){
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
-    group_by(Horizon,Date) %>%
+    group_by(Horizon,date) %>%
     arrange(Quantile) %>%
     mutate(across(contains("GaR"),~sort(.))) %>%
     ungroup()
@@ -459,7 +458,7 @@ add_leads_to_target_var = function(df,
 #'
 #' @import slider
 #'
-calculate_YoY_returns = function(variable_vec){
+calculate.YoY.returns = function(variable_vec){
 
   yoy_vec = slide_dbl(.x = variable_vec,
                          .f = ~.[5]/.[1]-1,
@@ -477,7 +476,7 @@ calculate_YoY_returns = function(variable_vec){
 #'
 #' @import slider
 #'
-calculate_four_quarters_ma = function(variable_vec){
+calculate.four.quarters.ma = function(variable_vec){
 
   ma_vec = slide_dbl(.x = variable_vec,
                       .f = mean,
@@ -506,9 +505,9 @@ make_prediction_df = function(gar_model, xreg_df){
            function(temp_mod, temp_name){
 
              temp_pred_df = xreg_df %>%
-               select(Date) %>%
+               select(date) %>%
                cbind(predict(temp_mod, xreg_df)) %>%
-               pivot_longer(-Date,
+               pivot_longer(-date,
                             names_to = "Quantile",
                             values_to = "GaR_fitted") %>%
                mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
@@ -518,7 +517,7 @@ make_prediction_df = function(gar_model, xreg_df){
 
   }) %>%
     fix_quantile_crossing() %>%
-    select(Date,Horizon,Quantile,GaR_fitted)
+    select(date,Horizon,Quantile,GaR_fitted)
 
   return(prediction_df)
 

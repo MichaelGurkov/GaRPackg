@@ -20,50 +20,52 @@
 #'  (x component of the PCA object list). The loadings are left unchaged.
 
 
-align_pca = function(pca_obj, var_name,
-                     positive_direction = TRUE){
-
-
-  if(length(var_name) > 1){
-
+align.pca = function(pca_obj, var_name,
+                     positive_direction = TRUE) {
+  if (length(var_name) > 1) {
     sign_vec = sapply(as.data.frame(pca_obj$x),
-                      function(temp_col){
+                      function(temp_col) {
+                        return(sign(
+                          cor(x = temp_col, y = var_name,
+                              use = "pairwise.complete.obs")
+                        ))
 
-      return(sign(cor(x = temp_col, y = var_name,
-                      use = "pairwise.complete.obs")))
-
-    })
+                      })
 
 
-  } else if(grepl("[0-9]",var_name)){
-
-    sign_vec = sign(pca_obj[["rotation"]][var_name,])
+  } else if (grepl("[0-9]", var_name)) {
+    sign_vec = sign(pca_obj[["rotation"]][var_name, ])
 
   } else {
-
     sign_vec = sign(pca_obj[["rotation"]][
-      rownames(pca_obj[["rotation"]]) == var_name,])
+      rownames(pca_obj[["rotation"]]) == var_name, ])
 
   }
 
-  if(length(sign_vec) == 0){
-
-    message(paste0("align_pca: ",
-                   "Aligning coefficient missing ",
-                   "for ", var_name))
+  if (length(sign_vec) == 0) {
+    message(paste0(
+      "align.pca: ",
+      "Aligning coefficient missing ",
+      "for ",
+      var_name
+    ))
 
     return(pca_obj)
 
   }
 
 
-  if(!positive_direction){sign_vec = sign_vec * (-1)}
+  if (!positive_direction) {
+    sign_vec = sign_vec * (-1)
+  }
 
-  pca_obj$x = sapply(1:ncol(pca_obj$x),function(temp_ind){
-    pca_obj$x[,temp_ind] * sign_vec[temp_ind]})
+  pca_obj$x = sapply(1:ncol(pca_obj$x), function(temp_ind) {
+    pca_obj$x[, temp_ind] * sign_vec[temp_ind]
+  })
 
-  pca_obj$rotation = sapply(1:ncol(pca_obj$rotation),function(temp_ind){
-    pca_obj$rotation[,temp_ind] * sign_vec[temp_ind]})
+  pca_obj$rotation = sapply(1:ncol(pca_obj$rotation), function(temp_ind) {
+    pca_obj$rotation[, temp_ind] * sign_vec[temp_ind]
+  })
 
   return(pca_obj)
 
@@ -95,41 +97,46 @@ align_pca = function(pca_obj, var_name,
 #' character (variable's name) or numeric (variable's position index). The second element
 #' if(supplied) is boolean indicator alignment direction (True means positive direction).
 #'
-#' @return a list with two elements : pca_obj - PCA object, time_index - Dates vector
+#' @return a list with two elements : pca_obj - PCA object, time_index - dates vector
 #'
-pca_reduction = function(df,center = TRUE,
+pca_reduction = function(df,
+                         center = TRUE,
                          scale = TRUE,
-                         sign_align_params = NULL){
-
+                         sign_align_params = NULL) {
   # Identify time index
 
   time_index_var = str_subset(names(df), "[Dd]ate")
 
-  if(length(time_index_var) != 1){message("Could not identify time index")}
+  if (length(time_index_var) != 1) {
+    message("Could not identify time index")
+  }
 
   # Extract PCA
 
   df = df %>%
     filter(complete.cases(.))
 
+  if (ncol(df) == 1) {
+    return(list(pca_obj = NULL, time_index = df[, time_index_var]))
+  }
+
   temp_pca = df %>%
     select(-all_of(time_index_var)) %>%
-    prcomp(center = center,scale. = scale)
+    prcomp(center = center, scale. = scale)
 
 
   # Align PCA, if length == 2 then the second parameter is
   # the direction (boolean indicator).
 
-  if(!is.null(sign_align_params)){
-
-    if(length(sign_align_params) == 2){
-
-      temp_pca = align_pca(pca_obj = temp_pca,
-                           var_name = sign_align_params[[1]],
-                           positive_direction = sign_align_params[[2]])
+  if (!is.null(sign_align_params)) {
+    if (length(sign_align_params) == 2) {
+      temp_pca = align.pca(
+        pca_obj = temp_pca,
+        var_name = sign_align_params[[1]],
+        positive_direction = sign_align_params[[2]]
+      )
     } else {
-
-      temp_pca = align_pca(pca_obj = temp_pca,
+      temp_pca = align.pca(pca_obj = temp_pca,
                            var_name = sign_align_params[[1]])
 
     }
@@ -139,7 +146,7 @@ pca_reduction = function(df,center = TRUE,
   }
 
 
-  return(list(pca_obj = temp_pca, time_index = df[,time_index_var]))
+  return(list(pca_obj = temp_pca, time_index = df[, time_index_var]))
 
 }
 
@@ -161,69 +168,63 @@ pca_reduction = function(df,center = TRUE,
 map_pca_reduction = function(multi_feature_partitions,
                              vars_df,
                              n_components,
-                             pca_align_list = NULL){
+                             pca_align_list = NULL) {
 
   reduction_objects_list = map2(
     names(multi_feature_partitions),
-    multi_feature_partitions,
-    function(temp_name, temp_part){
-
+    multi_feature_partitions, function(temp_name, temp_part) {
       temp_df = vars_df %>%
-        select(any_of(c(unlist(temp_part),"Date")))
+        select(any_of(c(unlist(temp_part, use.names = FALSE), "date")))
 
       # Set alignment params
 
-      if(temp_name %in% names(pca_align_list)){
+      if (temp_name %in% names(pca_align_list)) {
 
         temp_sign_align_params = pca_align_list[[temp_name]]
 
-      } else {
+        } else {
 
-        temp_sign_align_params = NULL
+          temp_sign_align_params = NULL
 
-      }
+        }
 
-      temp_pca = pca_reduction(
-        df = temp_df,
-        sign_align_params = temp_sign_align_params
-      )
-
-
+      temp_pca = pca_reduction(df = temp_df,
+                               sign_align_params = temp_sign_align_params)
       return(temp_pca)
 
-    })
+      })
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
-  xreg_df_multi = map(names(reduction_objects_list),
-                      function(temp_name){
+  xreg_df_multi = map(names(reduction_objects_list),function(temp_name) {
+    date_vec = reduction_objects_list[[temp_name]]$time_index
 
-                        Date_vec = reduction_objects_list[[temp_name]]$time_index
+    data_df = reduction_objects_list[[temp_name]]$pca_obj$x[, 1:n_components]
 
-                        data_df = reduction_objects_list[[temp_name]]$pca_obj$x[
-                          ,1:n_components]
+    if (is.null(data_df)) {
 
-                        temp_df = cbind.data.frame(Date_vec, data_df)
+      data_df = matrix(nrow = length(date_vec),
+                       ncol = n_components)
+      }
 
-                        if(n_components > 1){
+    temp_df = cbind.data.frame(date_vec, data_df)
 
-                          names(temp_df) = c(
-                            "Date",
-                            paste(rep(temp_name, n_components),
-                                  seq(1,n_components), sep = "_"))
+    if (n_components > 1) {
+      names(temp_df) = c("date",
+                         paste(rep(temp_name, n_components),
+                               seq(1, n_components), sep = "_"))
+      }
 
-                        } else {
+    else {
 
+      names(temp_df) = c("date", temp_name)
 
-                          names(temp_df) = c("Date", temp_name)
+      }
 
-                        }
-
-
-                        return(temp_df)
+    return(temp_df)
 
                       }) %>%
-    reduce(full_join, by = "Date")
+    reduce(full_join, by = "date")
 
   return_list = list()
 
@@ -232,9 +233,6 @@ map_pca_reduction = function(multi_feature_partitions,
   return_list$reduction_objects_list = reduction_objects_list
 
   return(return_list)
-
-
-
 
 
 }
@@ -263,20 +261,21 @@ map_pca_reduction = function(multi_feature_partitions,
 #' (True means positive direction).
 #'
 #' @return a list with two elements : pls_obj - PLS object,
-#'  time_index - Dates vector
+#'  time_index - dates vector
 #'
 #' @importFrom  pls plsr
 #'
-pls_reduction = function(df,target_var_name,center = TRUE,
-                         scale = TRUE){
-
+pls_reduction = function(df,
+                         target_var_name,
+                         center = TRUE,
+                         scale = TRUE) {
   # Identify time index
 
   time_index_var = str_subset(names(df), "[Dd]ate")
 
-  if(length(time_index_var) != 1){
-
-    message("Could not identify time index")}
+  if (length(time_index_var) != 1) {
+    message("Could not identify time index")
+  }
 
   # Identify predictors names
 
@@ -285,14 +284,16 @@ pls_reduction = function(df,target_var_name,center = TRUE,
     str_remove_all(time_index_var)
 
   xvars_names = xvars_names[sapply(xvars_names,
-                                   function(temp){nchar(temp) > 0})]
+                                   function(temp) {
+                                     nchar(temp) > 0
+                                   })]
 
   # Extract PLS
 
   df = df %>%
     filter(complete.cases(.))
 
-  pls_form = formula(paste(target_var_name,"~",
+  pls_form = formula(paste(target_var_name, "~",
                            paste(xvars_names, collapse = "+")))
 
   temp_pls = df %>%
@@ -305,7 +306,7 @@ pls_reduction = function(df,target_var_name,center = TRUE,
       data = .
     )
 
-  return(list(pls_obj = temp_pls, time_index = df[,time_index_var]))
+  return(list(pls_obj = temp_pls, time_index = df[, time_index_var]))
 
 }
 
@@ -325,51 +326,41 @@ pls_reduction = function(df,target_var_name,center = TRUE,
 map_pls_reduction = function(multi_feature_partitions,
                              vars_df,
                              target_var_name,
-                             n_components){
+                             n_components) {
+  if (is.null(names(multi_feature_partitions))) {
+    stop("The partitions must be a named list")
+  }
 
-  if(is.null(names(multi_feature_partitions))){
-    stop("The partitions must be a named list")}
+  reduction_objects_list = map2(names(multi_feature_partitions),
+                                multi_feature_partitions,
+                                function(temp_name, temp_part) {
+                                  temp_df = vars_df %>%
+                                    select(any_of(c(
+                                      unlist(temp_part), "date", target_var_name
+                                    )))
+                                  temp_pls = pls_reduction(df = temp_df,
+                                                           target_var_name = target_var_name)
+                                  return(temp_pls)
 
-  reduction_objects_list = map2(
-    names(multi_feature_partitions),
-    multi_feature_partitions,
-    function(temp_name, temp_part){
-
-      temp_df = vars_df %>%
-        select(any_of(c(unlist(temp_part),"Date",target_var_name)))
-      temp_pls = pls_reduction(
-        df = temp_df,
-        target_var_name = target_var_name
-      )
-      return(temp_pls)
-
-    })
+                                })
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
   xreg_df_multi = map(names(reduction_objects_list),
-                      function(temp_name){
-                        Date_vec = reduction_objects_list[[
-                          temp_name]]$time_index
+                      function(temp_name) {
+                        date_vec = reduction_objects_list[[temp_name]]$time_index
 
-                        data_df = reduction_objects_list[[
-                          temp_name]]$pls_obj$scores[,1:n_components]
+                        data_df = reduction_objects_list[[temp_name]]$pls_obj$scores[, 1:n_components]
 
-                        temp_df = cbind.data.frame(
-                          Date_vec, data_df
-                        )
+                        temp_df = cbind.data.frame(date_vec, data_df)
 
-                        if(n_components > 1){
-
-                          names(temp_df) = c(
-                            "Date",
-                            paste(rep(temp_name, n_components),
-                                  seq(1,n_components), sep = "_"))
+                        if (n_components > 1) {
+                          names(temp_df) = c("date",
+                                             paste(rep(temp_name, n_components),
+                                                   seq(1, n_components), sep = "_"))
 
                         } else {
-
-
-                          names(temp_df) = c("Date", temp_name)
+                          names(temp_df) = c("date", temp_name)
 
                         }
 
@@ -377,7 +368,7 @@ map_pls_reduction = function(multi_feature_partitions,
                         return(temp_df)
 
                       }) %>%
-    reduce(full_join, by = "Date")
+    reduce(full_join, by = "date")
 
   return_list = list()
 
@@ -424,20 +415,17 @@ reduce_data_dimension = function(vars_df,
                                  n_components = 1,
                                  pca_align_list = NULL,
                                  method = "inner_join_pca",
-                                 return_objects_list = FALSE){
-
+                                 return_objects_list = FALSE) {
   # Validation
 
-  if(is.null(partition)){
-
+  if (is.null(partition)) {
     warning("The partition is NULL")
 
     return(NULL)
 
   }
 
-  if(is.null(target_var_name) & method == "pls"){
-
+  if (is.null(target_var_name) & method == "pls") {
     message("Target variable is NULL")
 
     return(NULL)
@@ -455,11 +443,10 @@ reduce_data_dimension = function(vars_df,
 
   # Check for one variable partitions
 
-  if(length(one_feature_partitions) > 0){
-
+  if (length(one_feature_partitions) > 0) {
     xreg_df_one = vars_df %>%
-      select(Date, unlist(one_feature_partitions)) %>%
-      mutate(across(-Date,scale))
+      select(date, unlist(one_feature_partitions)) %>%
+      mutate(across(-date, scale))
 
   }
 
@@ -467,10 +454,8 @@ reduce_data_dimension = function(vars_df,
   # Reduce multi variable partitions
 
 
-  if(length(multi_feature_partitions) > 0){
-
-
-    if(method == "inner_join_pca"){
+  if (length(multi_feature_partitions) > 0) {
+    if (method == "inner_join_pca") {
       multi_part_return_list = map_pca_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,
@@ -481,8 +466,7 @@ reduce_data_dimension = function(vars_df,
     }
 
 
-    if(method == "pls"){
-
+    if (method == "pls") {
       multi_part_return_list = map_pls_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,
@@ -494,8 +478,7 @@ reduce_data_dimension = function(vars_df,
     }
 
 
-    if(return_objects_list){
-
+    if (return_objects_list) {
       return_list$objects_list =
         multi_part_return_list$reduction_objects_list
 
@@ -508,27 +491,21 @@ reduce_data_dimension = function(vars_df,
   # Return xreg df and reduction objects (optional)
 
 
-  if(length(one_feature_partitions) > 0 &
-     length(multi_feature_partitions) > 0){
-
-    return_list$xreg_df = inner_join(
-      xreg_df_one,
-      multi_part_return_list$xreg_df_multi,
-      by = "Date"
-    )
+  if (length(one_feature_partitions) > 0 &
+      length(multi_feature_partitions) > 0) {
+    return_list$xreg_df = inner_join(xreg_df_one,
+                                     multi_part_return_list$xreg_df_multi,
+                                     by = "date")
 
   }
 
-  else if (length(multi_feature_partitions) > 0){
-
+  else if (length(multi_feature_partitions) > 0) {
     return_list$xreg_df = multi_part_return_list$xreg_df_multi
 
 
   }
 
   else {
-
-
     return_list$xreg_df = xreg_df_one
 
   }
