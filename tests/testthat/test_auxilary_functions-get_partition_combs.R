@@ -9,7 +9,7 @@ part_list =  list(
 
 part_name = "dom_fci"
 
-test_required_object = get_partition_combs(partition_list = part_list[1],
+test_required_object = get_partition_combs(partitions_list = part_list[1],
                            partition_name = part_name)
 
 expected_required_object = part_list[1] %>%
@@ -33,7 +33,7 @@ test_that("get_partition_combs handles required only list",
                        expected = expected_required_object))
 
 
-test_optional_object = get_partition_combs(partition_list = part_list[2],
+test_optional_object = get_partition_combs(partitions_list = part_list[2],
                                            partition_name = part_name)
 
 expected_optional_object = list(

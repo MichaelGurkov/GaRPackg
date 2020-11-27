@@ -1,4 +1,6 @@
-#' This function returns a data_frame with list-column
+#' @title Return combinations of partition elements
+#'
+#' @description  This function returns a data_frame with list-column
 #' partition combs
 #'
 #' @param optional_vars_vec
@@ -14,20 +16,20 @@
 
 get_partition_combs = function(partitions_list,
                                partition_name) {
+
+  # if only required category present return as data frame
+
   if (all(length(names(partitions_list)) == 1 &
           names(partitions_list) == "required")) {
+
     temp_comb_df = partitions_list %>%
       enframe %>%
       mutate(value = map(value, function(temp_vec) {
         temp_list = list(temp_vec)
 
-        names(pca_obj) = names(partitions_list)[sapply(partitions_list, length) > 1]
-
         names(temp_list) = partition_name
 
         return(temp_list)
-
-        names(pca_obj) = names(partitions_list)[sapply(partitions_list, length) > 1]
 
       })) %>%
       rename(!!sym(partition_name) := value) %>%
@@ -37,9 +39,12 @@ get_partition_combs = function(partitions_list,
     return(temp_comb_df)
   }
 
+  # make all combinations of optional category --> comb_df
+
   comb_df = map(seq_along(partitions_list$optional),
                 function(temp_ind) {
-                  comb_list =  combn(partitions_list$optional, temp_ind, simplify = FALSE)
+                  comb_list =  combn(partitions_list$optional,
+                                     temp_ind, simplify = FALSE)
 
                   temp_comb_df = comb_list %>%
                     enframe %>%
@@ -47,6 +52,8 @@ get_partition_combs = function(partitions_list,
                 }) %>%
     bind_rows() %>%
     rbind(data.frame(name = paste0(partition_name, "-0"), value = ""))
+
+  # if required category present add to each combination in comb_df
 
   if ("required" %in% names(partitions_list)) {
     comb_df = comb_df %>%
