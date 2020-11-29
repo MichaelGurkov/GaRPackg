@@ -104,8 +104,8 @@ current_partition = partitions_list$gdp_comp_fin_cycle_cond
 ```{r df_filters}
 
 df = df %>% 
-  # filter(across(unlist(current_partition, use.names = FALSE), ~!is.na(.))) %>% 
-  filter(date <= as.yearqtr("2019 Q4")) %>%
+  filter(across(unlist(current_partition, use.names = FALSE), ~!is.na(.))) %>%
+  # filter(date <= as.yearqtr("2019 Q4")) %>%
   identity()
 
 
