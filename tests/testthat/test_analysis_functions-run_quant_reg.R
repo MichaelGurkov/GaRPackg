@@ -3,9 +3,9 @@ data("gar_data")
 test_params = list()
 
 test_params$linear_part = list(
-  gdp = list(
-    "gdp"
-  ),
+  # gdp = list(
+  #   "gdp"
+  # ),
   credit = list(
     "credit"
   ),
@@ -15,7 +15,7 @@ test_params$linear_part = list(
 
 test_params$horizon_list = list(1,4)
 
-test_params$quantile_vec = c(0.05,0.5)
+test_params$quantile_vec = 0.5
 
 test_params$target_var_name = "gdp"
 
@@ -48,7 +48,7 @@ test_reg = map(test_params$horizon_list,
     x = as.matrix(x_mat),
     y = as.matrix(y_vec),
     tau = test_params$quantile_vec,
-    lambda = 1)
+    lambda = 2)
 
 
 

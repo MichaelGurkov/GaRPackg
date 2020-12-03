@@ -13,6 +13,8 @@
 #'
 #' @return a data frame with out of sample predictions
 #'
+#' @export
+#'
 
 get_gar_forecast = function(partitions_list,
                             vars_df,

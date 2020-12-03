@@ -169,6 +169,8 @@ extract_coeffs_from_gar_model = function(gar_model,
 #' @param partition_names optional which partitions to return
 #'
 #' @return factor_contribution_df
+#'
+#' @export
 
 extract_factor_contribution_from_gar_model = function(
   gar_model, quantile = "0.05") {
@@ -222,6 +224,8 @@ extract_factor_contribution_from_gar_model = function(
 #'
 #' @param benchmark_df
 #'
+#' @export
+#'
 collect_quantile_r2_score = function(pred_df, realized_df,
                                      benchmark_df) {
   prediction_df = pred_df %>%
@@ -255,6 +259,8 @@ collect_quantile_r2_score = function(pred_df, realized_df,
 #' reg df and calculates skew and
 #'
 #' @param gar_model
+#'
+#' @export
 #'
 calculate_skew_and_iqr = function(gar_obj) {
   prediction_df = make_prediction_df(gar_model = gar_obj$qreg_result,
@@ -318,6 +324,8 @@ extract_coeffs_from_gar_model = function(gar_model,
 #' @param partition_names optional which partitions to return
 #'
 #' @return factor_contribution_df
+#'
+#' @export
 
 extract_pca_loadings_from_gar_model = function(gar_model) {
 

@@ -237,13 +237,12 @@ map_pca_reduction = function(multi_feature_partitions,
 
 }
 
-#' This function reduces dimension based on PLS method
+#' @title PLS reduction
+#'
+#' @details This function reduces dimension based on PLS method
 #' The function takes a data matrix and returns the first n_comps
 #' components of PLS transformation. If the data matrix has a
 #' time index the result is aligned along the index
-#'
-#' @title PLS reduction
-#'
 #'
 #' @param df dataframe
 #'
@@ -312,7 +311,7 @@ pls_reduction = function(df,
 
 
 
-#' This function maps pls reduction over partitions list
+#' @title Map PLS reduction over partitions list
 #'
 #' @param multi_feature_partitions list of partitions
 #'
@@ -350,7 +349,8 @@ map_pls_reduction = function(multi_feature_partitions,
                       function(temp_name) {
                         date_vec = reduction_objects_list[[temp_name]]$time_index
 
-                        data_df = reduction_objects_list[[temp_name]]$pls_obj$scores[, 1:n_components]
+                        data_df = reduction_objects_list[[
+                          temp_name]]$pls_obj$scores[, 1:n_components]
 
                         temp_df = cbind.data.frame(date_vec, data_df)
 
@@ -387,7 +387,7 @@ map_pls_reduction = function(multi_feature_partitions,
 
 #' This function preprocess data by reducing dimension and returns regression dataset
 #'
-#' @title Data dimesion reduction
+#' @title Data dimension reduction
 #'
 #' @param vars_df a dataframe with all variables
 #'
