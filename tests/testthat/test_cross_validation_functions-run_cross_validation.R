@@ -19,8 +19,7 @@ test_reg_df = make_quant_reg_df(
                          fin_cycle = c("credit","house_price")),
   vars_df = gar_data,
   target_var_name = "gdp",
-  horizon_list = test_params$horizon_list,
-  quantile_vec = test_params$quantile_vec)[["reg_df"]]
+  horizon_list = test_params$horizon_list)[["reg_df"]]
 
 
 

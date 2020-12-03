@@ -393,11 +393,12 @@ map_pls_reduction = function(multi_feature_partitions,
 #'
 #' @param target_var_name string that specifies outcome feature
 #'
-#' @param partition a list of partitions for dimension reduction
+#' @param partition_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param n_components number of components that should be returned
 #'
-#' @param method (optional) string that specifies dimesion reduction method
+#' @param preprocess_method (optional) string that specifies preprocess method
 #' (default is PCA)
 #'
 #' @param pca_align_list (optional) a list with alignment parameters. For each partition
@@ -410,22 +411,22 @@ map_pls_reduction = function(multi_feature_partitions,
 #' (optional) element is the pca obj list
 
 reduce_data_dimension = function(vars_df,
-                                 partition,
+                                 partition_list,
                                  target_var_name = NULL,
                                  n_components = 1,
                                  pca_align_list = NULL,
-                                 method = "inner_join_pca",
+                                 preprocess_method = "inner_join_pca",
                                  return_objects_list = FALSE) {
   # Validation
 
-  if (is.null(partition)) {
-    warning("The partition is NULL")
+  if (is.null(partition_list)) {
+    warning("The partition_list is NULL")
 
     return(NULL)
 
   }
 
-  if (is.null(target_var_name) & method == "pls") {
+  if (is.null(target_var_name) & preprocess_method == "pls") {
     message("Target variable is NULL")
 
     return(NULL)
@@ -436,17 +437,16 @@ reduce_data_dimension = function(vars_df,
 
   return_list = list()
 
-  one_feature_partitions = partition[sapply(partition, length) == 1]
+  one_feature_partitions = partition_list[sapply(partition_list, length) == 1]
 
-  multi_feature_partitions = partition[sapply(partition, length) > 1]
+  multi_feature_partitions = partition_list[sapply(partition_list, length) > 1]
 
 
   # Check for one variable partitions
 
   if (length(one_feature_partitions) > 0) {
     xreg_df_one = vars_df %>%
-      select(date, unlist(one_feature_partitions)) %>%
-      mutate(across(-date, scale))
+      select(date, unlist(one_feature_partitions))
 
   }
 
@@ -455,7 +455,7 @@ reduce_data_dimension = function(vars_df,
 
 
   if (length(multi_feature_partitions) > 0) {
-    if (method == "inner_join_pca") {
+    if (preprocess_method == "inner_join_pca") {
       multi_part_return_list = map_pca_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,
@@ -466,7 +466,7 @@ reduce_data_dimension = function(vars_df,
     }
 
 
-    if (method == "pls") {
+    if (preprocess_method == "pls") {
       multi_part_return_list = map_pls_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,

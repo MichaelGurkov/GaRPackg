@@ -20,7 +20,7 @@ get_gar_forecast = function(partitions_list,
                             horizon_list,
                             quantile_vec,
                             pca.align.list = NULL,
-                            method = "inner_join_pca",
+                            preprocess_method = "inner_join_pca",
                             win_len = 30,
                             win_type_expanding = FALSE){
 
@@ -29,9 +29,8 @@ get_gar_forecast = function(partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
-    quantile_vec = quantile_vec,
     pca.align.list = pca.align.list,
-    method = method,
+    preprocess_method = preprocess_method,
     return_objects_list = FALSE
   )
 

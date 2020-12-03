@@ -11,8 +11,7 @@ test_params$linear_part = list(
   ),
   house_price = list(
     "house_price"
-  )
-)
+))
 
 test_params$horizon_list = list(1,4)
 
@@ -24,8 +23,7 @@ xreg_df = make_quant_reg_df(
   partitions_list = test_params$linear_part,
   vars_df = gar_data,
   target_var_name = test_params$target_var_name,
-  horizon_list = test_params$horizon_list,
-  quantile_vec = test_params$quantile_vec)[[1]]
+  horizon_list = test_params$horizon_list)[[1]]
 
 test_reg = map(test_params$horizon_list,
                  function(temp_horizon){
@@ -50,7 +48,7 @@ test_reg = map(test_params$horizon_list,
     x = as.matrix(x_mat),
     y = as.matrix(y_vec),
     tau = test_params$quantile_vec,
-    lambda = 2)
+    lambda = 1)
 
 
 

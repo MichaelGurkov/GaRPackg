@@ -44,7 +44,7 @@ test_mix_df = data.frame(
   inner_join(
     gar_data %>%
       select(date,credit) %>%
-      mutate(fin_cycle = scale(credit)),
+      rename(fin_cycle = credit),
     by = "date"
   ) %>%
   select(date, fin_cycle, dom_macro)
@@ -59,10 +59,9 @@ test_multi_df = map_pca_reduction(
 test_that("reduce_data_dimension returns one feature data",
           expect_equal(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition = one_feature_part)[[1]],
+            partition_list = one_feature_part)[[1]],
             expected = gar_data %>%
-              select(date,unlist(one_feature_part)) %>%
-              mutate(across(-date,scale))
+              select(date,unlist(one_feature_part))
             )
           )
 
@@ -72,7 +71,7 @@ test_that(paste0("reduce_data_dimension handles mix",
           expect_equal(
             object = reduce_data_dimension(
             vars_df = gar_data,
-            partition = mix_feature_part)[[1]],
+            partition_list = mix_feature_part)[[1]],
             expected = test_mix_df)
           )
 
@@ -80,16 +79,16 @@ test_that(paste0("reduce_data_dimension handles mix",
 test_that("reduce_data_dimension returns multi feature data",
           expect_equal(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition = mult_feature_part)[[1]],
+            partition_list = mult_feature_part)[[1]],
             expected = test_multi_df$xreg_df_multi)
           )
 
 
 test_that(paste0("reduce_data_dimension issues warning",
-                 " when partition is NULL"),
+                 " when partition_list is NULL"),
           expect_warning(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition = NULL))
+            partition_list = NULL))
 )
 
 
@@ -97,10 +96,9 @@ test_that(paste0("reduce_data_dimension skips reduction",
                  " object list with one feature part"),
           expect_equal(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition = one_feature_part,
+            partition_list = one_feature_part,
             return_objects_list = TRUE)[[1]],
             expected = gar_data %>%
-              select(date,unlist(one_feature_part)) %>%
-              mutate(across(-date,scale)))
+              select(date,unlist(one_feature_part)))
 )
 
