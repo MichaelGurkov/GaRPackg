@@ -10,7 +10,7 @@
 #'
 #' @importFrom stats formula
 #'
-#' @param partititions_list list of partitons
+#' @param partititions_list list of partitions
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -21,7 +21,7 @@
 #' @param quantile_vec vector of required quantiles in quantile
 #' regression (corresponds to tau argument in rq)
 #'
-#' @param method string a method that aggregates the data to partitions
+#' @param preprocess_method string a method that aggregates the data to partitions
 #'
 #' @param run_ols_reg boolean indicator that adds an OLS regression
 #'
@@ -46,11 +46,13 @@
 #'
 #' @return pca_obj (optional) PCA object
 #'
+#' @export
+#'
 run_GaR_analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
-                            method = "inner_join_pca",
+                            preprocess_method = "inner_join_pca",
                             run_ols_reg = FALSE,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
@@ -61,9 +63,8 @@ run_GaR_analysis = function(partitions_list, vars_df,
     vars_df = vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
-    quantile_vec = quantile_vec,
     pca.align.list = pca.align.list,
-    method = method,
+    preprocess_method = preprocess_method,
     return_objects_list = return_objects_list
   )
 

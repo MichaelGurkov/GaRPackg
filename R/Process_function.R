@@ -64,7 +64,6 @@ identify_endpoints_NA = function(data_vec){
 #'
 #' @importFrom zoo as.yearqtr as.yearmon
 #'
-#' @export
 #'
 interpolate = function(data_vec, direction = "forward"){
 
@@ -150,7 +149,7 @@ get_time_indices_list = function(df){
 #'
 #'@import dplyr
 
-chain_index = function(df, method = "PCA", ...){
+chain_index = function(df, preprocess_method = "PCA", ...){
 
   date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -278,9 +277,13 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
 #'This function creates a data set for quantile regression
 #'
+#'@details This functions applies preprocessing by reducing dimension of the data
+#'(currently by PCA or PLS).
+#'
 #'@importFrom stats complete.cases
 #'
-#' @param partititions_list list of partitons
+#' @param partition_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -288,31 +291,58 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @param horizon_list list of forecast horizon
 #'
-#' @param quantile_vec vector of required quantiles in quantile regression
-#' (corresponds to tau argument in rq)
+#' @param partitions_list list of partition names
 #'
-#' @param method string a method that aggregates the data to partitions
+#' @param preprocess_method string a method that aggregates the data to partitions
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
 #'
-make_quant_reg_df = function(partitions_list, vars_df,
+make_quant_reg_df = function(vars_df,
                              target_var_name,
                              horizon_list,
-                             quantile_vec,
-                             return_objects_list = FALSE,
+                             preprocess_method = "inner_join_pca",
+                             partitions_list = NULL,
                              pca.align.list = NULL,
-                             method = "inner_join_pca"){
+                             return_objects_list = FALSE
+                             ){
 
-  if(!is.null(partitions_list)){
 
-    # Preprocess
+  if(preprocess_method == "asis"){
+
+    vars_names = setdiff(names(vars_df), c(target_var_name, "date"))
+
+    reg_df = vars_df %>%
+       add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list)) %>%
+      rename_at(vars(-c(target_var_name, "date")), ~paste0(.,"_xreg"))
+
+    return(reg_df)
+
+
+  }
+
+
+
+  if(is.null(partitions_list)){
+
+    reg_df = vars_df %>%
+      select(date, all_of(target_var_name)) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+    return(reg_df)
+
+
+  }
+
 
     preproc_df_list = reduce_data_dimension(
       vars_df = vars_df,
       pca_align_list = pca.align.list,
-      partition = partitions_list,
-      method = method,
+      partitions_list = partitions_list,
+      preprocess_method = preprocess_method,
       target_var_name = target_var_name,
       return_objects_list = return_objects_list
       )
@@ -332,20 +362,6 @@ make_quant_reg_df = function(partitions_list, vars_df,
 
 
 
-
-  }
-
-
-  if(is.null(partitions_list)){
-
-     reg_df = vars_df %>%
-      select(date, all_of(target_var_name)) %>%
-      filter(complete.cases(.)) %>%
-      add_leads_to_target_var(target_var_name = target_var_name,
-                              leads_vector = unlist(horizon_list))
-
-
-  }
 
   return_list = list()
 

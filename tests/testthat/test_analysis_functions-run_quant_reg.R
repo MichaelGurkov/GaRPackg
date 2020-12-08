@@ -3,20 +3,19 @@ data("gar_data")
 test_params = list()
 
 test_params$linear_part = list(
-  gdp = list(
-    "gdp"
-  ),
+  # gdp = list(
+  #   "gdp"
+  # ),
   credit = list(
     "credit"
   ),
   house_price = list(
     "house_price"
-  )
-)
+))
 
 test_params$horizon_list = list(1,4)
 
-test_params$quantile_vec = c(0.05,0.5)
+test_params$quantile_vec = 0.5
 
 test_params$target_var_name = "gdp"
 
@@ -24,8 +23,7 @@ xreg_df = make_quant_reg_df(
   partitions_list = test_params$linear_part,
   vars_df = gar_data,
   target_var_name = test_params$target_var_name,
-  horizon_list = test_params$horizon_list,
-  quantile_vec = test_params$quantile_vec)[[1]]
+  horizon_list = test_params$horizon_list)[[1]]
 
 test_reg = map(test_params$horizon_list,
                  function(temp_horizon){

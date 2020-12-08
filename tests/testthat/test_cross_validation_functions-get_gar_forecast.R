@@ -23,7 +23,6 @@ reg_df = make_quant_reg_df(
   vars_df = gar_data,
   target_var_name = test_params$target_var,
   horizon_list = test_params$horizon_list,
-  quantile_vec = test_params$quantile_vec
   )[[1]]
 
 
