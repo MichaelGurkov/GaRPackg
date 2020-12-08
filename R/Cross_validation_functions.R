@@ -35,6 +35,8 @@ get_gar_forecast = function(partitions_list,
     return_objects_list = FALSE
   )
 
+  if(nrow(reg_df_list$reg_df) == 0){stop("The regression data frame is empty")}
+
 
   prediction_df = map(horizon_list,run_cross_validation,
                     reg_df = reg_df_list$reg_df,
