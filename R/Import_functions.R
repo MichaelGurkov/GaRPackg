@@ -5,6 +5,8 @@
 #' @import stringr
 #'
 #' @return df
+#'
+#' @export
 
 import.from.fame.template = function(template_path) {
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
