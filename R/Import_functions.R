@@ -5,6 +5,8 @@
 #' @import stringr
 #'
 #' @return df
+#'
+#' @export
 
 import.from.fame.template = function(template_path) {
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
@@ -45,7 +47,8 @@ import.from.fame.template = function(template_path) {
   }
 
   fame_df = fame_df %>%
-    select(-all_of(append_vars_list))
+    select(-all_of(append_vars_list)) %>%
+    rename_all(tolower)
 
 
   return(fame_df)
