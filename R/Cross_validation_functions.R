@@ -11,6 +11,19 @@
 #'
 #' @import purrr
 #'
+#' @param partitions_list list of partition names
+#'
+#' @param vars_df data frame with input variables
+#'
+#' @param target_var_name string that specifies outcome variable
+#'
+#' @param horizon_list list (or vector) of forecast horizons
+#'
+#' @param quantile_vec vector quantiles for quantile regression
+#'
+#' @param pca.align.list (optional) list list that contains the "aligning" variable
+#' for each partition that should be "aligned". See
+#'
 #' @return a data frame with out of sample predictions
 #'
 #' @export

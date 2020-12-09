@@ -220,3 +220,41 @@ run_quant_reg = function(reg_df,
 
 
 }
+
+
+#' This function returns a data frame with predicted values
+#'
+#' @title Make prediction df
+#'
+#' @details The default is in sample prediction (fitted values),
+#' otherwise predict according to supplied xreg data
+#'
+#' @param gar_model
+#'
+#' @param xreg_df xreg data
+#'
+make_prediction_df = function(gar_model, xreg_df){
+
+  prediction_df = map2_dfr(gar_model,names(gar_model),
+                           function(temp_mod, temp_name){
+
+                             temp_pred_df = xreg_df %>%
+                               select(date) %>%
+                               cbind(predict(temp_mod, xreg_df)) %>%
+                               pivot_longer(-date,
+                                            names_to = "Quantile",
+                                            values_to = "gar_fitted") %>%
+                               mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
+                               mutate(Horizon = temp_name)
+
+
+
+                           }) %>%
+    fix_quantile_crossing() %>%
+    select(date,Horizon,Quantile,gar_fitted)
+
+  return(prediction_df)
+
+
+
+}

@@ -228,52 +228,6 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 }
 
 
-#' This function calculates the compound annualized growth rate
-#'
-#' @param df dataframe  - time indexed variable
-#'
-#' @param horizon the horizon of the change period
-#'
-#' @param freq time frequency of the data
-#'
-#' @param forward determines whether the calculation is forward
-#' (meaning that at each time point the change is between lead
-#'  and current point) or backward (at each time point the change
-#'  is between current point and its lag) looking.
-#'
-
-calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
-
-  date_varname = grep("[Dd]ate",names(df),value = TRUE)
-
-  if(!length(date_varname) == 1){
-    stop("Couldn't identify time index variable")
-  }
-
-
-  if(forward){
-
-    ret_df = df %>%
-      mutate_at(vars(-date_varname),
-                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
-
-  } else{
-
-    ret_df = df %>%
-      mutate_at(vars(-date_varname),
-                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
-
-
-  }
-
-
-  ret_df = ret_df %>%
-    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
-
-  return(ret_df)
-
-}
-
 
 #'This function creates a data set for quantile regression
 #'
@@ -503,40 +457,105 @@ calculate_four_quarters_ma = function(variable_vec){
 
 }
 
-
-#' This function returns a data frame with predicted values
+#' This function calculates the compound annualized growth rate
 #'
-#' @title Make prediction df
+#' @param df dataframe  - time indexed variable
 #'
-#' @details The default is in sample prediction (fitted values),
-#' otherwise predict according to supplied xreg data
+#' @param horizon the horizon of the change period
 #'
-#' @param gar_model
+#' @param freq time frequency of the data
 #'
-#' @param xreg_df xreg data
+#' @param forward determines whether the calculation is forward
+#' (meaning that at each time point the change is between lead
+#'  and current point) or backward (at each time point the change
+#'  is between current point and its lag) looking.
 #'
-make_prediction_df = function(gar_model, xreg_df){
 
-  prediction_df = map2_dfr(gar_model,names(gar_model),
-           function(temp_mod, temp_name){
+calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
-             temp_pred_df = xreg_df %>%
-               select(date) %>%
-               cbind(predict(temp_mod, xreg_df)) %>%
-               pivot_longer(-date,
-                            names_to = "Quantile",
-                            values_to = "gar_fitted") %>%
-               mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
-               mutate(Horizon = temp_name)
+  date_varname = grep("[Dd]ate",names(df),value = TRUE)
+
+  if(!length(date_varname) == 1){
+    stop("Couldn't identify time index variable")
+  }
 
 
+  if(forward){
 
-  }) %>%
-    fix_quantile_crossing() %>%
-    select(date,Horizon,Quantile,gar_fitted)
+    ret_df = df %>%
+      mutate_at(vars(-date_varname),
+                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
 
-  return(prediction_df)
+  } else{
 
+    ret_df = df %>%
+      mutate_at(vars(-date_varname),
+                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
+
+
+  }
+
+
+  ret_df = ret_df %>%
+    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+
+  return(ret_df)
+
+}
+
+
+#' @title Preprocess raw data
+#'
+#' @description This function performs preprocessing variable transformation
+#'
+#' @details The following transformations are supported
+#' \itemize{
+#'  \item{Year on Year percent change (the variables should be at quarterly frequency)}
+#'  \item{Differencing}
+#'  \item{Annual moving average (the variables should be at quarterly frequency)}
+#' }
+#'
+#' @param vars_to_yoy (optional) vector of variable names for "Year on Year" transformation
+#'
+#' @param vars_to_diff (optional) vector of variable names for differencing transformation
+#'
+#' @param vars_to_4_ma (optional) vector of variable names for "Annual moving average"
+#' transformation
+#'
+#' @export
+preprocess_df = function(df,
+                         vars_to_yoy = NULL,
+                         vars_to_diff = NULL,
+                         vars_to_4_ma = NULL) {
+
+  if(!is_null(vars_to_yoy)){
+
+    df = df %>%
+      mutate(across(any_of(vars_to_yoy), calculate_YoY_returns))
+
+
+
+  }
+
+  if(!is_null(vars_to_diff)){
+
+    df = df %>%
+      mutate(across(any_of(vars_to_diff), ~c(NA, diff(.))))
+
+
+
+  }
+
+  if(!is_null(vars_to_yoy)){
+
+    df = df %>%
+      mutate(across(any_of(vars_to_4_ma), calculate_four_quarters_ma))
+
+
+
+  }
+
+  return(df)
 
 
 }
