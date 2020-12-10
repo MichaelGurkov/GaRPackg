@@ -277,7 +277,6 @@ make_quant_reg_df = function(vars_df,
   }
 
 
-
   if(is.null(partitions_list)){
 
     reg_df = vars_df %>%
@@ -290,6 +289,19 @@ make_quant_reg_df = function(vars_df,
 
 
   }
+
+
+  if(!length(setdiff(unlist(partitions_list, use.names = FALSE),
+                    names(vars_df))) == 0){
+
+    warning(paste("The following variables are missing :",
+                  paste0(setdiff(unlist(partitions_list, use.names = FALSE),
+                                 names(vars_df)), collapse = ",")))
+
+
+
+  }
+
 
 
     preproc_df_list = reduce_data_dimension(

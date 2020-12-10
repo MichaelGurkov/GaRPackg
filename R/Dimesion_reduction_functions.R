@@ -446,7 +446,7 @@ reduce_data_dimension = function(vars_df,
 
   if (length(one_feature_partitions) > 0) {
     xreg_df_one = vars_df %>%
-      select(date, unlist(one_feature_partitions))
+      select(date, any_of(unlist(one_feature_partitions, use.names = FALSE)))
 
   }
 

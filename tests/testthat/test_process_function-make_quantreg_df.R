@@ -47,3 +47,17 @@ test_that(
       rename_at(vars(-c("date","gdp")), ~paste0(.,"_xreg"))
   )
 )
+
+
+test_that(
+  'make_quant_reg_df issues a warning on missing vars',
+  expect_warning(
+    object = gar_data %>%
+      select(date,gdp, ind_prod_israel, boi_rate) %>%
+      make_quant_reg_df(target_var_name = "gdp",
+                        horizon_list = c(1, 2),
+                        partitions_list = linear_part))
+  )
+
+
+
