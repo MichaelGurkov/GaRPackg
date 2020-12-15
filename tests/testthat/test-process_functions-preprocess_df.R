@@ -2,7 +2,7 @@ data("gar_data")
 
 
 
-test_that("multiplication works", {
+test_that("all preprocess transformations work", {
   expect_equal(
     object = gar_data %>%
       select(date, gdp, ind_prod_israel,ind_prod_euro, boi_rate, vix) %>%
@@ -23,3 +23,19 @@ test_that("multiplication works", {
       ))
   )
 })
+
+expect_warning(gar_data %>%
+                 select(gdp) %>%
+                 preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel")),
+               "The following variables are missing : ind_prod_israel")
+
+expect_warning(gar_data %>%
+                 select(gdp) %>%
+                 preprocess_df(vars_to_diff = c("gdp","ind_prod_israel")),
+               "The following difference variables are missing : ind_prod_israel")
+
+expect_warning(gar_data %>%
+                 select(gdp) %>%
+                 preprocess_df(vars_to_4_ma = c("gdp","ind_prod_israel")),
+               "The following moving average variables are missing : ind_prod_israel")
+

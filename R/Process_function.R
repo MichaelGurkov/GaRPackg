@@ -542,6 +542,18 @@ preprocess_df = function(df,
 
   if(!is_null(vars_to_yoy)){
 
+    if(!length(setdiff(vars_to_yoy,
+                       names(df))) == 0){
+
+      warning(paste("The following variables are missing :",
+                    paste0(setdiff(vars_to_yoy,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
+
     df = df %>%
       mutate(across(any_of(vars_to_yoy), calculate_YoY_returns))
 
@@ -551,6 +563,17 @@ preprocess_df = function(df,
 
   if(!is_null(vars_to_diff)){
 
+    if(!length(setdiff(vars_to_diff,
+                       names(df))) == 0){
+
+      warning(paste("The following difference variables are missing :",
+                    paste0(setdiff(vars_to_diff,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
     df = df %>%
       mutate(across(any_of(vars_to_diff), ~c(NA, diff(.))))
 
@@ -558,7 +581,18 @@ preprocess_df = function(df,
 
   }
 
-  if(!is_null(vars_to_yoy)){
+  if(!is_null(vars_to_4_ma)){
+
+    if(!length(setdiff(vars_to_4_ma,
+                       names(df))) == 0){
+
+      warning(paste("The following moving average variables are missing :",
+                    paste0(setdiff(vars_to_4_ma,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
 
     df = df %>%
       mutate(across(any_of(vars_to_4_ma), calculate_four_quarters_ma))
