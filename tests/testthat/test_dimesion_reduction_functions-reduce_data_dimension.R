@@ -43,11 +43,10 @@ test_mix_df = data.frame(
   ) %>%
   inner_join(
     gar_data %>%
-      select(date,credit) %>%
-      rename(fin_cycle = credit),
+      select(date,credit),
     by = "date"
   ) %>%
-  select(date, fin_cycle, dom_macro)
+  select(date, credit, dom_macro)
 
 
 
@@ -61,7 +60,7 @@ test_that("reduce_data_dimension returns one feature data",
             vars_df = gar_data,
             partition_list = one_feature_part)[[1]],
             expected = gar_data %>%
-              select(date,unlist(one_feature_part))
+              select(date,unlist(one_feature_part, use.names = FALSE))
             )
           )
 
@@ -99,6 +98,6 @@ test_that(paste0("reduce_data_dimension skips reduction",
             partition_list = one_feature_part,
             return_objects_list = TRUE)[[1]],
             expected = gar_data %>%
-              select(date,unlist(one_feature_part)))
+              select(date,unlist(one_feature_part, use.names = FALSE)))
 )
 
