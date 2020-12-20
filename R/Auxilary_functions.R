@@ -315,7 +315,9 @@ extract_coeffs_from_gar_model = function(gar_model,
 #' This function extracts the factor contribution (coefficients
 #'  multiplied by values) data frame from gar model
 #'
-#'  @import purrr
+#'  @importFrom  purrr map_dfr
+#'
+#'  @importFrom tibble rownames_to_column
 #'
 #'  @import magrittr
 #'
@@ -329,18 +331,19 @@ extract_coeffs_from_gar_model = function(gar_model,
 
 extract_pca_loadings_from_gar_model = function(gar_model) {
 
-  stopifnot("pca_obj" %in% names(gar_model))
+  if(!"pca_obj" %in% names(gar_model)){
 
-  pca_loadings_df = map_dfr(gar_model$pca_obj, function(temp_pca){
+    stop("The pca object is missing")
+  }
 
-    temp_coeffs = temp_pca$pca_obj$rotation[,1] %>%
+  pca_loadings_df = map_dfr(gar_model$pca_obj, function(temp_pca) {
+    temp_coeffs = temp_pca$pca_obj$rotation[, 1] %>%
       as.data.frame() %>%
       setNames("coeff") %>%
       rownames_to_column()
 
 
-  },
-  .id = "partition")
+  },  .id = "partition")
 
   return(pca_loadings_df)
 
