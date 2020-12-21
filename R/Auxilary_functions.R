@@ -283,23 +283,46 @@ calculate_skew_and_iqr = function(gar_obj) {
 
 
 
+#' @title Extract coefficients
+#'
+#' @description This function extracts quantile reg coefficients
+#' data frame from gar model
+#'
+#' @importFrom  purrr map2_dfr
+#'
+#' @importFrom tibble rownames_to_column
+#'
+#' @import magrittr
+#'
+#' @param gar_model
+#'
+#' @param partition_names optional which partitions to return
+#'
+#' @return factor_contribution_df
+#'
+#' @export
+
 extract_coeffs_from_gar_model = function(gar_model,
                                          partition_names = NULL) {
-  stopifnot("qreg_result" %in% names(gar_model))
+
+  if(!"qreg_result" %in% names(gar_model)){
+
+    stop("The quantile regression results object is missing")
+  }
 
   coeffs_df = map2_dfr(gar_model[["qreg_result"]],
                        names(gar_model[["qreg_result"]]),
                        function(temp_mod, temp_name) {
                          temp_df = temp_mod %>%
                            extract.qreg.coeff.table() %>%
-                           mutate(Horizon = temp_name)
+                           mutate(horizon = temp_name)
 
 
                        })
 
   if (!is.null(partition_names)) {
     coeffs_df = coeffs_df %>%
-      filter(Name %in% partition_names)
+      filter(name %in% partition_names)
 
 
   }
@@ -310,16 +333,15 @@ extract_coeffs_from_gar_model = function(gar_model,
 }
 
 
-#' @title Extract factor contribution from gar model
+#' @title Extract PCA
 #'
-#' This function extracts the factor contribution (coefficients
-#'  multiplied by values) data frame from gar model
+#' @description This function extracts PCA loadings data frame from gar model
 #'
-#'  @importFrom  purrr map_dfr
+#' @importFrom  purrr map_dfr
 #'
-#'  @importFrom tibble rownames_to_column
+#' @importFrom tibble rownames_to_column
 #'
-#'  @import magrittr
+#' @import magrittr
 #'
 #' @param gar_model
 #'
