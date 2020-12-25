@@ -162,7 +162,7 @@ extract_coeffs_from_gar_model = function(gar_model,
 #'
 #'  @import purrr
 #'
-#'  @import magrittr
+#'  @importFrom magrittr %>%
 #'
 #' @param gar_model
 #'
@@ -292,7 +292,7 @@ calculate_skew_and_iqr = function(gar_obj) {
 #'
 #' @importFrom tibble rownames_to_column
 #'
-#' @import magrittr
+#' @importFrom magrittr %>%
 #'
 #' @param gar_model
 #'
@@ -333,7 +333,7 @@ extract_coeffs_from_gar_model = function(gar_model,
 }
 
 
-#' @title Extract PCA
+#' @title Extract PCA loadings
 #'
 #' @description This function extracts PCA loadings data frame from gar model
 #'
@@ -341,13 +341,11 @@ extract_coeffs_from_gar_model = function(gar_model,
 #'
 #' @importFrom tibble rownames_to_column
 #'
-#' @import magrittr
+#' @importFrom magrittr %>%
 #'
 #' @param gar_model
 #'
-#' @param partition_names optional which partitions to return
-#'
-#' @return factor_contribution_df
+#' @return pca_loadings_df
 #'
 #' @export
 
@@ -370,6 +368,62 @@ extract_pca_loadings_from_gar_model = function(gar_model) {
   return(pca_loadings_df)
 
 }
+
+
+#' @title Extract PCA timeseries
+#'
+#' @description This function extracts PCA timeseries data frame from gar model
+#'
+#' @importFrom  purrr map_dfr
+#'
+#' @importFrom tibble rownames_to_column
+#'
+#' @importFrom magrittr %>%
+#'
+#' @param gar_model
+#'
+#' @param n_comp number of PCA components to return
+#'
+#' @return pca_timeseries_df
+#'
+#' @export
+
+extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
+
+  if(!"pca_obj" %in% names(gar_model)){
+
+    stop("The pca object is missing")
+  }
+
+  pca_loadings_df = map2(gar_model$pca_obj, names(gar_model$pca_obj),
+                             function(temp_pca, temp_name) {
+
+    temp_pca_df = temp_pca$pca_obj$x[, 1:n_comp] %>%
+      as.data.frame() %>%
+      cbind(date = temp_pca$time_index) %>%
+      relocate(date)
+
+    if (n_comp > 1) {
+      temp_pca_df = temp_pca_df %>%
+        setNames(c("date",paste(temp_name, 1:n_comp, sep = "_")))
+
+    } else {
+      temp_pca_df = temp_pca_df %>%
+        setNames(c("date",temp_name))
+
+    }
+
+    return(temp_pca_df)
+
+
+  }) %>%
+    reduce(full_join, by = "date")
+
+
+  return(pca_loadings_df)
+
+}
+
 
 
 #' @description  This function compares two partitions
