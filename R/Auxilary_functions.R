@@ -93,7 +93,7 @@ extract.qreg.coeff.table = function(qreg_obj) {
 
                         temp_df$tau = temp_list$tau
 
-                        temp_df$Name = rownames(temp_df)
+                        temp_df$partition = rownames(temp_df)
 
                         rownames(temp_df) = NULL
 
@@ -102,17 +102,17 @@ extract.qreg.coeff.table = function(qreg_obj) {
                       }) %>%
     bind_rows() %>%
     rename(
-      Coeff = coefficients,
-      Low = `lower bd`,
-      High = `upper bd`,
-      Tau = tau
+      coeff = coefficients,
+      low = `lower bd`,
+      high = `upper bd`,
+      quantile = tau
     ) %>%
-    mutate(Tau = as.character(Tau)) %>%
-    mutate(Name = gsub("(Intercept)", "Intercept", Name, fixed = TRUE)) %>%
-    mutate(Significant = factor(
-      ifelse(High <= 0 | Low >= 0, "Significant",
-             "Non Significant"),
-      levels = c("Significant", "Non Significant")
+    mutate(quantile = as.character(quantile)) %>%
+    mutate(partition = gsub("(Intercept)", "Intercept", partition, fixed = TRUE)) %>%
+    mutate(significant = factor(
+      ifelse(high <= 0 | low >= 0, "significant",
+             "non_significant"),
+      levels = c("significant", "non_significant")
     ))
 
   return(coef_table)
@@ -132,19 +132,14 @@ extract_coeffs_from_gar_model = function(gar_model,
                                          partition_names = NULL) {
   stopifnot("qreg_result" %in% names(gar_model))
 
-  coeffs_df = map2_dfr(gar_model[["qreg_result"]],
-                       names(gar_model[["qreg_result"]]),
-                       function(temp_mod, temp_name) {
-                         temp_df = temp_mod %>%
-                           extract.qreg.coeff.table() %>%
-                           mutate(Horizon = temp_name)
-
-
-                       })
+  coeffs_df = gar_model[["qreg_result"]] %>%
+    map_dfr(extract.qreg.coeff.table,.id = "horizon") %>%
+    relocate(partition, horizon, quantile, coeff, low, high, significant) %>%
+    mutate(partition = str_remove_all(partition,"_xreg$"))
 
   if (!is.null(partition_names)) {
     coeffs_df = coeffs_df %>%
-      filter(Name %in% partition_names)
+      filter(partition %in% partition_names)
 
 
   }
@@ -283,54 +278,6 @@ calculate_skew_and_iqr = function(gar_obj) {
 
 
 
-#' @title Extract coefficients
-#'
-#' @description This function extracts quantile reg coefficients
-#' data frame from gar model
-#'
-#' @importFrom  purrr map2_dfr
-#'
-#' @importFrom tibble rownames_to_column
-#'
-#' @importFrom magrittr %>%
-#'
-#' @param gar_model
-#'
-#' @param partition_names optional which partitions to return
-#'
-#' @return factor_contribution_df
-#'
-#' @export
-
-extract_coeffs_from_gar_model = function(gar_model,
-                                         partition_names = NULL) {
-
-  if(!"qreg_result" %in% names(gar_model)){
-
-    stop("The quantile regression results object is missing")
-  }
-
-  coeffs_df = map2_dfr(gar_model[["qreg_result"]],
-                       names(gar_model[["qreg_result"]]),
-                       function(temp_mod, temp_name) {
-                         temp_df = temp_mod %>%
-                           extract.qreg.coeff.table() %>%
-                           mutate(horizon = temp_name)
-
-
-                       })
-
-  if (!is.null(partition_names)) {
-    coeffs_df = coeffs_df %>%
-      filter(name %in% partition_names)
-
-
-  }
-
-  return(coeffs_df)
-
-
-}
 
 
 #' @title Extract PCA loadings
