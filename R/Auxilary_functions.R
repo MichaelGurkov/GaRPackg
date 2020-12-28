@@ -127,6 +127,8 @@ extract.qreg.coeff.table = function(qreg_obj) {
 #' @param partition_names optional which partitions to return
 #'
 #' @return coeffs_df
+#'
+#' @export
 
 extract_coeffs_from_gar_model = function(gar_model,
                                          partition_names = NULL) {
@@ -155,9 +157,9 @@ extract_coeffs_from_gar_model = function(gar_model,
 #' This function extracts the factor contribution (coefficients
 #'  multiplied by values) data frame from gar model
 #'
-#'  @import purrr
+#' @import purrr
 #'
-#'  @importFrom magrittr %>%
+#' @importFrom magrittr %>%
 #'
 #' @param gar_model
 #'
