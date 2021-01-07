@@ -272,25 +272,56 @@ quantile_r2_score = function(realized_values, forecast_values,
 #' The value represents the relative frequency of the
 #' data points in the sample
 #'
-#' @param prediction_df data frame with actual values and
-#' predicted values by horizon, quantile and date
+#' @param forecast_df data frame with predicted values
+#' by horizon, quantile and date
+#'
+#'  @param actual_df data frame with actual values
+#'  by value and date
 #'
 
-quantile_pit_score = function(prediction_df){
+quantile_pit_score = function(forecast_df, actual_df){
 
   var_names = c("horizon","quantile","date")
 
-  if(!all(var_names %in% names(prediction_df))){
+  if(!all(var_names %in% names(forecast_df))){
 
-    stop("The following variables are missing :",
-         paste(var_names[!var_names %in% names(prediction_df)],
+    stop("The following variables are missing in forecast df :",
+         paste(var_names[!var_names %in% names(forecast_df)],
                collapse = ","))
 
 
   }
 
+  if(!"date" %in%  names(actual_df)){
+
+    stop("The date variable is missing in actual df ")
+
+
+  }
+
+  names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
+
+  names(actual_df)[!names(actual_df) == "date"] = "actual_values"
+
+
+  prediction_df = forecast_df %>%
+    mutate(date = as.yearqtr(date) + as.numeric(horizon) * 0.25) %>%
+    left_join(actual_df %>%
+                mutate(date = as.yearqtr(date)), by = c("date"))
+
+
+  if(sum(is.na(prediction_df$actual_values)) > 0){
+
+    warning(paste0("There are missing actual values",
+                   " for corresponding predicted values.",
+                   "\n",
+                   "Those values will be excluded"))
+
+  }
+
 
   pit_score_df = prediction_df %>%
+    filter(!is.na(actual_values)) %>%
     group_by(horizon, quantile) %>%
     mutate(pit = if_else(actual_values < predicted_values,
                          1 /length(date),0)) %>%
