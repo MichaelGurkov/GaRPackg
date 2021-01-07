@@ -251,6 +251,8 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
+#' @return
+#'
 #'
 make_quant_reg_df = function(vars_df,
                              target_var_name,
@@ -260,6 +262,8 @@ make_quant_reg_df = function(vars_df,
                              pca.align.list = NULL,
                              return_objects_list = FALSE
                              ){
+
+  return_list = list()
 
 
   if(preprocess_method == "asis"){
@@ -271,7 +275,9 @@ make_quant_reg_df = function(vars_df,
                               leads_vector = unlist(horizon_list)) %>%
       rename_at(vars(-c(target_var_name, "date")), ~paste0(.,"_xreg"))
 
-    return(reg_df)
+    return_list$reg_df = reg_df
+
+    return(return_list)
 
 
   }
@@ -285,7 +291,9 @@ make_quant_reg_df = function(vars_df,
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
 
-    return(reg_df)
+    return_list$reg_df = reg_df
+
+    return(return_list)
 
 
   }
@@ -327,11 +335,8 @@ make_quant_reg_df = function(vars_df,
                               leads_vector = unlist(horizon_list))
 
 
+    return_list$reg_df = reg_df
 
-
-  return_list = list()
-
-  return_list$reg_df = reg_df
 
   if(return_objects_list & (!is.null(partitions_list))){
     return_list$pca_obj = preproc_df_list$objects_list}

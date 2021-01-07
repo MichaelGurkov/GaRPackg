@@ -33,13 +33,14 @@ test_that(paste("make_quant_reg_df return proper names"),
             )
 
 test_that(
-  'make_quant_reg_df returns data "as is"',
+  'make_quant_reg_df contains data under reg_df name',
   expect_equal(
     object = gar_data %>%
       select(date,gdp, ind_prod_israel, boi_rate) %>%
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
-                        preprocess_method = "asis"),
+                        preprocess_method = "asis") %>%
+      pluck("reg_df"),
     expected = gar_data %>%
       select(date,gdp, ind_prod_israel, boi_rate) %>%
       add_leads_to_target_var(target_var_name = "gdp",
