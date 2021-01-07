@@ -5,7 +5,7 @@
 #'
 #' @param data_vec
 #'
-identify.endpoints.NA = function(data_vec){
+identify_endpoints_NA = function(data_vec){
 
   na_ind = which(is.na(data_vec))
 
@@ -64,7 +64,6 @@ identify.endpoints.NA = function(data_vec){
 #'
 #' @importFrom zoo as.yearqtr as.yearmon
 #'
-#' @export
 #'
 interpolate = function(data_vec, direction = "forward"){
 
@@ -74,7 +73,7 @@ interpolate = function(data_vec, direction = "forward"){
 
   if(length(na_ind) == 0){return(data_vec)}
 
-  na_endpoints_list = identify.endpoints.NA(data_vec)
+  na_endpoints_list = identify_endpoints_NA(data_vec)
 
   clean_data = na.approx(data_vec)
 
@@ -124,7 +123,7 @@ interpolate = function(data_vec, direction = "forward"){
 #'
 #' @param df dataframe
 #'
-get.time.indices.list = function(df){
+get_time_indices_list = function(df){
 
   time_index_name = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -150,13 +149,13 @@ get.time.indices.list = function(df){
 #'
 #'@import dplyr
 
-chain_index = function(df, method = "PCA", ...){
+chain_index = function(df, preprocess_method = "PCA", ...){
 
   date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
   # Get list range
 
-  time_indices_list = get.time.indices.list(df)
+  time_indices_list = get_time_indices_list(df)
 
   # Get reduced diff series
 
@@ -229,58 +228,16 @@ chain_index = function(df, method = "PCA", ...){
 }
 
 
-#' This function calculates the compound annualized growth rate
-#'
-#' @param df dataframe  - time indexed variable
-#'
-#' @param horizon the horizon of the change period
-#'
-#' @param freq time frequency of the data
-#'
-#' @param forward determines whether the calculation is forward
-#' (meaning that at each time point the change is between lead
-#'  and current point) or backward (at each time point the change
-#'  is between current point and its lag) looking.
-#'
-
-calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
-
-  date_varname = grep("[Dd]ate",names(df),value = TRUE)
-
-  if(!length(date_varname) == 1){
-    stop("Couldn't identify time index variable")
-  }
-
-
-  if(forward){
-
-    ret_df = df %>%
-      mutate_at(vars(-date_varname),
-                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
-
-  } else{
-
-    ret_df = df %>%
-      mutate_at(vars(-date_varname),
-                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
-
-
-  }
-
-
-  ret_df = ret_df %>%
-    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
-
-  return(ret_df)
-
-}
-
 
 #'This function creates a data set for quantile regression
 #'
+#'@details This functions applies preprocessing by reducing dimension of the data
+#'(currently by PCA or PLS).
+#'
 #'@importFrom stats complete.cases
 #'
-#' @param partititions_list list of partitons
+#' @param partition_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -288,31 +245,70 @@ calculate.CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @param horizon_list list of forecast horizon
 #'
-#' @param quantile_vec vector of required quantiles in quantile regression
-#' (corresponds to tau argument in rq)
+#' @param partitions_list list of partition names
 #'
-#' @param method string a method that aggregates the data to partitions
+#' @param preprocess_method string a method that aggregates the data to partitions
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
 #'
-make.quant.reg.df = function(partitions_list, vars_df,
+make_quant_reg_df = function(vars_df,
                              target_var_name,
                              horizon_list,
-                             quantile_vec,
-                             return_objects_list = FALSE,
+                             preprocess_method = "inner_join_pca",
+                             partitions_list = NULL,
                              pca.align.list = NULL,
-                             method = "inner_join_pca"){
+                             return_objects_list = FALSE
+                             ){
 
-  if(!is.null(partitions_list)){
 
-    # Preprocess
+  if(preprocess_method == "asis"){
+
+    vars_names = setdiff(names(vars_df), c(target_var_name, "date"))
+
+    reg_df = vars_df %>%
+       add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list)) %>%
+      rename_at(vars(-c(target_var_name, "date")), ~paste0(.,"_xreg"))
+
+    return(reg_df)
+
+
+  }
+
+
+  if(is.null(partitions_list)){
+
+    reg_df = vars_df %>%
+      select(date, all_of(target_var_name)) %>%
+      filter(complete.cases(.)) %>%
+      add_leads_to_target_var(target_var_name = target_var_name,
+                              leads_vector = unlist(horizon_list))
+
+    return(reg_df)
+
+
+  }
+
+
+  if(!length(setdiff(unlist(partitions_list, use.names = FALSE),
+                    names(vars_df))) == 0){
+
+    warning(paste("The following variables are missing :",
+                  paste0(setdiff(unlist(partitions_list, use.names = FALSE),
+                                 names(vars_df)), collapse = ",")))
+
+
+
+  }
+
+
 
     preproc_df_list = reduce_data_dimension(
       vars_df = vars_df,
       pca_align_list = pca.align.list,
-      partition = partitions_list,
-      method = method,
+      partition_list = partitions_list,
+      preprocess_method = preprocess_method,
       target_var_name = target_var_name,
       return_objects_list = return_objects_list
       )
@@ -332,20 +328,6 @@ make.quant.reg.df = function(partitions_list, vars_df,
 
 
 
-
-  }
-
-
-  if(is.null(partitions_list)){
-
-     reg_df = vars_df %>%
-      select(date, all_of(target_var_name)) %>%
-      filter(complete.cases(.)) %>%
-      add_leads_to_target_var(target_var_name = target_var_name,
-                              leads_vector = unlist(horizon_list))
-
-
-  }
 
   return_list = list()
 
@@ -368,7 +350,7 @@ make.quant.reg.df = function(partitions_list, vars_df,
 #' @param k window size
 #'
 
-fill.na.average = function(data_vec, k = 4){
+fill_na_average = function(data_vec, k = 4){
 
   na_ind = which(is.na(data_vec))
 
@@ -409,9 +391,9 @@ fill.na.average = function(data_vec, k = 4){
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
-    group_by(Horizon,date) %>%
-    arrange(Quantile) %>%
-    mutate(across(contains("GaR"),~sort(.))) %>%
+    group_by(horizon,date) %>%
+    arrange(quantile) %>%
+    mutate(across(contains("gar"),~sort(.))) %>%
     ungroup()
 
 
@@ -458,7 +440,7 @@ add_leads_to_target_var = function(df,
 #'
 #' @import slider
 #'
-calculate.YoY.returns = function(variable_vec){
+calculate_YoY_returns = function(variable_vec){
 
   yoy_vec = slide_dbl(.x = variable_vec,
                          .f = ~.[5]/.[1]-1,
@@ -476,7 +458,7 @@ calculate.YoY.returns = function(variable_vec){
 #'
 #' @import slider
 #'
-calculate.four.quarters.ma = function(variable_vec){
+calculate_four_quarters_ma = function(variable_vec){
 
   ma_vec = slide_dbl(.x = variable_vec,
                       .f = mean,
@@ -487,40 +469,139 @@ calculate.four.quarters.ma = function(variable_vec){
 
 }
 
-
-#' This function returns a data frame with predicted values
+#' This function calculates the compound annualized growth rate
 #'
-#' @title Make prediction df
+#' @param df dataframe  - time indexed variable
 #'
-#' @details The default is in sample prediction (fitted values),
-#' otherwise predict according to supplied xreg data
+#' @param horizon the horizon of the change period
 #'
-#' @param gar_model
+#' @param freq time frequency of the data
 #'
-#' @param xreg_df xreg data
+#' @param forward determines whether the calculation is forward
+#' (meaning that at each time point the change is between lead
+#'  and current point) or backward (at each time point the change
+#'  is between current point and its lag) looking.
 #'
-make_prediction_df = function(gar_model, xreg_df){
 
-  prediction_df = map2_dfr(gar_model,names(gar_model),
-           function(temp_mod, temp_name){
+calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
-             temp_pred_df = xreg_df %>%
-               select(date) %>%
-               cbind(predict(temp_mod, xreg_df)) %>%
-               pivot_longer(-date,
-                            names_to = "Quantile",
-                            values_to = "GaR_fitted") %>%
-               mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
-               mutate(Horizon = temp_name)
+  date_varname = grep("[Dd]ate",names(df),value = TRUE)
+
+  if(!length(date_varname) == 1){
+    stop("Couldn't identify time index variable")
+  }
 
 
+  if(forward){
 
-  }) %>%
-    fix_quantile_crossing() %>%
-    select(date,Horizon,Quantile,GaR_fitted)
+    ret_df = df %>%
+      mutate_at(vars(-date_varname),
+                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
 
-  return(prediction_df)
+  } else{
 
+    ret_df = df %>%
+      mutate_at(vars(-date_varname),
+                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
+
+
+  }
+
+
+  ret_df = ret_df %>%
+    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+
+  return(ret_df)
+
+}
+
+
+#' @title Preprocess raw data
+#'
+#' @description This function performs preprocessing variable transformation
+#'
+#' @details The following transformations are supported
+#' \itemize{
+#'  \item{Year on Year percent change (the variables should be at quarterly frequency)}
+#'  \item{Differencing}
+#'  \item{Annual moving average (the variables should be at quarterly frequency)}
+#' }
+#'
+#' @param vars_to_yoy (optional) vector of variable names for "Year on Year" transformation
+#'
+#' @param vars_to_diff (optional) vector of variable names for differencing transformation
+#'
+#' @param vars_to_4_ma (optional) vector of variable names for "Annual moving average"
+#' transformation
+#'
+#' @export
+preprocess_df = function(df,
+                         vars_to_yoy = NULL,
+                         vars_to_diff = NULL,
+                         vars_to_4_ma = NULL) {
+
+  if(!is_null(vars_to_yoy)){
+
+    if(!length(setdiff(vars_to_yoy,
+                       names(df))) == 0){
+
+      warning(paste("The following variables are missing :",
+                    paste0(setdiff(vars_to_yoy,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
+
+    df = df %>%
+      mutate(across(any_of(vars_to_yoy), calculate_YoY_returns))
+
+
+
+  }
+
+  if(!is_null(vars_to_diff)){
+
+    if(!length(setdiff(vars_to_diff,
+                       names(df))) == 0){
+
+      warning(paste("The following difference variables are missing :",
+                    paste0(setdiff(vars_to_diff,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
+    df = df %>%
+      mutate(across(any_of(vars_to_diff), ~c(NA, diff(.))))
+
+
+
+  }
+
+  if(!is_null(vars_to_4_ma)){
+
+    if(!length(setdiff(vars_to_4_ma,
+                       names(df))) == 0){
+
+      warning(paste("The following moving average variables are missing :",
+                    paste0(setdiff(vars_to_4_ma,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
+    df = df %>%
+      mutate(across(any_of(vars_to_4_ma), calculate_four_quarters_ma))
+
+
+
+  }
+
+  return(df)
 
 
 }

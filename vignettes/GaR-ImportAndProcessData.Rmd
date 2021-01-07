@@ -63,7 +63,7 @@ parameters_list$vars_to_4_ma = c(
 ```{r Import_data}
 
 
-raw_df = import.from.fame.template(
+raw_df = import_from_fame_template(
   paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
          "\\OneDrive - Bank Of Israel\\",
          "Data\\BoI\\GaR_Data\\Working_data",
@@ -83,9 +83,9 @@ df = raw_df %>%
   mutate(dom_gdp = private_consumption + 
            public_consumption + investment) %>% 
   mutate(across(any_of(parameters_list$vars_to_yoy),
-                calculate.YoY.returns)) %>% 
+                calculate_YoY_returns)) %>% 
   mutate(across(any_of(parameters_list$vars_to_4_ma),
-                ~ calculate.four.quarters.ma(.) * 4 / 100)) %>% 
+                ~ calculate_four_quarters_ma(.) * 4 / 100)) %>% 
   mutate(across(any_of(parameters_list$vars_to_diff),
                 ~c(NA,diff(.))))
 
@@ -115,7 +115,7 @@ df = df %>%
 ```{r fill_last_NA, eval=FALSE}
 
 df = df %>% 
-  mutate_at(vars(gdp,credit),.funs = list(~fill.na.average(.)))
+  mutate_at(vars(gdp,credit),.funs = list(~fill_na_average(.)))
 
 ```
 

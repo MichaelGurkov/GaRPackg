@@ -5,8 +5,10 @@
 #' @import stringr
 #'
 #' @return df
+#'
+#' @export
 
-import.from.fame.template = function(template_path) {
+import_from_fame_template = function(template_path) {
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
     slice(-(1:10)) %>%
     rename(date = 1)
@@ -45,7 +47,8 @@ import.from.fame.template = function(template_path) {
   }
 
   fame_df = fame_df %>%
-    select(-all_of(append_vars_list))
+    select(-all_of(append_vars_list)) %>%
+    rename_all(tolower)
 
 
   return(fame_df)
@@ -58,7 +61,7 @@ import.from.fame.template = function(template_path) {
 #'
 #' @import dplyr
 #'
-import.staff.forecast = function(raw_df,
+import_staff_forecast = function(raw_df,
                                  conversion_table_path = NULL) {
   if (is.null(conversion_table_path)) {
     conversion_table_path = paste0(
@@ -140,5 +143,27 @@ import.staff.forecast = function(raw_df,
 
 
   return(staff_forecast)
+
+}
+
+
+#' This functions imports forecasts from DSGE model data structure
+#'
+#' @importFrom readxl read_xlsx
+#'
+#' @param file_path
+
+import_dsge_forecast = function(file_path){
+
+  temp_df = read_xlsx(file_path, sheet = 2,skip = 1)
+
+  temp_df = temp_df %>%
+    rename_all(tolower) %>%
+    rename(date = obs, `0` = 2) %>%
+    mutate(date = as.yearqtr(date)) %>%
+    pivot_longer(-date, names_to = "horizon", values_to = "dsge_forecast")
+
+  return(temp_df)
+
 
 }

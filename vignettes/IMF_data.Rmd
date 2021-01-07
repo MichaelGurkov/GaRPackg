@@ -46,7 +46,7 @@ roman_data = read_csv(paste0(
   mutate(date = str_replace_all(date, "\\.","-")) %>% 
   mutate(date = as.yearqtr(date, format = "%Y-%q"))
 
-df = import.from.fame.template(
+df = import_from_fame_template(
   paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
          "\\OneDrive - Bank Of Israel\\",
          "Data\\BoI\\GaR_Data\\Working_data",

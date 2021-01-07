@@ -200,7 +200,7 @@ realized_df = df %>%
   select(Forecast_Period, realized) %>% 
   as_tibble()
 
-benchmark_df = get.gar.forecast(
+benchmark_df = get_gar_forecast(
   partitions_list = NULL,
   vars_df = df,
   target_var_name = "gdp",
@@ -231,7 +231,7 @@ staff_forecast_df = list(
 models_df = list(GDP_comp = partitions_list$gdp_components) %>% 
   enframe(value = "partition") %>%
   mutate(pred_df = map(partition,function(temp_part){
-      temp_forecast = get.gar.forecast(
+      temp_forecast = get_gar_forecast(
         partitions_list = temp_part,
         vars_df = df,
         target_var_name = "gdp",

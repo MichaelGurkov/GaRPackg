@@ -139,7 +139,7 @@ for(temp_name in names(corr_df_list)){
 forecast_data_list = map(names(models_list),
   function(temp_name){
     
-    temp_df = get.gar.forecast(
+    temp_df = get_gar_forecast(
       partitions_list = models_list[[temp_name]],
       vars_df = forecast_parameters$df,
       target_var_name = "GDP",
@@ -169,7 +169,7 @@ names(forecast_data_list) = names(models_list)
 forecast_data_list = map(names(models_list),
   function(temp_name){
     
-    temp_df = get.gar.forecast(
+    temp_df = get_gar_forecast(
       partitions_list = models_list[[temp_name]],
       vars_df = forecast_parameters$df,
       target_var_name = "GDP",

@@ -354,7 +354,7 @@ realized_df = df %>%
   select(Forecast_Period, realized) %>%
   as_tibble()
 
-benchmark_df = get.gar.forecast(
+benchmark_df = get_gar_forecast(
   partitions_list = NULL,
   vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
   target_var_name = "gdp",
@@ -393,7 +393,7 @@ models_df = list(GaR_Forecast = partitions_list$basic,
 models_df = models_df %>%
   mutate(pred_df = map(partition,function(temp_part){
 
-      temp_forecast = get.gar.forecast(
+      temp_forecast = get_gar_forecast(
         partitions_list = temp_part,
         vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
         target_var_name = "gdp",
