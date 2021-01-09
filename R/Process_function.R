@@ -267,7 +267,7 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
-#' @return
+#' @return regression data frame
 #'
 #'
 make_quant_reg_df = function(vars_df,

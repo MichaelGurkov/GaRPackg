@@ -107,27 +107,6 @@ run_GaR_analysis = function(partitions_list, vars_df,
 
 
 
-  # Run OLS regresion
-
-  if(run_ols_reg){
-
-    ols_result = lapply(horizon_list, function(temp_horizon){
-
-      ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
-                   data = reg_df_list$reg_df %>%
-                     select(-.data$date) %>%
-                     select(-contains(target_var_name), all_of(.data$dep_var)))
-
-      return(ols_reg)
-
-
-    })
-
-    names(ols_result) = horizon_list
-
-  }
-
-
   # Check for objects and return list
 
   return_list = list()
@@ -141,9 +120,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
   if(length(reg_df_list) == 2){
     return_list$pca_obj = reg_df_list$pca_obj}
 
-  if(run_ols_reg){return_list$ols_result = preproc_df_list$ols_result}
-
-  return(return_list)
+   return(return_list)
 
 }
 
