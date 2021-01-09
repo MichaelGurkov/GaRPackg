@@ -3,15 +3,24 @@
 #' @description  This function returns a data_frame with list-column
 #' partition combs
 #'
-#' @param optional_vars_vec
-#'
-#' @param required_vars_vec
-#'
-#' @param partition_name
-#'
 #' @import purrr
 #'
 #' @import tibble
+#'
+#' @importFrom rlang .data
+#'
+#' @importFrom rlang :=
+#'
+#' @importFrom utils combn
+#'
+#' @param partitions_list a named list where the names are
+#' \itemize{
+#'  \item{"optional"}{-Optional elements}
+#'  \item{"required"}{-Required elements}
+#'  }
+#'
+#' @param partition_name name of the partition for resulting df
+#'
 #'
 
 get_partition_combs = function(partitions_list,
@@ -24,7 +33,7 @@ get_partition_combs = function(partitions_list,
 
     temp_comb_df = partitions_list %>%
       enframe %>%
-      mutate(value = map(value, function(temp_vec) {
+      mutate(value = map(.data$value, function(temp_vec) {
         temp_list = list(temp_vec)
 
         names(temp_list) = partition_name
@@ -32,7 +41,7 @@ get_partition_combs = function(partitions_list,
         return(temp_list)
 
       })) %>%
-      rename(!!sym(partition_name) := value) %>%
+      rename(!!sym(partition_name) := .data$value) %>%
       mutate(name = paste(partition_name, 1, sep = "-"))
 
 
@@ -43,7 +52,7 @@ get_partition_combs = function(partitions_list,
 
   comb_df = map(seq_along(partitions_list$optional),
                 function(temp_ind) {
-                  comb_list =  combn(partitions_list$optional,
+                  comb_list =  utils::combn(partitions_list$optional,
                                      temp_ind, simplify = FALSE)
 
                   temp_comb_df = comb_list %>%
@@ -57,12 +66,12 @@ get_partition_combs = function(partitions_list,
 
   if ("required" %in% names(partitions_list)) {
     comb_df = comb_df %>%
-      mutate(value = map(value, ~ c(., partitions_list$required)))
+      mutate(value = map(.data$value, ~ c(., partitions_list$required)))
   }
 
 
   comb_df = comb_df %>%
-    mutate(value = map(value, function(temp_vec) {
+    mutate(value = map(.data$value, function(temp_vec) {
       temp_list = list(temp_vec)
 
       names(temp_list) = partition_name
@@ -72,7 +81,7 @@ get_partition_combs = function(partitions_list,
     }))
 
   comb_df = comb_df %>%
-    rename(!!sym(partition_name) := value)
+    rename(!!sym(partition_name) := .data$value)
 
   return(comb_df)
 
@@ -80,10 +89,14 @@ get_partition_combs = function(partitions_list,
 
 
 
-#' This function extracts the coefficients from quantile regression
+#' @description This function extracts the coefficients from quantile regression
+#'
+#' @title Extract coefficients from quantile reg
+#'
+#' @importFrom rlang .data
 #'
 #'
-#' @param qreg_object quantile regression object
+#' @param qreg_obj quantile regression object
 #'
 #'
 extract.qreg.coeff.table = function(qreg_obj) {
@@ -102,15 +115,15 @@ extract.qreg.coeff.table = function(qreg_obj) {
                       }) %>%
     bind_rows() %>%
     rename(
-      coeff = coefficients,
-      low = `lower bd`,
-      high = `upper bd`,
-      quantile = tau
+      coeff = .data$coefficients,
+      low = .data$`lower bd`,
+      high = .data$`upper bd`,
+      quantile = .data$tau
     ) %>%
-    mutate(quantile = as.character(quantile)) %>%
-    mutate(partition = gsub("(Intercept)", "Intercept", partition, fixed = TRUE)) %>%
+    mutate(quantile = as.character(.data$quantile)) %>%
+    mutate(partition = gsub("(Intercept)", "Intercept", .data$partition, fixed = TRUE)) %>%
     mutate(significant = factor(
-      ifelse(high <= 0 | low >= 0, "significant",
+      ifelse(.data$high <= 0 | .data$low >= 0, "significant",
              "non_significant"),
       levels = c("significant", "non_significant")
     ))
@@ -120,9 +133,15 @@ extract.qreg.coeff.table = function(qreg_obj) {
 }
 
 
-#' This function extracts the coefficients data frame from gar model
+#' @description This function extracts the coefficients data frame from gar model
 #'
-#' @param gar_model
+#' @title Extract regression coefficient from gar model object
+#'
+#' @importFrom stringr str_remove_all
+#'
+#' @importFrom rlang .data
+#'
+#' @param gar_model model object with run_GaR_analysis result
 #'
 #' @param partition_names optional which partitions to return
 #'
@@ -136,12 +155,13 @@ extract_coeffs_from_gar_model = function(gar_model,
 
   coeffs_df = gar_model[["qreg_result"]] %>%
     map_dfr(extract.qreg.coeff.table,.id = "horizon") %>%
-    relocate(partition, horizon, quantile, coeff, low, high, significant) %>%
-    mutate(partition = str_remove_all(partition,"_xreg$"))
+    relocate(.data$partition, .data$horizon, .data$quantile,
+             .data$coeff, .data$low, .data$high, .data$significant) %>%
+    mutate(partition = str_remove_all(.data$partition,"_xreg$"))
 
   if (!is.null(partition_names)) {
     coeffs_df = coeffs_df %>%
-      filter(partition %in% partition_names)
+      filter(.data$partition %in% partition_names)
 
 
   }
@@ -154,16 +174,20 @@ extract_coeffs_from_gar_model = function(gar_model,
 
 #' @title Extract factor contribution from gar model
 #'
-#' This function extracts the factor contribution (coefficients
-#'  multiplied by values) data frame from gar model
+#' @details This function extracts the factor contribution (coefficients
+#'  multiplied by values) data frame from gar model for given quantile
 #'
 #' @import purrr
 #'
 #' @importFrom magrittr %>%
 #'
-#' @param gar_model
+#' @importFrom rlang .data
 #'
-#' @param partition_names optional which partitions to return
+#' @importFrom stringr str_remove_all
+#'
+#' @param gar_model model object with run_GaR_analysis result
+#'
+#' @param quantile filtering quantile (default 0.05)
 #'
 #' @return factor_contribution_df
 #'
@@ -179,18 +203,18 @@ extract_factor_contribution_from_gar_model = function(
 
   coeffs_df = gar_model %>%
     extract_coeffs_from_gar_model() %>%
-    filter(!Name == "Intercept") %>%
-    filter(Tau == quantile) %>%
-    select(Coeff,Horizon, Name)
+    filter(!.data$Name == "Intercept") %>%
+    filter(.data$Tau == quantile) %>%
+    select(.data$coeff,.data$horizon, .data$name)
 
 
 
   factors_df = map_dfr(
-    unique(coeffs_df$Horizon),function(temp_horizon){
+    unique(coeffs_df$horizon),function(temp_horizon){
 
       coef_vec = coeffs_df %>%
-        filter(Horizon == temp_horizon) %>%
-        select(Coeff) %>%
+        filter(.data$horizon == temp_horizon) %>%
+        select(.data$coeff) %>%
         unlist(use.names = FALSE)
 
       factors_df =  t(t(data_mat) * coef_vec)
@@ -198,7 +222,7 @@ extract_factor_contribution_from_gar_model = function(
       factors_df = factors_df %>%
         as.data.frame() %>%
         cbind(date = gar_model$reg_df$date) %>%
-        mutate(horizon = temp_horizon)
+        mutate(horizon = .data$temp_horizon)
 
       return(factors_df)
 
@@ -215,31 +239,36 @@ extract_factor_contribution_from_gar_model = function(
 #'
 #' @import dplyr
 #'
-#' @param pred_df
+#' @importFrom rlang .data
 #'
-#' @param actual_df
+#' @param pred_df data frame with forecasted values
 #'
-#' @param benchmark_df
+#' @param realized_df data frame with actual values
+#'
+#' @param benchmark_df data frame with benchmark values (intercept only model)
 #'
 #' @export
 #'
 collect_quantile_r2_score = function(pred_df, realized_df,
                                      benchmark_df) {
+  . = NULL
+
   prediction_df = pred_df %>%
     inner_join(benchmark_df,
-               by = c("Quantile", "Horizon", "Forecast_Period")) %>%
+               by = c("quantile", "horizon", "Forecast_Period")) %>%
     left_join(realized_df, by = "Forecast_Period")
 
   score_df = prediction_df %>%
-    select(realized, prediction, benchmark, Quantile, Horizon) %>%
+    select(.data$realized, .data$prediction, .data$benchmark,
+           .data$quantile, .data$horizon) %>%
     filter(complete.cases(.)) %>%
-    group_by(Quantile, Horizon) %>%
+    group_by(.data$quantile, .data$horizon) %>%
     summarise(
       score = quantile_r2_score(
-        realized_values = realized,
-        forecast_values = prediction,
-        quantile = as.numeric(Quantile)[1],
-        benchmark_values = benchmark
+        realized_values = .data$realized,
+        forecast_values = .data$prediction,
+        quantile = as.numeric(.data$quantile)[1],
+        benchmark_values = .data$benchmark
       ),
       .groups = "drop"
     )
@@ -253,9 +282,11 @@ collect_quantile_r2_score = function(pred_df, realized_df,
 #' @title Calculate skew and IQR measures
 #'
 #' @details This function takes gar object and
-#' reg df and calculates skew and
+#' reg df and calculates Skew and IQR measures
 #'
-#' @param gar_model
+#' @param gar_obj model object with run_GaR_analysis result
+#'
+#' @importFrom rlang .data
 #'
 #' @export
 #'
@@ -265,20 +296,18 @@ calculate_skew_and_iqr = function(gar_obj) {
 
   skew_df = prediction_df %>%
     pivot_wider(
-      names_from = Quantile,
-      values_from = gar_fitted,
+      names_from = .data$quantile,
+      values_from = .data$gar_fitted,
       names_prefix = "q"
     ) %>%
-    mutate(Skew = (0.5 * q0.75 + 0.5 * q0.25 - q0.50) /
-             (0.5 * q0.75 - 0.5 * q0.25)) %>%
-    mutate(IQR = q0.75 - q0.25)
+    mutate(skew = (0.5 * .data$q0.75 + 0.5 * .data$q0.25 - .data$q0.50) /
+             (0.5 * .data$q0.75 - 0.5 * .data$q0.25)) %>%
+    mutate(iqr = .data$q0.75 - .data$q0.25)
 
   return(skew_df)
 
 
 }
-
-
 
 
 
@@ -292,7 +321,9 @@ calculate_skew_and_iqr = function(gar_obj) {
 #'
 #' @importFrom magrittr %>%
 #'
-#' @param gar_model
+#' @importFrom stats setNames
+#'
+#' @param gar_model model object with run_GaR_analysis result
 #'
 #' @return pca_loadings_df
 #'
@@ -327,9 +358,11 @@ extract_pca_loadings_from_gar_model = function(gar_model) {
 #'
 #' @importFrom tibble rownames_to_column
 #'
+#' @importFrom stats setNames
+#'
 #' @importFrom magrittr %>%
 #'
-#' @param gar_model
+#' @param gar_model model object with run_GaR_analysis result
 #'
 #' @param n_comp number of PCA components to return
 #'
@@ -379,9 +412,9 @@ extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
 #'
 #' @title compare two partitions
 #'
-#' @param source_partition
+#' @param source_partition benchmark partition
 #'
-#' @param target_partition
+#' @param target_partition compared partition
 #'
 
 is_partition_identical = function(source_partition, target_partition){

@@ -3,7 +3,8 @@
 #' at the beginning or end of data vector. This is an auxilary function
 #' for interpolate
 #'
-#' @param data_vec
+#' @param data_vec data series
+#'
 #'
 identify_endpoints_NA = function(data_vec){
 
@@ -60,9 +61,11 @@ identify_endpoints_NA = function(data_vec){
 
 #' This function interpolates forward by using linear interpolation
 #'
-#' @param data_vec
+#' @param data_vec numeric vector
 #'
-#' @importFrom zoo as.yearqtr as.yearmon
+#' @param direction direction for interpolation (default is "forward")
+#'
+#' @importFrom zoo as.yearqtr as.yearmon na.approx
 #'
 #'
 interpolate = function(data_vec, direction = "forward"){
@@ -147,9 +150,19 @@ get_time_indices_list = function(df){
 
 #' This function creates a chained index partition
 #'
-#'@import dplyr
+#' @import dplyr
+#'
+#' @importFrom rlang .data
+#'
+#' @param df data frame with pca data
+#'
+#' @param preprocess_method method for dimension reduction (default is PCA)
+#'
+#' @param ... external optional arguments
 
 chain_index = function(df, preprocess_method = "PCA", ...){
+
+  . = NULL
 
   date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -167,14 +180,14 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 
     temp_agg_series = temp_df %>%
       pca_reduction(...) %>%
-      mutate(PCA = scale(PCA))
+      mutate(PCA = scale(.data$PCA))
 
     # debugging
     # if(sum(is.na(temp_agg_series$PCA)) > 0){browser()}
 
 
     temp_diff_series = temp_agg_series %>%
-      mutate(PCA = PCA - lead(PCA)) %>%
+      mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
       slice(-nrow(.))
 
     return(list(agg_series = temp_diff_series,
@@ -220,7 +233,7 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 
   chain_df = diff_df %>%
     arrange(desc(date)) %>%
-    mutate(PCA = cumsum(PCA)) %>%
+    mutate(PCA = cumsum(.data$PCA)) %>%
     arrange(date)
 
   return(chain_df)
@@ -236,8 +249,6 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 #'
 #'@importFrom stats complete.cases
 #'
-#' @param partition_list a list of partitions for dimension reduction.
-#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -245,7 +256,12 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 #'
 #' @param horizon_list list of forecast horizon
 #'
-#' @param partitions_list list of partition names
+#' @param partitions_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
+#'
+#' @param pca.align.list named list where the names are partition names and the
+#' first element is the aligning variable name. The second (optional) element
+#' is the alignment direction (default is "positive")
 #'
 #' @param preprocess_method string a method that aggregates the data to partitions
 #'
@@ -262,6 +278,8 @@ make_quant_reg_df = function(vars_df,
                              pca.align.list = NULL,
                              return_objects_list = FALSE
                              ){
+
+  . = NULL
 
   return_list = list()
 
@@ -391,13 +409,16 @@ fill_na_average = function(data_vec, k = 4){
 #'
 #' @import tidyr
 #'
-#' @param prediction_df
+#' @importFrom rlang .data
+#'
+#' @param prediction_df data frame with prediction values. The structure is
+#' date, horizon, quantile, gar
 #'
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
-    group_by(horizon,date) %>%
-    arrange(quantile) %>%
+    group_by(.data$horizon,.data$date) %>%
+    arrange(.data$quantile) %>%
     mutate(across(contains("gar"),~sort(.))) %>%
     ungroup()
 
@@ -410,13 +431,15 @@ fix_quantile_crossing = function(prediction_df){
 }
 
 
-#' This helper function adds leads of target variable
+#' @title  This helper function adds leads of target variable
 #'
-#' @param df
+#' @importFrom rlang :=
 #'
-#' @param target_var_name
+#' @param df raw data frame
 #'
-#' @param  leads_vector
+#' @param target_var_name regression depended variable
+#'
+#' @param leads_vector numeric vector with lead horizons
 #'
 add_leads_to_target_var = function(df,
                                    target_var_name,leads_vector){
@@ -441,9 +464,9 @@ add_leads_to_target_var = function(df,
 
 #' This helper function calculates YoY rates of return
 #'
-#' @param variable_vec
+#' @param variable_vec data series
 #'
-#' @import slider
+#' @importFrom  slider slide_dbl
 #'
 calculate_YoY_returns = function(variable_vec){
 
@@ -457,11 +480,11 @@ calculate_YoY_returns = function(variable_vec){
 }
 
 
-#' This helper function calculates 4
+#' This helper function calculates 4 points moving average
 #'
-#' @param variable_vec
+#' @param variable_vec data series
 #'
-#' @import slider
+#' @importFrom  slider slide_dbl
 #'
 calculate_four_quarters_ma = function(variable_vec){
 
@@ -531,6 +554,8 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'  \item{Differencing}
 #'  \item{Annual moving average (the variables should be at quarterly frequency)}
 #' }
+#'
+#' @param df raw data frame
 #'
 #' @param vars_to_yoy (optional) vector of variable names for "Year on Year" transformation
 #'

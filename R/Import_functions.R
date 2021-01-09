@@ -1,8 +1,16 @@
-#' This function imports clean data from fame template
+#' @details This function imports clean data from fame template
 #'
 #' @title Returns tidy df
 #'
-#' @import stringr
+#' @importFrom  stringr str_subset str_remove
+#'
+#' @importFrom rlang .data
+#'
+#' @importFrom rlang :=
+#'
+#' @importFrom utils read.csv
+#'
+#' @param template_path file path to template file
 #'
 #' @return df
 #'
@@ -15,12 +23,12 @@ import_from_fame_template = function(template_path) {
 
   if (!is.na(as.yearqtr(fame_df$date[1], format = "%d/%m/%Y"))) {
     fame_df = fame_df %>%
-      mutate(date = as.yearqtr(date, format = "%d/%m/%Y"))
+      mutate(date = as.yearqtr(.data$date, format = "%d/%m/%Y"))
 
   }
   else if (!is.na(as.yearqtr(fame_df$date[1], format = "%m/%d/%Y"))) {
     fame_df = fame_df %>%
-      mutate(date = as.yearqtr(date, format = "%m/%d/%Y"))
+      mutate(date = as.yearqtr(.data$date, format = "%m/%d/%Y"))
 
   }
 
@@ -61,109 +69,5 @@ import_from_fame_template = function(template_path) {
 #'
 #' @import dplyr
 #'
-import_staff_forecast = function(raw_df,
-                                 conversion_table_path = NULL) {
-  if (is.null(conversion_table_path)) {
-    conversion_table_path = paste0(
-      file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-      "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\",
-      "Staff_forecast_conversion_table.csv"
-    )
-
-  }
-
-  staff_forecast_conversion_table = read_csv(conversion_table_path)
-
-  staff_forecast_conversion_table = staff_forecast_conversion_table %>%
-    filter(Type == "YoY") %>%
-    select(-Type) %>%
-    mutate(Horizon = as_factor(Horizon, )) %>%
-    pivot_longer(cols = c(-Horizon),
-                 names_to = "Quantile",
-                 values_to = "Conversion_Coeff") %>%
-    mutate(Conversion_Coeff = Conversion_Coeff * 0.01)
-
-  staff_forecast_conversion_table = full_join(staff_forecast_conversion_table,
-                                              select(raw_df, date),
-                                              by = character())
-
-
-  staff_forecast_df_h1 = raw_df %>%
-    select(date, staff_1q) %>%
-    rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
-    gather(key = Quarter, value = Forecast,-date) %>%
-    filter(complete.cases(.)) %>%
-    left_join(., raw_df %>%
-                select(date, gdp) %>%
-                mutate(gdp = gdp / lag(gdp, 3) - 1)) %>%
-    mutate(Staff_Forecast = Forecast * 0.25 * 0.01 + gdp) %>%
-    select(date, Staff_Forecast) %>%
-    mutate(Forecast_Period = paste(date - 0.75, date + 0.25,
-                                   sep = "-")) %>%
-    mutate(Horizon = "1")
-
-
-  staff_forecast_df_h4 = raw_df %>%
-    select(date, staff_1q, staff_2q, staff_3q, staff_4q) %>%
-    rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
-    gather(key = Quarter, value = Forecast,-date) %>%
-    group_by(date) %>%
-    summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
-    ungroup() %>%
-    filter(complete.cases(.)) %>%
-    mutate(Forecast_Period = paste(date, (date + 1),
-                                   sep = "-")) %>%
-    mutate(Horizon = "4")
-
-
-
-  staff_forecast_df_h8 = raw_df %>%
-    select(date, staff_5q, staff_6q, staff_7q, staff_8q) %>%
-    rename_all(.funs = list( ~ str_remove(., "staff_"))) %>%
-    gather(key = Quarter, value = Forecast,-date) %>%
-    group_by(date) %>%
-    summarise(Staff_Forecast = mean(Forecast) * 0.01) %>%
-    ungroup() %>%
-    filter(complete.cases(.)) %>%
-    mutate(Forecast_Period = paste((date + 1), (date + 2),
-                                   sep = "-")) %>%
-    mutate(Horizon = "8")
-
-  staff_forecast = list(staff_forecast_df_h1,
-                        staff_forecast_df_h4,
-                        staff_forecast_df_h8) %>%
-    bind_rows() %>%
-    mutate(date = as.yearqtr(date)) %>%
-    inner_join(., staff_forecast_conversion_table,
-               by = c("date", "Horizon")) %>%
-    mutate(Staff_Forecast = Staff_Forecast + Conversion_Coeff) %>%
-    mutate(Quantile = str_replace_all(Quantile, "0.5", "0.50")) %>%
-    select(-Conversion_Coeff) %>%
-    select(date, Horizon, Quantile, Forecast_Period, Staff_Forecast)
-
-
-  return(staff_forecast)
-
-}
-
-
-#' This functions imports forecasts from DSGE model data structure
+#' @importFrom rlang .data
 #'
-#' @importFrom readxl read_xlsx
-#'
-#' @param file_path
-
-import_dsge_forecast = function(file_path){
-
-  temp_df = read_xlsx(file_path, sheet = 2,skip = 1)
-
-  temp_df = temp_df %>%
-    rename_all(tolower) %>%
-    rename(date = obs, `0` = 2) %>%
-    mutate(date = as.yearqtr(date)) %>%
-    pivot_longer(-date, names_to = "horizon", values_to = "dsge_forecast")
-
-  return(temp_df)
-
-
-}

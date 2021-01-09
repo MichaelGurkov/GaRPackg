@@ -5,11 +5,11 @@ Version: 0.1.0
 Author: Michael Gurkov
 Maintainer: Michael Gurkov <michael.gurkov@mail.huji.ac.il>
 Description: The package imports and processes data for GaR analysis
-License: What license is it under?
+License: GPL-2
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
-Depends:
+Imports:
     magrittr,
     dplyr,
     stringr,
@@ -22,6 +22,8 @@ Depends:
     ggplot2,
     slider,
     readr,
+    readxl,
+    rlang,
     tibble
 Suggests: 
     knitr,
