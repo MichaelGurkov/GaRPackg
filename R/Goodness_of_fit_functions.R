@@ -1,8 +1,10 @@
 
-#' @title Calculate quantile R square score
+#' @title Calculate quantile R square score for given spec:
+#' realized_values, forecast_values, quantile, benchmark_values
 #'
 #' @description This function evaluates the goodness of fit between
-#' "realized"  value and forecasted quantiles
+#' "realized"  value and forecasted quantiles. The calculation is for given spec:
+#' realized_values, forecast_values, quantile, benchmark_values
 #'
 #' @param realized_values realized values series for comparison to forecasted
 #'
@@ -14,11 +16,12 @@
 #' @param benchmark_values benchmark_values series (intercept predictions
 #'  in GaR model)
 #'
-quantile_r2_score = function(realized_values, forecast_values,
-                             quantile, benchmark_values){
+quantile_r2_score_calculation = function(realized_values,
+                                         forecast_values,
+                                         quantile,
+                                         benchmark_values) {
 
-  if(length(forecast_values) != length(benchmark_values)){
-
+  if (length(forecast_values) != length(benchmark_values)) {
     stop("Forecast values and benchmark must be of same length ")
 
   }
@@ -28,8 +31,7 @@ quantile_r2_score = function(realized_values, forecast_values,
 
   denom = 0
 
-  for (ind in 1:length(forecast_values)){
-
+  for (ind in 1:length(forecast_values)) {
     realized_error = realized_values[ind] - forecast_values[ind]
 
     benchmark_error = realized_values[ind] - benchmark_values[ind]
@@ -52,6 +54,88 @@ quantile_r2_score = function(realized_values, forecast_values,
 }
 
 
+#' @title Calculate quantile R square score
+#'
+#' @importFrom rlang .data
+#'
+#' @import dplyr
+#'
+#' @param predict_df data frame with predicted values
+#' by horizon, quantile, date, forecast_values
+#'
+#' @param actual_df data frame with actual values
+#' by date and actual_values
+#'
+#' @param benchmark_df data frame with predicted values
+#' by horizon, quantile, date and benchmark_values
+#'
+#' @export
+#'
+quantile_r2_score = function(predict_df, actual_df, benchmark_df){
+
+  var_names = c("horizon","quantile","date")
+
+  if(!all(var_names %in% names(predict_df))){
+
+    stop("The following variables are missing in predict df :",
+         paste(var_names[!var_names %in% names(predict_df)],
+               collapse = ","))
+
+
+  }
+
+  if(!all(var_names %in% names(benchmark_df))){
+
+    stop("The following variables are missing in predict df :",
+         paste(var_names[!var_names %in% names(benchmark_df)],
+               collapse = ","))
+
+
+  }
+
+  if(!"date" %in%  names(actual_df)){
+
+    stop("The date variable is missing in actual df ")
+
+
+  }
+
+  names(predict_df)[!names(predict_df) %in% var_names] = "predicted_values"
+
+  names(benchmark_df)[!names(benchmark_df) %in% var_names] = "benchmark_values"
+
+  names(actual_df)[!names(actual_df) == "date"] = "actual_values"
+
+
+  df = predict_df %>%
+    left_join(benchmark_df,
+              by = c("date", "horizon", "quantile")) %>%
+    left_join(actual_df, by = "date")
+
+  score_df = df %>%
+    group_by(.data$horizon, .data$quantile) %>%
+    summarise(
+      quantile_r2 =
+        quantile_r2_score_calculation(
+          realized_values = .data$actual_values,
+          forecast_values = .data$predicted_values,
+          quantile = .data$quantile[1],
+          benchmark_values = .data$benchmark_values
+        ),.groups = "drop"
+    )
+
+  return(score_df)
+
+
+
+
+
+
+
+}
+
+
+
 #' @title Calculate PIT score
 #'
 #'
@@ -62,11 +146,15 @@ quantile_r2_score = function(realized_values, forecast_values,
 #'
 #' @importFrom rlang .data
 #'
+#' @import dplyr
+#'
 #' @param forecast_df data frame with predicted values
 #' by horizon, quantile and date
 #'
 #' @param actual_df data frame with actual values
 #' by value and date
+#'
+#' @export
 #'
 
 quantile_pit_score = function(forecast_df, actual_df){

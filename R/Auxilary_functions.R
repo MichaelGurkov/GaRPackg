@@ -235,49 +235,6 @@ extract_factor_contribution_from_gar_model = function(
 
 }
 
-#' This function calculates quantile r2 score for prediction df
-#'
-#' @import dplyr
-#'
-#' @importFrom rlang .data
-#'
-#' @param pred_df data frame with forecasted values
-#'
-#' @param realized_df data frame with actual values
-#'
-#' @param benchmark_df data frame with benchmark values (intercept only model)
-#'
-#' @export
-#'
-collect_quantile_r2_score = function(pred_df, realized_df,
-                                     benchmark_df) {
-  . = NULL
-
-  prediction_df = pred_df %>%
-    inner_join(benchmark_df,
-               by = c("quantile", "horizon", "Forecast_Period")) %>%
-    left_join(realized_df, by = "Forecast_Period")
-
-  score_df = prediction_df %>%
-    select(.data$realized, .data$prediction, .data$benchmark,
-           .data$quantile, .data$horizon) %>%
-    filter(complete.cases(.)) %>%
-    group_by(.data$quantile, .data$horizon) %>%
-    summarise(
-      score = quantile_r2_score(
-        realized_values = .data$realized,
-        forecast_values = .data$prediction,
-        quantile = as.numeric(.data$quantile)[1],
-        benchmark_values = .data$benchmark
-      ),
-      .groups = "drop"
-    )
-
-
-  return(score_df)
-
-
-}
 
 #' @title Calculate skew and IQR measures
 #'
