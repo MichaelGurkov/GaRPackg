@@ -203,9 +203,9 @@ extract_factor_contribution_from_gar_model = function(
 
   coeffs_df = gar_model %>%
     extract_coeffs_from_gar_model() %>%
-    filter(!.data$Name == "Intercept") %>%
-    filter(.data$Tau == quantile) %>%
-    select(.data$coeff,.data$horizon, .data$name)
+    filter(!.data$partition == "Intercept") %>%
+    filter(.data$quantile == quantile) %>%
+    select(.data$coeff,.data$horizon, .data$partition)
 
 
 
@@ -222,7 +222,7 @@ extract_factor_contribution_from_gar_model = function(
       factors_df = factors_df %>%
         as.data.frame() %>%
         cbind(date = gar_model$reg_df$date) %>%
-        mutate(horizon = .data$temp_horizon)
+        mutate(horizon = temp_horizon)
 
       return(factors_df)
 
@@ -238,8 +238,8 @@ extract_factor_contribution_from_gar_model = function(
 
 #' @title Calculate skew and IQR measures
 #'
-#' @details This function takes gar object and
-#' reg df and calculates Skew and IQR measures
+#' @details This function takes gar object, extracts
+#' predictions and calculates Skew and IQR measures
 #'
 #' @param gar_obj model object with run_GaR_analysis result
 #'
