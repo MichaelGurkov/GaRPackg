@@ -32,7 +32,9 @@
 #' @param win_type_expanding boolean should the sliding window expand
 #'  (default FALSE)
 #'
-#' @return a data frame with out of sample predictions
+#' @return a data frame with out of sample predictions.
+#' The date column specifies the date of the test set observation,
+#' the target date is the date + horizon * 0.25 (the date units are quarters)
 #'
 #' @export
 #'

@@ -19,3 +19,5 @@ test_that(paste0(
     expect_error() %>%
     expect_warning()
 })
+
+
