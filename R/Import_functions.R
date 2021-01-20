@@ -1,10 +1,20 @@
-#' @details This function imports clean data from fame template
+#' @title Import data from fame template
 #'
-#' @title Returns tidy df
+#' @description This function imports and cleans data from fame template
+#'
+#' @details If a complimentary column (a column name with _append suffix) is
+#'  supplied, the functions merges the two columns (varname, varname_append)
+#'  into one. The merge is performed by substituting NA values in the main
+#'  (varname) column with values from the complimentary (varname_append) column.
+#'
 #'
 #' @importFrom  stringr str_subset str_remove
 #'
 #' @importFrom rlang .data
+#'
+#' @importFrom lubridate parse_date_time
+#'
+#' @importFrom zoo as.yearqtr as.yearmon
 #'
 #' @importFrom rlang :=
 #'
@@ -12,25 +22,38 @@
 #'
 #' @param template_path file path to template file
 #'
-#' @return df
+#' @param data_frequency string that specifies time frequency of the data.
+#'
+#' Available options are :
+#' \itemize{
+#'  \item {quarterly}{ (the default)}
+#'  \item {monthly}
+#' }
+#'
+#' @return tidy df
 #'
 #' @export
 
-import_from_fame_template = function(template_path) {
+import_from_fame_template = function(template_path,
+                                     data_frequency = "quarterly") {
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
     slice(-(1:10)) %>%
-    rename(date = 1)
+    rename(date = 1) %>%
+    mutate(date = parse_date_time(.data$date,orders = c("dmy","mdy")))
 
-  if (!is.na(as.yearqtr(fame_df$date[1], format = "%d/%m/%Y"))) {
+  if (data_frequency == "quarterly") {
+
     fame_df = fame_df %>%
-      mutate(date = as.yearqtr(.data$date, format = "%d/%m/%Y"))
+      mutate(date = as.yearqtr(.data$date))
+
+  }  else if (data_frequency == "monthly") {
+
+    fame_df = fame_df %>%
+      mutate(date = as.yearmon(.data$date))
 
   }
-  else if (!is.na(as.yearqtr(fame_df$date[1], format = "%m/%d/%Y"))) {
-    fame_df = fame_df %>%
-      mutate(date = as.yearqtr(.data$date, format = "%m/%d/%Y"))
 
-  }
+
 
 
   # Substitute empty strings with NA

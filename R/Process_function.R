@@ -462,20 +462,41 @@ add_leads_to_target_var = function(df,
 
 }
 
-#' This helper function calculates YoY rates of return
+#' This helper function calculates periodic (Period on period) rates of return
 #'
 #' @param variable_vec data series
 #'
+#' @param data_frequency string that specifies time frequency of the data.
+#'
+#' Available options are :
+#' \itemize{
+#'  \item {quarterly}{ (the default)}
+#'  \item {monthly}
+#' }
+#'
 #' @importFrom  slider slide_dbl
 #'
-calculate_YoY_returns = function(variable_vec){
+calculate_period_returns = function(variable_vec,
+                                    data_frequency = "quarterly"){
 
-  yoy_vec = slide_dbl(.x = variable_vec,
-                         .f = ~.[5]/.[1]-1,
-                         .before = 4,
+  if(data_frequency == "quarterly"){
+
+    win_len = 4
+
+  } else if(data_frequency == "monthly"){
+
+
+    win_len = 12
+
+  }
+
+
+  percent_change_vec = slide_dbl(.x = variable_vec,
+                         .f = ~.[win_len + 1]/.[1]-1,
+                         .before = win_len,
                          .complete = TRUE)
 
-  return(yoy_vec)
+  return(percent_change_vec)
 
 }
 
@@ -550,14 +571,19 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @details The following transformations are supported
 #' \itemize{
-#'  \item{Year on Year percent change (the variables should be at quarterly frequency)}
+#'  \item{Period on Period percent change}
 #'  \item{Differencing}
 #'  \item{Annual moving average (the variables should be at quarterly frequency)}
 #' }
 #'
+#' In case of Period on Period percent change the function identifies the time
+#' frequency (by checking date class, either yearqtr or yearmon) and calculates
+#' the precent change appropriately
+#'
 #' @param df raw data frame
 #'
-#' @param vars_to_yoy (optional) vector of variable names for "Year on Year" transformation
+#' @param vars_to_period_on_period_returns (optional) vector of variable names
+#' for "Period on Period" transformation
 #'
 #' @param vars_to_diff (optional) vector of variable names for differencing transformation
 #'
@@ -566,9 +592,28 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @export
 preprocess_df = function(df,
-                         vars_to_yoy = NULL,
+                         vars_to_period_on_period_returns = NULL,
                          vars_to_diff = NULL,
                          vars_to_4_ma = NULL) {
+
+  if(!"date" %in% names(df)){
+
+    stop("date variable is missing")
+
+  } else if(class(df$date) == "yearqtr"){
+
+    data_frequency = "quarterly"
+
+  } else if(class(df$date) == "yearmon"){
+
+    data_frequency = "monthly"
+
+  } else {
+
+    stop("The date variable must be yearqtr or yearmon class")
+
+  }
+
 
   if(!is_null(vars_to_yoy)){
 
@@ -584,8 +629,14 @@ preprocess_df = function(df,
     }
 
 
+
+
     df = df %>%
-      mutate(across(any_of(vars_to_yoy), calculate_YoY_returns))
+      mutate(across(
+        any_of(vars_to_yoy),
+        calculate_period_returns,
+        data_frequency = data_frequency
+      ))
 
 
 

@@ -1,5 +1,7 @@
 data("gar_data")
 
+gar_data = gar_data %>%
+  mutate(date = as.yearqtr(date))
 
 
 test_that("all preprocess transformations work", {
@@ -24,18 +26,23 @@ test_that("all preprocess transformations work", {
   )
 })
 
-expect_warning(gar_data %>%
+expect_error(gar_data %>%
                  select(gdp) %>%
+                 preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel")),
+               "date variable is missing")
+
+expect_warning(gar_data %>%
+                 select(date, gdp) %>%
                  preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel")),
                "The following variables are missing : ind_prod_israel")
 
 expect_warning(gar_data %>%
-                 select(gdp) %>%
+                 select(date, gdp) %>%
                  preprocess_df(vars_to_diff = c("gdp","ind_prod_israel")),
                "The following difference variables are missing : ind_prod_israel")
 
 expect_warning(gar_data %>%
-                 select(gdp) %>%
+                 select(date, gdp) %>%
                  preprocess_df(vars_to_4_ma = c("gdp","ind_prod_israel")),
                "The following moving average variables are missing : ind_prod_israel")
 
