@@ -122,7 +122,7 @@ run_cross_validation = function(reg_df,
 roll_cv_list = reg_df %>%
   rolling_origin(
     initial = win_len,
-    assess = horizon,
+    assess = horizon + 1,
     cumulative = win_type_expanding
   )
 

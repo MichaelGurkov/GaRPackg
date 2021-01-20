@@ -32,17 +32,18 @@ test_quant_reg_list_fixed = run_quant_reg(
   horizon_list = test_params$horizon_list)
 
 test_quant_reg_list_expanding = run_quant_reg(
-  reg_df = test_reg_df[1:(nrow(test_reg_df)-unlist(test_params$horizon_list)),],
+  reg_df = test_reg_df[1:(nrow(test_reg_df) - unlist(test_params$horizon_list) - 1),],
   target_var_name = test_params$target_var_name,
   quantile_vec = test_params$quantile_vec,
-  horizon_list = test_params$horizon_list)
+  horizon_list = test_params$horizon_list
+)
 
 # Predict out of sample
 
 test_pred_fixed = predict(
   test_quant_reg_list_fixed$`4`,
   newdata = test_reg_df[test_params$win_len +
-                          unlist(test_params$horizon_list),]
+                          unlist(test_params$horizon_list) + 1,]
   )
 
 
@@ -94,7 +95,7 @@ test_that(
   expect_equal(
     object = cross_validation_pred_fixed$date[1],
     expected = test_reg_df$date[test_params$win_len +
-                             unlist(test_params$horizon_list)]))
+                             unlist(test_params$horizon_list) + 1]))
 
 test_that(
   "run_cross_validation returns scalar quantile vec",
