@@ -8,5 +8,5 @@ test_that("calculate_periodic_returns gets the correct lags",
           expect_equal(
             object = gar_data %>%
               select(date,gdp) %>%
-              mutate(gdp_yoy = calculate_period_returns(gdp)),
+              mutate(gdp_yoy = calculate_yoy_changes(gdp)),
             expected = test_df))

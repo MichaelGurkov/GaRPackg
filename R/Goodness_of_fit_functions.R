@@ -108,9 +108,9 @@ quantile_r2_score = function(predict_df, actual_df, benchmark_df){
 
 
   df = predict_df %>%
-    left_join(benchmark_df,
+    inner_join(benchmark_df,
               by = c("date", "horizon", "quantile")) %>%
-    left_join(actual_df, by = "date") %>%
+    inner_join(actual_df, by = "date") %>%
     mutate(quantile = as.numeric(.data$quantile))
 
   score_df = df %>%

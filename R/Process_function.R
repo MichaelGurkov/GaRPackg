@@ -462,7 +462,10 @@ add_leads_to_target_var = function(df,
 
 }
 
-#' This helper function calculates periodic (Period on period) rates of return
+#' @title Calculate year on year percent changes
+#'
+#' @description  This helper function calculates the percent change
+#' between parallel periods in  two different years.
 #'
 #' @param variable_vec data series
 #'
@@ -476,7 +479,7 @@ add_leads_to_target_var = function(df,
 #'
 #' @importFrom  slider slide_dbl
 #'
-calculate_period_returns = function(variable_vec,
+calculate_yoy_changes = function(variable_vec,
                                     data_frequency = "quarterly"){
 
   if(data_frequency == "quarterly"){
@@ -571,19 +574,23 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @details The following transformations are supported
 #' \itemize{
-#'  \item{Period on Period percent change}
+#'  \item{Year on Year percent change}
 #'  \item{Differencing}
 #'  \item{Annual moving average (the variables should be at quarterly frequency)}
 #' }
 #'
-#' In case of Period on Period percent change the function identifies the time
+#' In case of Year on Year percent change the function identifies the time
 #' frequency (by checking date class, either yearqtr or yearmon) and calculates
-#' the precent change appropriately
+#' the percent change appropriately
 #'
 #' @param df raw data frame
 #'
-#' @param vars_to_period_on_period_returns (optional) vector of variable names
-#' for "Period on Period" transformation
+#' @param vars_to_yoy (optional) vector of variable names
+#' for "Year on Year" transformation. Computes the percent change
+#' between parallel periods in  two different years.
+#'
+#' @param vars_to_percent_changes (optional) vector of variable names
+#' Computes the percent change between two sequential  periods.
 #'
 #' @param vars_to_diff (optional) vector of variable names for differencing transformation
 #'
@@ -592,7 +599,8 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @export
 preprocess_df = function(df,
-                         vars_to_period_on_period_returns = NULL,
+                         vars_to_yoy = NULL,
+                         vars_to_percent_changes = NULL,
                          vars_to_diff = NULL,
                          vars_to_4_ma = NULL) {
 
@@ -634,11 +642,29 @@ preprocess_df = function(df,
     df = df %>%
       mutate(across(
         any_of(vars_to_yoy),
-        calculate_period_returns,
+        calculate_yoy_changes,
         data_frequency = data_frequency
       ))
 
 
+
+  }
+
+  if(!is_null(vars_to_percent_changes)){
+
+    if(!length(setdiff(vars_to_percent_changes,
+                       names(df))) == 0){
+
+      warning(paste("The following variables are missing :",
+                    paste0(setdiff(vars_to_percent_changes,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
+    df = df %>%
+      mutate(across(any_of(vars_to_percent_changes),  ~ . / lag(., 1) - 1))
 
   }
 
@@ -681,6 +707,7 @@ preprocess_df = function(df,
 
 
   }
+
 
   return(df)
 
