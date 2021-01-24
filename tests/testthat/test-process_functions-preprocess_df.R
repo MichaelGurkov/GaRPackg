@@ -11,11 +11,12 @@ test_that("all preprocess transformations work", {
         vars_to_yoy = c("gdp", "ind_prod_israel"),
         vars_to_percent_changes = c("sp500","dxy"),
         vars_to_diff = "boi_rate",
-        vars_to_4_ma = "ind_prod_euro"
+        vars_to_4_ma = "ind_prod_euro",
+        convert_to_percent_units = TRUE
       ),
     expected = gar_data %>%
       mutate(across(
-        c("gdp", "ind_prod_israel"), ~ ./ lag(., 4) - 1
+        c("gdp", "ind_prod_israel"), ~ (./ lag(., 4) - 1) * 100
       )) %>%
       mutate(across(c("boi_rate"), ~ c(NA, diff(.)))) %>%
       mutate(across(
@@ -24,10 +25,15 @@ test_that("all preprocess transformations work", {
       )) %>%
       mutate(across(
         c("sp500","dxy"),
-        ~ . / lag(.) - 1
+        ~ (. / lag(.) - 1) * 100
       ))
   )
 })
+
+
+
+
+
 
 expect_error(gar_data %>%
                  select(gdp) %>%

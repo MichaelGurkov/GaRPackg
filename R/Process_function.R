@@ -597,12 +597,16 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #' @param vars_to_4_ma (optional) vector of variable names for "Annual moving average"
 #' transformation
 #'
+#' @param convert_to_percent_units logical default is FALSE should the relative change
+#' variables be converted to percent units (multiply by 100).
+#'
 #' @export
 preprocess_df = function(df,
                          vars_to_yoy = NULL,
                          vars_to_percent_changes = NULL,
                          vars_to_diff = NULL,
-                         vars_to_4_ma = NULL) {
+                         vars_to_4_ma = NULL,
+                         convert_to_percent_units = FALSE) {
 
   if(!"date" %in% names(df)){
 
@@ -705,6 +709,15 @@ preprocess_df = function(df,
       mutate(across(any_of(vars_to_4_ma), calculate_four_quarters_ma))
 
 
+
+  }
+
+
+  if(convert_to_percent_units){
+
+    df = df %>%
+      mutate(across(any_of(c(vars_to_yoy, vars_to_percent_changes)),
+                    ~ . * 100))
 
   }
 
