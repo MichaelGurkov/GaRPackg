@@ -187,14 +187,14 @@ extract_coeffs_from_gar_model = function(gar_model,
 #'
 #' @param gar_model model object with run_GaR_analysis result
 #'
-#' @param quantile filtering quantile (default 0.05)
+#' @param target_quantile filtering quantile (default 0.05)
 #'
 #' @return factor_contribution_df
 #'
 #' @export
 
 extract_factor_contribution_from_gar_model = function(
-  gar_model, quantile = "0.05") {
+  gar_model, target_quantile = "0.05") {
   stopifnot("qreg_result" %in% names(gar_model))
 
   data_mat = gar_model$reg_df %>%
@@ -204,7 +204,7 @@ extract_factor_contribution_from_gar_model = function(
   coeffs_df = gar_model %>%
     extract_coeffs_from_gar_model() %>%
     filter(!.data$partition == "Intercept") %>%
-    filter(.data$quantile == quantile) %>%
+    filter(.data$quantile == target_quantile) %>%
     select(.data$coeff,.data$horizon, .data$partition)
 
 

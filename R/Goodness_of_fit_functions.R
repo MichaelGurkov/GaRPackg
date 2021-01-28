@@ -86,7 +86,7 @@ quantile_r2_score = function(predict_df, actual_df, benchmark_df){
 
   if(!all(var_names %in% names(benchmark_df))){
 
-    stop("The following variables are missing in predict df :",
+    stop("The following variables are missing in benchmark_df :",
          paste(var_names[!var_names %in% names(benchmark_df)],
                collapse = ","))
 

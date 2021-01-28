@@ -94,3 +94,97 @@ import_from_fame_template = function(template_path,
 #'
 #' @importFrom rlang .data
 #'
+
+
+
+#' @title Import DSGE forecasts
+#'
+#' @description  This function imports DSGE forecasts and convert the data
+#' to tidy format
+#'
+#' @param file_path
+#'
+#' @importFrom  readxl read_xlsx
+#'
+#' @importFrom  zoo as.yearqtr
+#'
+#' @importFrom tibble tribble
+#'
+#' @import dplyr
+#'
+#' @importFrom rlang .data
+#'
+import_dsge_forecasts = function(file_path){
+
+
+  cpi_table = tribble(
+    ~horizon,~`0.05`,~`0.25`,
+    "1",-1.2,-0.5,
+    "4",-3.25,-1.3,
+    "8",-3.5,-1.45,
+    "12",-3.75,-1.5) %>%
+    mutate(`0.5` = 0) %>%
+    mutate(`0.75` = abs(`0.25`)) %>%
+    mutate(`0.95` = abs(`0.05`)) %>%
+    mutate(across(-horizon, ~./100))
+
+
+  gdp_table = tribble(
+    ~horizon,~`0.05`,~`0.25`,
+    "1",-1.98,-0.8,
+    "4",-3.95,-1.6,
+    "8",-4.6,-1.8,
+    "12",-4.9,-2) %>%
+    mutate(`0.5` = 0) %>%
+    mutate(`0.75` = abs(`0.25`)) %>%
+    mutate(`0.95` = abs(`0.05`)) %>%
+    mutate(across(-horizon, ~./100))
+
+
+
+  sheet_names_list = list(cpi = "OB_DP_CP_YOY",
+                        gdp = "OB_DY_YOY")
+
+
+  forecast_df = map_dfr(
+    sheet_names_list,
+    .id = "target_var",
+    .f = function(temp_sheet) {
+      raw_data = read_xlsx(file_path, sheet = temp_sheet, skip = 1)
+
+      data = raw_data %>%
+        rename(date = OBS) %>%
+        select(matches("date|[0-9]")) %>%
+        mutate(date = as.yearqtr(date)) %>%
+        pivot_longer(-"date",
+                     names_to = "horizon",
+                     values_to = "forecast") %>%
+        filter(complete.cases(.))
+
+      data = data %>%
+        mutate(date = date - as.numeric(horizon) * 0.25)
+
+
+      return(data)
+
+    }
+  )
+
+
+  result_df = forecast_df %>%
+    filter(target_var == "gdp") %>%
+    left_join(gdp_table, by = "horizon") %>%
+    filter(complete.cases(.)) %>%
+    bind_rows(forecast_df %>%
+            filter(target_var == "cpi") %>%
+            left_join(cpi_table, by = "horizon") %>%
+            filter(complete.cases(.))) %>%
+    mutate(across(matches("[0-9]"), ~ . + forecast)) %>%
+    select(-forecast) %>%
+    pivot_longer(-c("target_var","date", "horizon"),
+                 names_to = "quantile",
+                 values_to = "forecast")
+
+  return(result_df)
+
+}
