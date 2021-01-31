@@ -114,6 +114,8 @@ import_from_fame_template = function(template_path,
 #'
 #' @importFrom rlang .data
 #'
+#' @export
+#'
 import_dsge_forecasts = function(file_path){
 
 

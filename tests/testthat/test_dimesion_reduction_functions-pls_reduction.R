@@ -45,5 +45,7 @@ test_df = gar_data %>%
 
 
 
-expect_equal(object = result_temp_part$pls_obj,
-             expected = test_df)
+test_that("return pls object",
+          expect_equal(object = result_temp_part$pls_obj,
+                       expected = test_df)
+)
