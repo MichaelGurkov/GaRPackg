@@ -24,23 +24,12 @@ benchmark_df = get_gar_forecast(
   win_type_expanding = forecast_parameters$win_type_expanding) %>% 
   rename(benchmark_values = gar_forecast)
 
-temp = gar_df %>% 
-  left_join(benchmark_df,by = c("quantile", "horizon", "date")) %>% 
-  left_join(df %>% select(gdp, date), by = "date")
+r2_df = quantile_r2_score(predict_df = gar_df,
+                          actual_df = df %>% select(date, gdp),
+                          benchmark_df = benchmark_df)
 
-
-r2_df = temp %>% 
-  group_by(quantile, horizon) %>% 
-  summarise(r2 = quantile_r2_score(realized_values = gdp,
-                    forecast_values = forecast_values,
-                    benchmark_values = benchmark_values,
-                    quantile = as.numeric(quantile[1])), .groups = "drop"
-)
-
-pit_df = temp %>% 
-  select(horizon, quantile, date, gdp, forecast_values) %>% 
-  rename(actual_values = gdp, predicted_values = forecast_values) %>% 
-  quantile_pit_score()
+pit_df = quantile_pit_score(forecast_df = gar_df,
+                            actual_df = df %>% select(date, gdp))
 
 ```
 
@@ -49,7 +38,7 @@ pit_df = temp %>%
 
 r2_df %>% 
   mutate(horizon = factor(horizon, c(1,4,8,12))) %>% 
-  ggplot(aes(x = quantile, y = r2)) + 
+  ggplot(aes(x = quantile, y = quantile_r2)) + 
   geom_col() + 
   facet_wrap(~horizon) + 
   xlab(NULL) + ylab(NULL)
