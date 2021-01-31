@@ -242,16 +242,16 @@ make_prediction_df = function(gar_model, xreg_df){
                                select(date) %>%
                                cbind(predict(temp_mod, xreg_df)) %>%
                                pivot_longer(-date,
-                                            names_to = "Quantile",
+                                            names_to = "quantile",
                                             values_to = "gar_fitted") %>%
-                               mutate(Quantile = str_remove_all(Quantile,"tau= ")) %>%
-                               mutate(Horizon = temp_name)
+                               mutate(quantile = str_remove_all(quantile,"tau= ")) %>%
+                               mutate(horizon = temp_name)
 
 
 
                            }) %>%
     fix_quantile_crossing() %>%
-    select(date,Horizon,Quantile,gar_fitted)
+    select(date,horizon,quantile,gar_fitted)
 
   return(prediction_df)
 

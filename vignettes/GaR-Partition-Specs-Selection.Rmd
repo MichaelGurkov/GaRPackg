@@ -172,7 +172,7 @@ models_df = models_df %>%
   mutate(gar_model = map2(
     partition, pca_align_list,function(temp_part, temp_align){
       
-      temp_gar = run.GaR.analysis(
+      temp_gar = run_GaR_analysis(
         partitions_list = temp_part,
         vars_df = df,
         target_var_name = "gdp",

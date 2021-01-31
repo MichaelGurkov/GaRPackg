@@ -85,7 +85,7 @@ fit_df = feature_select_df %>%
   mutate(
     gar_model = map(
       temp_part,
-      run.GaR.analysis,
+      run_GaR_analysis,
       vars_df = df,
       target_var_name = "gdp",
       horizon_list = parameters_list$horizon_list,

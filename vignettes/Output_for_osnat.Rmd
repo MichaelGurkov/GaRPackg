@@ -81,7 +81,7 @@ parameters_list$drop_series = c(
 
 current_partition = partitions_list$gdp_comp_fin_cycle
 
-results = run.GaR.analysis(partitions_list = current_partition,
+results = run_GaR_analysis(partitions_list = current_partition,
                    vars_df = df,
                    target_var_name = "gdp",
                    horizon_list = parameters_list$horizon_list,
