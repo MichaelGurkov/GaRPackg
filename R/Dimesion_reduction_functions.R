@@ -83,10 +83,10 @@ align_pca = function(pca_obj, var_name,
 #'
 #' @title PCA reduction
 #'
+#' @importFrom stats prcomp
+#'
 #'
 #' @param df dataframe
-#'
-#' @param target_var_name string that specifies outcome feature
 #'
 #' @param center boolean indicator
 #'
@@ -103,6 +103,9 @@ pca_reduction = function(df,
                          center = TRUE,
                          scale = TRUE,
                          sign_align_params = NULL) {
+
+  . = NULL
+
   # Identify time index
 
   time_index_var = str_subset(names(df), "[Dd]ate")
@@ -156,18 +159,21 @@ pca_reduction = function(df,
 #'
 #' @param multi_feature_partitions list of partitions
 #'
-#' @param vars_df
+#' @param vars_df raw data frame
 #'
-#' @param n_components
+#' @param n_components number of components (default is 1)
 #'
-#' @param pca_align_list (optional) a list with alignment parameters. For each partition
-#'  the aligning (axis) variable is specified together with aligning direction (optional).
-#'
+#' @param pca_align_list (optional) a named list of alignment parameters.
+#' The name is the name of the targeted partition. The first element in
+#' the list is the aligning (axis) variable, the value is either character
+#' (variable's name) or numeric (variable's position index). The second element
+#' (optional) is boolean indicator alignment direction (True means
+#'  positive direction).
 #'
 
 map_pca_reduction = function(multi_feature_partitions,
                              vars_df,
-                             n_components,
+                             n_components = 1,
                              pca_align_list = NULL) {
 
   reduction_objects_list = map2(
@@ -252,22 +258,20 @@ map_pca_reduction = function(multi_feature_partitions,
 #'
 #' @param scale boolean indicator
 #'
-#' @param sign_align_params (optional) a list of alignment parameters.
-#' The first element in the list is the aligning (axis) variable,
-#' the value is either character (variable's name) or numeric
-#' (variable's position index). The second element if(supplied) is
-#' boolean indicator alignment direction
-#' (True means positive direction).
 #'
 #' @return a list with two elements : pls_obj - PLS object,
 #'  time_index - dates vector
 #'
 #' @importFrom  pls plsr
 #'
+#' @importFrom stringr str_remove_all
+#'
 pls_reduction = function(df,
                          target_var_name,
                          center = TRUE,
                          scale = TRUE) {
+  . = NULL
+
   # Identify time index
 
   time_index_var = str_subset(names(df), "[Dd]ate")
@@ -315,9 +319,9 @@ pls_reduction = function(df,
 #'
 #' @param multi_feature_partitions list of partitions
 #'
-#' @param vars_df
+#' @param vars_df raw data frame
 #'
-#' @param n_components
+#' @param n_components number of components (default is 1)
 #'
 #' @param target_var_name string that specifies outcome feature
 #'
@@ -325,7 +329,7 @@ pls_reduction = function(df,
 map_pls_reduction = function(multi_feature_partitions,
                              vars_df,
                              target_var_name,
-                             n_components) {
+                             n_components = 1) {
   if (is.null(names(multi_feature_partitions))) {
     stop("The partitions must be a named list")
   }
@@ -401,8 +405,12 @@ map_pls_reduction = function(multi_feature_partitions,
 #' @param preprocess_method (optional) string that specifies preprocess method
 #' (default is PCA)
 #'
-#' @param pca_align_list (optional) a list with alignment parameters. For each partition
-#'  the aligning (axis) variable is specified together with aligning direction (optional).
+#' @param pca_align_list (optional) a named list of alignment parameters.
+#' The name is the name of the targeted partition. The first element in
+#' the list is the aligning (axis) variable, the value is either character
+#' (variable's name) or numeric (variable's position index). The second element
+#' (optional) is boolean indicator alignment direction (True means
+#'  positive direction).
 #'
 #' @param return_objects_list boolean indicator that specifies whether a list
 #' with object containing information (such as loadings) should be returned

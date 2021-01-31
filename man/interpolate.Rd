@@ -7,7 +7,9 @@
 interpolate(data_vec, direction = "forward")
 }
 \arguments{
-\item{data_vec}{}
+\item{data_vec}{numeric vector}
+
+\item{direction}{direction for interpolation (default is "forward")}
 }
 \description{
 This function interpolates forward by using linear interpolation

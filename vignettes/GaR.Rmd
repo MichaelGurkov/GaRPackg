@@ -109,7 +109,7 @@ theme_set(theme_bw() + theme(
 
 ```{r Analysis}
 
-results = run.GaR.analysis(
+results = run_GaR_analysis(
   partitions_list = current_partition,
   vars_df = df,
   target_var_name = "gdp",
@@ -179,7 +179,7 @@ results = run.GaR.analysis(
 
 \section{Robustness}
 
-```{r child="GaR-Robustness-Plots.Rmd"}
+```{r child="GaR-Robustness-Plots.Rmd", eval=FALSE}
 
 ```
 

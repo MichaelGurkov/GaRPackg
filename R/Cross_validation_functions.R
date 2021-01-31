@@ -11,6 +11,7 @@
 #'
 #' @import purrr
 #'
+#'
 #' @param partitions_list list of partition names
 #'
 #' @param vars_df data frame with input variables
@@ -24,7 +25,16 @@
 #' @param pca.align.list (optional) list list that contains the "aligning" variable
 #' for each partition that should be "aligned". See
 #'
-#' @return a data frame with out of sample predictions
+#' @param preprocess_method dimension reduction method (default PCA)
+#'
+#' @param win_len the length of sliding window (default 30)
+#'
+#' @param win_type_expanding boolean should the sliding window expand
+#'  (default FALSE)
+#'
+#' @return a data frame with out of sample predictions.
+#' The date column specifies the date of the test set observation,
+#' the target date is the date + horizon * 0.25 (the date units are quarters)
 #'
 #' @export
 #'
@@ -90,8 +100,14 @@ get_gar_forecast = function(partitions_list,
 #' @param win_type_expanding boolean indicator that determines
 #' whether the rolling window should be expanding or rolling
 #'
+#' @param ... external optional arguments
+#'
 #'
 #' @import tidyr
+#'
+#' @importFrom stringr str_remove
+#'
+#' @importFrom stats predict
 #'
 #'
 run_cross_validation = function(reg_df,

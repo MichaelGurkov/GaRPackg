@@ -3,7 +3,8 @@
 #' at the beginning or end of data vector. This is an auxilary function
 #' for interpolate
 #'
-#' @param data_vec
+#' @param data_vec data series
+#'
 #'
 identify_endpoints_NA = function(data_vec){
 
@@ -60,9 +61,11 @@ identify_endpoints_NA = function(data_vec){
 
 #' This function interpolates forward by using linear interpolation
 #'
-#' @param data_vec
+#' @param data_vec numeric vector
 #'
-#' @importFrom zoo as.yearqtr as.yearmon
+#' @param direction direction for interpolation (default is "forward")
+#'
+#' @importFrom zoo as.yearqtr as.yearmon na.approx
 #'
 #'
 interpolate = function(data_vec, direction = "forward"){
@@ -147,9 +150,19 @@ get_time_indices_list = function(df){
 
 #' This function creates a chained index partition
 #'
-#'@import dplyr
+#' @import dplyr
+#'
+#' @importFrom rlang .data
+#'
+#' @param df data frame with pca data
+#'
+#' @param preprocess_method method for dimension reduction (default is PCA)
+#'
+#' @param ... external optional arguments
 
 chain_index = function(df, preprocess_method = "PCA", ...){
+
+  . = NULL
 
   date_varname = grep("[Dd]ate", names(df), value = TRUE)
 
@@ -167,14 +180,14 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 
     temp_agg_series = temp_df %>%
       pca_reduction(...) %>%
-      mutate(PCA = scale(PCA))
+      mutate(PCA = scale(.data$PCA))
 
     # debugging
     # if(sum(is.na(temp_agg_series$PCA)) > 0){browser()}
 
 
     temp_diff_series = temp_agg_series %>%
-      mutate(PCA = PCA - lead(PCA)) %>%
+      mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
       slice(-nrow(.))
 
     return(list(agg_series = temp_diff_series,
@@ -220,7 +233,7 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 
   chain_df = diff_df %>%
     arrange(desc(date)) %>%
-    mutate(PCA = cumsum(PCA)) %>%
+    mutate(PCA = cumsum(.data$PCA)) %>%
     arrange(date)
 
   return(chain_df)
@@ -236,8 +249,6 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 #'
 #'@importFrom stats complete.cases
 #'
-#' @param partition_list a list of partitions for dimension reduction.
-#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -245,11 +256,18 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 #'
 #' @param horizon_list list of forecast horizon
 #'
-#' @param partitions_list list of partition names
+#' @param partitions_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
+#'
+#' @param pca.align.list named list where the names are partition names and the
+#' first element is the aligning variable name. The second (optional) element
+#' is the alignment direction (default is "positive")
 #'
 #' @param preprocess_method string a method that aggregates the data to partitions
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
+#'
+#' @return regression data frame
 #'
 #'
 make_quant_reg_df = function(vars_df,
@@ -261,6 +279,10 @@ make_quant_reg_df = function(vars_df,
                              return_objects_list = FALSE
                              ){
 
+  . = NULL
+
+  return_list = list()
+
 
   if(preprocess_method == "asis"){
 
@@ -271,7 +293,9 @@ make_quant_reg_df = function(vars_df,
                               leads_vector = unlist(horizon_list)) %>%
       rename_at(vars(-c(target_var_name, "date")), ~paste0(.,"_xreg"))
 
-    return(reg_df)
+    return_list$reg_df = reg_df
+
+    return(return_list)
 
 
   }
@@ -285,7 +309,9 @@ make_quant_reg_df = function(vars_df,
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
 
-    return(reg_df)
+    return_list$reg_df = reg_df
+
+    return(return_list)
 
 
   }
@@ -327,11 +353,8 @@ make_quant_reg_df = function(vars_df,
                               leads_vector = unlist(horizon_list))
 
 
+    return_list$reg_df = reg_df
 
-
-  return_list = list()
-
-  return_list$reg_df = reg_df
 
   if(return_objects_list & (!is.null(partitions_list))){
     return_list$pca_obj = preproc_df_list$objects_list}
@@ -386,13 +409,16 @@ fill_na_average = function(data_vec, k = 4){
 #'
 #' @import tidyr
 #'
-#' @param prediction_df
+#' @importFrom rlang .data
+#'
+#' @param prediction_df data frame with prediction values. The structure is
+#' date, horizon, quantile, gar
 #'
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
-    group_by(horizon,date) %>%
-    arrange(quantile) %>%
+    group_by(.data$horizon,.data$date) %>%
+    arrange(.data$quantile) %>%
     mutate(across(contains("gar"),~sort(.))) %>%
     ungroup()
 
@@ -405,13 +431,15 @@ fix_quantile_crossing = function(prediction_df){
 }
 
 
-#' This helper function adds leads of target variable
+#' @title  This helper function adds leads of target variable
 #'
-#' @param df
+#' @importFrom rlang :=
 #'
-#' @param target_var_name
+#' @param df raw data frame
 #'
-#' @param  leads_vector
+#' @param target_var_name regression depended variable
+#'
+#' @param leads_vector numeric vector with lead horizons
 #'
 add_leads_to_target_var = function(df,
                                    target_var_name,leads_vector){
@@ -434,29 +462,53 @@ add_leads_to_target_var = function(df,
 
 }
 
-#' This helper function calculates YoY rates of return
+#' @title Calculate year on year percent changes
 #'
-#' @param variable_vec
+#' @description  This helper function calculates the percent change
+#' between parallel periods in  two different years.
 #'
-#' @import slider
+#' @param variable_vec data series
 #'
-calculate_YoY_returns = function(variable_vec){
+#' @param data_frequency string that specifies time frequency of the data.
+#'
+#' Available options are :
+#' \itemize{
+#'  \item {quarterly}{ (the default)}
+#'  \item {monthly}
+#' }
+#'
+#' @importFrom  slider slide_dbl
+#'
+calculate_yoy_changes = function(variable_vec,
+                                    data_frequency = "quarterly"){
 
-  yoy_vec = slide_dbl(.x = variable_vec,
-                         .f = ~.[5]/.[1]-1,
-                         .before = 4,
+  if(data_frequency == "quarterly"){
+
+    win_len = 4
+
+  } else if(data_frequency == "monthly"){
+
+
+    win_len = 12
+
+  }
+
+
+  percent_change_vec = slide_dbl(.x = variable_vec,
+                         .f = ~.[win_len + 1]/.[1]-1,
+                         .before = win_len,
                          .complete = TRUE)
 
-  return(yoy_vec)
+  return(percent_change_vec)
 
 }
 
 
-#' This helper function calculates 4
+#' This helper function calculates 4 points moving average
 #'
-#' @param variable_vec
+#' @param variable_vec data series
 #'
-#' @import slider
+#' @importFrom  slider slide_dbl
 #'
 calculate_four_quarters_ma = function(variable_vec){
 
@@ -522,23 +574,58 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @details The following transformations are supported
 #' \itemize{
-#'  \item{Year on Year percent change (the variables should be at quarterly frequency)}
+#'  \item{Year on Year percent change}
 #'  \item{Differencing}
 #'  \item{Annual moving average (the variables should be at quarterly frequency)}
 #' }
 #'
-#' @param vars_to_yoy (optional) vector of variable names for "Year on Year" transformation
+#' In case of Year on Year percent change the function identifies the time
+#' frequency (by checking date class, either yearqtr or yearmon) and calculates
+#' the percent change appropriately
+#'
+#' @param df raw data frame
+#'
+#' @param vars_to_yoy (optional) vector of variable names
+#' for "Year on Year" transformation. Computes the percent change
+#' between parallel periods in  two different years.
+#'
+#' @param vars_to_percent_changes (optional) vector of variable names
+#' Computes the percent change between two sequential  periods.
 #'
 #' @param vars_to_diff (optional) vector of variable names for differencing transformation
 #'
 #' @param vars_to_4_ma (optional) vector of variable names for "Annual moving average"
 #' transformation
 #'
+#' @param convert_to_percent_units logical default is FALSE should the relative change
+#' variables be converted to percent units (multiply by 100).
+#'
 #' @export
 preprocess_df = function(df,
                          vars_to_yoy = NULL,
+                         vars_to_percent_changes = NULL,
                          vars_to_diff = NULL,
-                         vars_to_4_ma = NULL) {
+                         vars_to_4_ma = NULL,
+                         convert_to_percent_units = FALSE) {
+
+  if(!"date" %in% names(df)){
+
+    stop("date variable is missing")
+
+  } else if(class(df$date) == "yearqtr"){
+
+    data_frequency = "quarterly"
+
+  } else if(class(df$date) == "yearmon"){
+
+    data_frequency = "monthly"
+
+  } else {
+
+    stop("The date variable must be yearqtr or yearmon class")
+
+  }
+
 
   if(!is_null(vars_to_yoy)){
 
@@ -554,10 +641,34 @@ preprocess_df = function(df,
     }
 
 
+
+
     df = df %>%
-      mutate(across(any_of(vars_to_yoy), calculate_YoY_returns))
+      mutate(across(
+        any_of(vars_to_yoy),
+        calculate_yoy_changes,
+        data_frequency = data_frequency
+      ))
 
 
+
+  }
+
+  if(!is_null(vars_to_percent_changes)){
+
+    if(!length(setdiff(vars_to_percent_changes,
+                       names(df))) == 0){
+
+      warning(paste("The following variables are missing :",
+                    paste0(setdiff(vars_to_percent_changes,
+                                   names(df)), collapse = ",")))
+
+
+
+    }
+
+    df = df %>%
+      mutate(across(any_of(vars_to_percent_changes),  ~ . / lag(., 1) - 1))
 
   }
 
@@ -600,6 +711,16 @@ preprocess_df = function(df,
 
 
   }
+
+
+  if(convert_to_percent_units){
+
+    df = df %>%
+      mutate(across(any_of(c(vars_to_yoy, vars_to_percent_changes)),
+                    ~ . * 100))
+
+  }
+
 
   return(df)
 

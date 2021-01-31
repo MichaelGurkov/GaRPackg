@@ -238,7 +238,7 @@ fit_df = read_rds(paste0(
 
 current_partition = partitions_list$basic
 
-results = run.GaR.analysis(partitions_list = current_partition,
+results = run_GaR_analysis(partitions_list = current_partition,
                    vars_df = df,
                    target_var_name = "gdp",
                    horizon_list = parameters_list$horizon_list,

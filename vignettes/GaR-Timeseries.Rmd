@@ -3,9 +3,7 @@
 ```{r get_predict_df}
 
 prediction_df = make_prediction_df(gar_model = results$qreg_result,
-                          xreg_df = results$reg_df) %>% 
-  rename_all(tolower) %>% 
-  rename(value = gar_fitted)
+                          xreg_df = results$reg_df)
 
 
 
@@ -17,7 +15,7 @@ prediction_df = make_prediction_df(gar_model = results$qreg_result,
 prediction_df %>% 
   mutate(horizon  = factor(horizon, levels = c(1,4,8,12))) %>% 
   filter(quantile %in% c("0.05","0.50","0.95")) %>% 
-  ggplot(aes(x = date, y = value, color = quantile)) + 
+  ggplot(aes(x = date, y = gar_fitted, color = quantile)) + 
   geom_line() + 
   facet_grid(rows = vars(horizon)) + 
   scale_x_yearqtr() + 
@@ -52,9 +50,9 @@ temp_df = prediction_df %>%
 ggplot() +
   ylim(c(-0.12,0.08)) +
   geom_point(data = temp_df,
-             mapping = aes(x = date, y = value, color = horizon)) +
+             mapping = aes(x = date, y = gar_fitted, color = horizon)) +
   geom_line(data = temp_df,
-            mapping = aes(x = date, y = value, color = horizon)) +
+            mapping = aes(x = date, y = gar_fitted, color = horizon)) +
   geom_rect(data = recessions,
             mapping = aes(xmin = Start, xmax = End,
                           ymin = -Inf, ymax = Inf),
@@ -64,14 +62,14 @@ ggplot() +
   theme(legend.position = "bottom") +
   geom_point(data = temp_df %>%
              filter(date %in% events$Start),
-           mapping = aes(x = date, y = value),
+           mapping = aes(x = date, y = gar_fitted),
            color = "blue") +
   geom_segment(data = temp_df %>%
                  filter(date %in% events$Start) %>%
                  group_by(date) %>% 
-                 summarise(value = min(value), .groups = "drop"),
+                 summarise(gar_fitted = min(gar_fitted), .groups = "drop"),
              mapping = aes(x = date, y = c(0.0745,0.0745,0.0545),
-                           xend = date, yend = value),
+                           xend = date, yend = gar_fitted),
             arrow = arrow(length = unit(0.1,"cm")),
              color = "blue") +
   geom_text(data = events,
@@ -89,7 +87,7 @@ rm(temp_df)
 
 ggplot(prediction_df %>% 
   filter(quantile %in% c("0.05","0.5","0.95")),
-       aes(x = date, y = value, color = quantile)) + 
+       aes(x = date, y = gar_fitted, color = quantile)) + 
   geom_line() + 
   scale_x_yearqtr() + 
   labs(title = "GaR normalized upper and lower quantile timeseries",
@@ -110,10 +108,7 @@ gdp_df = df %>%
 
 fan_chart_df  = prediction_df %>% 
   filter(date == max(date))%>% 
-  rename(Horizon = horizon, Quantile = quantile, GaR = value) %>% 
-  fix_quantile_crossing() %>% 
-  rename_all(tolower) %>% 
-  pivot_wider(names_from = quantile,values_from = gar) %>% 
+  pivot_wider(names_from = quantile,values_from = gar_fitted) %>% 
   rename_at(vars(-date,-horizon),
             .funs = list(~paste0("Q_",.))) %>% 
   mutate(date = date + as.numeric(as.character(horizon)) * 0.25)
@@ -179,8 +174,8 @@ ggplot(data = factor_df %>%
 
 results %>% 
   calculate_skew_and_iqr() %>% 
-  filter(Horizon == 1) %>% 
-  ggplot(aes(x = date, y = Skew)) + 
+  filter(horizon == 1) %>% 
+  ggplot(aes(x = date, y = skew)) + 
   geom_line() + 
   geom_hline(yintercept = c(-0.5,0.5),
              linetype = "dashed", color = "blue") + 
