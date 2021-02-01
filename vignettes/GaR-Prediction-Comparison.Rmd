@@ -31,8 +31,8 @@ dsge_forecast = import_dsge_forecasts(paste0(
 dsge_forecast = dsge_forecast %>% 
   filter(target_var == "gdp") %>% 
   select(-target_var) %>% 
-  filter(date >= as.yearqtr("2006 Q3")) %>% 
-  mutate(quantile = recode(quantile, "0.5" = "0.50"))
+  inner_join(gar_df[,c("date", "horizon","quantile")],
+             by = c("date", "horizon","quantile"))
 
 
 r2_df = map_dfr(

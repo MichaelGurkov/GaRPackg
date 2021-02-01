@@ -102,7 +102,7 @@ import_from_fame_template = function(template_path,
 #' @description  This function imports DSGE forecasts and convert the data
 #' to tidy format
 #'
-#' @param file_path
+#' @param file_path string
 #'
 #' @importFrom  readxl read_xlsx
 #'
@@ -118,6 +118,8 @@ import_from_fame_template = function(template_path,
 #'
 import_dsge_forecasts = function(file_path){
 
+  . = NULL
+
 
   cpi_table = tribble(
     ~horizon,~`0.05`,~`0.25`,
@@ -126,9 +128,9 @@ import_dsge_forecasts = function(file_path){
     "8",-3.5,-1.45,
     "12",-3.75,-1.5) %>%
     mutate(`0.5` = 0) %>%
-    mutate(`0.75` = abs(`0.25`)) %>%
-    mutate(`0.95` = abs(`0.05`)) %>%
-    mutate(across(-horizon, ~./100))
+    mutate(`0.75` = abs(.data$`0.25`)) %>%
+    mutate(`0.95` = abs(.data$`0.05`)) %>%
+    mutate(across(-.data$horizon, ~./100))
 
 
   gdp_table = tribble(
@@ -138,9 +140,9 @@ import_dsge_forecasts = function(file_path){
     "8",-4.6,-1.8,
     "12",-4.9,-2) %>%
     mutate(`0.5` = 0) %>%
-    mutate(`0.75` = abs(`0.25`)) %>%
-    mutate(`0.95` = abs(`0.05`)) %>%
-    mutate(across(-horizon, ~./100))
+    mutate(`0.75` = abs(.data$`0.25`)) %>%
+    mutate(`0.95` = abs(.data$`0.05`)) %>%
+    mutate(across(-.data$horizon, ~./100))
 
 
 
@@ -155,16 +157,16 @@ import_dsge_forecasts = function(file_path){
       raw_data = read_xlsx(file_path, sheet = temp_sheet, skip = 1)
 
       data = raw_data %>%
-        rename(date = OBS) %>%
+        rename(date = .data$OBS) %>%
         select(matches("date|[0-9]")) %>%
-        mutate(date = as.yearqtr(date)) %>%
+        mutate(date = as.yearqtr(.data$date)) %>%
         pivot_longer(-"date",
                      names_to = "horizon",
                      values_to = "forecast") %>%
         filter(complete.cases(.))
 
       data = data %>%
-        mutate(date = date - as.numeric(horizon) * 0.25)
+        mutate(date = .data$date - as.numeric(.data$horizon) * 0.25)
 
 
       return(data)
@@ -174,18 +176,22 @@ import_dsge_forecasts = function(file_path){
 
 
   result_df = forecast_df %>%
-    filter(target_var == "gdp") %>%
+    filter(.data$target_var == "gdp") %>%
     left_join(gdp_table, by = "horizon") %>%
     filter(complete.cases(.)) %>%
     bind_rows(forecast_df %>%
-            filter(target_var == "cpi") %>%
+            filter(.data$target_var == "cpi") %>%
             left_join(cpi_table, by = "horizon") %>%
             filter(complete.cases(.))) %>%
-    mutate(across(matches("[0-9]"), ~ . + forecast)) %>%
-    select(-forecast) %>%
+    mutate(across(matches("[0-9]"), ~ . + .data$forecast)) %>%
+    select(-.data$forecast) %>%
     pivot_longer(-c("target_var","date", "horizon"),
                  names_to = "quantile",
                  values_to = "forecast")
+
+  result_df = result_df %>%
+    mutate(quantile = as.character(.data$quantile)) %>%
+    mutate(quantile = recode(.data$quantile, "0.5" = "0.50"))
 
   return(result_df)
 

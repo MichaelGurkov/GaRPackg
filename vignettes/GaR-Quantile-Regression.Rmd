@@ -6,11 +6,10 @@ coeffs_df = results %>%
   extract_coeffs_from_gar_model() %>% 
   filter(!partition == "Intercept") %>%
   mutate(partition = recode(partition,
-                Dom_Fin = "Dom. Fin. Cond.",
-                Dom_Macro = "Dom. Macro",
-                Ext_Macro = "Ext. Macro",
-                Ext_Fin = "Ext. Fin. Cond.",
-                Dom_Fin_Cycle = "Dom. Fin. Cycle")) %>% 
+                dom_fin = "Dom. Fin. Cond.",
+                dom_macro = "Dom. Macro",
+                ext_macro = "Ext. Macro",
+                ext_fin = "Ext. Fin. Cond.")) %>% 
   mutate(partition = factor(partition, levels = plot_names$plot_name))
 
 ```

@@ -9,39 +9,32 @@ partitions_list  = list()
 
 ```{r basic}
 
-partitions_list$basic = list(
-  Dom_Macro = c(
-    "gdp",
-    "state_of_economy_ind",
-    "ue_gap"),
-  Global = c(
-    "gdp_us",
-    "gdp_euro",
-    "rate_euro",
-    "rate_us",
-    "us_term_spread",
-    "sp500",
-    "eurostoxx600",
-    "vix",
+partitions_list$basic = partitions_list = list(
+  dom_macro = c(
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "unemployment"),
+  ext_macro = c(
     "oecd_imp",
-    "oil_p",
-    "non_energy_p"
+    "exports",
+    "imports"
   ),
-  Dom_FCI =  c(
-    "spread_cpi_corp",
-    "sovereigh_spread",
-    "term_spread",
-    "ils_usd_impl_vol",
-    "ta_35_impl_vol",
-    "boi_rate"
-  ),
-  FinCycle = c(
+  dom_fin = c(
     "credit",
     "house_price",
-    "ta125_close"
+    "ta125_close",
+    "boi_rate"
+  ),
+  ext_fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "oil_p",
+    "non_energy_p"
   )
 )
-
 
 
 ```
@@ -225,7 +218,6 @@ partitions_list$gdp_comp_fin_cycle = list(
 )
 
 ```
-
 
 
 ```{r gdp_comp_fin_cycle_united}
