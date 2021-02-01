@@ -30,7 +30,7 @@
 #' @param win_len the length of sliding window (default 30)
 #'
 #' @param win_type_expanding boolean should the sliding window expand
-#'  (default FALSE)
+#'  (default TRUE)
 #'
 #' @return a data frame with out of sample predictions.
 #' The date column specifies the date of the test set observation,
@@ -47,7 +47,7 @@ get_gar_forecast = function(partitions_list,
                             pca.align.list = NULL,
                             preprocess_method = "inner_join_pca",
                             win_len = 30,
-                            win_type_expanding = FALSE){
+                            win_type_expanding = TRUE){
 
   reg_df_list = make_quant_reg_df(
     partitions_list = partitions_list,
