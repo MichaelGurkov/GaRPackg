@@ -189,7 +189,7 @@ import_dsge_forecasts = function(file_path){
                  names_to = "quantile",
                  values_to = "forecast")
 
-  result_df %>%
+  result_df = result_df %>%
     mutate(quantile = as.character(.data$quantile)) %>%
     mutate(quantile = recode(.data$quantile, "0.5" = "0.50"))
 
