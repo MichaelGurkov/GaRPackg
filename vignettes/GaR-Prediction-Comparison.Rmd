@@ -14,7 +14,7 @@ gar_df = get_gar_forecast(
   rename(forecast_values = gar_forecast)
 
 
-benchmark_df = get_gar_forecast(
+intercept_df = get_gar_forecast(
   partitions_list = NULL,
   vars_df = df,
   target_var_name = "gdp",
@@ -24,12 +24,34 @@ benchmark_df = get_gar_forecast(
   win_type_expanding = forecast_parameters$win_type_expanding) %>% 
   rename(benchmark_values = gar_forecast)
 
-r2_df = quantile_r2_score(predict_df = gar_df,
-                          actual_df = df %>% select(date, gdp),
-                          benchmark_df = benchmark_df)
+dsge_forecast = import_dsge_forecasts(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\DSGE forecasts.xlsx"))
 
-pit_df = quantile_pit_score(forecast_df = gar_df,
-                            actual_df = df %>% select(date, gdp))
+dsge_forecast = dsge_forecast %>% 
+  filter(target_var == "gdp") %>% 
+  select(-target_var) %>% 
+  filter(date >= as.yearqtr("2006 Q3")) %>% 
+  mutate(quantile = recode(quantile, "0.5" = "0.50"))
+
+
+r2_df = map_dfr(
+  list(gar_forecast = gar_df,
+       dsge_forecast = dsge_forecast),
+  quantile_r2_score,
+  actual_df = df %>% select(date, gdp),
+  benchmark_df = intercept_df,
+  .id = "model"
+)
+
+pit_df = map_dfr(
+  list(gar_forecast = gar_df,
+       dsge_forecast = dsge_forecast),
+  quantile_pit_score,
+  actual_df = df %>% select(date, gdp),
+  .id = "model"
+)
+
 
 ```
 
@@ -38,8 +60,9 @@ pit_df = quantile_pit_score(forecast_df = gar_df,
 
 r2_df %>% 
   mutate(horizon = factor(horizon, c(1,4,8,12))) %>% 
-  ggplot(aes(x = quantile, y = quantile_r2)) + 
-  geom_col() + 
+  ggplot(aes(x = quantile, y = quantile_r2, fill = model)) + 
+  geom_col(position = "dodge", width = 0.15) + 
+  scale_fill_viridis_d(option = "plasma",direction = -1) + 
   facet_wrap(~horizon) + 
   xlab(NULL) + ylab(NULL)
 
@@ -51,8 +74,9 @@ r2_df %>%
 
 pit_df %>% 
   mutate(horizon = factor(horizon, c(1,4,8,12))) %>% 
-  ggplot(aes(x = as.numeric(quantile), y = pit, group = 1)) + 
-  geom_line(color = "blue") +
+  ggplot(aes(x = as.numeric(quantile), y = pit, color = model, group = model)) + 
+  geom_line() +
+  # scale_colour_viridis_d(option = "plasma") + 
   geom_abline(slope = 1,intercept = 0, linetype = "dashed") + 
   facet_wrap(~horizon) + 
   xlab(NULL) + ylab(NULL)
