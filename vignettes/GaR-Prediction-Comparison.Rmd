@@ -36,8 +36,8 @@ dsge_forecast = dsge_forecast %>%
 
 
 r2_df = map_dfr(
-  list(gar_forecast = gar_df,
-       dsge_forecast = dsge_forecast),
+  list(GaR = gar_df,
+       DSGE = dsge_forecast),
   quantile_r2_score,
   actual_df = df %>% select(date, gdp),
   benchmark_df = intercept_df,
@@ -45,8 +45,9 @@ r2_df = map_dfr(
 )
 
 pit_df = map_dfr(
-  list(gar_forecast = gar_df,
-       dsge_forecast = dsge_forecast),
+  list(GaR = gar_df,
+       DSGE = dsge_forecast,
+       Intercept = intercept_df),
   quantile_pit_score,
   actual_df = df %>% select(date, gdp),
   .id = "model"
@@ -62,7 +63,7 @@ r2_df %>%
   mutate(horizon = factor(horizon, c(1,4,8,12))) %>% 
   ggplot(aes(x = quantile, y = quantile_r2, fill = model)) + 
   geom_col(position = "dodge", width = 0.15) + 
-  scale_fill_viridis_d(option = "plasma",direction = -1) + 
+  # scale_fill_viridis_d(option = "plasma",direction = -1) + 
   facet_wrap(~horizon) + 
   xlab(NULL) + ylab(NULL)
 

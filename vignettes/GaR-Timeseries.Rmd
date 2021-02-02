@@ -154,8 +154,9 @@ factor_df = extract_factor_contribution_from_gar_model(results) %>%
 ggplot(data = factor_df %>% 
          mutate(Total = rowSums(across(-c("date","horizon")))) %>% 
          pivot_longer(-c("date","horizon")) %>% 
-         filter(!name == "Total"),
-       aes(x = date, y = value, fill = name)) + 
+         filter(!name == "Total") %>% 
+         left_join(plot_names, by = c("name" = "partition_name")),
+       aes(x = date, y = value, fill = plot_name)) + 
   geom_col(position = "stack") + 
   geom_line(data = factor_df %>% 
               mutate(Total = rowSums(across(-c("date","horizon")))) %>% 
