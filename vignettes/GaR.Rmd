@@ -177,7 +177,7 @@ results = run_GaR_analysis(
 
 \section{Robustness}
 
-```{r child="GaR-Robustness-Plots.Rmd", eval=FALSE}
+```{r child="GaR-Robustness-Plots.Rmd"}
 
 ```
 

@@ -13,59 +13,44 @@
 ```{r get_all_combinations_test}
 
 category_params_df = list(
-  Dom_Macro = list(
+  dom_macro = list(
     optional = c("public_consumption", "unemployment"),
-    required = c("investment","private_consumption")
+    required = c("investment", "private_consumption")
   ),
-  Ext_Macro = list(
-    optional = c("gdp_euro","gdp_us"),
-    required = c("oecd_imp", "imports", "exports")
+  ext_macro = list(
+    optional = c("oecd_imp"),
+    required = c("imports", "exports")
   ),
-  Dom_Fin =  list(
-    required = c("term_spread","boi_rate"),
-    optional = c(
-      "spread_cpi_corp",
-      "ils_usd_impl_vol",
-      "ta_35_impl_vol"
-    )
+  dom_fin =  list(
+    required = c("credit", "boi_rate"),
+    optional = c("house_price",
+                 "ta125_close")
   ),
-  Ext_Fin = list(
-    required = c("us_term_spread"),
-    optional = c("rate_euro",
-                 "rate_us",
-                 "oil_p",
-                 "non_energy_p",
-                 "vix",
-                 "sp500",
-                 "eurostoxx600")
-  ),
-  Dom_Fin_Cycle = list(
-    optional = c("ta125_close", "house_price"),
-    required = c("credit")
+  ext_fin = list(
+    required = c("rate_us", "rate_euro"),
+    optional = c("sp500", "eurostoxx600", "oil_p", "non_energy_p")
   )
 ) %>%
-  enframe(name = "category", value = "params") %>%
-  mutate(part_comb_df = map2(
-    category, params,
-    function(temp_name, temp_part) {
-      temp_part_df = get_partition_combs(partition_list = temp_part,
-                                         partition_name = temp_name)
-      }))
+  enframe(name = "category", value = "params") %>% 
+  mutate(part_comb_df = map2(category, params,
+                             function(temp_name, temp_part){
+                               temp_part_df = get_partition_combs(
+                                 partitions_list = temp_part,
+                                 partition_name = temp_name)
+                             }))
 
 
-feature_select_df = map(
-  category_params_df$category,function(temp_cat){
-    temp_df = category_params_df %>%
-      filter(category == temp_cat) %>%
-      select(part_comb_df) %>%
-      unnest(cols = c(part_comb_df))
-    return(temp_df)
-                        }
-  ) %>%
+feature_select_df = map(category_params_df$category, function(temp_cat) {
+  temp_df = category_params_df %>%
+    filter(category == temp_cat) %>%
+    select(part_comb_df) %>%
+    unnest(cols = c(part_comb_df))
+  return(temp_df)
+}) %>%
   reduce(full_join, by = character()) %>%
-  unite(col = name,starts_with("name"),sep = "-") %>%
-  mutate(temp_part = pmap(list(Dom_Macro,Ext_Macro,
-                               Dom_Fin,Ext_Fin,Dom_Fin_Cycle),c))
+  unite(col = name, starts_with("name"), sep = "-") %>%
+  mutate(temp_part = pmap(list(dom_macro, ext_macro,
+                               dom_fin, ext_fin), c))
 
 ```
 
@@ -74,7 +59,6 @@ feature_select_df = map(
 
 
 fit_df = feature_select_df %>%
-  slice_sample(n = 6500) %>%
   rbind(feature_select_df %>%
           mutate(ind = map_lgl(feature_select_df$temp_part,
                                ~is_partition_identical(
@@ -139,20 +123,26 @@ fit_df =  fit_df %>%
 
 ```{r plot_coeffs}
 
-fit_df %>%
+coeff_plot = fit_df %>%
   rownames_to_column() %>%
   select(rowname, coeff_df) %>%
   unnest(coeff_df) %>%
-  mutate(Name = str_remove_all(Name, "_xreg")) %>% 
-  filter(Name %in% c("Dom_Fin_Cycle","Dom_Fin","Ext_Fin")) %>%
-  left_join(plot_names, by = c("Name" = "partition_name")) %>% 
-  select(rowname, plot_name, Coeff, Horizon, Tau) %>%
-  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>%
-  ggplot(aes(x = Coeff, fill = Tau)) +
-  geom_histogram() +
+  filter(!partition == "Intercept") %>%
+  filter(quantile %in% c("0.05","0.95")) %>% 
+  left_join(plot_names, by = c("partition" = "partition_name")) %>% 
+  select(rowname, plot_name, coeff, horizon, quantile) %>%
+  mutate(horizon = factor(horizon,c(1,4,8,12))) %>%
+  group_by(quantile, horizon, plot_name) %>% 
+  mutate(extreme_ind = case_when(coeff > quantile(coeff,0.95) ~ "mark",
+                                 coeff < quantile(coeff,0.05) ~ "mark",
+                                 TRUE ~"normal")) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = coeff, fill = quantile, alpha = extreme_ind)) + 
+  scale_alpha_discrete(range = c(0.5,1), guide = "none") + 
+  geom_histogram() + 
   geom_vline(xintercept = 0, linetype = "dashed") +
   ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +
-  facet_grid(cols = vars(Horizon), rows = vars(plot_name),
+  facet_grid(cols = vars(horizon), rows = vars(plot_name),
              scales = "free") +
   theme(legend.position = "bottom")
 
@@ -169,13 +159,13 @@ skew_plot = fit_df %>%
   rownames_to_column() %>%
   select(rowname,skew_df) %>%
   unnest(cols = skew_df) %>%
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = date, y = Skew, group = rowname)) +
+  mutate(horizon = factor(horizon, c(1,4,8,12))) %>%
+  ggplot(aes(x = date, y = skew, group = rowname)) +
   geom_line() +
   xlab(NULL) + ylab(NULL) +
   ggtitle("The skewness measure for each partition") +
-  facet_wrap(~Horizon, scales = "free") +
-  gghighlight(rowname == 6501,
+  facet_wrap(~horizon, scales = "free") +
+  gghighlight(rowname == nrow(fit_df),
               use_group_by = FALSE,
               use_direct_label = FALSE,
               unhighlighted_params = list(alpha = 0.1),
@@ -194,15 +184,15 @@ gar_plot = fit_df %>%
   rownames_to_column() %>%
   select(rowname, pred_df) %>%
   unnest(cols = pred_df) %>%
-  filter(Quantile == "0.05") %>%
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) +
+  filter(quantile == "0.05") %>%
+  mutate(horizon = factor(horizon, c(1,4,8,12))) %>%
+  ggplot(aes(x = date, y = gar_fitted, group = rowname)) +
   geom_line() +
   xlab(NULL) + ylab(NULL) +
   ggtitle("5th percentile of predictive distribution") +
-  facet_wrap(~Horizon, scales = "free") +
+  facet_wrap(~horizon, scales = "free") +
   scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-  gghighlight(rowname == 6501,
+  gghighlight(rowname == nrow(fit_df),
               use_group_by = FALSE,
               use_direct_label = FALSE,
               unhighlighted_params = list(alpha = 0.1),
@@ -220,16 +210,16 @@ med_plot = fit_df %>%
   rownames_to_column() %>%
   select(rowname, skew_df) %>%
   unnest(cols = skew_df) %>%
-  group_by(rowname, Horizon) %>%
-  summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>%
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
+  group_by(rowname, horizon) %>%
+  summarise(med_vol_cor = cor(iqr,q0.50), .groups = "drop") %>%
+  mutate(horizon = factor(horizon, c(1,4,8,12))) %>%
   ggplot(aes(x = med_vol_cor)) +
   geom_histogram() +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste0("Correlaltion between the median",
                  " and IQR of the predictive distribution")) +
   geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free") +
+  facet_wrap(~horizon, scales = "free") +
   theme_bw()
 
 
