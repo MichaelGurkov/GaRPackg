@@ -1,27 +1,12 @@
 
-```{r import_plot_data}
+```{r import_fit_df}
 
-coeffs_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\coeffs_plot.rds"))
+alpha=0.05
 
-
-
-skew_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\skew_plot.rds"))
-
-gar_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\gar_plot.rds"))
-
-med_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\med_plot.rds"))
+fit_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
+  "GaR_Data\\Working_data\\fit_df.RDS"))
 
 
 ```
@@ -30,19 +15,36 @@ med_plot = read_rds(paste0(
 
 ```{r plot_coeffs_plot}
 
-print(coeffs_plot)
+coeff_plot = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\coeff_plot.rds"))
+
+
+print(coeff_plot) 
 
 ```
 
 
 ```{r plot_skew_plot}
 
+skew_plot = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\skew_plot.rds"))
+
 print(skew_plot)
+
 
 ```
 
 
 ```{r gar_plot}
+
+gar_plot = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\gar_plot.rds"))
 
 print(gar_plot)
 
@@ -51,6 +53,11 @@ print(gar_plot)
 
 
 ```{r med_plot}
+
+med_plot = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\med_plot.rds"))
 
 print(med_plot)
 

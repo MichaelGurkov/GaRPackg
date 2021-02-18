@@ -9,6 +9,13 @@
 
 ```
 
+```{r set_params}
+
+alpha = 0.05
+
+```
+
+
 
 ```{r get_all_combinations_test}
 
@@ -75,14 +82,11 @@ fit_df = feature_select_df %>%
       horizon_list = parameters_list$horizon_list,
       quantile_vec = parameters_list$quantile_vec,
       pca.align.list = list(
-        Dom_Fin = list(var_name = "term_spread",
-                       positive_direction = FALSE),
-        Dom_Macro = list(var_name = "private_consumption"),
-        Ext_Macro = list(var_name = "exports"),
-        Ext_Fin = list(var_name = "us_term_spread",
-                       positive_direction = FALSE),
-        Dom_Fin_Cycle = list(var_name = "credit")
-      )
+    dom_macro = list(var_name = "private_consumption"),
+    dom_fin = list("credit"),
+    ext_macro = list(var_name = "exports"),
+    ext_fin = list(var_name = "rate_euro")
+  )
     )
   )
 
@@ -111,7 +115,7 @@ fit_df = fit_df %>%
 ```
 
 
-```{r get_gar}
+```{r get_prediction}
 
 fit_df =  fit_df %>%
   mutate(pred_df = map(gar_model,function(temp_mod){
@@ -123,28 +127,35 @@ fit_df =  fit_df %>%
 
 ```{r plot_coeffs}
 
-coeff_plot = fit_df %>%
-  rownames_to_column() %>%
-  select(rowname, coeff_df) %>%
-  unnest(coeff_df) %>%
-  filter(!partition == "Intercept") %>%
-  filter(quantile %in% c("0.05","0.95")) %>% 
-  left_join(plot_names, by = c("partition" = "partition_name")) %>% 
-  select(rowname, plot_name, coeff, horizon, quantile) %>%
-  mutate(horizon = factor(horizon,c(1,4,8,12))) %>%
-  group_by(quantile, horizon, plot_name) %>% 
-  mutate(extreme_ind = case_when(coeff > quantile(coeff,0.95) ~ "mark",
-                                 coeff < quantile(coeff,0.05) ~ "mark",
-                                 TRUE ~"normal")) %>% 
-  ungroup() %>% 
-  ggplot(aes(x = coeff, fill = quantile, alpha = extreme_ind)) + 
-  scale_alpha_discrete(range = c(0.5,1), guide = "none") + 
-  geom_histogram() + 
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +
-  facet_grid(cols = vars(horizon), rows = vars(plot_name),
-             scales = "free") +
-  theme(legend.position = "bottom")
+coeff_df = fit_df %>%
+  select(coeff_df) %>%
+  unnest(cols = c(coeff_df)) %>%
+  group_by(partition, horizon, quantile) %>%
+  summarise(
+    low_bound = quantile(coeff, alpha),
+    high_bound = quantile(coeff, 1 - alpha),
+    mean = mean(coeff),
+    min = min(coeff),
+    max = max(coeff)
+  , .groups = "drop") %>%
+  filter(horizon == 12) %>%
+  select(-horizon) %>% 
+  left_join(plot_names, by = c("partition" = "partition_name"))
+
+
+coeff_plot = coeff_df %>% 
+  filter(plot_name %in% c("Dom. Fin. Cond.","Ext. Fin. Cond.")) %>% 
+  ggplot(aes(x = quantile)) +
+  geom_point(aes(y = mean)) +
+  geom_errorbar(
+    aes(ymin = low_bound, ymax = high_bound),
+    position = position_dodge(width = 0.5),
+    width = 0.2
+  ) +
+  facet_wrap(~plot_name) +
+  geom_hline(yintercept = 0) +
+  ylab("Coefficients") + xlab("Quantile")
+
 
 
 ```
@@ -152,26 +163,30 @@ coeff_plot = fit_df %>%
 
 ```{r plot_skew}
 
-library(gghighlight)
+skew_df = fit_df %>%
+  select(skew_df) %>%
+  unnest(cols = c(skew_df)) %>%
+  group_by(date, horizon) %>%
+  summarise(
+    low_bound = quantile(skew, alpha, na.rm = TRUE),
+    high_bound = quantile(skew, 1 - alpha, na.rm = TRUE),
+    mean = mean(skew, na.rm = TRUE),
+    min = min(skew, na.rm = TRUE),
+    max = max(skew, na.rm = TRUE)
+  ,.groups = "drop") %>%
+  mutate(horizon = factor(horizon, level = parameters_list$horizon_list))
 
-
-skew_plot = fit_df %>%
-  rownames_to_column() %>%
-  select(rowname,skew_df) %>%
-  unnest(cols = skew_df) %>%
-  mutate(horizon = factor(horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = date, y = skew, group = rowname)) +
-  geom_line() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle("The skewness measure for each partition") +
-  facet_wrap(~horizon, scales = "free") +
-  gghighlight(rowname == nrow(fit_df),
-              use_group_by = FALSE,
-              use_direct_label = FALSE,
-              unhighlighted_params = list(alpha = 0.1),
-              calculate_per_facet = TRUE) +
-  geom_hline(yintercept = c(-0.5,0.5),
-             linetype = "dashed", color = "blue")
+skew_plot = skew_df %>%
+  ggplot(aes(x = date)) +
+  # geom_ribbon(aes(ymin = min, ymax = max), fill = "grey", alpha = 0.5) +
+  geom_ribbon(aes(ymin = low_bound, ymax = high_bound),
+              fill = "grey",
+              alpha = 1) +
+  geom_line(aes(y = mean), color = "black") +
+  facet_wrap( ~ horizon, nrow = 2) +
+  geom_hline(yintercept = 0) +
+  theme_bw() +
+  ylab("Skewness") + xlab(NULL)
 
 
 
@@ -180,24 +195,32 @@ skew_plot = fit_df %>%
 
 ```{r plot_gar}
 
-gar_plot = fit_df %>%
-  rownames_to_column() %>%
-  select(rowname, pred_df) %>%
-  unnest(cols = pred_df) %>%
-  filter(quantile == "0.05") %>%
-  mutate(horizon = factor(horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = date, y = gar_fitted, group = rowname)) +
-  geom_line() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle("5th percentile of predictive distribution") +
-  facet_wrap(~horizon, scales = "free") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-  gghighlight(rowname == nrow(fit_df),
-              use_group_by = FALSE,
-              use_direct_label = FALSE,
-              unhighlighted_params = list(alpha = 0.1),
-              calculate_per_facet = TRUE) +
-  theme_bw()
+pred_df = fit_df %>%
+  select(pred_df) %>%
+  unnest(cols = c(pred_df)) %>%
+  group_by(date, horizon, quantile) %>%
+  summarise(
+    low_bound = quantile(gar_fitted, alpha, na.rm = TRUE),
+    high_bound = quantile(gar_fitted, 1 - alpha, na.rm = TRUE),
+    mean = mean(gar_fitted, na.rm = TRUE),
+    min = min(gar_fitted, na.rm = TRUE),
+    max = max(gar_fitted, na.rm = TRUE)
+  , .groups = "drop") %>%
+  mutate(horizon = factor(horizon, level = parameters_list$horizon_list))
+
+
+gar_plot = pred_df %>% 
+  filter(quantile == "0.05") %>% 
+  ggplot(aes(x = date)) +
+  # geom_ribbon(aes(ymin = min, ymax = max), fill = "grey", alpha = 0.5) +
+  geom_ribbon(aes(ymin = low_bound, ymax = high_bound),
+              fill = "grey",
+              alpha = 1) +
+  geom_line(aes(y = mean), color = "black") +
+  facet_wrap( ~ horizon, nrow = 2) +
+  geom_hline(yintercept = 0) +
+  theme_bw() +
+  ylab("Fifth Percentile") + xlab(NULL)
 
 
 
@@ -206,21 +229,34 @@ gar_plot = fit_df %>%
 
 ```{r plot_median_iqr}
 
-med_plot = fit_df %>%
-  rownames_to_column() %>%
-  select(rowname, skew_df) %>%
-  unnest(cols = skew_df) %>%
-  group_by(rowname, horizon) %>%
-  summarise(med_vol_cor = cor(iqr,q0.50), .groups = "drop") %>%
-  mutate(horizon = factor(horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = med_vol_cor)) +
-  geom_histogram() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste0("Correlaltion between the median",
-                 " and IQR of the predictive distribution")) +
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~horizon, scales = "free") +
-  theme_bw()
+median_iqr_df = fit_df %>%
+  rownames_to_column(var = "draw_id") %>% 
+  select(draw_id, skew_df) %>%
+  unnest(cols = c(skew_df)) %>%
+  select(draw_id, date, horizon, q0.50, iqr) %>%
+  group_by(draw_id, horizon) %>%
+  summarize(correlation = cor(q0.50, iqr)) %>%
+  group_by(horizon) %>%
+  summarise(
+    low_bound = quantile(correlation, alpha, na.rm = TRUE),
+    high_bound = quantile(correlation, 1 - alpha, na.rm = TRUE),
+    mean = mean(correlation, na.rm = TRUE),
+    min = min(correlation, na.rm = TRUE),
+    max = max(correlation, na.rm = TRUE)
+  , .groups = "drop") %>%
+  mutate(horizon = factor(horizon, level = parameters_list$horizon_list))
+
+
+med_plot = median_iqr_df %>% 
+  ggplot(aes(x = horizon)) +
+  geom_point(aes(y = mean)) +
+  geom_errorbar(
+    aes(ymin = low_bound, ymax = high_bound),
+    position = position_dodge(width = 0.5),
+    width = 0.2
+  ) +
+  geom_hline(yintercept = 0) +
+  ylab("Correlation") + xlab("Horizon")
 
 
 
@@ -247,6 +283,11 @@ write_rds(x = fit_df,paste0(
   "\\OneDrive - Bank Of",
   " Israel\\Data\\BoI\\GaR_Data\\Working_data\\fit_df.RDS"))
 
+write_rds(coeff_plot, paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI",
+  "\\GaR_Data\\Working_data\\coeff_plot.rds"))
+
 write_rds(skew_plot, paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
   "\\OneDrive - Bank Of Israel\\Data\\BoI",
@@ -264,34 +305,3 @@ write_rds(med_plot, paste0(
 
 
 ```
-
-
-```{r make_plot_coeffs}
-
-coeffs_plot = fit_df %>%
-  rownames_to_column() %>%
-  select(rowname, coeff_df) %>%
-  unnest(coeff_df) %>%
-  mutate(Name = str_remove_all(Name, "_xreg")) %>% 
-  filter(Name %in% c("Dom_Fin_Cycle","Dom_Fin","Ext_Fin")) %>%
-  left_join(plot_names, by = c("Name" = "partition_name")) %>% 
-  select(rowname, plot_name, Coeff, Horizon, Tau) %>%
-  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>%
-  filter(Horizon %in% c(8,12)) %>% 
-  ggplot(aes(x = Coeff, fill = Tau)) +
-  geom_histogram() +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") +
-  facet_grid(cols = vars(plot_name), rows = vars(Horizon),
-             scales = "free") +
-  theme(legend.position = "bottom")
-
-write_rds(coeffs_plot, paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\Working_data\\coeffs_plot.rds"))
-
-
-
-```
-
