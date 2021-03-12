@@ -19,14 +19,14 @@ test_that("pls reduction returns complete obs date vector",
 
 data("gar_data")
 
-temp_part = list("gdp","Ind_Prod_Israel")
+temp_part = list("gdp","ind_prod_israel")
 
 result_temp_part = pls_reduction(
   df = gar_data %>%
     select(date,unlist(temp_part)),
   target_var_name = "gdp")
 
-pls_form = formula("gdp ~ Ind_Prod_Israel")
+pls_form = formula("gdp ~ ind_prod_israel")
 
 scale = TRUE
 
@@ -45,5 +45,7 @@ test_df = gar_data %>%
 
 
 
-expect_equal(object = result_temp_part$pls_obj,
-             expected = test_df)
+test_that("return pls object",
+          expect_equal(object = result_temp_part$pls_obj,
+                       expected = test_df)
+)

@@ -1,6 +1,3 @@
-
-context("calculate CAGR function")
-
 test_df = data.frame(date = seq.Date(from = as.Date("2000-01-01"),
                                      to = as.Date("2008-01-01"),
                                      by = "year"), X = 1:9)

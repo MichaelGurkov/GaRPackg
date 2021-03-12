@@ -17,12 +17,3 @@ test_that("pca reduction returns complete obs pca",
             object = abs(result_df$pca_obj$x[,1]),
             expected = test_df$x[c(-1,-12)]
           ))
-
-test_that("pca reduction returns NULL and time index in case of missing data",
-          expect_equal(
-            object = test_df %>%
-              select(date) %>%
-              pca_reduction(),
-            expected = list(pca_obj = NULL, time_index = date_vec)
-          ))
-

@@ -1,5 +1,3 @@
-context("fill_na_average")
-
 
 test_that("function fills NA at previous 4 obs",
           expect_equal(c(rep(1,5), rep(2,5)),

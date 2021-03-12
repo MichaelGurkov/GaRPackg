@@ -1,6 +1,3 @@
-
-context("get time index function")
-
 dates_vec = seq.Date(from = as.Date("2000-01-01"),
                      to = as.Date("2005-01-01"),
                      by = "year")
@@ -12,4 +9,4 @@ df = data.frame(date = dates_vec,
 
 dates_list = list(dates_vec[!is.na(df$X)], dates_vec[!is.na(df$Y)])
 
-testthat::expect_equal(get.time.indices.list(df), dates_list)
+testthat::expect_equal(get_time_indices_list(df), dates_list)
