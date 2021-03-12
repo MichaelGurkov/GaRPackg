@@ -1,6 +1,8 @@
-test_estimated_quantiles = c(0.05,0.05,0.95)
+test_estimated_quantiles = c(0.05,0.5,0.95)
 
-test_estimated_values = qt(p = test_estimated_quantiles,df = 30)
+test_estimated_values = qt(p = test_estimated_quantiles,df = 30) %>%
+  t() %>%
+  as.data.frame()
 
 test_params = c(0,1,0,30)
 
