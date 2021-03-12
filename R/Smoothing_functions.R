@@ -1,31 +1,35 @@
-#' This function estimates the skewed t dist density based on
-#' empirical quantiles
+#' This function calculates the loss of matching estimated quantiles
+#' with theoretical ones
+#'
+#' @importFrom sn qst
+#'
+#' @param estimated_quantiles
 #'
 #' @param estimated_values
 #'
-#' @param quantiles
+#' @param skew_t_params
 
-get_skewed_t_density = function(estimated_values,
-                                quantiles = c(0.05,0.25,0.5,0.75,0.95)){
+skew_t_loss = function(estimated_quantiles = c(0.05, 0.25, 0.5, 0.75, 0.95),
+                       estimated_values,
+                       skew_t_params) {
 
-  match_fun = function(x) {
-    dist = estimated_values - qst(
-      p = quantiles,
-      xi = x[1],
-      omega = x[2],
-      alpha = x[3],
-      nu = x[4]
-    )
+  if(length(estimated_quantiles) != length(estimated_values)){
 
-    return(sum(dist ^ 2))
-
+    stop("Estimated quantiles should be the same length as estimated values")
 
   }
 
-  sol = optim(c(0,1,0,1),match_fun, lower=c(-Inf, 0, -Inf, 0.0000001),
-              method="L-BFGS-B")
+  skew_t_values = qst(
+    p = estimated_quantiles,
+    xi = skew_t_params[1],
+    omega = skew_t_params[2],
+    alpha = skew_t_params[3],
+    nu = skew_t_params[4]
+  )
 
-  return(sol$par)
 
+  loss = sum((estimated_values - skew_t_values) ^ 2)
+
+  return(loss)
 
 }

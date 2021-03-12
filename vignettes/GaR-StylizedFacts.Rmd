@@ -16,12 +16,14 @@ factor_quantiles_df = extract_factor_contribution_from_gar_model(results)
 
 ```{r median_variance_scatter_plot}
 
-ggplot(dist_quantile_df %>% 
-         select(horizon, iqr, q0.05), aes(x = iqr, y = q0.05)) + 
+dist_quantile_df %>% 
+  select(horizon, iqr, q0.50) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = iqr, y = q0.50)) + 
   geom_point() + 
   stat_smooth(method = "lm") + 
   facet_wrap(~horizon) + 
-  labs(x = "Dispersion", y = "Median", title = "Dispersion vs Variance") +
+  labs(x = "Dispersion", y = "Median", title = "Median vs Variance") +
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5))
     
