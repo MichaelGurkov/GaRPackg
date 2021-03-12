@@ -97,8 +97,10 @@ get_gar_forecast = function(partitions_list,
 #'
 #' @param win_len rolling window length
 #'
-#' @param win_type_expanding boolean indicator that determines
-#' whether the rolling window should be expanding or rolling
+#' @param win_type_expanding  boolean should the sliding window expand
+#'  (default TRUE)
+#'
+#' @param ... external optional arguments
 #'
 #' @param ... external optional arguments
 #'
@@ -115,7 +117,7 @@ run_cross_validation = function(reg_df,
                                 horizon,
                                 quantile_vec,
                                 win_len = 30,
-                                win_type_expanding = FALSE,
+                                win_type_expanding = TRUE,
                                 ...){
 
 

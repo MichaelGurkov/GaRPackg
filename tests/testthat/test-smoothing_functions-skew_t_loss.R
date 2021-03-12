@@ -14,7 +14,7 @@ test_that("unequal length in quantiles and values issues error",
           ))
 
 
-testthat_example("skew_t_loss gives zero error for t dist",
+test_that("skew_t_loss gives zero error for t dist",
                  expect_equal(
                    skew_t_loss(
                      estimated_quantiles = test_estimated_quantiles,

@@ -275,7 +275,7 @@ models_df = list(GDP_comp = partitions_list$gdp_components) %>%
                                     by = "Forecast_Period") %>% 
                          rename(actual_values = realized,
                                 predicted_values = prediction) %>% 
-                         quantile.pit.score()
+                         quantile_pit_score()
                        
                        return(temp_score)
                      }))
@@ -314,7 +314,7 @@ intercept_df = models_df$benchmark[[1]] %>%
   rename(actual_values = realized, predicted_values = benchmark) %>% 
   select(date,actual_values,predicted_values,Quantile, Horizon) %>% 
   filter(complete.cases(.)) %>% 
-  quantile.pit.score() %>% 
+  quantile_pit_score() %>% 
   mutate(name = "Intercept") %>% 
   select(names(pit_score_df)) %>% 
   mutate(Quantile = as.numeric(Quantile))

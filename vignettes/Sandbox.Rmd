@@ -368,7 +368,7 @@ forecast_model_fit$pit = map2(
       select(-Forecast_Period) %>% 
       rename(actual_values = GDP_actual) %>% 
       rename(predicted_values = !!sym(temp_name)) %>% 
-      quantile.pit.score() %>% 
+      quantile_pit_score() %>% 
       mutate(model = temp_name)
     
     return(pit_df)
