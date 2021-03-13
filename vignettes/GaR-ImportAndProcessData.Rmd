@@ -21,40 +21,31 @@ parameters_list$drop_series = c(
 )
 
 parameters_list$vars_to_yoy = c(
-  "ind_prod_us",
-  "ind_prod_euro",
-  "Ind_Prod_Israel",
   "gdp",
   "private_consumption",
   "public_consumption",
   "investment",
+  "oecd_imp",
   "exports",
   "imports",
-  "dom_gdp",
-  "credit",
-  "ta125_close",
-  "house_price",
   "sp500",
-  "dxy",
   "eurostoxx600",
-  "state_of_economy_ind",
-  "oecd_imp",
   "oil_p",
-  "non_energy_p"
+  "non_energy_p",
+  "credit",
+  "house_price",
+  "ta125_close"
 )
 
-parameters_list$vars_to_diff = c(
-  "boi_rate",
-  "rate_us",
-  "rate_euro",
-  "unemployment"
-  )
+parameters_list$vars_to_diff = c("unemployment",
+                                 "boi_rate",
+                                 "rate_euro",
+                                 "rate_us")
 
 
-parameters_list$vars_to_4_ma = c(
-  "gdp_us",
-  "gdp_euro"
-  )
+parameters_list$vars_to_4_ma = c("gdp_us",
+                                 "gdp_euro",
+                                 "staff_qoq")
 
 
 ```
@@ -79,15 +70,16 @@ raw_df = import_from_fame_template(
 
 ```{r Process_data}
 
-df = raw_df %>% 
-  mutate(dom_gdp = private_consumption + 
-           public_consumption + investment) %>% 
-  mutate(across(any_of(parameters_list$vars_to_yoy),
-                calculate_yoy_changes)) %>% 
-  mutate(across(any_of(parameters_list$vars_to_4_ma),
-                ~ calculate_four_quarters_ma(.) * 4 / 100)) %>% 
-  mutate(across(any_of(parameters_list$vars_to_diff),
-                ~c(NA,diff(.))))
+df = raw_df %>%
+  mutate(dom_gdp = private_consumption +
+           public_consumption + investment) %>%
+  preprocess_df(
+    vars_to_yoy = parameters_list$vars_to_yoy,
+    vars_to_diff = parameters_list$vars_to_diff,
+    vars_to_4_ma = parameters_list$vars_to_4_ma
+  )
+
+
 
 
 ```

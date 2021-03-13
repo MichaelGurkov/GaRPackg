@@ -8,34 +8,31 @@
 #'
 #' @importFrom magrittr "%>%"
 #'
-#' @param estimated_quantiles
-#'
-#' @param estimated_values
+#' @param estimated_df data frame with quantile column
 #'
 #' @param skew_t_params
 
-skew_t_loss = function(estimated_quantiles = c(0.05, 0.25, 0.5, 0.75, 0.95),
-                       estimated_values,
+skew_t_loss = function(estimated_df,
                        skew_t_params) {
 
-  if(length(estimated_quantiles) != ncol(estimated_values)){
-
-    stop("Estimated quantiles should be the same length as estimated values")
-
-  }
+  quantiles_vec = unique(estimated_df$quantile)
 
   skew_t_values = qst(
-    p = estimated_quantiles,
+    p = quantiles_vec,
     xi = skew_t_params[1],
     omega = skew_t_params[2],
     alpha = skew_t_params[3],
     nu = skew_t_params[4]
   )
 
+  skew_t_df = tibble(quantile = quantiles_vec,
+                     skew_t_values = skew_t_values)
 
-  loss = apply(estimated_values, 1,
-               function(temp_row) {(temp_row - skew_t_values) ^ 2}) %>%
-    sum()
+  loss = estimated_df %>%
+    left_join(skew_t_df, by = "quantile") %>%
+    mutate(error = values - skew_t_values) %>%
+    summarise(loss = sum(error ^ 2)) %>%
+    pull(loss)
 
 
   return(loss)
@@ -49,21 +46,26 @@ skew_t_loss = function(estimated_quantiles = c(0.05, 0.25, 0.5, 0.75, 0.95),
 #' @description This function fits skew t distribution based on empirical quantiles.
 #' If the estimated_values supplied as a data frame the fitting is performed on all
 #' the data.
-#' @param quantiles
 #'
-#' @param values
+#' @param estimated_df data frame with quantile column
 #'
-fit_skew_t_distribution = function(quantiles = c(0.05, 0.25, 0.5, 0.75, 0.95),
-                                   values){
+run_skew_t_fitting = function(estimated_df){
 
-  estimated_mean = apply(values, 1,mean) %>%
-    mean()
+  if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
 
-  estimated_sd = apply(values, 1,sd) %>%
-    mean()
+    stop("estimated df should only have two columns : quantile and values")
+  }
+
+  estimated_mean = estimated_df %>%
+    summarise(est_mean = mean(values, na.rm = TRUE)) %>%
+    pull(est_mean)
+
+  estimated_sd = estimated_df %>%
+    summarise(est_sd = sd(values, na.rm = TRUE)) %>%
+    pull(est_sd)
 
 
-  estimated_t_params = c(
+  initial_params = c(
     xi = estimated_mean,
     omega = estimated_sd,
     alpha = 0,
@@ -71,12 +73,47 @@ fit_skew_t_distribution = function(quantiles = c(0.05, 0.25, 0.5, 0.75, 0.95),
   )
 
 
-  optimization_result = optim(par = estimated_t_params,
+  optimization_result = optim(par = initial_params,
                               fn = skew_t_loss,
-                              estimated_values = values,
-                              estimated_quantiles = quantiles,
+                              estimated_df = estimated_df,
                               method = "Nelder-Mead")
 
   return(optimization_result$par)
+
+}
+
+#' @title Fit skew t distribution
+#'
+#' @description This function fits skew t distribution based on empirical quantiles.
+#' If the estimated_values supplied as a data frame the fitting is performed on all
+#' the data.
+#' @param quantiles
+#'
+#' @param values
+#'
+fit_skew_t_distribution = function(estimated_df, time_limit = 10){
+
+  if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
+
+    stop("estimated df should only have two columns : quantile and values")
+  }
+
+  setTimeLimit(cpu = time_limit, elapsed = time_limit, transient = TRUE)
+  on.exit({
+    setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)
+  })
+
+  tryCatch({
+    run_skew_t_fitting(estimated_df)
+  }, error = function(e) {
+    if (grepl("reached elapsed time limit|reached CPU time limit", e$message)) {
+      warning("t skew fitting has timed out")
+      return(NA)
+    } else {
+      # error not related to timeout
+      stop(e)
+    }
+  })
+
 
 }
