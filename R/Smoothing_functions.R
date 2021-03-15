@@ -108,10 +108,14 @@ fit_skew_t_distribution = function(estimated_df, time_limit = 10){
   }, error = function(e) {
     if (grepl("reached elapsed time limit|reached CPU time limit", e$message)) {
       warning("t skew fitting has timed out")
-      return(NA)
+      vec = c(0,0,0,0)
+      names(vec) = c("xi","omega","alpha","nu")
+      return(vec)
     } else {
       # error not related to timeout
-      stop(e)
+      vec = c(NA,NA,NA,NA)
+      names(vec) = c("xi","omega","alpha","nu")
+      return(vec)
     }
   })
 
