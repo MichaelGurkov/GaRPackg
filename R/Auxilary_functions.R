@@ -201,9 +201,11 @@ extract_factor_contribution_from_gar_model = function(
     select(ends_with("_xreg")) %>%
     as.matrix()
 
+  data_mat = cbind(rep(1,nrow(data_mat)),data_mat)
+
+
   coeffs_df = gar_model %>%
     extract_coeffs_from_gar_model() %>%
-    filter(!.data$partition == "Intercept") %>%
     filter(.data$quantile == target_quantile) %>%
     select(.data$coeff,.data$horizon, .data$partition)
 
@@ -229,7 +231,8 @@ extract_factor_contribution_from_gar_model = function(
     })
 
   factors_df = factors_df %>%
-    rename_all(~str_remove_all(.,"_xreg"))
+    rename_all(~str_remove_all(.,"_xreg")) %>%
+    rename(intercept = V1)
 
   return(factors_df)
 

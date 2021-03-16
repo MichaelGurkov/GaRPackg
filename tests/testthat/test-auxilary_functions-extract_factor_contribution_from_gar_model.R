@@ -19,10 +19,11 @@ test_data_mat = test_obj$reg_df %>%
   select(ends_with("_xreg")) %>%
   as.matrix()
 
+test_data_mat = cbind(rep(1, nrow(test_data_mat)), test_data_mat)
+
 
 coeffs_df = test_obj %>%
   extract_coeffs_from_gar_model() %>%
-  filter(!.data$partition == "Intercept") %>%
   filter(.data$quantile == "0.5") %>%
   select(.data$coeff,.data$horizon, .data$partition)
 
@@ -45,7 +46,8 @@ test_factors_df = map_dfr(
     return(test_factors_df)
 
   })%>%
-  rename_all(~str_remove_all(.,"_xreg"))
+  rename_all(~str_remove_all(.,"_xreg")) %>%
+  rename(intercept = V1)
 
 test_that("returns a tibble with factors for median quantile",
           {
