@@ -49,7 +49,10 @@ skew_t_loss = function(estimated_df,
 #'
 #' @param estimated_df data frame with quantile column
 #'
-run_skew_t_fitting = function(estimated_df){
+#' @param bounded_optimization boolean indicator, default TRUE
+#'
+run_skew_t_fitting = function(estimated_df,
+                              bounded_optimization = TRUE){
 
   if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
 
@@ -72,15 +75,35 @@ run_skew_t_fitting = function(estimated_df){
     nu = 30
   )
 
+  if(bounded_optimization){
 
-  optimization_result = optim(par = initial_params,
-                              fn = skew_t_loss,
-                              estimated_df = estimated_df,
-                              method = "Nelder-Mead")
+    optimization_result = optim(
+      par = initial_params,
+      fn = skew_t_loss,
+      lower = c(-Inf, 0, -Inf, 0),
+      upper = c(Inf, Inf, Inf, 100),
+      method = "L-BFGS-B",
+      estimated_df = estimated_df
+    )
+
+
+  } else{
+
+    optimization_result = optim(par = initial_params,
+                                fn = skew_t_loss,
+                                estimated_df = estimated_df,
+                                method = "Nelder-Mead")
+
+
+  }
+
+
+
 
   return(optimization_result$par)
 
 }
+
 
 #' @title Fit skew t distribution
 #'
@@ -108,10 +131,12 @@ fit_skew_t_distribution = function(estimated_df, time_limit = 10){
   }, error = function(e) {
     if (grepl("reached elapsed time limit|reached CPU time limit", e$message)) {
       warning("t skew fitting has timed out")
-      return(NA)
+      res_vec = c(0,0,0,0)
+      names(res_vec) = c("xi","omega","alpha","nu")
+      return(res_vec)
     } else {
       # error not related to timeout
-      stop(e)
+      return(NA)
     }
   })
 
