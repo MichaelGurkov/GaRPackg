@@ -12,7 +12,7 @@
 #'
 #' @param skew_t_params
 
-skew_t_loss = function(estimated_df,
+t_skew_loss = function(estimated_df,
                        skew_t_params) {
 
   quantiles_vec = unique(estimated_df$quantile)
@@ -51,8 +51,18 @@ skew_t_loss = function(estimated_df,
 #'
 #' @param bounded_optimization boolean indicator, default TRUE
 #'
-run_skew_t_fitting = function(estimated_df,
-                              bounded_optimization = TRUE){
+#' @param lower_bounds lower bounds for xi(location),
+#' omega(scale), alpha(slant), nu(degrees of freedom).
+#' The default is c(-Inf, 0, -Inf, 0).
+#'
+#' @param upper_bounds upper bounds for xi(location),
+#' omega(scale), alpha(slant), nu(degrees of freedom).
+#' The default is c(Inf, Inf, Inf, 100).
+#'
+run_t_skew_fitting = function(estimated_df,
+                              bounded_optimization = TRUE,
+                              lower_bounds = c(-Inf, 0, -Inf, 0),
+                              upper_bounds = c(Inf, Inf, Inf, 100)){
 
   if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
 
@@ -79,9 +89,9 @@ run_skew_t_fitting = function(estimated_df,
 
     optimization_result = optim(
       par = initial_params,
-      fn = skew_t_loss,
-      lower = c(-Inf, 0, -Inf, 0),
-      upper = c(Inf, Inf, Inf, 100),
+      fn = t_skew_loss,
+      lower = lower_bounds,
+      upper = upper_bounds,
       method = "L-BFGS-B",
       estimated_df = estimated_df
     )
@@ -110,11 +120,12 @@ run_skew_t_fitting = function(estimated_df,
 #' @description This function fits skew t distribution based on empirical quantiles.
 #' If the estimated_values supplied as a data frame the fitting is performed on all
 #' the data.
-#' @param quantiles
 #'
-#' @param values
+#' @param estimated_df data frame with (quantiles, values) columns
 #'
-fit_skew_t_distribution = function(estimated_df, time_limit = 10){
+#'
+fit_skew_t_distribution = function(estimated_df, time_limit = 10,
+                                   ...){
 
   if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
 
@@ -127,7 +138,7 @@ fit_skew_t_distribution = function(estimated_df, time_limit = 10){
   })
 
   tryCatch({
-    run_skew_t_fitting(estimated_df)
+    run_t_skew_fitting(estimated_df,...)
   }, error = function(e) {
     if (grepl("reached elapsed time limit|reached CPU time limit", e$message)) {
       warning("t skew fitting has timed out")
@@ -144,3 +155,4 @@ fit_skew_t_distribution = function(estimated_df, time_limit = 10){
 
 
 }
+

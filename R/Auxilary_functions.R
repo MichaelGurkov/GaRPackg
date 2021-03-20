@@ -403,3 +403,42 @@ is_partition_identical = function(source_partition, target_partition){
 
 
 }
+
+
+#' @title Smooth gar forecast with skew t distribution
+#'
+#' @description
+#'
+#' @param gar_forecast_df
+#'
+#' @param time_limit
+#'
+#' @export
+#'
+smooth_gar_forecast_with_t_skew = function(gar_forecast_df,
+                                            time_limit = 10){
+
+  t_skew_fit_df = gar_forecast_df %>%
+    rename(values = forecast_values) %>%
+    mutate(across(c(quantile, values),as.numeric)) %>%
+    group_by(date, horizon) %>%
+    group_map(function(temp_df, temp_name){
+
+      fit_params =  fit_skew_t_distribution(select(temp_df, c(
+        "quantile", "values")),time_limit = time_limit)
+
+      fit_params_df = tibble(temp_name,parameter = names(fit_params), value = fit_params)
+
+      return(fit_params_df)
+
+    }) %>%
+    bind_rows()
+
+
+  return(t_skew_fit_df)
+
+
+
+
+
+}
