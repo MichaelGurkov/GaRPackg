@@ -223,6 +223,8 @@ quantile_pit_score = function(forecast_df, actual_df){
 #'
 #' @import dplyr
 #'
+#' @importFrom sn dst
+#'
 #' @param forecast_dist_df data frame with estimated t skewed distribution
 #' by horizon, quantile, date and parameter
 #'
