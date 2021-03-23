@@ -70,7 +70,6 @@ r2_df %>%
 ```
 
 
-
 ```{r plot_pit_goodness_of_fit}
 
 pit_df %>% 
@@ -81,6 +80,104 @@ pit_df %>%
   geom_abline(slope = 1,intercept = 0, linetype = "dashed") + 
   facet_wrap(~horizon) + 
   xlab(NULL) + ylab(NULL)
+
+```
+
+
+<!-- Smoothing -->
+
+```{r}
+
+library(sn)
+
+file_path = paste0(
+    file.path(Sys.getenv("USERPROFILE")),
+    "\\OneDrive - Bank Of Israel\\Data",
+    "\\BoI\\GaR_Data\\Working_data\\")
+
+
+t_skew_fit_data = map_dfr(list(
+  gar = "gar_fit.rds",
+  dsge = "dsge_fit.rds",
+  intercept =  "intercept_fit.rds"
+),
+function(temp_name) {
+  temp_df = read_rds(paste0(file_path, temp_name)) %>%
+    filter(complete.cases(.)) %>%
+    filter(value != 0)
+},.id = "model")
+
+
+smoothed_data = t_skew_fit_data %>% 
+  mutate(parameter = factor(parameter,
+                            levels = c("xi","omega","alpha","nu"))) %>% 
+  group_by(model, date, horizon) %>% 
+  arrange(parameter) %>% 
+  summarise(data.frame(quantile = parameters_list$quantile_vec,
+                       prediction = qst(p = parameters_list$quantile_vec,
+                             dp = value)), .groups = "drop")
+
+
+
+```
+
+
+```{r plot_smoothed_pit}
+
+smoothed_data %>% 
+  group_by(model) %>% 
+  group_map(.f = function(temp_df,...){
+    
+    quantile_pit_score(forecast_df = select(
+      temp_df, horizon, quantile,date,  predicted_values = prediction),
+      actual_df = select(df, date, actual_values = gdp))
+    
+    
+  }) %>% 
+  set_names(unique(smoothed_data$model)) %>% 
+  bind_rows(.id = "model") %>% 
+  mutate(horizon = factor(horizon, c(1,4,8,12))) %>% 
+  ggplot(aes(x = as.numeric(quantile), y = pit, color = model, group = model)) + 
+  geom_line() +
+  # scale_colour_viridis_d(option = "plasma") + 
+  geom_abline(slope = 1,intercept = 0, linetype = "dashed") + 
+  facet_wrap(~horizon) + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Pit score based on smoothed t skew estimates")
+
+
+
+```
+
+```{r plot_smoothed_quantile_r_squared}
+
+smoothed_data %>% 
+  pivot_wider(names_from = model,values_from = prediction) %>% 
+  pivot_longer(cols = c(gar,dsge),names_to = "model",
+               values_to = "predicted_values") %>% 
+  filter(complete.cases(.)) %>% 
+  group_by(model) %>% 
+  group_map(function(temp_df,...){
+    
+    quantile_r2_score(predict_df = select(
+      temp_df,c(horizon,quantile,date, predicted_values)),
+      actual_df = select(df,date, actual_values = gdp),
+      benchmark_df = select(
+      temp_df,c(horizon,quantile,date, predicted_values = intercept)))
+    
+    
+  }) %>% 
+  set_names(c("gar","dsge")) %>% 
+  bind_rows(.id = "model")%>% 
+  mutate(horizon = factor(horizon, c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = quantile_r2, fill = model)) + 
+  geom_col(position = "dodge", width = 0.15) + 
+  # scale_fill_viridis_d(option = "plasma",direction = -1) + 
+  facet_wrap(~horizon) + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("R2 score based on smoothed t skew estimates")
+
+
 
 ```
 

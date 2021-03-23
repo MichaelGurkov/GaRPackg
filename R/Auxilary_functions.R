@@ -418,6 +418,12 @@ is_partition_identical = function(source_partition, target_partition){
 smooth_gar_forecast_with_t_skew = function(gar_forecast_df,
                                             time_limit = 10){
 
+  if("forecast_values" %in% names(gar_forecast_df)){
+
+    stop("forecast_values column is missing")
+
+  }
+
   t_skew_fit_df = gar_forecast_df %>%
     rename(values = forecast_values) %>%
     mutate(across(c(quantile, values),as.numeric)) %>%
