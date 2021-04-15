@@ -1,0 +1,115 @@
+---
+title: "Report"
+---
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, error = FALSE, warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r load_library}
+
+library(tidyverse)
+
+devtools::load_all()
+
+```
+
+
+```{r import__and_preprocess_data}
+
+raw_df = import_from_fame_template(paste0(
+  file.path(
+    Sys.getenv("USERPROFILE"),
+    "\\OneDrive - Bank Of Israel\\Data\\BoI",
+    "\\GaR_Data\\Working_data\\data_fame.csv"
+  )
+))
+
+df = raw_df %>%
+  preprocess_df(
+    vars_to_yoy = c(
+      "gdp",
+      "private_consumption",
+      "public_consumption",
+      "investment",
+      "oecd_imp",
+      "exports",
+      "imports",
+      "sp500",
+      "eurostoxx600",
+      "oil_p",
+      "non_energy_p",
+      "credit",
+      "house_price",
+      "ta125_close"
+    ),
+    vars_to_diff = c("unemployment",
+                     "boi_rate",
+                     "rate_euro",
+                     "rate_us"),
+    vars_to_4_ma = c("gdp_us",
+                     "gdp_euro",
+                     "staff_qoq")
+  )
+
+
+
+```
+
+```{r set_params}
+
+partitions_list = list(
+  dom_macro = c(
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "unemployment"
+  ),
+  ext_macro = c("oecd_imp",
+                "exports",
+                "imports"),
+  dom_fin = c("credit",
+              "house_price",
+              "ta125_close",
+              "boi_rate"),
+  ext_fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "oil_p",
+    "non_energy_p"
+  )
+)
+
+horizon_list = c(1, 4, 8, 12)
+
+quantile_vec = c(0.05, 0.25, 0.5, 0.75, 0.95)
+
+```
+
+```{r analisys}
+
+analysis_res = run_GaR_analysis(partitions_list = partitions_list,
+                                vars_df = df,
+                                target_var_name = "gdp",
+                                horizon_list = horizon_list,
+                                quantile_vec = quantile_vec)
+
+```
+
+# Analysis results
+
+```{r plot_gar}
+
+analysis_res$gar_fitted_df %>%
+  filter(quantile == "0.05") %>% 
+  filter(horizon %in% c("1","4")) %>% 
+  ggplot(aes(x = date, y = gar_fitted, color = horizon)) + 
+  geom_line()
+
+```
+
