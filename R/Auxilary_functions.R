@@ -293,7 +293,8 @@ extract_pca_loadings_from_gar_model = function(gar_model) {
 
   if(!"pca_obj" %in% names(gar_model)){
 
-    stop("The pca object is missing")
+    stop(paste("The pca object is missing.",
+               "Perhaps all the partitions are one variable only?"))
   }
 
   pca_loadings_df = map_dfr(gar_model$pca_obj, function(temp_pca) {
