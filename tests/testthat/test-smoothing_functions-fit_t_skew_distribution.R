@@ -5,6 +5,7 @@ test_estimated_values = qt(p = test_estimated_quantiles,df = 30)
 test_df = tibble(quantile = test_estimated_quantiles,
                  values = test_estimated_values)
 
+
 expected_params = c(0,1,0,30)
 
 names(expected_params) = c("xi","omega","alpha","nu")
@@ -32,4 +33,5 @@ test_that("t_skew_fitting converts to numeric and issues warning", {
     expect_warning() %>%
     expect_equal(expected_params)
 })
+
 
