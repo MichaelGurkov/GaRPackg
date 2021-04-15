@@ -9,7 +9,7 @@ test_params = c(0,1,0,30)
 
 test_that("unequal length in quantiles and values issues error",
           expect_error(
-            skew_t_loss(
+            t_skew_loss(
               estimated_quantiles = test_estimated_quantiles[1],
               estimated_values = test_estimated_values,
               skew_t_params = test_params
@@ -19,7 +19,7 @@ test_that("unequal length in quantiles and values issues error",
 
 test_that("skew_t_loss gives zero error for t dist",
           expect_equal(
-            skew_t_loss(estimated_df = test_df,
+            t_skew_loss(estimated_df = test_df,
                         skew_t_params = test_params),
             0
           ))

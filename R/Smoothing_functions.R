@@ -61,7 +61,7 @@ t_skew_loss = function(estimated_df,
 #'
 run_t_skew_fitting = function(estimated_df,
                               bounded_optimization = TRUE,
-                              lower_bounds = c(-Inf, 0, -Inf, 0),
+                              lower_bounds = c(-Inf, 0, -Inf, 1),
                               upper_bounds = c(Inf, Inf, Inf, 100)){
 
   if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
@@ -127,9 +127,26 @@ run_t_skew_fitting = function(estimated_df,
 fit_skew_t_distribution = function(estimated_df, time_limit = 10,
                                    ...){
 
+  # Validation
+
   if(!length(setdiff(names(estimated_df),c("values","quantile"))) == 0){
 
     stop("estimated df should only have two columns : quantile and values")
+  }
+
+  col_class = map_chr(estimated_df, class)
+
+  non_numeric_vars = names(col_class)[!col_class == "numeric"]
+
+  if(length(non_numeric_vars) > 0){
+
+    warning(paste("Column(s)",paste(non_numeric_vars, collapse = ","),
+                  "have been converted to numeric"))
+
+    estimated_df = estimated_df %>%
+      mutate(across(all_of(non_numeric_vars), as.numeric))
+
+
   }
 
   setTimeLimit(cpu = time_limit, elapsed = time_limit, transient = TRUE)
