@@ -99,7 +99,7 @@ get_partition_combs = function(partitions_list,
 #' @param qreg_obj quantile regression object
 #'
 #'
-extract.qreg.coeff.table = function(qreg_obj) {
+extract_qreq_coeff_table = function(qreg_obj) {
   coef_table = lapply(suppressWarnings(summary(qreg_obj)),
                       function(temp_list) {
                         temp_df = as.data.frame(temp_list$coefficients)
@@ -154,7 +154,7 @@ extract_coeffs_from_gar_model = function(gar_model,
   stopifnot("qreg_result" %in% names(gar_model))
 
   coeffs_df = gar_model[["qreg_result"]] %>%
-    map_dfr(extract.qreg.coeff.table,.id = "horizon") %>%
+    map_dfr(extract_qreq_coeff_table,.id = "horizon") %>%
     relocate(.data$partition, .data$horizon, .data$quantile,
              .data$coeff, .data$low, .data$high, .data$significant) %>%
     mutate(partition = str_remove_all(.data$partition,"_xreg$"))
@@ -430,7 +430,7 @@ smooth_gar_forecast_with_t_skew = function(gar_forecast_df,
     group_by(date, horizon) %>%
     group_map(function(temp_df, temp_name){
 
-      fit_params =  fit_skew_t_distribution(select(temp_df, c(
+      fit_params =  fit_t_skew(select(temp_df, c(
         "quantile", "values")),time_limit = time_limit)
 
       fit_params_df = tibble(temp_name,parameter = names(fit_params), value = fit_params)

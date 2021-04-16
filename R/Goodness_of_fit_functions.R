@@ -257,9 +257,10 @@ quantile_prediction_score = function(forecast_dist_df, actual_df){
   names(actual_df)[!names(actual_df) == "date"] = "actual_value"
 
   prediction_score = left_join(forecast_dist_df, actual_df,
-                            by = "date") %>%
-    group_by(across(-c("parameter","value"))) %>%
-    summarise(prob = dst(x = actual_value[1], dp = value), .groups = "drop")
+                               by = "date") %>%
+    group_by(across(-c("parameter", "value"))) %>%
+    summarise(prob = dst(x = actual_value[1], dp = .data$value),
+              .groups = "drop")
 
   return(prediction_score)
 

@@ -1,19 +1,19 @@
 
-#' @title Calculate skew t distribution fitting loss
+#' @title Calculate t skewed distribution fitting loss
 #'
 #' @description This function calculates the loss of matching estimated quantiles
-#' with theoretical ones
+#' with theoretical ones. The errors are calculated as the difference between
+#' empirical and theoretical values for each quantile. The loss metric is RMSE.
 #'
 #' @importFrom sn qst
 #'
 #' @importFrom magrittr "%>%"
 #'
-#' @param estimated_df data frame with quantile column
+#' @param estimated_df data frame with (quantiles, values) columns
 #'
 #' @param skew_t_params
 
-t_skew_loss = function(estimated_df,
-                       skew_t_params) {
+t_skew_loss = function(estimated_df, skew_t_params) {
 
   quantiles_vec = unique(estimated_df$quantile)
 
@@ -31,7 +31,7 @@ t_skew_loss = function(estimated_df,
   loss = estimated_df %>%
     left_join(skew_t_df, by = "quantile") %>%
     mutate(error = values - skew_t_values) %>%
-    summarise(loss = sum(error ^ 2)) %>%
+    summarise(loss = sqrt(mean(error ^ 2))) %>%
     pull(loss)
 
 
@@ -41,13 +41,18 @@ t_skew_loss = function(estimated_df,
 
 
 
-#' @title Fit skew t distribution
+#' @title Run t skewed optimization
 #'
-#' @description This function fits t skew distribution based on empirical quantiles.
-#' If the estimated_values supplied as a data frame the fitting is performed on all
-#' the data.
+#' @importFrom rlang .data
 #'
-#' @param estimated_df_x data frame with quantile column
+#' @importFrom stats sd
+#'
+#' @description This function finds the parameters of the t skewed distribution
+#' xi (location), omega (scale), alpha (slant) and nu (degrees of freedom)
+#' while minimizing the RMSE loss function. The function supports bounded and
+#' unbounded optimization, the default is bounded optimization.
+#'
+#' @param estimated_df_x data frame with (quantiles, values) columns
 #'
 #' @param bounded_optimization_x boolean indicator, default TRUE
 #'
@@ -59,7 +64,7 @@ t_skew_loss = function(estimated_df,
 #' omega (scale), alpha (slant), nu (degrees of freedom).
 #' The default is (Inf, Inf, Inf, 100).
 #'
-run_t_skew_fitting = function(estimated_df_x,
+run_t_skew_optimization = function(estimated_df_x,
                               bounded_optimization_x = TRUE,
                               lower_bounds_x = c(-Inf, 0, -Inf, 1),
                               upper_bounds_x = c(Inf, Inf, Inf, 100)){
@@ -70,11 +75,11 @@ run_t_skew_fitting = function(estimated_df_x,
   }
 
   estimated_mean = estimated_df_x %>%
-    summarise(est_mean = mean(values, na.rm = TRUE)) %>%
+    summarise(est_mean = mean(.data$values, na.rm = TRUE)) %>%
     pull(est_mean)
 
   estimated_sd = estimated_df_x %>%
-    summarise(est_sd = sd(values, na.rm = TRUE)) %>%
+    summarise(est_sd = sd(.data$values, na.rm = TRUE)) %>%
     pull(est_sd)
 
 
@@ -115,11 +120,15 @@ run_t_skew_fitting = function(estimated_df_x,
 }
 
 
-#' @title Fit skew t distribution
+#' @title Fit t skewed distribution
 #'
-#' @description This function fits skew t distribution based on empirical quantiles.
-#' If the estimated_values supplied as a data frame the fitting is performed on all
-#' the data.
+#' @description This function fits t skewed distribution based on empirical
+#' quantiles. The input data should be a data frame with (quantiles, values)
+#' columns.
+#'
+#' @details The fitting is performed by calculating the errors
+#' (difference between empirical and theoretical values for each quantile).
+#' The loss metric is RMSE.
 #'
 #' @param estimated_df data frame with (quantiles, values) columns
 #'
@@ -133,10 +142,14 @@ run_t_skew_fitting = function(estimated_df_x,
 #' omega (scale), alpha (slant), nu (degrees of freedom).
 #' The default is (Inf, Inf, Inf, 100).
 #'
+#' @param time_limit the time limit given to each optimization round.
+#'  In case the computation doesn't converge in the given time frame a vector
+#'  of 0 is returned for the optimization parameters and "timed out" warning is
+#'  issued.
+#'
 #' @export
 #'
-fit_skew_t_distribution = function(estimated_df,
-                                   time_limit = 10,
+fit_t_skew = function(estimated_df,time_limit = 10,
                                    bounded_optimization = TRUE,
                                    lower_bounds = c(-Inf, 0, -Inf, 1),
                                    upper_bounds = c(Inf, Inf, Inf, 100)){
@@ -169,7 +182,7 @@ fit_skew_t_distribution = function(estimated_df,
   })
 
   tryCatch({
-    run_t_skew_fitting(estimated_df_x = estimated_df,
+    run_t_skew_optimization(estimated_df_x = estimated_df,
                        bounded_optimization_x = bounded_optimization,
                        lower_bounds_x = lower_bounds,
                        upper_bounds_x = upper_bounds)
@@ -190,3 +203,53 @@ fit_skew_t_distribution = function(estimated_df,
 
 }
 
+#' @title Smooth gar forecast with skew t distribution
+#'
+#' @description
+#'
+#' @param gar_forecast_df
+#'
+#' @param time_limit
+#'
+#' @export
+#'
+extract_t_skew_from_gar_forecast = function(gar_forecast_df,
+                                            time_limit = 10,
+                                            bounded_optimization = TRUE,
+                                            lower_bounds = c(-Inf, 0, -Inf, 1),
+                                            upper_bounds = c(Inf, Inf, Inf, 100)) {
+
+  required_cols = c("forecast_values","quantile","horizon","date")
+
+  if (length(setdiff(required_cols,names(gar_forecast_df))) > 0) {
+
+    stop(paste0("The following column(s) are missing:",
+                paste0(setdiff(required_cols,names(gar_forecast_df)),
+                       collapse = ",")))
+
+  }
+
+  t_skew_fit_df = gar_forecast_df %>%
+    rename(values = forecast_values) %>%
+    group_by(date, horizon) %>%
+    group_map(function(temp_df, temp_name){
+
+      fit_params =  fit_t_skew(select(temp_df, c(
+        "quantile", "values")),time_limit = time_limit)
+
+      fit_params_df = tibble(temp_name,parameter = names(fit_params), value = fit_params)
+
+      return(fit_params_df)
+
+    }) %>%
+    bind_rows()
+
+
+
+  return(t_skew_fit_df)
+
+
+
+
+
+}

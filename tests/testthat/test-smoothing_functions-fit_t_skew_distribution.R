@@ -11,7 +11,7 @@ expected_params = c(0,1,0,30)
 names(expected_params) = c("xi","omega","alpha","nu")
 
 test_that("t_skew_fitting_works_in_approximation", {
-  expect_equal(round(fit_skew_t_distribution(estimated_df = test_df),1),
+  expect_equal(round(fit_t_skew(estimated_df = test_df),1),
                expected_params)
 })
 
@@ -20,14 +20,14 @@ expected_time_out_res = rep(0,4)
 names(expected_time_out_res) = c("xi","omega","alpha","nu")
 
 test_that("t_skew_fitting_returns 0 vector and issued warning on time out", {
-  fit_skew_t_distribution(estimated_df = test_df,time_limit = 0.0001) %>%
+  fit_t_skew(estimated_df = test_df,time_limit = 0.0001) %>%
     expect_warning() %>%
     expect_equal(expected_time_out_res)
 })
 
 
 test_that("t_skew_fitting converts to numeric and issues warning", {
-  fit_skew_t_distribution(estimated_df = test_df %>%
+  fit_t_skew(estimated_df = test_df %>%
                             mutate(across(everything(), as.character))) %>%
     round(1) %>%
     expect_warning() %>%
