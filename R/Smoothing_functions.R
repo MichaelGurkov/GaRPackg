@@ -226,13 +226,18 @@ fit_t_skew = function(estimated_df,time_limit = 10,
 #' omega (scale), alpha (slant), nu (degrees of freedom).
 #' The default is (Inf, Inf, Inf, 100).
 #'
+#' @param parallel_computing boolean. If TRUE uses parallel computing
+#' by setting \code{plan(multisession)} before fitting t skewed distribution
+#' and setting \code{plan(sequential)} after the fitting is complete.
+#'
 #' @export
 #'
 fit_t_skew_to_gar_df = function(gar_df,
                                 time_limit = 10,
                                 bounded_optimization = TRUE,
                                 lower_bounds = c(-Inf, 0, -Inf, 1),
-                                upper_bounds = c(Inf, Inf, Inf, 100))
+                                upper_bounds = c(Inf, Inf, Inf, 100),
+                                parallel_computing = TRUE)
 {
   required_cols = c("quantile", "horizon", "date")
 
@@ -264,6 +269,14 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   }
 
+  if(parallel_computing){
+
+    library(future)
+
+    plan(multisession)
+
+  }
+
 
   nested_df = gar_df %>%
     mutate(across(c(quantile, horizon), as.numeric)) %>%
@@ -280,6 +293,12 @@ fit_t_skew_to_gar_df = function(gar_df,
 
 
     }))
+
+  if(parallel_computing){
+
+    plan(sequential)
+
+  }
 
   t_skew_fit_df = nested_df %>%
     select(-data) %>%
