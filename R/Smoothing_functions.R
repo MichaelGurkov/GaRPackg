@@ -132,6 +132,11 @@ run_t_skew_optimization = function(estimated_df_x,
 #'
 #' @param estimated_df data frame with (quantiles, values) columns
 #'
+#' @param time_limit the time limit given to each optimization round.
+#'  In case the computation doesn't converge in the given time frame a vector
+#'  of 0 is returned for the optimization parameters and "timed out" warning is
+#'  issued.
+#'
 #' @param bounded_optimization boolean indicator, default TRUE
 #'
 #' @param lower_bounds lower bounds for xi (location),
@@ -142,10 +147,6 @@ run_t_skew_optimization = function(estimated_df_x,
 #' omega (scale), alpha (slant), nu (degrees of freedom).
 #' The default is (Inf, Inf, Inf, 100).
 #'
-#' @param time_limit the time limit given to each optimization round.
-#'  In case the computation doesn't converge in the given time frame a vector
-#'  of 0 is returned for the optimization parameters and "timed out" warning is
-#'  issued.
 #'
 #' @export
 #'
@@ -203,47 +204,84 @@ fit_t_skew = function(estimated_df,time_limit = 10,
 
 }
 
-#' @title Smooth gar forecast with skew t distribution
+#' @title Fit t skewed distribution to gar df
 #'
-#' @description
+#' @description This function fits t skewed distribution to either fitted
+#'  values of gar model or out of sample forecasted values
 #'
-#' @param gar_forecast_df
+#' @param time_limit the time limit given to each optimization round.
+#'  In case the computation doesn't converge in the given time frame a vector
+#'  of 0 is returned for the optimization parameters and "timed out" warning is
+#'  issued.
 #'
-#' @param time_limit
+#' @param bounded_optimization boolean indicator, default TRUE
+#'
+#' @param lower_bounds lower bounds for xi (location),
+#' omega (scale), alpha (slant), nu (degrees of freedom).
+#' The default is (-Inf, 0, -Inf, 0).
+#'
+#' @param upper_bounds upper bounds for xi (location),
+#' omega (scale), alpha (slant), nu (degrees of freedom).
+#' The default is (Inf, Inf, Inf, 100).
 #'
 #' @export
 #'
-extract_t_skew_from_gar_model = function(gar_model,
-                                            time_limit = 10,
-                                            bounded_optimization = TRUE,
-                                            lower_bounds = c(-Inf, 0, -Inf, 1),
-                                            upper_bounds = c(Inf, Inf, Inf, 100)) {
+fit_t_skew_to_gar_df = function(gar_df,
+                                time_limit = 10,
+                                bounded_optimization = TRUE,
+                                lower_bounds = c(-Inf, 0, -Inf, 1),
+                                upper_bounds = c(Inf, Inf, Inf, 100))
+{
+  required_cols = c("quantile", "horizon", "date")
 
-  required_cols = c("forecast_values","quantile","horizon","date")
-
-  if (length(setdiff(required_cols,names(gar_forecast_df))) > 0) {
-
-    stop(paste0("The following column(s) are missing:",
-                paste0(setdiff(required_cols,names(gar_forecast_df)),
-                       collapse = ",")))
+  if (length(setdiff(required_cols, names(gar_df))) > 0) {
+    stop(paste0(
+      "The following column(s) are missing:",
+      paste0(setdiff(required_cols, names(gar_df)),
+             collapse = ",")
+    ))
 
   }
 
-  t_skew_fit_df = gar_forecast_df %>%
-    rename(values = forecast_values) %>%
+  if ("forecast_values" %in% names(gar_df)) {
+    gar_df = gar_df %>%
+      rename(values = forecast_values)
+
+  } else if ("gar_fitted" %in% names(gar_df)) {
+    gar_df = gar_df %>%
+      rename(values = gar_fitted)
+
+  } else {
+    stop(
+      paste0(
+        "Couldn't identify values column, ",
+        "must be either forecast_values or gar_fitted"
+      )
+    )
+
+
+  }
+
+
+  nested_df = gar_df %>%
+    mutate(across(c(quantile, horizon), as.numeric)) %>%
     group_by(date, horizon) %>%
-    group_map(function(temp_df, temp_name){
+    nest(data = c(quantile, values)) %>%
+    ungroup() %>%
+    mutate(t_skew = future_map(data, function(temp_data) {
+      temp_fit = fit_t_skew(temp_data)
 
-      fit_params =  fit_t_skew(select(temp_df, c(
-        "quantile", "values")),time_limit = time_limit)
+      fit_df = tibble(t_skew_parameter = names(temp_fit),
+                      values = temp_fit)
 
-      fit_params_df = tibble(temp_name,parameter = names(fit_params), value = fit_params)
+      return(fit_df)
 
-      return(fit_params_df)
 
-    }) %>%
-    bind_rows()
+    }))
 
+  t_skew_fit_df = nested_df %>%
+    select(-data) %>%
+    unnest(cols = "t_skew")
 
 
   return(t_skew_fit_df)
