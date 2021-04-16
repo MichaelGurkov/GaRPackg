@@ -53,16 +53,16 @@ t_skew_loss = function(estimated_df,
 #'
 #' @param lower_bounds_x lower bounds for xi (location),
 #' omega (scale), alpha (slant), nu (degrees of freedom).
-#' The default is (-Inf, 0, -Inf, 0).
+#' The default is (-Inf, 0, -Inf, 1).
 #'
 #' @param upper_bounds_x upper bounds for xi (location),
 #' omega (scale), alpha (slant), nu (degrees of freedom).
 #' The default is (Inf, Inf, Inf, 100).
 #'
-run_t_skew_fitting = function(estimated_df,
-                              bounded_optimization = TRUE,
-                              lower_bounds = c(-Inf, 0, -Inf, 1),
-                              upper_bounds = c(Inf, Inf, Inf, 100)){
+run_t_skew_fitting = function(estimated_df_x,
+                              bounded_optimization_x = TRUE,
+                              lower_bounds_x = c(-Inf, 0, -Inf, 1),
+                              upper_bounds_x = c(Inf, Inf, Inf, 100)){
 
   if(!length(setdiff(names(estimated_df_x),c("values","quantile"))) == 0){
 
