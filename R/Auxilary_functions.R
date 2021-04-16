@@ -364,7 +364,6 @@ extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
 }
 
 
-
 #' @description  This function compares two partitions
 #'
 #' @title compare two partitions

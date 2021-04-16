@@ -213,7 +213,7 @@ fit_t_skew = function(estimated_df,time_limit = 10,
 #'
 #' @export
 #'
-extract_t_skew_from_gar_forecast = function(gar_forecast_df,
+extract_t_skew_from_gar_model = function(gar_model,
                                             time_limit = 10,
                                             bounded_optimization = TRUE,
                                             lower_bounds = c(-Inf, 0, -Inf, 1),
