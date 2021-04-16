@@ -209,6 +209,8 @@ fit_t_skew = function(estimated_df,time_limit = 10,
 #' @description This function fits t skewed distribution to either fitted
 #'  values of gar model or out of sample forecasted values
 #'
+#' @importFrom furrr future_map
+#'
 #' @param time_limit the time limit given to each optimization round.
 #'  In case the computation doesn't converge in the given time frame a vector
 #'  of 0 is returned for the optimization parameters and "timed out" warning is

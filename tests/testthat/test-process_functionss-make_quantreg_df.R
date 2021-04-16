@@ -30,7 +30,10 @@ test_that(paste("make_quant_reg_df return proper names"),
             expected = c("date","gdp","gdp_xreg",
                          "credit_xreg","house_price_xreg",
                          "gdp_1","gdp_4"))
-            )
+)
+
+
+
 
 test_that(
   'make_quant_reg_df contains data under reg_df name',
@@ -58,7 +61,9 @@ test_that(
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
                         partitions_list = linear_part))
-  )
+)
+
+
 
 
 

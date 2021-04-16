@@ -20,7 +20,7 @@ expected_time_out_res = rep(0,4)
 names(expected_time_out_res) = c("xi","omega","alpha","nu")
 
 test_that("t_skew_fitting_returns 0 vector and issued warning on time out", {
-  fit_t_skew(estimated_df = test_df,time_limit = 0.0001) %>%
+  fit_t_skew(estimated_df = test_df,time_limit = 10 ^ (-10)) %>%
     expect_warning() %>%
     expect_equal(expected_time_out_res)
 })
