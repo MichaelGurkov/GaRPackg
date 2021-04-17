@@ -237,7 +237,7 @@ fit_t_skew_to_gar_df = function(gar_df,
                                 bounded_optimization = TRUE,
                                 lower_bounds = c(-Inf, 0, -Inf, 1),
                                 upper_bounds = c(Inf, Inf, Inf, 100),
-                                parallel_computing = TRUE)
+                                parallel_computing = FALSE)
 {
   required_cols = c("quantile", "horizon", "date")
 
