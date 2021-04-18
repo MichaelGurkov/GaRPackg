@@ -20,7 +20,7 @@ test_that("returns a tibble with coefficients",
               object = test_obj %>%
                 extract_coeffs_from_gar_model(),
               expected = test_obj$qreg_result %>%
-                map_dfr(extract.qreg.coeff.table, .id = "horizon") %>%
+                map_dfr(extract_qreq_coeff_table, .id = "horizon") %>%
                 relocate(partition, horizon, quantile,
                          coeff, low, high, significant) %>%
                 mutate(partition = str_remove_all(partition, "_xreg$"))

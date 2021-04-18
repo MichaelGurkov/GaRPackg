@@ -12,22 +12,23 @@ RoxygenNote: 7.1.1
 Depends:
     R (>= 3.5.0)
 Imports:
-    magrittr,
     dplyr,
-    stringr,
-    zoo,
-    pls,
-    tidyr,
-    purrr,
-    lubridate,
-    rsample,
-    quantreg,
     ggplot2,
-    slider,
+    lubridate,
+    magrittr,
+    pls,
+    purrr,
+    quantreg,
     readr,
     readxl,
     rlang,
-    tibble
+    rsample,
+    slider,
+    sn,
+    stringr,
+    tibble,
+    tidyr,
+    zoo
 Suggests: 
     knitr,
     rmarkdown,
