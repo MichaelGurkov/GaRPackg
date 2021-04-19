@@ -4,6 +4,7 @@ gar_data = gar_data %>%
   mutate(date = as.yearqtr(date))
 
 
+
 test_that("all preprocess transformations work", {
   expect_equal(
     object = gar_data %>%
@@ -29,10 +30,6 @@ test_that("all preprocess transformations work", {
       ))
   )
 })
-
-
-
-
 
 
 expect_error(gar_data %>%

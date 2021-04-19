@@ -210,3 +210,61 @@ quantile_pit_score = function(forecast_df, actual_df){
 
 
 }
+
+
+#' @title Calculate prediction score
+#'
+#'
+#' @details This function calculates the prediction score which is the
+#' probability to get the observed (actual) value from the fitted t skew
+#' distribution based on estimated quantiles
+#'
+#' @importFrom rlang .data
+#'
+#' @import dplyr
+#'
+#' @importFrom sn dst
+#'
+#' @param forecast_dist_df data frame with estimated t skewed distribution
+#' by horizon, quantile, date and parameter
+#'
+#' @param actual_df data frame with actual values
+#' by value and date
+#'
+#' @export
+#'
+
+quantile_prediction_score = function(forecast_dist_df, actual_df){
+
+  var_names = c("parameter", "value")
+
+  if(!all(var_names %in% names(forecast_dist_df))){
+
+    stop("The following variables are missing in forecast dist df :",
+         paste(var_names[!var_names %in% names(forecast_dist_df)],
+               collapse = ","))
+
+
+  }
+
+  if(!"date" %in%  names(actual_df)){
+
+    stop("The date variable is missing in actual df ")
+
+
+  }
+
+  names(actual_df)[!names(actual_df) == "date"] = "actual_value"
+
+  prediction_score = left_join(forecast_dist_df, actual_df,
+                               by = "date") %>%
+    group_by(across(-c("parameter", "value"))) %>%
+    summarise(prob = dst(x = .data$actual_value[1], dp = .data$value),
+              .groups = "drop")
+
+  return(prediction_score)
+
+
+
+
+}

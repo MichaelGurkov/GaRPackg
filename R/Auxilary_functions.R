@@ -99,7 +99,7 @@ get_partition_combs = function(partitions_list,
 #' @param qreg_obj quantile regression object
 #'
 #'
-extract.qreg.coeff.table = function(qreg_obj) {
+extract_qreq_coeff_table = function(qreg_obj) {
   coef_table = lapply(suppressWarnings(summary(qreg_obj)),
                       function(temp_list) {
                         temp_df = as.data.frame(temp_list$coefficients)
@@ -154,7 +154,7 @@ extract_coeffs_from_gar_model = function(gar_model,
   stopifnot("qreg_result" %in% names(gar_model))
 
   coeffs_df = gar_model[["qreg_result"]] %>%
-    map_dfr(extract.qreg.coeff.table,.id = "horizon") %>%
+    map_dfr(extract_qreq_coeff_table,.id = "horizon") %>%
     relocate(.data$partition, .data$horizon, .data$quantile,
              .data$coeff, .data$low, .data$high, .data$significant) %>%
     mutate(partition = str_remove_all(.data$partition,"_xreg$"))
@@ -368,7 +368,6 @@ extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
 }
 
 
-
 #' @description  This function compares two partitions
 #'
 #' @title compare two partitions
@@ -404,6 +403,51 @@ is_partition_identical = function(source_partition, target_partition){
   }
 
   return(TRUE)
+
+
+}
+
+
+#' @title Smooth gar forecast with skew t distribution
+#'
+#' @description
+#'
+#' @param gar_forecast_df
+#'
+#' @param time_limit
+#'
+#' @export
+#'
+smooth_gar_forecast_with_t_skew = function(gar_forecast_df,
+                                            time_limit = 10){
+
+  if("forecast_values" %in% names(gar_forecast_df)){
+
+    stop("forecast_values column is missing")
+
+  }
+
+  t_skew_fit_df = gar_forecast_df %>%
+    rename(values = forecast_values) %>%
+    mutate(across(c(quantile, values),as.numeric)) %>%
+    group_by(date, horizon) %>%
+    group_map(function(temp_df, temp_name){
+
+      fit_params =  fit_t_skew(select(temp_df, c(
+        "quantile", "values")),time_limit = time_limit)
+
+      fit_params_df = tibble(temp_name,parameter = names(fit_params), value = fit_params)
+
+      return(fit_params_df)
+
+    }) %>%
+    bind_rows()
+
+
+  return(t_skew_fit_df)
+
+
+
 
 
 }

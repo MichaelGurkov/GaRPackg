@@ -102,6 +102,8 @@ get_gar_forecast = function(partitions_list,
 #'
 #' @param ... external optional arguments
 #'
+#' @param ... external optional arguments
+#'
 #'
 #' @import tidyr
 #'
