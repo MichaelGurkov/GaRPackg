@@ -22,7 +22,6 @@ test_reg_df = make_quant_reg_df(
   horizon_list = test_params$horizon_list)[["reg_df"]]
 
 
-
 # Run quantile reg
 
 test_quant_reg_list_fixed = run_quant_reg(
@@ -37,6 +36,7 @@ test_quant_reg_list_expanding = run_quant_reg(
   quantile_vec = test_params$quantile_vec,
   horizon_list = test_params$horizon_list
 )
+
 
 # Predict out of sample
 
