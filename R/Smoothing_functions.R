@@ -211,6 +211,8 @@ fit_t_skew = function(estimated_df,time_limit = 10,
 #'
 #' @importFrom furrr future_map
 #'
+#' @param return_smoothed_quantiles boolean returns quantiles
+#'
 #' @param time_limit the time limit given to each optimization round.
 #'  In case the computation doesn't converge in the given time frame a vector
 #'  of 0 is returned for the optimization parameters and "timed out" warning is
@@ -233,9 +235,11 @@ fit_t_skew = function(estimated_df,time_limit = 10,
 #' @export
 #'
 fit_t_skew_to_gar_df = function(gar_df,
+                                return_smoothed_quantiles = FALSE,
+                                smoothed_quantiles_vec = c(0.05, 0.25, 0.5, 0.75, 0.95),
                                 time_limit = 10,
                                 bounded_optimization = TRUE,
-                                lower_bounds = c(-Inf, 0, -Inf, 1),
+                                lower_bounds = c(-Inf, 0,-Inf, 1),
                                 upper_bounds = c(Inf, Inf, Inf, 100),
                                 parallel_computing = FALSE)
 {
@@ -304,10 +308,67 @@ fit_t_skew_to_gar_df = function(gar_df,
     select(-data) %>%
     unnest(cols = "t_skew")
 
+  if(return_smoothed_quantiles){
+
+    smoothed_quantiles_df = t_skew_fit_df %>%
+      group_by(date, horizon) %>%
+      nest(cols = c("t_skew_parameter", "values")) %>%
+      mutate(
+        t_skew_quantiles = map(cols, get_t_skew_quantiles,
+                               quantiles_vec = smoothed_quantiles_vec)
+      ) %>%
+      select(-cols) %>%
+      unnest(cols = c("t_skew_quantiles")) %>%
+      ungroup() %>%
+      rename(quantile = quantiles) %>%
+      mutate(horizon = as.character(horizon)) %>%
+      mutate(quantile = as.character(quantile)) %>%
+      mutate(source = "smoothed")
+
+
+    smoothed_quantiles_df = gar_df %>%
+      left_join(smoothed_quantiles_df,
+                by = c("date","horizon","quantile"),
+                suffix = c("_estimated","_smoothed")) %>%
+      mutate(source = replace_na(source, "unsmoothed")) %>%
+      mutate(value = coalesce(values_smoothed,values_estimated)) %>%
+      select(-starts_with("values_"))
+
+    return(smoothed_quantiles_df)
+
+  }
+
 
   return(t_skew_fit_df)
 
 
+
+
+
+}
+
+#' This is an auxilary function that returns quantiles from specified
+#' t skew distribution
+#'
+#' @importFrom sn qst
+#'
+#' @param t_skew_param_df
+#'
+#'
+#'
+get_t_skew_quantiles = function(t_skew_param_df,
+                                quantiles_vec = c(0.05,0.25,0.5,0.75,0.95)){
+
+  temp_dp = t_skew_param_df %>%
+    mutate(t_skew_parameter = factor(t_skew_parameter,
+                                     levels = c("xi", "omega", "alpha", "nu"))) %>%
+    arrange(t_skew_parameter) %>%
+    pull(values)
+
+  temp_quantiles_df = data.frame(quantiles = quantiles_vec,
+                                 values = qst(p = quantiles_vec, dp = temp_dp))
+
+  return(temp_quantiles_df)
 
 
 
