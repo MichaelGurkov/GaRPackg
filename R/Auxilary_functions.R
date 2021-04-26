@@ -232,7 +232,7 @@ extract_factor_contribution_from_gar_model = function(
 
   factors_df = factors_df %>%
     rename_all(~str_remove_all(.,"_xreg")) %>%
-    rename(intercept = V1)
+    rename(intercept = .data$V1)
 
   return(factors_df)
 
