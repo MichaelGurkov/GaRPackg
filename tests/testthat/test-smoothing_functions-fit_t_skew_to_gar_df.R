@@ -25,9 +25,19 @@ test_fit_skew_df = gar_analisys$gar_fitted_df %>%
   filter(date == as.yearqtr("2000 Q1")) %>%
   fit_t_skew_to_gar_df()
 
-test_that("fit_t_skew_to_gar_df returns proper structure", {
+test_smoothed_df = gar_analisys$gar_fitted_df %>%
+  filter(date == as.yearqtr("2000 Q1")) %>%
+  fit_t_skew_to_gar_df(return_smoothed_quantiles = TRUE)
+
+test_that("fit_t_skew_to_gar_df returns proper structure for dist params", {
   expect_equal(unique(test_fit_skew_df$t_skew_parameter),
                c("xi", "omega", "alpha", "nu"))
   expect_equal(names(test_fit_skew_df),
                c("date", "horizon", "t_skew_parameter", "values"))
+})
+
+
+test_that("fit_t_skew_to_gar_df returns proper structure for smoothed quantiles", {
+  expect_equal(names(test_smoothed_df),
+               c("date","quantile", "horizon", "values_smoothed","values_raw", "value"))
 })

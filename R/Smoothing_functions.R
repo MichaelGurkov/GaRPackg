@@ -258,7 +258,9 @@ fit_t_skew_to_gar_df = function(gar_df,
     gar_df = gar_df %>%
       rename(values = forecast_values)
 
-  } else if ("gar_fitted" %in% names(gar_df)) {
+  }
+
+  else if ("gar_fitted" %in% names(gar_df)) {
     gar_df = gar_df %>%
       rename(values = gar_fitted)
 
@@ -310,29 +312,8 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   if(return_smoothed_quantiles){
 
-    smoothed_quantiles_df = t_skew_fit_df %>%
-      group_by(date, horizon) %>%
-      nest(cols = c("t_skew_parameter", "values")) %>%
-      mutate(
-        t_skew_quantiles = map(cols, get_t_skew_quantiles,
-                               quantiles_vec = smoothed_quantiles_vec)
-      ) %>%
-      select(-cols) %>%
-      unnest(cols = c("t_skew_quantiles")) %>%
-      ungroup() %>%
-      rename(quantile = quantiles) %>%
-      mutate(horizon = as.character(horizon)) %>%
-      mutate(quantile = as.character(quantile)) %>%
-      mutate(source = "smoothed")
-
-
-    smoothed_quantiles_df = gar_df %>%
-      left_join(smoothed_quantiles_df,
-                by = c("date","horizon","quantile"),
-                suffix = c("_estimated","_smoothed")) %>%
-      mutate(source = replace_na(source, "unsmoothed")) %>%
-      mutate(value = coalesce(values_smoothed,values_estimated)) %>%
-      select(-starts_with("values_"))
+    smoothed_quantiles_df = extract_smoothed_quantiles(dist_param_df = t_skew_fit_df,
+                                                       raw_quantiles_df = gar_df)
 
     return(smoothed_quantiles_df)
 
@@ -347,7 +328,7 @@ fit_t_skew_to_gar_df = function(gar_df,
 
 }
 
-#' This is an auxilary function that returns quantiles from specified
+#' This is an auxiliary function that returns quantiles from specified
 #' t skew distribution
 #'
 #' @importFrom sn qst
@@ -373,3 +354,38 @@ get_t_skew_quantiles = function(t_skew_param_df,
 
 
 }
+
+
+
+#' This function returns "smoothed" (drawn from parametrized t skew distribution)
+#' quantiles
+#'
+extract_smoothed_quantiles = function(dist_param_df,
+                                      raw_quantiles_df,
+                                      smoothed_quantiles_vec_x = c(0.05, 0.25, 0.5, 0.75, 0.95)) {
+
+  smoothed_quantiles_df = dist_param_df %>%
+    group_by(date, horizon) %>%
+    nest(cols = c("t_skew_parameter", "values")) %>%
+    mutate(
+      t_skew_quantiles = map(cols, get_t_skew_quantiles,
+                             quantiles_vec = smoothed_quantiles_vec_x)
+    ) %>%
+    select(-cols) %>%
+    unnest(cols = c("t_skew_quantiles")) %>%
+    ungroup() %>%
+    rename(quantile = quantiles) %>%
+    mutate(horizon = as.character(horizon)) %>%
+    mutate(quantile = as.character(quantile))
+
+
+  smoothed_quantiles_df = raw_quantiles_df %>%
+    left_join(smoothed_quantiles_df,
+              by = c("date","horizon","quantile"),
+              suffix = c("_raw","_smoothed")) %>%
+    mutate(value = coalesce(values_smoothed,values_raw)) %>%
+    select(date,quantile, horizon, values_smoothed, values_raw, value)
+
+  return(smoothed_quantiles_df)
+}
+
