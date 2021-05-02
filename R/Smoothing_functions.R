@@ -326,7 +326,6 @@ fit_t_skew_to_gar_df = function(gar_df,
 
     smoothed_quantiles_df = extract_smoothed_quantiles(dist_param_df = t_skew_fit_df,
                                                        raw_quantiles_df = gar_df)
-
     return(smoothed_quantiles_df)
 
   }
@@ -364,8 +363,16 @@ get_t_skew_quantiles = function(t_skew_param_df,
     arrange(.data$t_skew_parameter) %>%
     pull(.data$values)
 
-  temp_quantiles_df = data.frame(quantiles = quantiles_vec,
-                                 values = qst(p = quantiles_vec, dp = temp_dp))
+  if(all(is.na(temp_dp)) | all(temp_dp == 0)){
+
+    temp_quantiles_df = data.frame(quantiles = quantiles_vec,
+                                   values = rep(NA,length(quantiles_vec)))
+  } else {
+
+    temp_quantiles_df = data.frame(quantiles = quantiles_vec,
+                                   values = qst(p = quantiles_vec, dp = temp_dp))
+
+  }
 
   return(temp_quantiles_df)
 
@@ -405,17 +412,25 @@ extract_smoothed_quantiles = function(dist_param_df,
     unnest(cols = c("t_skew_quantiles")) %>%
     ungroup() %>%
     rename(quantile = .data$quantiles) %>%
-    mutate(horizon = as.character(.data$horizon)) %>%
-    mutate(quantile = as.character(.data$quantile))
+    mutate(horizon = as.character(.data$horizon))
 
 
   smoothed_quantiles_df = raw_quantiles_df %>%
-    left_join(smoothed_quantiles_df,
-              by = c("date","horizon","quantile"),
-              suffix = c("_raw","_smoothed")) %>%
-    mutate(value = coalesce(.data$values_smoothed,.data$values_raw)) %>%
-    select(.data$date,.data$quantile, .data$horizon, .data$values_smoothed,
-           .data$values_raw, .data$value)
+    mutate(quantile = as.numeric(.data$quantile)) %>%
+    left_join(
+      smoothed_quantiles_df,
+      by = c("date", "horizon", "quantile"),
+      suffix = c("_raw", "_smoothed")
+    ) %>%
+    mutate(value = coalesce(.data$values_smoothed, .data$values_raw)) %>%
+    select(
+      .data$date,
+      .data$quantile,
+      .data$horizon,
+      .data$values_smoothed,
+      .data$values_raw,
+      .data$value
+    )
 
   return(smoothed_quantiles_df)
 }
