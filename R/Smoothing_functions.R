@@ -152,6 +152,11 @@ run_t_skew_optimization = function(estimated_df_x,
 #' omega (scale), alpha (slant), nu (degrees of freedom).
 #' The default is (Inf, Inf, Inf, 100).
 #'
+#' @return vector of parameters xi (location),
+#' omega (scale), alpha (slant), nu (degrees of freedom) if the fitting was
+#'  successful, otherwise a vector of 0 if the optimization has timeout or a
+#'  vector of NA if there was an error.
+#'
 #'
 #' @export
 #'
@@ -289,9 +294,7 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   if(parallel_computing){
 
-    requireNamespace(future)
-
-    plan(multisession)
+    future::plan("multisession")
 
   }
 
@@ -307,6 +310,8 @@ fit_t_skew_to_gar_df = function(gar_df,
       fit_df = tibble(t_skew_parameter = names(temp_fit),
                       values = temp_fit)
 
+      if(!nrow(fit_df) == 4){browser()}
+
       return(fit_df)
 
 
@@ -314,7 +319,7 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   if(parallel_computing){
 
-    plan(sequential)
+    future::plan("sequential")
 
   }
 
@@ -397,9 +402,10 @@ get_t_skew_quantiles = function(t_skew_param_df,
 #' Default is c(0.05, 0.25, 0.5, 0.75, 0.95)
 #'
 #'
-extract_smoothed_quantiles = function(dist_param_df,
-                                      raw_quantiles_df,
-                                      smoothed_quantiles_vec_x = c(0.05, 0.25, 0.5, 0.75, 0.95)) {
+extract_smoothed_quantiles = function(
+  dist_param_df,
+  raw_quantiles_df,
+  smoothed_quantiles_vec_x = c(0.05, 0.25, 0.5, 0.75, 0.95)) {
 
   smoothed_quantiles_df = dist_param_df %>%
     group_by(.data$date, .data$horizon) %>%
