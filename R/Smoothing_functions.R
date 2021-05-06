@@ -277,9 +277,9 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   }
 
-  else if ("gar_fitted" %in% names(gar_df)) {
+  else if ("fitted_values" %in% names(gar_df)) {
     gar_df = gar_df %>%
-      rename(values = .data$gar_fitted)
+      rename(values = .data$fitted_values)
 
   } else {
     stop(
@@ -305,12 +305,14 @@ fit_t_skew_to_gar_df = function(gar_df,
     nest(data = c(.data$quantile, .data$values)) %>%
     ungroup() %>%
     mutate(t_skew = future_map(.data$data, function(temp_data) {
-      temp_fit = fit_t_skew(temp_data)
+      temp_fit = fit_t_skew(temp_data,
+                            bounded_optimization = bounded_optimization,
+                            time_limit = time_limit,
+                            lower_bounds = lower_bounds,
+                            upper_bounds = upper_bounds)
 
       fit_df = tibble(t_skew_parameter = names(temp_fit),
                       values = temp_fit)
-
-      if(!nrow(fit_df) == 4){browser()}
 
       return(fit_df)
 

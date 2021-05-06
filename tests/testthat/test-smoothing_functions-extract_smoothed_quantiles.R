@@ -30,7 +30,7 @@ test_smoothed = extract_smoothed_quantiles(test_fit_skew_df,
                                            gar_analisys$gar_fitted_df %>%
                                              filter(date %in% c(as.yearqtr("2000 Q1"),
                                                                 as.yearqtr("2000 Q2"))) %>%
-                                             rename(values = gar_fitted))
+                                             rename(values = fitted_values))
 
 test_that(
   "smoothing returns smoothed values where available",
