@@ -21,11 +21,11 @@ gar_analisys = run_GaR_analysis(
   quantile_vec = test_params$quantile_vec
 )
 
-test_fit_skew_df = gar_analisys$gar_fitted_df %>%
+test_fit_skew_df = gar_analisys$fitted_df %>%
   filter(date == as.yearqtr("2000 Q1")) %>%
   fit_t_skew_to_gar_df()
 
-test_smoothed_df = gar_analisys$gar_fitted_df %>%
+test_smoothed_df = gar_analisys$fitted_df %>%
   filter(date == as.yearqtr("2000 Q1")) %>%
   fit_t_skew_to_gar_df(return_smoothed_quantiles = TRUE)
 
