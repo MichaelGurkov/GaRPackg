@@ -13,6 +13,8 @@ Depends:
     R (>= 3.5.0)
 Imports:
     dplyr,
+    furrr,
+    future,
     ggplot2,
     lubridate,
     magrittr,

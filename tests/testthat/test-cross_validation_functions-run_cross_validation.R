@@ -77,7 +77,7 @@ cross_validation_pred_expanding = run_cross_validation(
 test_that(
   "run_cross_validation produces correct prediction in fixed window",
   expect_equal(
-    object = cross_validation_pred_fixed$gar_forecast[1],
+    object = cross_validation_pred_fixed$forecast_values[1],
     expected = test_pred_fixed)
   )
 
@@ -85,7 +85,7 @@ test_that(
 test_that(
   desc = "run_cross_validation produces correct prediction in expanding window",
   code =  expect_equal(
-    object = cross_validation_pred_expanding$gar_forecast[
+    object = cross_validation_pred_expanding$forecast_values[
       nrow(cross_validation_pred_expanding)],
     expected = test_pred_expanding)
 )

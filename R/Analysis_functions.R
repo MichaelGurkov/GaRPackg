@@ -96,7 +96,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
                        1:nrow(temp_obj$model)]) %>%
                       pivot_longer(cols = -.data$date,
                                    names_to = "quantile",
-                                   values_to = "gar_fitted") %>%
+                                   values_to = "fitted_values") %>%
                       mutate(horizon = temp_name)
 
 
@@ -239,7 +239,7 @@ make_prediction_df = function(gar_model, xreg_df){
                                cbind(predict(temp_mod, xreg_df)) %>%
                                pivot_longer(-.data$date,
                                             names_to = "quantile",
-                                            values_to = "gar_fitted") %>%
+                                            values_to = "fitted_values") %>%
                                mutate(quantile = str_remove_all(.data$quantile,"tau= ")) %>%
                                mutate(horizon = temp_name)
 

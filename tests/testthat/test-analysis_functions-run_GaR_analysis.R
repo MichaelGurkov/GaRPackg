@@ -25,7 +25,7 @@ test_that(desc = "run_GaR_analysis returns fitted values",
               setNames(test_params$quantile_vec) %>%
               pivot_longer(cols = everything(),
                            names_to = "quantile",
-                           values_to = "gar_fitted") %>%
+                           values_to = "fitted_values") %>%
               mutate(horizon = as.character(test_params$horizon_list[1])) %>%
               arrange(quantile)))
 
