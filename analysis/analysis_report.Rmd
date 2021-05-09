@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = FALSE, error = FALSE, warning = FALSE,
 
 library(tidyverse)
 
+library(sn)
+
 devtools::load_all()
 
 ```
@@ -26,7 +28,8 @@ raw_df = import_from_fame_template(paste0(
     "\\OneDrive - Bank Of Israel\\Data\\BoI",
     "\\GaR_Data\\Working_data\\data_fame.csv"
   )
-))
+)) %>% 
+  filter_at(vars(-date),any_vars(!is.na(.)))
 
 df = raw_df %>%
   preprocess_df(
@@ -103,13 +106,44 @@ analysis_res = run_GaR_analysis(partitions_list = partitions_list,
 
 # Analysis results
 
-```{r plot_gar}
+```{r plot_gar_timeseries}
 
 analysis_res$gar_fitted_df %>%
   filter(quantile == "0.05") %>% 
   filter(horizon %in% c("1","4")) %>% 
-  ggplot(aes(x = date, y = gar_fitted, color = horizon)) + 
+  ggplot(aes(x = date, y = fitted_values, color = horizon)) + 
   geom_line()
 
 ```
+
+```{r plot_gar_density_dist}
+
+t_params = analysis_res$gar_fitted_df %>% 
+  filter(horizon == 4) %>% 
+  filter(date %in% c(max(date),as.yearqtr("2020 Q3"))) %>% 
+  fit_t_skew_to_gar_df()
+
+t_params_corona = analysis_res$gar_fitted_df %>% 
+  filter(date == max(date)) %>% 
+  select(quantile, values = fitted_values) %>% 
+  fit_t_skew()
+  
+dist_df = tibble(x_range = seq(-10,10, by = 0.25) / 100) %>% 
+  mutate(prob = dst(x_range,dp = t_params))
+
+gar_point_df = tibble(x_range = qst(0.05, dp = t_params)) %>% 
+  mutate(prob = dst(x_range,dp = t_params))
+
+
+dist_df %>% 
+  ggplot(aes(x = x_range, y = prob)) + 
+  geom_line() + 
+  geom_point(data = gar_point_df, aes(x = x_range, y = prob), color = "red") + 
+  xlab(NULL) + ylab(NULL) + 
+  scale_x_continuous(labels = scales::percent_format()) + 
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+
+```
+
 
