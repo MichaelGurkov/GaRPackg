@@ -71,7 +71,7 @@ t_skew_loss = function(estimated_df, t_skew_params) {
 #'
 run_t_skew_optimization = function(estimated_df_x,
                               bounded_optimization_x = TRUE,
-                              lower_bounds_x = c(-Inf, 0, -Inf, 1),
+                              lower_bounds_x = c(-Inf, 0.01, -Inf, 1),
                               upper_bounds_x = c(Inf, Inf, Inf, 100)){
 
   if(!length(setdiff(names(estimated_df_x),c("values","quantile"))) == 0){
@@ -146,7 +146,7 @@ run_t_skew_optimization = function(estimated_df_x,
 #'
 #' @param lower_bounds lower bounds for xi (location),
 #' omega (scale), alpha (slant), nu (degrees of freedom).
-#' The default is (-Inf, 0, -Inf, 0).
+#' The default is (-Inf, 0.01, -Inf, 0).
 #'
 #' @param upper_bounds upper bounds for xi (location),
 #' omega (scale), alpha (slant), nu (degrees of freedom).
@@ -162,7 +162,7 @@ run_t_skew_optimization = function(estimated_df_x,
 #'
 fit_t_skew = function(estimated_df,time_limit = 10,
                                    bounded_optimization = TRUE,
-                                   lower_bounds = c(-Inf, 0, -Inf, 1),
+                                   lower_bounds = c(-Inf, 0.01, -Inf, 1),
                                    upper_bounds = c(Inf, Inf, Inf, 100)){
 
   # Validation
@@ -256,7 +256,7 @@ fit_t_skew_to_gar_df = function(gar_df,
                                 smoothed_quantiles_vec = c(0.05, 0.25, 0.5, 0.75, 0.95),
                                 time_limit = 10,
                                 bounded_optimization = TRUE,
-                                lower_bounds = c(-Inf, 0,-Inf, 1),
+                                lower_bounds = c(-Inf, 0.01,-Inf, 1),
                                 upper_bounds = c(Inf, Inf, Inf, 100),
                                 parallel_computing = FALSE)
 {
