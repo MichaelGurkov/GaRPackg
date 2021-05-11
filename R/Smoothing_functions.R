@@ -285,7 +285,7 @@ fit_t_skew_to_gar_df = function(gar_df,
     stop(
       paste0(
         "Couldn't identify values column, ",
-        "must be either forecast_values or gar_fitted"
+        "must be either forecast_values or fitted_values"
       )
     )
 

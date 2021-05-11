@@ -246,23 +246,46 @@ extract_factor_contribution_from_gar_model = function(
 #'
 #' @param gar_obj model object with run_GaR_analysis result
 #'
+#' @param quantile_values vector that specifies the quantiles used in the calculation
+#' of skew and iqr. The structure of the vector should be (low,mid,high), for example
+#' if the iqr is based on 95th and 5th quantile the vector will be c(0.05,0.5,0.95).
+#'
 #' @importFrom rlang .data
 #'
 #' @export
 #'
-calculate_skew_and_iqr = function(gar_obj) {
+calculate_skew_and_iqr = function(gar_obj,
+                                  quantile_values = c("0.25","0.5","0.75")) {
+
+  quantile_names = c("low","mid","high")
+
+  rename_table = tibble(quantile = as.numeric(quantile_values),
+                        names = quantile_names)
+
+
   prediction_df = make_prediction_df(gar_model = gar_obj$qreg_result,
                                      xreg_df = gar_obj$reg_df)
 
+  missing_quantiles = setdiff(quantile_values,unique(prediction_df$quantile))
+
+  if(!length(missing_quantiles) == 0){
+
+    stop(paste("the following quantile(s) are missing in the model object:",
+               paste(missing_quantiles, collapse = ",")))
+
+  }
+
   skew_df = prediction_df %>%
+    inner_join(rename_table, by = "quantile") %>%
+    select(-quantile) %>%
     pivot_wider(
-      names_from = .data$quantile,
-      values_from = .data$gar_fitted,
-      names_prefix = "q"
+      names_from = .data$names,
+      values_from = .data$fitted_values
     ) %>%
-    mutate(skew = (0.5 * .data$q0.75 + 0.5 * .data$q0.25 - .data$q0.50) /
-             (0.5 * .data$q0.75 - 0.5 * .data$q0.25)) %>%
-    mutate(iqr = .data$q0.75 - .data$q0.25)
+    mutate(skew = (0.5 * .data$high + 0.5 * .data$low - .data$mid) /
+             (0.5 * .data$high - 0.5 * .data$low)) %>%
+    mutate(iqr = .data$high - .data$low) %>%
+    select(.data$date,.data$horizon,.data$skew,.data$iqr)
 
   return(skew_df)
 
