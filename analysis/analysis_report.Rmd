@@ -108,7 +108,7 @@ analysis_res = run_GaR_analysis(partitions_list = partitions_list,
 
 ```{r plot_gar_timeseries}
 
-analysis_res$gar_fitted_df %>%
+analysis_res$fitted_df %>%
   filter(quantile == "0.05") %>% 
   filter(horizon %in% c("1","4")) %>% 
   ggplot(aes(x = date, y = fitted_values, color = horizon)) + 
