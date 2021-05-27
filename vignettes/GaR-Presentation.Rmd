@@ -674,37 +674,33 @@ events = read.csv(paste0(
   "Data\\BoI\\GaR_Data","\\events.csv")) %>%
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
-predict_df =  gar_analysis %>% 
-  make_prediction_df(xreg_df = df)
 
-predict_df %>%
-ggplot() +
-  ylim(c(-0.12,0.08)) +
-  geom_point(aes(x = date, y = GaR, color = Horizon)) +
-  geom_line(aes(x = date, y = GaR, color = Horizon)) +
-  geom_rect(data = recessions,
-            mapping = aes(xmin = Start, xmax = End,
-                          ymin = -Inf, ymax = Inf),
+gar_analysis$fitted_df %>%
+  filter(horizon %in% c(1, 12)) %>%
+  filter(quantile == "0.05") %>% 
+  ggplot() +
+  ylim(c(-0.12, 0.08)) +
+  geom_point(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_line(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End,
+                                            ymin = -Inf,ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
   ylab(NULL) + xlab(NULL) +
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
   geom_point(data = . %>% filter(date %in% events$Start),
-             aes(x = date, y = GaR),
-           color = "blue") +
-  geom_segment(data = . %>%
-                 filter(date %in% events$Start),
-               aes(x = date, y = c(0.0745,0.0745,0.0745,
-                                   0.0745,-0.0745,-0.0745),
-                   xend = date, yend = GaR),
-               arrow = arrow(length = unit(0.1,"cm")),
-               color = "blue") +
-  geom_text(data = events,
-            mapping = aes(x = Start + 1,
-                          y = c(0.08,0.08,-0.08),
-                          label = Event),
-            color = "blue") + 
-  labs(caption = paste0("Notes: Shaded areas depict US and Euro",
-                        " recessions (NBER and CEPR recessions)")) + 
+             aes(x = date, y = fitted_values),color = "blue") +
+  geom_segment(data = . %>%filter(date %in% events$Start),
+               aes(x = date,y = c(0.0745, 0.0745, -0.0745,
+                                  0.0745, +0.0745, -0.0745),
+                   xend = date,
+                   yend = fitted_values),
+               arrow = arrow(length = unit(0.1, "cm")), color = "blue") +
+  geom_text(data = events,mapping = aes(x = Start + 1,
+                                        y = c(0.08, 0.08, -0.08),
+                                        label = Event),color = "blue") +
+  labs(caption = paste0(
+    "Notes: Shaded areas depict US and Euro",
+    " recessions (NBER and CEPR recessions)")) +
   theme(plot.caption = element_text(hjust = 0))
 
 
@@ -715,21 +711,25 @@ ggplot() +
 
 ```{r plot_factor_decomposition}
 
-factors_df %>%
-  filter(Horizon %in% c(1,12)) %>%
-  ggplot() +
-  geom_col(aes(x = date, y = value,fill = partition),
-           position = "stack") +
-  geom_line(data = . %>%
-              group_by(date,Horizon) %>%
-              summarise(Total = sum(value),.groups = "drop") %>%
-              ungroup(),
-            aes(x = date, y = Total), size = 0.5) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab), scales = "free") +
+
+gar_analysis %>% 
+  extract_factor_contribution_from_gar_model() %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  select(-intercept) %>% 
+  rename(`Dom. Macro` = dom_macro,
+         `Ext. Macro` = ext_macro,
+         `Dom. Fin. Cond` = dom_fin,
+         `Ext. Fin. Cond` = ext_fin) %>% 
+  pivot_longer(-c("date","horizon")) %>% 
+  ggplot(aes(x = date, y = value, fill = name)) + 
+  geom_col() + 
+  facet_wrap(~horizon, scales = "free") + 
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
                  "GaR forecast \n (5th percentile)")) +
   scale_fill_viridis_d(option = "plasma")
+  
+ 
 
 ```
 
