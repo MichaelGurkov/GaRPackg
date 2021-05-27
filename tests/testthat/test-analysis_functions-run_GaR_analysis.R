@@ -14,18 +14,23 @@ test_obj = run_GaR_analysis(
   horizon_list = test_params$horizon_list,
   quantile_vec = test_params$quantile_vec)
 
+
+
+
 test_that(desc = "run_GaR_analysis returns fitted values",
           expect_equal(
-            object = test_obj$gar_fitted_df %>%
+            object = test_obj$fitted_df %>%
               select(-date) %>%
               filter(horizon == test_params$horizon_list[1]),
             expected = predict(test_obj$qreg_result[[1]],
-                               test_obj$reg_df[1:89,]) %>%
+                               test_obj$reg_df) %>%
               as.data.frame() %>%
               setNames(test_params$quantile_vec) %>%
               pivot_longer(cols = everything(),
                            names_to = "quantile",
-                           values_to = "gar_fitted") %>%
+                           values_to = "fitted_values") %>%
               mutate(horizon = as.character(test_params$horizon_list[1])) %>%
+              mutate(quantile = as.numeric(quantile)) %>%
+              select(horizon, quantile, fitted_values) %>%
               arrange(quantile)))
 
