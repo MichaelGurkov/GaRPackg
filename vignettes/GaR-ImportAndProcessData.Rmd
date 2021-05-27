@@ -62,14 +62,12 @@ parameters_list$vars_to_4_ma = c(
 
 ```{r Import_data}
 
-
 raw_df = import.from.fame.template(
   paste0(file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
          "\\OneDrive - Bank Of Israel\\",
          "Data\\BoI\\GaR_Data\\Working_data",
          "\\data_fame.csv")) %>% 
-  rename_all(tolower) %>% 
-  rename(public_consumption = gov_consumption)
+  rename_all(tolower)
 
 
 
@@ -95,7 +93,7 @@ df = raw_df %>%
 
 ```{r set_current_partition}
 
-current_partition = partitions_list$gdp_comp_fin_cycle_cond
+current_partition = partitions_list$gdp_components
 
 
 ```
@@ -105,7 +103,7 @@ current_partition = partitions_list$gdp_comp_fin_cycle_cond
 
 df = df %>% 
   filter(across(unlist(current_partition, use.names = FALSE), ~!is.na(.))) %>%
-  # filter(date <= as.yearqtr("2019 Q4")) %>%
+  filter(date <= as.yearqtr("2019 Q4")) %>%
   identity()
 
 
