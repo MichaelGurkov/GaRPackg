@@ -8,9 +8,11 @@
 #' }
 #'
 #'
-#' @importFrom stats formula
+#' @importFrom stats formula lm setNames
 #'
-#' @param partititions_list list of partitons
+#' @importFrom rlang .data
+#'
+#' @param partitions_list list of partitions
 #'
 #' @param vars_df data frame with input variables
 #'
@@ -21,7 +23,7 @@
 #' @param quantile_vec vector of required quantiles in quantile
 #' regression (corresponds to tau argument in rq)
 #'
-#' @param method string a method that aggregates the data to partitions
+#' @param preprocess_method string a method that aggregates the data to partitions
 #'
 #' @param run_ols_reg boolean indicator that adds an OLS regression
 #'
@@ -46,24 +48,25 @@
 #'
 #' @return pca_obj (optional) PCA object
 #'
-run.GaR.analysis = function(partitions_list, vars_df,
+#' @export
+#'
+run_GaR_analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
-                            method = "inner_join_pca",
+                            preprocess_method = "inner_join_pca",
                             run_ols_reg = FALSE,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 
 
-  reg_df_list = make.quant.reg.df(
+  reg_df_list = make_quant_reg_df(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
-    quantile_vec = quantile_vec,
     pca.align.list = pca.align.list,
-    method = method,
+    preprocess_method = preprocess_method,
     return_objects_list = return_objects_list
   )
 
@@ -75,7 +78,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
 
 
 
-  qreg_result = run.quant.reg(
+  qreg_result = run_quant_reg(
     reg_df = reg_df_list$reg_df,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
@@ -91,10 +94,10 @@ run.GaR.analysis = function(partitions_list, vars_df,
                      setNames(quantile_vec) %>%
                      mutate(date = reg_df_list$reg_df$date[
                        1:nrow(temp_obj$model)]) %>%
-                      pivot_longer(cols = -date,
-                                   names_to = "Quantile",
-                                   values_to = "GaR_fitted") %>%
-                      mutate(Horizon = temp_name)
+                      pivot_longer(cols = -.data$date,
+                                   names_to = "quantile",
+                                   values_to = "gar_fitted") %>%
+                      mutate(horizon = temp_name)
 
 
 
@@ -102,27 +105,6 @@ run.GaR.analysis = function(partitions_list, vars_df,
                   }) %>%
     fix_quantile_crossing()
 
-
-
-  # Run OLS regresion
-
-  if(run_ols_reg){
-
-    ols_result = lapply(horizon_list, function(temp_horizon){
-
-      ols_reg = lm(formula = formula(paste0(dep_var,"~.")),
-                   data = reg_df_list$reg_df %>%
-                     select(-date) %>%
-                     select(-contains(target_var_name), all_of(dep_var)))
-
-      return(ols_reg)
-
-
-    })
-
-    names(ols_result) = horizon_list
-
-  }
 
 
   # Check for objects and return list
@@ -138,9 +120,7 @@ run.GaR.analysis = function(partitions_list, vars_df,
   if(length(reg_df_list) == 2){
     return_list$pca_obj = reg_df_list$pca_obj}
 
-  if(run_ols_reg){return_list$ols_result = preproc_df_list$ols_result}
-
-  return(return_list)
+   return(return_list)
 
 }
 
@@ -153,16 +133,29 @@ run.GaR.analysis = function(partitions_list, vars_df,
 #'
 #' @param target_var_name string
 #'
-#' @param quantile_vec
+#' @param quantile_vec vector of quantiles
+#'
+#' @param horizon_list list of target horizons
+#'
+#' @param ... external optional arguments
+#'
+#' @param reg_type type of regression (default "quantile").
+#' The possible options are:
+#' \itemize{
+#'  \item {quantile}{ (the default)}
+#'  \item {lasso}
+#' }
 #'
 #' @return list of quantile reg objects
 #'
-run.quant.reg = function(reg_df,
+run_quant_reg = function(reg_df,
                          target_var_name,
                          quantile_vec,
                          horizon_list,
                          reg_type = "quantile",
                          ...){
+
+  . = NULL
 
 
   if(reg_type == "quantile"){
@@ -191,7 +184,7 @@ run.quant.reg = function(reg_df,
       dep_var = paste(target_var_name, temp_horizon, sep = "_")
 
       y_mat = reg_df %>%
-        select(dep_var) %>%
+        select(all_of(dep_var)) %>%
         filter(complete.cases(.))
 
       x_mat = reg_df %>%
@@ -216,6 +209,48 @@ run.quant.reg = function(reg_df,
 
 
   return(qreg_result)
+
+
+}
+
+
+#' This function returns a data frame with predicted values
+#'
+#' @title Make prediction df
+#'
+#' @details The default is in sample prediction (fitted values),
+#' otherwise predict according to supplied xreg data
+#'
+#' @importFrom rlang .data
+#'
+#' @importFrom stringr str_remove_all
+#'
+#' @param gar_model model object with run_GaR_analysis result
+#'
+#' @param xreg_df xreg data
+#'
+make_prediction_df = function(gar_model, xreg_df){
+
+  prediction_df = map2_dfr(gar_model,names(gar_model),
+                           function(temp_mod, temp_name){
+
+                             temp_pred_df = xreg_df %>%
+                               select(.data$date) %>%
+                               cbind(predict(temp_mod, xreg_df)) %>%
+                               pivot_longer(-.data$date,
+                                            names_to = "quantile",
+                                            values_to = "gar_fitted") %>%
+                               mutate(quantile = str_remove_all(.data$quantile,"tau= ")) %>%
+                               mutate(horizon = temp_name)
+
+
+
+                           }) %>%
+    fix_quantile_crossing() %>%
+    select(.data$date,.data$horizon,.data$quantile,.data$gar_fitted)
+
+  return(prediction_df)
+
 
 
 }

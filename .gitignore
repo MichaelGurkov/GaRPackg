@@ -2,7 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-*.Rd
+man/*.Rd
 *.tex
-*.log
 inst/doc

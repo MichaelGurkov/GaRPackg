@@ -11,32 +11,58 @@
 #'
 #' @import purrr
 #'
-#' @return a data frame with out of sample predictions
+#'
+#' @param partitions_list list of partition names
+#'
+#' @param vars_df data frame with input variables
+#'
+#' @param target_var_name string that specifies outcome variable
+#'
+#' @param horizon_list list (or vector) of forecast horizons
+#'
+#' @param quantile_vec vector quantiles for quantile regression
+#'
+#' @param pca.align.list (optional) list list that contains the "aligning" variable
+#' for each partition that should be "aligned". See
+#'
+#' @param preprocess_method dimension reduction method (default PCA)
+#'
+#' @param win_len the length of sliding window (default 30)
+#'
+#' @param win_type_expanding boolean should the sliding window expand
+#'  (default TRUE)
+#'
+#' @return a data frame with out of sample predictions.
+#' The date column specifies the date of the test set observation,
+#' the target date is the date + horizon * 0.25 (the date units are quarters)
+#'
+#' @export
 #'
 
-get.gar.forecast = function(partitions_list,
+get_gar_forecast = function(partitions_list,
                             vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
                             pca.align.list = NULL,
-                            method = "inner_join_pca",
+                            preprocess_method = "inner_join_pca",
                             win_len = 30,
-                            win_type_expanding = FALSE){
+                            win_type_expanding = TRUE){
 
-  reg_df_list = make.quant.reg.df(
+  reg_df_list = make_quant_reg_df(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
-    quantile_vec = quantile_vec,
     pca.align.list = pca.align.list,
-    method = method,
+    preprocess_method = preprocess_method,
     return_objects_list = FALSE
   )
 
+  if(nrow(reg_df_list$reg_df) == 0){stop("The regression data frame is empty")}
 
-  prediction_df = map(horizon_list,run.cross.validation,
+
+  prediction_df = map(horizon_list,run_cross_validation,
                     reg_df = reg_df_list$reg_df,
                     target_var_name = target_var_name,
                     quantile_vec = quantile_vec,
@@ -71,19 +97,27 @@ get.gar.forecast = function(partitions_list,
 #'
 #' @param win_len rolling window length
 #'
-#' @param win_type_expanding boolean indicator that determines
-#' whether the rolling window should be expanding or rolling
+#' @param win_type_expanding  boolean should the sliding window expand
+#'  (default TRUE)
+#'
+#' @param ... external optional arguments
+#'
+#' @param ... external optional arguments
 #'
 #'
 #' @import tidyr
 #'
+#' @importFrom stringr str_remove
 #'
-run.cross.validation = function(reg_df,
+#' @importFrom stats predict
+#'
+#'
+run_cross_validation = function(reg_df,
                                 target_var_name,
                                 horizon,
                                 quantile_vec,
                                 win_len = 30,
-                                win_type_expanding = FALSE,
+                                win_type_expanding = TRUE,
                                 ...){
 
 
@@ -102,7 +136,7 @@ predict_df = map(roll_cv_list$splits,
   assessment_set = assessment(temp_split) %>%
     slice(n())
 
-  qreg_result = run.quant.reg(
+  qreg_result = run_quant_reg(
     reg_df = analysis_set,
     target_var_name = target_var_name,
     quantile_vec = quantile_vec,
@@ -117,14 +151,14 @@ predict_df = map(roll_cv_list$splits,
       as.data.frame() %>%
       rename_all(~str_remove(.,"tau= ")) %>%
       pivot_longer(cols = everything(),
-                   names_to = "Quantile",
-                   values_to = "GaR_forecast") %>%
-      mutate(Horizon = temp_name) %>%
+                   names_to = "quantile",
+                   values_to = "gar_forecast") %>%
+      mutate(horizon = temp_name) %>%
       mutate(date = assessment_set$date)
 
     if(length(quantile_vec) == 1){
       temp_pred = temp_pred %>%
-        mutate(Quantile = quantile_vec)
+        mutate(quantile = quantile_vec)
       }
 
     return(temp_pred)
