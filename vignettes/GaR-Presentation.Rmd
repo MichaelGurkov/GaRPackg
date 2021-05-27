@@ -33,30 +33,6 @@ setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
   "\\Documents\\GaRPackg\\vignettes"))
 
-
-
-```
-
-
-
-```{r set_plot_params}
-
-theme_set(theme_bw() + 
-            theme(title = element_text(size = 20),
-                axis.text = element_text(size = 15),
-                axis.title = element_text(size = 15),
-                strip.text = element_text(size = 15),
-                legend.position = "bottom",
-                legend.title = element_blank(),
-                legend.text = element_text(size = 15)))
-
-
-
-```
-
-
-```{r load_libraries}
-
 library(tidyverse)
 
 library(cowplot)
@@ -68,15 +44,104 @@ library(gghighlight)
 ```
 
 
-```{r Get_partitions, child="Partition-Specs.Rmd"}
+```{r set_params}
+
+partitions_list = list(
+  dom_macro = c(
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "unemployment"),
+  ext_macro = c(
+    "oecd_imp",
+    "exports",
+    "imports"
+  ),
+  dom_fin = c(
+    "credit",
+    "house_price",
+    "ta125_close",
+    "boi_rate"
+  ),
+  ext_fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "oil_p",
+    "non_energy_p"
+  )
+)
+
+
+
+horizon_list=c(1,4,8,12)
+
+quantile_vec=c(0.05,0.25,0.5,0.75,0.95)
+
+
+theme_set(theme_bw() + 
+            theme(title = element_text(size = 20),
+                axis.text = element_text(size = 15),
+                axis.title = element_text(size = 15),
+                strip.text = element_text(size = 15),
+                legend.position = "bottom",
+                legend.title = element_blank(),
+                legend.text = element_text(size = 15)))
+
 
 ```
 
+```{r load_data}
 
-```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+raw_df = import_from_fame_template(
+  paste0(
+    file.path(Sys.getenv("USERPROFILE")),
+    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\Working_data\\data_fame.csv"
+  )
+)
+
+df = raw_df %>%
+  preprocess_df(vars_to_yoy = c(
+    "gdp",
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "oecd_imp",
+    "exports",
+    "imports",
+    "sp500",
+    "eurostoxx600",
+    "oil_p",
+    "non_energy_p",
+    "credit",
+    "house_price",
+    "ta125_close"
+  ),
+vars_to_diff = c("unemployment",
+                 "boi_rate",
+                 "rate_euro",
+                 "rate_us"),
+vars_to_4_ma = c("gdp_us",
+                 "gdp_euro")
+)
+
+df = df %>% 
+  filter(date <= as.yearqtr("2019 Q4"))
+
 
 ```
 
+```{r run_analysis}
+
+gar_analysis = run_GaR_analysis(
+  partitions_list = partitions_list,
+  vars_df = df,
+  target_var_name = "gdp",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec)
+
+```
 
 ```{r import_robustness_data,eval=FALSE}
 
@@ -86,234 +151,6 @@ fit_df = read_rds(paste0(
   " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
 ```
-
-
-```{r Analysis}
-
-results = run.GaR.analysis(partitions_list = current_partition,
-                   vars_df = df,
-                   target_var_name = "gdp",
-                   horizon_list = parameters_list$horizon_list,
-                   quantile_vec = parameters_list$quantile_vec,
-                   pca.align.list = list(
-                     Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
-                       positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "gdp"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "credit")))
-
-
-```
-
-```{r get_auxilary_data}
-
-pca_list = results$pca
-
-pca_variance = lapply(names(pca_list),
-                      function(temp_name){
-
-  data.frame(Name = temp_name,
-             Variance = round(pca_list[[temp_name]]$pca$sdev[1] ^ 2 /
-                                sum(pca_list[[temp_name]]$pca$sdev ^ 2),3),
-             stringsAsFactors = FALSE)
-
-
-
-}) %>%
-  bind_rows()
-
-plot_names_list = list("Macro","Global","Fin. Conditions",
-                       "Fin. Cycle")
-
-names(plot_names_list) = names(pca_list)
-
-coeff_df = map_dfr(names(results$qreg_result),
-                  function(temp_name){
-                    
-                    temp_coeff_df = tidy(results$qreg_result[[temp_name]]) %>% 
-                      rename(Partition = term, Coeff = estimate, Quantile = tau) %>% 
-                      select(Partition, Coeff, Quantile) %>% 
-                      mutate(Horizon = temp_name)
-
-  return(temp_coeff_df)
-
-}) %>% 
-  mutate(Horizon = factor(Horizon,
-                          levels = unlist(parameters_list$horizon_list))) %>% 
-  mutate(Quantile = factor(Quantile,
-                           levels = parameters_list$quantile_vec)) %>% 
-  filter(!Partition == "(Intercept)") %>% 
-  mutate(Partition = str_remove_all(Partition,"_xreg")) %>% 
-  left_join(plot_names_list %>% 
-  enframe(value = "new_name") %>% 
-  mutate(new_name = unlist(new_name)),
-  by = c("Partition" = "name")) %>% 
-  select(-Partition)
-  
-my_lab = function(string){
-  
-  paste0("horizon = ", string)
-  
-}
-
-```
-
-```{r calculate_gar_contribution}
-
-factors_df = map_dfr(names(results$qreg_result),function(temp_name){
-    
-    data_mat = results$reg_df %>%
-      rename_all(~str_remove_all(.,pattern = "_xreg")) %>%
-      select(names(current_partition)) %>%
-      as.matrix()
-    
-    coef_vec = coefficients(results$qreg_result[[temp_name]])[-1,1]
-    
-    gar_factors_df =  t(t(data_mat) * coef_vec)
-    
-    gar_factors_df = cbind(date = results$reg_df$date,
-                           as.data.frame(gar_factors_df)) %>% 
-      mutate(Horizon = temp_name)
-    
-    return(gar_factors_df)
- 
-                        })
-
-factors_df = factors_df %>% 
-  rename(Macro = Dom_Macro) %>% 
-  rename(`Fin. Cycle` = FinCycle) %>% 
-  rename(`Fin. Conditions` = Dom_FCI) %>% 
-  pivot_longer(cols = -c(date,Horizon), names_to = "partition")
-  
-
-
-
-
-```
-
-
-```{r make_df}
-
-realized_df = df %>%
-  filter(date < as.yearqtr("2020 Q1")) %>%
-  select(date, gdp) %>%
-  filter(complete.cases(.)) %>%
-  rename(realized = gdp) %>%
-  mutate(Forecast_Period = paste(date - 1, date, sep = "-")) %>%
-  select(-date) %>%
-  select(Forecast_Period, realized) %>%
-  as_tibble()
-
-benchmark_df = get.gar.forecast(
-  partitions_list = NULL,
-  vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
-  target_var_name = "gdp",
-  horizon_list = parameters_list$horizon_list,
-  quantile_vec = parameters_list$quantile_vec,
-  win_len = 40,
-  win_type_expanding = TRUE) %>%
-  mutate(Forecast_Period = paste(
-    date + as.numeric(Horizon) * 0.25 - 1,
-    date + as.numeric(Horizon) * 0.25,
-    sep = "-"
-    )) %>%
-  mutate(Horizon = as_factor(Horizon)) %>%
-  rename(benchmark = GaR_forecast)
-
-staff_forecast_df = import.staff.forecast(raw_df = raw_df) %>%
-  as_tibble() %>%
-  rename(prediction = Staff_Forecast)
-
-staff_forecast_df = list(
-  name = "Staff",
-  partition = list(staff = NA),
-  pred_df = staff_forecast_df) %>%
-  enframe() %>%
-  pivot_wider()
-
-```
-
-
-```{r GaR_Forecast}
-
-models_df = list(GaR_Forecast = partitions_list$basic,
-                 Macro_Forecast = partitions_list$macro) %>%
-  enframe(value = "partition")
-
-models_df = models_df %>%
-  mutate(pred_df = map(partition,function(temp_part){
-
-      temp_forecast = get.gar.forecast(
-        partitions_list = temp_part,
-        vars_df = df %>% filter(date < as.yearqtr("2020 Q1")),
-        target_var_name = "gdp",
-        horizon_list = parameters_list$horizon_list,
-        quantile_vec = parameters_list$quantile_vec,
-        pca.align.list = list(
-          Dom_FCI = list(var_name = "Spread_CPI_corp",
-                         positive_direction = FALSE),
-          Dom_Macro = list(var_name = "gdp"),
-          Global = list(var_name = "gdp_us"),
-          FinCycle = list(var_name = "credit")
-        ),
-        win_len = 40,
-        win_type_expanding = TRUE)
-
-      temp_forecast = temp_forecast %>%
-        filter(complete.cases(.)) %>%
-        mutate(Forecast_Period = paste(
-          date + as.numeric(Horizon) * 0.25 - 1,
-          date + as.numeric(Horizon) * 0.25,
-          sep = "-"
-        )) %>%
-        mutate(Horizon = as_factor(Horizon)) %>%
-        rename(prediction = GaR_forecast)
-
-
-      return(temp_forecast)
-
-      }))
-
-models_df = models_df %>%
-  rbind(staff_forecast_df)
-
-models_df = models_df %>%
-  mutate(realized = map(1:nrow(.),~realized_df)) %>%
-  mutate(benchmark = map(1:nrow(.),~benchmark_df))
-
-
-```
-
-
-```{r calculate_scores}
-
-models_df = models_df %>%
-  mutate(
-    r2_score = pmap(.l = list(pred_df,realized, benchmark),
-                     .f = function(pred_df,realized, benchmark){
-                       temp_score = collect_quantile_r2_score(
-                         pred_df = pred_df,
-                         realized_df = realized,
-                         benchmark_df = benchmark)
-                       return(temp_score)
-                     })
-    ) %>%
-  mutate(
-    pit_score = pmap(.l = list(pred_df,realized),
-                     .f = function(pred_df,realized){
-                       temp_score = pred_df %>%
-                         inner_join(realized_df,
-                                    by = "Forecast_Period") %>%
-                         rename(actual_values = realized,
-                                predicted_values = prediction) %>%
-                         quantile.pit.score()
-
-                       return(temp_score)
-                     }))
-
-```
-
 
 
 
@@ -666,18 +503,17 @@ Sample: 1997Q3-2019Q4
 
 ```{r plot_pca_timeseries}
 
-pca_timeseries_plots = lapply(names(pca_list), function(name){
-
-  ggplot(data.frame(x = pca_list[[name]]$time_index,
-                  y = pca_list[[name]]$pca_obj$x[,1]),
-         aes(x = x, y = y)) +
-    geom_line() +
-    labs(title = plot_names_list[name], x = "", y = "") +
-    scale_x_yearqtr()
-
-  })
-
-plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
+gar_analysis %>% 
+  extract_pca_timeseries_from_gar_model() %>% 
+  rename(`Dom. Macro` = dom_macro,
+         `Ext. Macro` = ext_macro,
+         `Dom. Fin. Cond` = dom_fin,
+         `Ext. Fin. Cond` = ext_fin) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(x = date, y = value)) + 
+  geom_line() + 
+  facet_wrap(~name, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
 
 ```
 
@@ -711,15 +547,20 @@ plot_grid(plotlist = pca_timeseries_plots, nrow = 2)
 
 ```{r dom_macro_plot, fig.height=6.5}
 
-ggplot(coeff_df %>%
-         filter(new_name == "Macro") %>%
-         filter(Horizon %in% c(1,12)),
-         aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("gdp growth (YoY)") + ggtitle("Macro coefficients") + 
-  facet_wrap(~ Horizon, labeller = labeller(Horizon = my_lab))
+
+gar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition %in% c("dom_macro", "ext_macro")) %>%
+  mutate(partition = recode(partition,
+                            "dom_macro" = "Dom. Macro", "ext_macro" = "Ext. Macro")) %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
+  geom_col() +
+  scale_fill_manual(values = c("significant" = "lightblue",
+                               "non_significant" = "gray")) + 
+  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") + 
+  xlab("Quantile") + ylab(NULL)
+
 
 
 
@@ -736,16 +577,19 @@ ggplot(coeff_df %>%
 
 ```{r fin_cycle_plot, fig.height=6.5}
 
-ggplot(coeff_df %>%
-         filter(new_name == "Fin. Cycle") %>%
-         filter(Horizon %in% c(1,12)),
-         aes(x = Quantile, y= Coeff)) +
-  geom_col(width = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  xlab("Quantile") + ylab("gdp growth (YoY)") + 
-  ggtitle("Fin. Cycle coefficients") + 
-  facet_wrap(~ Horizon,labeller = labeller(Horizon = my_lab))
+gar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition %in% c("dom_fin", "ext_fin")) %>%
+  mutate(partition = recode(partition,
+                            "dom_fin" = "Dom. Fin. Cond",
+                            "ext_fin" = "Ext. Fin. Cond")) %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
+  geom_col() +
+  scale_fill_manual(values = c("significant" = "lightblue",
+                               "non_significant" = "gray")) + 
+  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") + 
+  xlab("Quantile") + ylab(NULL)
 
 ```
 
@@ -830,15 +674,8 @@ events = read.csv(paste0(
   "Data\\BoI\\GaR_Data","\\events.csv")) %>%
   mutate(across(c(Start, End), ~as.yearqtr(.)))
 
-predict_df =  data.frame(
-  date = results$reg_df$date,
-  Horizon_1 = predict(results$qreg_result$`1`,
-                newdata = results$reg_df)[,1],
-  Horizon_12 = predict(results$qreg_result$`12`,
-                newdata = results$reg_df)[,1]) %>%
-  pivot_longer(cols = -date,
-               names_to = "Horizon",
-               values_to = "GaR")
+predict_df =  gar_analysis %>% 
+  make_prediction_df(xreg_df = df)
 
 predict_df %>%
 ggplot() +
