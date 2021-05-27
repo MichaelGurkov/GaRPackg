@@ -44,7 +44,7 @@
 #'
 #' @return qreg_result a quantile regression model object
 #'
-#' @return gar_fitted_df a data frame with fitted values
+#' @return fitted_df a data frame with fitted values
 #'
 #' @return pca_obj (optional) PCA object
 #'
@@ -86,23 +86,8 @@ run_GaR_analysis = function(partitions_list, vars_df,
   )
 
 
-  gar_fitted_df = map2_dfr(qreg_result, names(qreg_result),
-                  function(temp_obj,temp_name){
-
-                   temp_fitted_df =  temp_obj$fitted.values %>%
-                     as.data.frame() %>%
-                     setNames(quantile_vec) %>%
-                     mutate(date = reg_df_list$reg_df$date[
-                       1:nrow(temp_obj$model)]) %>%
-                      pivot_longer(cols = -.data$date,
-                                   names_to = "quantile",
-                                   values_to = "gar_fitted") %>%
-                      mutate(horizon = temp_name)
-
-
-
-
-                  }) %>%
+  fitted_df = make_prediction_df(gar_model = qreg_result,
+                                 xreg_df = reg_df_list$reg_df) %>%
     fix_quantile_crossing()
 
 
@@ -115,7 +100,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
 
   return_list$qreg_result = qreg_result
 
-  return_list$gar_fitted_df = gar_fitted_df
+  return_list$fitted_df = fitted_df
 
   if(length(reg_df_list) == 2){
     return_list$pca_obj = reg_df_list$pca_obj}
@@ -239,7 +224,7 @@ make_prediction_df = function(gar_model, xreg_df){
                                cbind(predict(temp_mod, xreg_df)) %>%
                                pivot_longer(-.data$date,
                                             names_to = "quantile",
-                                            values_to = "gar_fitted") %>%
+                                            values_to = "fitted_values") %>%
                                mutate(quantile = str_remove_all(.data$quantile,"tau= ")) %>%
                                mutate(horizon = temp_name)
 
@@ -247,7 +232,8 @@ make_prediction_df = function(gar_model, xreg_df){
 
                            }) %>%
     fix_quantile_crossing() %>%
-    select(.data$date,.data$horizon,.data$quantile,.data$gar_fitted)
+    mutate(quantile = as.numeric(.data$quantile)) %>%
+    select(.data$date,.data$horizon,.data$quantile,.data$fitted_values)
 
   return(prediction_df)
 

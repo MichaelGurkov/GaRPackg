@@ -102,7 +102,6 @@ get_gar_forecast = function(partitions_list,
 #'
 #' @param ... external optional arguments
 #'
-#' @param ... external optional arguments
 #'
 #'
 #' @import tidyr
@@ -152,7 +151,7 @@ predict_df = map(roll_cv_list$splits,
       rename_all(~str_remove(.,"tau= ")) %>%
       pivot_longer(cols = everything(),
                    names_to = "quantile",
-                   values_to = "gar_forecast") %>%
+                   values_to = "forecast_values") %>%
       mutate(horizon = temp_name) %>%
       mutate(date = assessment_set$date)
 
