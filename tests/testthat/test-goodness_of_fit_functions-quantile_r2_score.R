@@ -49,7 +49,7 @@ test_that(
   "quantile_R2_survives_numeric_example",
   code = expect_equal(
     object = quantile_r2_score(
-      predict_df = test_predict_df,
+      forecast_df = test_predict_df,
       actual_df = test_actual_df,
       benchmark_df = test_benchmark_df
     ),

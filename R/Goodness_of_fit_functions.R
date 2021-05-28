@@ -60,7 +60,7 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #' @import dplyr
 #'
-#' @param predict_df data frame with predicted values
+#' @param forecast_df data frame with predicted values
 #' by horizon, quantile, date, forecast_values
 #'
 #' @param actual_df data frame with actual values
@@ -69,16 +69,29 @@ quantile_r2_score_calculation = function(realized_values,
 #' @param benchmark_df data frame with predicted values
 #' by horizon, quantile, date and benchmark_values
 #'
+#'
+#' @details The evaluation between predicted and actual (benchmark) values is
+#' done by comparing the values for a given date. That is based on the
+#' assumption that the dates are correctly aligned. For instance, if the metric
+#' is Year on Year growth that means that on a given day we have the change
+#' for the previous year. So on 2000 Q1 we know the realized change for
+#' the period 1999 Q1-2000 Q1. Since the forecast is given for various horizons
+#' that means that a given date is the combination of the actual forecast date
+#' and the forecast horizon. So a forecast for an horizon of 4 quarters on
+#' 1999 Q1 and a forecast for an horizon of 8 quarters on 1998 Q3 both predict
+#' the realized change for the period 1999 Q1-2000 Q1.
+
+#'
 #' @export
 #'
-quantile_r2_score = function(predict_df, actual_df, benchmark_df){
+quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
   var_names = c("horizon","quantile","date")
 
-  if(!all(var_names %in% names(predict_df))){
+  if(!all(var_names %in% names(forecast_df))){
 
     stop("The following variables are missing in predict df :",
-         paste(var_names[!var_names %in% names(predict_df)],
+         paste(var_names[!var_names %in% names(forecast_df)],
                collapse = ","))
 
 
@@ -100,14 +113,14 @@ quantile_r2_score = function(predict_df, actual_df, benchmark_df){
 
   }
 
-  names(predict_df)[!names(predict_df) %in% var_names] = "predicted_values"
+  names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
 
   names(benchmark_df)[!names(benchmark_df) %in% var_names] = "benchmark_values"
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
 
 
-  df = predict_df %>%
+  df = forecast_df %>%
     inner_join(benchmark_df,
               by = c("date", "horizon", "quantile")) %>%
     inner_join(actual_df, by = "date") %>%

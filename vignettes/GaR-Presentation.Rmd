@@ -964,10 +964,48 @@ skew_plot +
 
 ```{r pit_score}
 
-quantile_pit_score(
-  predict_df = gar_forecast %>%
+gar_pit = quantile_pit_score(
+  forecast_df = gar_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = gdp, date))
+  actual_df = select(df, actual_values = gdp, date)
+) %>% 
+  rename(gar = pit)
+
+intercept_pit = quantile_pit_score(
+  forecast_df = intercept_forecast %>%
+    mutate(date = date + as.numeric(horizon) * 0.25),
+  actual_df = select(df, actual_values = gdp, date)
+) %>% 
+  rename(intercept = pit)
+
+dsge_pit = quantile_pit_score(
+  forecast_df = dsge_forecast %>%
+    mutate(date = date + as.numeric(horizon) * 0.25),
+  actual_df = select(df, actual_values = gdp, date)
+) %>% 
+  rename(dsge = pit)
+
+list(gar_pit, intercept_pit, dsge_pit) %>%
+  reduce(inner_join, by = c("quantile", "horizon")) %>%
+  pivot_longer(-c("quantile", "horizon")) %>%
+  mutate(horizon = factor(horizon, levels = c(1, 4, 8, 12))) %>%
+  mutate(quantile = as.numeric(quantile)) %>%
+  ggplot(aes(
+    x = quantile,
+    y = value,
+    color = name,
+    group = name
+  )) +
+  geom_line(width = 0.5) +
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    color = "black",
+    linetype = "dashed"
+  ) +
+  facet_wrap( ~ horizon)
+
+
 
 ```
 
