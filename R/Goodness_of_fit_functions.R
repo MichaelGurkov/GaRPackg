@@ -60,7 +60,7 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #' @import dplyr
 #'
-#' @param predict_df data frame with predicted values
+#' @param forecast_df data frame with predicted values
 #' by horizon, quantile, date, forecast_values
 #'
 #' @param actual_df data frame with actual values
@@ -84,14 +84,14 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #' @export
 #'
-quantile_r2_score = function(predict_df, actual_df, benchmark_df){
+quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
   var_names = c("horizon","quantile","date")
 
-  if(!all(var_names %in% names(predict_df))){
+  if(!all(var_names %in% names(forecast_df))){
 
     stop("The following variables are missing in predict df :",
-         paste(var_names[!var_names %in% names(predict_df)],
+         paste(var_names[!var_names %in% names(forecast_df)],
                collapse = ","))
 
 
@@ -113,14 +113,14 @@ quantile_r2_score = function(predict_df, actual_df, benchmark_df){
 
   }
 
-  names(predict_df)[!names(predict_df) %in% var_names] = "predicted_values"
+  names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
 
   names(benchmark_df)[!names(benchmark_df) %in% var_names] = "benchmark_values"
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
 
 
-  df = predict_df %>%
+  df = forecast_df %>%
     inner_join(benchmark_df,
               by = c("date", "horizon", "quantile")) %>%
     inner_join(actual_df, by = "date") %>%
