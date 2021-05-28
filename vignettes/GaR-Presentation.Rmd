@@ -143,6 +143,21 @@ gar_analysis = run_GaR_analysis(
 
 ```
 
+```{r out_of_sample_forecast}
+
+
+
+gar_forecast = get_gar_forecast(partitions_list = partitions_list,
+                                vars_df = df,
+                                target_var_name = "gdp",
+                                horizon_list = horizon_list,
+                                quantile_vec = quantile_vec,
+                                win_len = 40,
+                                win_type_expanding = TRUE)
+
+```
+
+
 ```{r import_robustness_data,eval=FALSE}
 
 fit_df = read_rds(paste0(
@@ -737,15 +752,17 @@ gar_analysis %>%
 
 ```{r plot_median_iqr_scatter}
 
-results %>% 
+gar_analysis %>% 
   calculate_skew_and_iqr() %>% 
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>% 
-  ggplot(aes(x = IQR, y = q0.50)) + 
+  inner_join(gar_analysis$fitted_df %>% 
+               filter(quantile == "0.5") %>% 
+               select(-quantile), by = c("date","horizon")) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = iqr, y = fitted_values)) + 
   geom_point() + 
-  geom_smooth(method = "lm",se = FALSE) + 
-  xlab("Inter Quartile Range") + ylab("Median") + 
-  facet_free(~Horizon, scales = "free",
-             labeller = labeller(Horizon = my_lab)) + 
+  geom_smooth(method = "lm") + 
+  xlab("Dispersion") + ylab("Median") + 
+  facet_wrap(~horizon, scales = "free") + 
   theme(axis.text = element_text(size = 8))
 
 
@@ -757,11 +774,11 @@ Contrary to other countries **no evidence of skewed distribution**
 
 ```{r plot_skewness_1_quarter, fig.height=3}
 
-results %>%
+gar_analysis %>%
   calculate_skew_and_iqr() %>%
-  filter(Horizon == 1) %>%
-  select(date, Skew) %>%
-  ggplot(aes(x = date, y = Skew)) +
+  filter(horizon == 1) %>%
+  select(date, skew) %>%
+  ggplot(aes(x = date, y = skew)) +
   geom_line() +
   geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
              color = "blue") +
