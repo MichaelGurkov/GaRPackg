@@ -145,7 +145,14 @@ gar_analysis = run_GaR_analysis(
 
 ```{r out_of_sample_forecast}
 
-
+dsge_forecast = import_dsge_forecasts(
+  paste0(
+    file.path(Sys.getenv("USERPROFILE")),
+    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\DSGE forecasts.xlsx"
+  )
+) %>% 
+  filter(target_var == "gdp") %>% 
+  select(-target_var)
 
 gar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
@@ -154,6 +161,15 @@ gar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 quantile_vec = quantile_vec,
                                 win_len = 40,
                                 win_type_expanding = TRUE)
+
+intercept_forecast = get_gar_forecast(partitions_list = NULL,
+                                vars_df = df,
+                                target_var_name = "gdp",
+                                horizon_list = horizon_list,
+                                quantile_vec = quantile_vec,
+                                win_len = 40,
+                                win_type_expanding = TRUE)
+
 
 ```
 
@@ -934,7 +950,7 @@ skew_plot +
 	GaR model compared to two alternatives:
 	\begin{enumerate}
 		\item
-		Macro only -- partial GaR model without financial variables
+		Intercep only -- partial GaR model without financial variables
 		(domestic and global)
 		\item
 		Staff forecast + DSGE fan chart (symmetric, constant width)
@@ -943,6 +959,17 @@ skew_plot +
 	All models evaluated out of sample (expanding window starts at
 	40 observations and adds one observation in each step)
 \end{itemize}
+
+## PIT score
+
+```{r pit_score}
+
+quantile_pit_score(
+  predict_df = gar_forecast %>%
+    mutate(date = date + as.numeric(horizon) * 0.25),
+  actual_df = select(df, actual_values = gdp, date))
+
+```
 
 ## Quantile R-Squared
 Quantile R-sq. [@Giglio2016] compares forecast performance to a
@@ -972,17 +999,35 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 
 ```{r plot_r2_score}
 
-models_df %>%
-  select(name, r2_score) %>%
-  unnest(r2_score) %>%
-  mutate(name = map_chr(name,~.)) %>%
-  mutate(Horizon = factor(Horizon,
-                          levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = Quantile, y = score, fill = name)) +
-  geom_col(position = "dodge") +
-  xlab(NULL) + ylab(NULL) +
-  scale_fill_viridis_d(option = "plasma") +
-  facet_wrap(~Horizon, labeller = labeller(Horizon = my_lab))
+gar_r2 = quantile_r2_score(
+  predict_df = gar_forecast %>%
+    mutate(date = date + as.numeric(horizon) * 0.25),
+  actual_df = select(df, actual_values = gdp, date),
+  benchmark_df = intercept_forecast %>%
+    mutate(date = date + as.numeric(horizon) * 0.25) %>%
+    rename(benchmark_values = forecast_values)
+) %>%
+  rename(gar_r2 = quantile_r2)
+
+dsge_r2 = quantile_r2_score(
+  predict_df = dsge_forecast %>% 
+    mutate(date = date + as.numeric(horizon) * 0.25) %>%
+    rename(forecast_values = forecast),
+  actual_df = select(df, actual_values = gdp, date),
+  benchmark_df = intercept_forecast %>%
+    mutate(date = date + as.numeric(horizon) * 0.25) %>%
+    rename(benchmark_values = forecast_values)
+  ) %>%
+  rename(dsge_r2 = quantile_r2)
+
+gar_r2 %>% 
+  inner_join(dsge_r2,by = c("horizon", "quantile")) %>% 
+  pivot_longer(-c(horizon, quantile)) %>% 
+  mutate(quantile = factor(quantile, levels = quantile_vec)) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = value, fill = name)) + 
+  geom_col(position = "dodge") + 
+  facet_wrap(~horizon)
 
 ```
 
