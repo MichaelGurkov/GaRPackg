@@ -69,6 +69,19 @@ quantile_r2_score_calculation = function(realized_values,
 #' @param benchmark_df data frame with predicted values
 #' by horizon, quantile, date and benchmark_values
 #'
+#'
+#' @details The evaluation between predicted and actual (benchmark) values is
+#' done by comparing the values for a given date. That is based on the
+#' assumption that the dates are correctly aligned. For instance, if the metric
+#' is Year on Year growth that means that on a given day we have the change
+#' for the previous year. So on 2000 Q1 we know the realized change for
+#' the period 1999 Q1-2000 Q1. Since the forecast is given for various horizons
+#' that means that a given date is the combination of the actual forecast date
+#' and the forecast horizon. So a forecast for an horizon of 4 quarters on
+#' 1999 Q1 and a forecast for an horizon of 8 quarters on 1998 Q3 both predict
+#' the realized change for the period 1999 Q1-2000 Q1.
+
+#'
 #' @export
 #'
 quantile_r2_score = function(predict_df, actual_df, benchmark_df){
