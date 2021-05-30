@@ -10,7 +10,7 @@ output:
       in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
     latex_engine: xelatex
     slide_level: 2
-bibliography: "GaR.bib"
+# bibliography: "GaR.bib"
 ---
 
 
@@ -139,7 +139,11 @@ gar_analysis = run_GaR_analysis(
   vars_df = df,
   target_var_name = "gdp",
   horizon_list = horizon_list,
-  quantile_vec = quantile_vec)
+  quantile_vec = quantile_vec,
+  pca.align.list = list(dom_fin = "credit",
+                        dom_macro = "private_consumption",
+                        ext_fin = "rate_us",
+                        ext_macro = "exports"))
 
 ```
 
@@ -1038,7 +1042,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 ```{r plot_r2_score}
 
 gar_r2 = quantile_r2_score(
-  predict_df = gar_forecast %>%
+  forecast_df = gar_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
   actual_df = select(df, actual_values = gdp, date),
   benchmark_df = intercept_forecast %>%
@@ -1048,7 +1052,7 @@ gar_r2 = quantile_r2_score(
   rename(gar_r2 = quantile_r2)
 
 dsge_r2 = quantile_r2_score(
-  predict_df = dsge_forecast %>% 
+  forecast_df = dsge_forecast %>% 
     mutate(date = date + as.numeric(horizon) * 0.25) %>%
     rename(forecast_values = forecast),
   actual_df = select(df, actual_values = gdp, date),
@@ -1089,46 +1093,6 @@ gar_r2 %>%
 
 # Appendix {.unlisted .unnumbered}
 ## Appendix 
-## Probability Integral Transform (PIT)
-For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
-	$$
-	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
-	$$
-\begin{itemize}
-\setlength\itemsep{1em}
-	\item
-	A model is better fitted the closer $\varphi_{\tau,h}$ is to
-	45-degree line.
-	\item
-	If the model perfectly fits the empirical  distribution, then
-	the fraction of observations falling below quantile $\tau$
-	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
-\end{itemize}
-
-## Probability Integral Transform (PIT)
-
-
-```{r plot_pit_score}
-
-models_df %>%
-  select(name, pit_score) %>%
-  unnest(pit_score) %>%
-  mutate(name = map_chr(name,~.)) %>%
-  mutate(Quantile = as.numeric(Quantile)) %>%
-  mutate(Horizon = factor(Horizon,
-                          levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) +
-  geom_line() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  xlab(NULL) + ylab(NULL) +
-  scale_color_viridis_d(option = "plasma") +
-  scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
-                   labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
-
-```
-
-
 ## Quantile Regression 
 
 \label{QuantileReg}
@@ -1166,28 +1130,13 @@ Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 
 ```{r plot_pc_loadings}
 
-pca_plots = lapply(names(pca_list), function(name){
-  
-  pca_var = round(pca_variance$Variance
-                  [pca_variance$Name == name] * 100,0)
-  
-  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
-                               Val = pca_list[[name]]$pca$rotation[,1]),
-                    aes(x = reorder(Name, Val), y = Val)) +
-    geom_bar(stat = "identity", width = 0.5) +
-    xlab(NULL) + ylab(NULL) + ggtitle(paste0(
-    plot_names_list[[name]], " (" ,pca_var, "%)")) +
-    coord_flip() + 
-    theme(plot.title = element_text(size = 18))
-  
-  rm(pca_var)
-  
-  return(bar_plot)
-  
+gar_analysis %>% 
+  extract_pca_loadings_from_gar_model() %>% 
+  ggplot(aes(x = rowname, y = coeff)) + 
+  geom_col(width = 0.5) + 
+  facet_wrap(~partition, scales = "free") + 
+  theme(axis.text.x = element_text(size = 13))
 
-})
-
-plot_grid(plotlist = pca_plots)
 
 ```
 
@@ -1201,22 +1150,24 @@ plot_grid(plotlist = pca_plots)
 
 \label{CoeffPanel}
 
-```{r coeff_panel_plot}
+```{r coeff_panel_plot, fig.height=7}
 
-coeff_plot_list = map(unique(coeff_df$Horizon), function(temp_horizon){
-  ggplot(coeff_df %>%
-           filter(Horizon == temp_horizon),
-         aes(x = Quantile, y= Coeff)) +
-    geom_col(width = 0.35) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-    xlab("Quantile") + ylab(NULL) + ggtitle(paste(temp_horizon, "quarters ahead")) + 
-    facet_wrap(~ new_name, scales = "free") + 
-    theme(axis.text = element_text(size = 8))
-  
-})
+gar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(!partition == "Intercept") %>% 
+  mutate(partition = recode(partition,
+                            "dom_macro" = "Dom. Macro",
+                            "ext_macro" = "Ext. Macro",
+                            "dom_fin" = "Dom. Fin. Cond.",
+                            "ext_fin" = "Ext. Fin. Cond.")) %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
+  geom_col() +
+  scale_fill_manual(values = c("significant" = "lightblue",
+                               "non_significant" = "gray")) + 
+  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") + 
+  xlab("Quantile") + ylab(NULL)
 
-
-plot_grid(plotlist = coeff_plot_list)
 
 ```
 
