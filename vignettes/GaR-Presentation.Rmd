@@ -1,8 +1,8 @@
 ---
-title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
+title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
-date: "14 September, 2020"
+date: "16 July, 2021"
 classoption: t
 output:
   beamer_presentation:
@@ -16,7 +16,7 @@ output:
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,eval = FALSE,
+  collapse = TRUE, echo = FALSE, message = FALSE,
   warning = FALSE, comment = "#>"
 
 )
@@ -92,7 +92,7 @@ theme_set(theme_bw() +
 
 ```
 
-```{r load_data,eval=FALSE}
+```{r load_data}
 
 raw_df = import_from_fame_template(
   paste0(
@@ -126,24 +126,27 @@ vars_to_diff = c("unemployment",
 )
 
 df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4")) %>% 
-  filter(complete.cases(.))
+  filter(date <= as.yearqtr("2019 Q4"))
 
 
 ```
 
-```{r run_analysis,eval=FALSE}
+```{r run_analysis}
 
 gar_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
   vars_df = df,
   target_var_name = "gdp",
   horizon_list = horizon_list,
-  quantile_vec = quantile_vec)
+  quantile_vec = quantile_vec,
+  pca.align.list = list(dom_macro = "private_consumption",
+                        ext_macro = "exports",
+                        dom_fin = "credit",
+                        ext_fin = "sp500"))
 
 ```
 
-```{r out_of_sample_forecast,eval=FALSE}
+```{r out_of_sample_forecast}
 
 dsge_forecast = import_dsge_forecasts(
   paste0(
@@ -174,7 +177,7 @@ intercept_forecast = get_gar_forecast(partitions_list = NULL,
 ```
 
 
-```{r import_robustness_data,eval=FALSE}
+```{r import_robustness_data, eval=FALSE}
 
 fit_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -189,11 +192,11 @@ fit_df = read_rds(paste0(
 
 \begin{itemize}
 	\item
-	Macro-financial model  developed by {adrian2019vulnerable}.
+	Macro-financial model  developed by Adrian et al. (2019).
 	
 	
 	\begin{itemize}
-		\item Operationalized by IMF {prasad2019growth}.
+		\item Operationalized by IMF (Prasad et al., 2019).
 		\item
 		Applied for: 
 		\begin{itemize}
@@ -255,7 +258,7 @@ fit_df = read_rds(paste0(
 	\end{itemize}
 	
 	\item
-	Possible uses:
+	Uses:
 	\begin{enumerate}
 		
 		\item
@@ -395,19 +398,19 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 \begin{itemize}
   \setlength\itemsep{3em}
   \item
-  Improve understanding of macro-financial linkages in Israel:
-  \begin{itemize}
-    \item
-    Provide empirical evidence to support macro-financial modeling
-    (joint project with IMF)
-  \end{itemize}
-  \item
   Tools for regular assessment of risks:
   \begin{itemize}
     \item
     5th percentile of forecast
     \item
     State-dependent fan charts
+  \end{itemize}
+  \item
+  Improve understanding of macro-financial linkages in Israel:
+  \begin{itemize}
+    \item
+    Provide empirical evidence to support macro-financial modeling
+    (joint project with IMF)
   \end{itemize}
 \end{itemize}
 
@@ -448,7 +451,7 @@ Out-of-sample forecast performance is impaired.
 
 \label{methodology}
 
-[@Prasad2019]
+(Prasad et al., 2019)
 \begin{enumerate}
 	\item
 	\textbf{Partition data:} divide a large number of variables
@@ -624,7 +627,7 @@ gar_analysis %>%
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
-## Fin.Cycle contributes to growth in the short term, and to risks in the long term
+## Fin.Conditions contribute to growth in the short term, and to risks in the long term
 
 ```{r fin_cycle_plot, fig.height=6.5}
 
@@ -650,60 +653,6 @@ gar_analysis %>%
 
 
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
-
-
-## Volatility Paradox
-
-\vspace{-1em}
-
-\begin{block}{\center{Brunnermeir and Sannikov 2014}}
-\vspace{0.5em}
-	Low risks (which contribute to short-term growth), encourage the
-	accumulation of risks in the medium-to-long term.
-\end{block}
-
-
-* Financial Cycle factor is correlated with growth in the short term,
-  but also with elevated risks in the long term.
-
-* Mechanisms:
-
-
-\begin{tikzpicture}
-			[nodestyle/.style={rounded rectangle,draw=blue!50,fill=blue!20,thick,
-				inner sep=2pt,minimum width=10mm},
-			%transition/.style={rectangle,draw=black!50,fill=black!20,thick,
-			%	inner sep=0pt,minimum size=4mm}
-			greynodestyle/.style={rounded rectangle,draw=black!50,fill=black!20,thick,
-				inner sep=2pt,minimum width=10mm}]
-			
-			%Nodes
-			\node       (Risk)          	[nodestyle]							{risk today $\downarrow$};			
-			\node  	    (Spreads)       	[nodestyle, right=of Risk,xshift=-2mm]		{ spreads $\downarrow$};
-			\node       (AssetPrices)      [nodestyle,above right=of Spreads, yshift=-4mm, xshift=4mm] 	{asset prices $\uparrow$};
-			\node       (Debt)      [nodestyle,below right=of Spreads, yshift=4mm, xshift=4mm] 	{ \quad{} debt  $\uparrow$ \quad{ } };
-			\node       (FutureRisk)      [nodestyle, right=of Spreads, xshift=35mm] 	{ future risk  $\uparrow$ };
-			\node       (FinCyc)      [greynodestyle, below=of Debt, yshift=3mm] 	{ Financial Cycle };
-			\node       (FCI)      [greynodestyle, left=of FinCyc, xshift=4mm] 	{ Fin. Cond. };
-			
-			
-			
-			
-			%Lines
-			\draw[->, thick] (Risk.east) -- (Spreads.west) node[midway,above] {};
-			\draw[->, thick] (Spreads.east) -- (AssetPrices.west) node[midway,above] {};
-			\draw[->, thick] (Spreads.east) -- (Debt.west) node[midway,above] {};
-			\draw[->, thick] (AssetPrices.east) -- (FutureRisk.west) node[midway,above] {};
-			\draw[->, thick] (Debt.east) -- (FutureRisk.west) node[midway,above] {};
-			
-			
-			%		\onslide<2->				
-			%		%Nodes
-			%		\node       (FinCyc)        [greynodestyle, below=of Debt]		{financial cycle};
-			%		\node  	    (FCI)       	[greynodestyle, left=of FinCyc, xshift=-2mm]		{ FCI };
-			%		
-			
-\end{tikzpicture}
 
 
 # In-sample Properties of Risks to Growth
@@ -737,6 +686,7 @@ gar_analysis$fitted_df %>%
                                             ymin = -Inf,ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
   ylab(NULL) + xlab(NULL) +
+  scale_y_continuous(labels = scales::percent_format()) + 
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
   geom_point(data = . %>% filter(date %in% events$Start),
              aes(x = date, y = fitted_values),color = "blue") +
@@ -784,7 +734,7 @@ gar_analysis %>%
 
 ```
 
-## Forecast Median and Dispersion are Negatively Correlated
+## Low median forecasts are associated with higher uncertainty
 
 ```{r plot_median_iqr_scatter}
 
@@ -1022,8 +972,10 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
     intercept = 0,
     color = "black",
     linetype = "dashed"
-  ) +
-  facet_wrap( ~ horizon)
+  ) + 
+  scale_fill_discrete(labels = c("DSGE","GaR")) +
+  facet_wrap(~horizon) + 
+  xlab("Quantile") + ylab(NULL)
 
 
 
@@ -1085,7 +1037,9 @@ gar_r2 %>%
   mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
   ggplot(aes(x = quantile, y = value, fill = name)) + 
   geom_col(position = "dodge") + 
-  facet_wrap(~horizon)
+  scale_fill_discrete(labels = c("DSGE","GaR")) +
+  facet_wrap(~horizon) + 
+  xlab("Quantile") + ylab(NULL)
 
 ```
 
@@ -1161,7 +1115,17 @@ Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 
 \label{PcaLoadings}
 
-\label{pca_loadings}
+```{r pca_loadings}
+
+gar_analysis %>% 
+  extract_pca_loadings_from_gar_model() %>% 
+  ggplot(aes(x = rowname, y = coeff)) + 
+  geom_col(width = 0.3) + 
+  coord_flip() + 
+  facet_wrap(~partition, scales = "free")
+
+```
+
 
 \vspace{-0.5em}
 
