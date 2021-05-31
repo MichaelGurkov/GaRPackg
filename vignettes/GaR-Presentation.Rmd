@@ -16,7 +16,7 @@ output:
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE, echo = FALSE, message = FALSE,
+  collapse = TRUE, echo = FALSE, message = FALSE,eval = FALSE,
   warning = FALSE, comment = "#>"
 
 )
@@ -92,7 +92,7 @@ theme_set(theme_bw() +
 
 ```
 
-```{r load_data}
+```{r load_data,eval=FALSE}
 
 raw_df = import_from_fame_template(
   paste0(
@@ -132,7 +132,7 @@ df = df %>%
 
 ```
 
-```{r run_analysis}
+```{r run_analysis,eval=FALSE}
 
 gar_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
@@ -143,7 +143,7 @@ gar_analysis = run_GaR_analysis(
 
 ```
 
-```{r out_of_sample_forecast}
+```{r out_of_sample_forecast,eval=FALSE}
 
 dsge_forecast = import_dsge_forecasts(
   paste0(
@@ -486,29 +486,49 @@ Out-of-sample forecast performance is impaired.
 \label{DataPartitioning}
 
 Sample: 1997Q3-2019Q4
-\tiny
-\begin{tabularx}{\linewidth}{X |X |X | X}
-	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
-	\hline
-	& & & \\
-	gdp 						& gdp - US, Euro 			& BoI rate 				& credit\\
-	& & & \\
-	State-of-the-Economy index 	& OECD imports				& TA35 implied vol. 	& house prices \\
-	& & & \\
-	unemployment gap 			& monetary rate - US, Euro  & ILS-USD implied vol. 	& TA125  \\
-	& & & \\
-								& S\&P500					& corp. bond spreads &  \\
-	& & & \\
-								& eurostoxx600				& term-spread 			& \\
-	& & & \\
-								&  non-energy commodity prices			& US-Israel gov. bond spread &\\
-	& & & \\
-								& Brent oil price &  & \\
-	& & & \\
-								& US term spread			&						& \\
-	& & & \\
-								& VIX						& 						& \\
-\end{tabularx}
+
+<!-- \flushleft -->
+
+\vspace{1em}
+
+\scriptsize
+
+\begin{tabular}{cccc}
+
+  \vspace{2em}
+
+		\textbf{Domestic Macro} & \textbf{Domestic Financial Cond.} &
+		\textbf{External Macro}	& \textbf{External Financial Cond.} \\
+	
+	
+	\vspace{1em}
+	
+	
+		Private consumption & BOI rate & Exports & Federal Funds rate \\
+		
+	\vspace{1em}
+
+		Real Investment & Private credit & Imports & Eonia \\
+		
+	\vspace{1em}
+
+		Public consumption & House price index & OECD imports & SP500 \\
+		
+	\vspace{1em}
+
+		Unemployment & TA125 &  & Eurostoxx600 \\
+		
+	\vspace{1em}
+
+		&  &  & Brent oil price \\
+		
+	\vspace{1em}
+
+		&  &  & Non energy commodity \\
+		
+	\vspace{1em}
+
+\end{tabular}
 
 \vspace{1em}
 
