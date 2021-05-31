@@ -102,7 +102,8 @@ raw_df = import_from_fame_template(
 )
 
 df = raw_df %>%
-  select(date,gdp, any_of(unlist(partitions_list,use.names = FALSE))) %>% 
+  select(date,starts_with("gdp"),
+         any_of(unlist(partitions_list,use.names = FALSE))) %>% 
   preprocess_df(vars_to_yoy = c(
     "gdp",
     "private_consumption",
@@ -781,9 +782,9 @@ Consistent with features of past gdp growth
 
 df %>%
   select(date,gdp_us, gdp_euro, gdp) %>%
-  filter(date < as.yearqtr("2020 Q1")) %>% 
+  filter(complete.cases(.)) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = gdp) %>%
-  mutate(across(-date, ~scale(.,center = TRUE, scale = FALSE))) %>% 
+  mutate(across(-date, ~scale(.,center = TRUE, scale = TRUE))) %>% 
   pivot_longer(-date) %>%
   ggplot(aes(x = value, fill = name)) +
   geom_density(alpha = 0.5) + 
