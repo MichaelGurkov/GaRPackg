@@ -10,7 +10,7 @@ output:
       in_header: !expr here::here('vignettes/GaR-PresentationPreamble.tex')
     latex_engine: xelatex
     slide_level: 2
-bibliography: "GaR.bib"
+# bibliography: "GaR.bib"
 ---
 
 
@@ -102,6 +102,7 @@ raw_df = import_from_fame_template(
 )
 
 df = raw_df %>%
+  select(date,gdp, any_of(unlist(partitions_list,use.names = FALSE))) %>% 
   preprocess_df(vars_to_yoy = c(
     "gdp",
     "private_consumption",
@@ -121,13 +122,12 @@ df = raw_df %>%
 vars_to_diff = c("unemployment",
                  "boi_rate",
                  "rate_euro",
-                 "rate_us"),
-vars_to_4_ma = c("gdp_us",
-                 "gdp_euro")
+                 "rate_us")
 )
 
 df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4"))
+  filter(date <= as.yearqtr("2019 Q4")) %>% 
+  filter(complete.cases(.))
 
 
 ```
@@ -807,7 +807,7 @@ gar_analysis %>%
 
 Consistent with features of past gdp growth
 
-```{r plot_gdp_growth, fig.height=3}
+```{r plot_gdp_growth, fig.height=3, eval=FALSE}
 
 df %>%
   select(date,gdp_us, gdp_euro, gdp) %>%
@@ -1038,7 +1038,7 @@ $\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
 ```{r plot_r2_score}
 
 gar_r2 = quantile_r2_score(
-  predict_df = gar_forecast %>%
+  forecast_df = gar_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
   actual_df = select(df, actual_values = gdp, date),
   benchmark_df = intercept_forecast %>%
@@ -1048,7 +1048,7 @@ gar_r2 = quantile_r2_score(
   rename(gar_r2 = quantile_r2)
 
 dsge_r2 = quantile_r2_score(
-  predict_df = dsge_forecast %>% 
+  forecast_df = dsge_forecast %>% 
     mutate(date = date + as.numeric(horizon) * 0.25) %>%
     rename(forecast_values = forecast),
   actual_df = select(df, actual_values = gdp, date),
@@ -1108,27 +1108,6 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 ## Probability Integral Transform (PIT)
 
 
-```{r plot_pit_score}
-
-models_df %>%
-  select(name, pit_score) %>%
-  unnest(pit_score) %>%
-  mutate(name = map_chr(name,~.)) %>%
-  mutate(Quantile = as.numeric(Quantile)) %>%
-  mutate(Horizon = factor(Horizon,
-                          levels = c("1","4","8","12"))) %>%
-  ggplot(aes(x = Quantile, y = pit, group = name, color = name)) +
-  geom_line() +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  xlab(NULL) + ylab(NULL) +
-  scale_color_viridis_d(option = "plasma") +
-  scale_x_continuous(breaks = c(0.05,0.25,0.5,0.75,0.95),
-                   labels = c(0.05,0.25,0.5,0.75,0.95)) +
-  facet_wrap(~Horizon,labeller = labeller(Horizon = my_lab))
-
-```
-
-
 ## Quantile Regression 
 
 \label{QuantileReg}
@@ -1164,33 +1143,6 @@ Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 
 \label{pca_loadings}
 
-```{r plot_pc_loadings}
-
-pca_plots = lapply(names(pca_list), function(name){
-  
-  pca_var = round(pca_variance$Variance
-                  [pca_variance$Name == name] * 100,0)
-  
-  bar_plot = ggplot(data.frame(Name = names(pca_list[[name]]$pca$rotation[,1]),
-                               Val = pca_list[[name]]$pca$rotation[,1]),
-                    aes(x = reorder(Name, Val), y = Val)) +
-    geom_bar(stat = "identity", width = 0.5) +
-    xlab(NULL) + ylab(NULL) + ggtitle(paste0(
-    plot_names_list[[name]], " (" ,pca_var, "%)")) +
-    coord_flip() + 
-    theme(plot.title = element_text(size = 18))
-  
-  rm(pca_var)
-  
-  return(bar_plot)
-  
-
-})
-
-plot_grid(plotlist = pca_plots)
-
-```
-
 \vspace{-0.5em}
 
 \hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
@@ -1200,25 +1152,6 @@ plot_grid(plotlist = pca_plots)
 
 
 \label{CoeffPanel}
-
-```{r coeff_panel_plot}
-
-coeff_plot_list = map(unique(coeff_df$Horizon), function(temp_horizon){
-  ggplot(coeff_df %>%
-           filter(Horizon == temp_horizon),
-         aes(x = Quantile, y= Coeff)) +
-    geom_col(width = 0.35) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
-    xlab("Quantile") + ylab(NULL) + ggtitle(paste(temp_horizon, "quarters ahead")) + 
-    facet_wrap(~ new_name, scales = "free") + 
-    theme(axis.text = element_text(size = 8))
-  
-})
-
-
-plot_grid(plotlist = coeff_plot_list)
-
-```
 
 
 \vspace{-0.5em}
