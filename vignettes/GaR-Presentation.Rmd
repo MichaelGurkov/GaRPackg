@@ -1,8 +1,8 @@
 ---
-title: "Growth at Risk: The Distribution of Future gdp Growth in Israel"
+title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
-date: "14 September, 2020"
+date: "16 July, 2021"
 classoption: t
 output:
   beamer_presentation:
@@ -102,6 +102,8 @@ raw_df = import_from_fame_template(
 )
 
 df = raw_df %>%
+  select(date,starts_with("gdp"),
+         any_of(unlist(partitions_list,use.names = FALSE))) %>% 
   preprocess_df(vars_to_yoy = c(
     "gdp",
     "private_consumption",
@@ -121,9 +123,7 @@ df = raw_df %>%
 vars_to_diff = c("unemployment",
                  "boi_rate",
                  "rate_euro",
-                 "rate_us"),
-vars_to_4_ma = c("gdp_us",
-                 "gdp_euro")
+                 "rate_us")
 )
 
 df = df %>% 
@@ -140,10 +140,10 @@ gar_analysis = run_GaR_analysis(
   target_var_name = "gdp",
   horizon_list = horizon_list,
   quantile_vec = quantile_vec,
-  pca.align.list = list(dom_fin = "credit",
-                        dom_macro = "private_consumption",
-                        ext_fin = "rate_us",
-                        ext_macro = "exports"))
+  pca.align.list = list(dom_macro = "private_consumption",
+                        ext_macro = "exports",
+                        dom_fin = "credit",
+                        ext_fin = "sp500"))
 
 ```
 
@@ -178,7 +178,7 @@ intercept_forecast = get_gar_forecast(partitions_list = NULL,
 ```
 
 
-```{r import_robustness_data,eval=FALSE}
+```{r import_robustness_data, eval=FALSE}
 
 fit_df = read_rds(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -187,103 +187,9 @@ fit_df = read_rds(paste0(
 
 ```
 
-
-
-# Background
-
-\begin{itemize}
-	\item
-	Macro-financial model  developed by {adrian2019vulnerable}.
-	
-	
-	\begin{itemize}
-		\item Operationalized by IMF {prasad2019growth}.
-		\item
-		Applied for: 
-		\begin{itemize}
-			\item[] Italy {\scriptsize{Alessandri2019}}
-			\item[] UK {\scriptsize{Aikman2018}}
-			\item[] advanced economies {\scriptsize{Aikman2019}}
-			\item[] developing economies {\scriptsize{Komatsuzaki2019,Bespalova2019}}
-		\end{itemize}
-		 
-		\item
-		First run in Israel (based on IMF modelling): box in  Financial Stability Report 2019(1)
-	\end{itemize}
-	
-	\item
-	Today: 
-	\begin{itemize}
-		\item
-		Further adjustments of the model to Israel
-		\item
-		Discussion of main findings (corresponding to {adrian2019monetary})
-		
-	\end{itemize}
-\end{itemize}	
-	
-
-
-
-# Motivation
-
-\begin{itemize}
-	
-	\item
-	Goal: Estimate risks to growth using real and financial variables:	
-	
-	\begin{center}	
-		~
-	\begin{beamerboxesrounded}[width=0.75\linewidth]{}
-		Given current macro-financial conditions, what is the distribution of
-		expected economic growth?		
-	\end{beamerboxesrounded}
-	~
-	\end{center}
-	
-
-	
-	\item
-	Tool: Linear  model of
-	density forecasts. 
-	
-	\begin{itemize}
-		\item
-		Based on quantile regressions
-		\item
-		Parsimonious
-		\item
-		Easy to interpret
-		
-				
-	\end{itemize}
-	
-	\item
-	Possible uses:
-	\begin{enumerate}
-		
-		\item
-		Tool for regular assessment of risks:
-		\begin{itemize}
-			\item
-			Financial Stability Report
-			\item
-			Staff forecast fan chart
-		\end{itemize}
-		
-		\item
-		Provide empirical evidence to support macro-financial  modelling efforts (joint project with IMF)
-		
-		
-		
-	\end{enumerate}
-		
-\end{itemize}
-
-
 # Outline
 
-\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide] 
+\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
 
 ## Motivation
 
@@ -303,7 +209,7 @@ fit_df = read_rds(paste0(
 
 	Given current macro-financial conditions, what is the distribution of
 	expected economic growth?
-	
+
 \end{block}
 \end{center}
 
@@ -313,7 +219,7 @@ fit_df = read_rds(paste0(
 ## Motivation
 
 \centering
-Quantile Regressions of YoY gdp Growth Four Quarters Ahead
+Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 
 \vspace{3mm}
 
@@ -347,15 +253,15 @@ temp_plot = temp_df %>%
               aes(intercept = my_int,
                   slope = my_slope,
                   color = Quantile)) +
-  scale_color_manual(values = c("red","black","green")) + 
+  scale_color_manual(values = c("red","black","green")) +
   scale_x_continuous(
     labels = scales::percent_format(accuracy = 1)) +
   scale_y_continuous(
     labels = scales::percent_format(accuracy = 1)) +
-  scale_color_manual(values = c("red","black","green")) + 
+  scale_color_manual(values = c("red","black","green")) +
   xlab(paste("YoY", temp_var, "growth")) +
   ylab((paste("YoY gdp growth 4 quarters ahead"))) +
-  ggtitle(temp_var) +
+  ggtitle(if_else(temp_var == "gdp","GDP","Credit")) +
   theme(legend.position = "none")
 
   return(temp_plot)
@@ -383,13 +289,13 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 
 \vspace{1em}
 
-* Proposed by @Adrian2019, operationalized by the IMF [@Prasad2019].
+* Proposed by Adrian et al. (2019), operationalized by the IMF (Prasad et al., 2019).
 
 \vspace{1em}
 
 * Applied to:
-  + Advanced economies [@Aikman2018;@Alessandri2019]
-  + Developing economies [@Komatsuzaki2019; @Bespalova2019]
+  + Advanced economies (Aikman et al., 2018, 2019; Alessandri et al., 2019)
+  + Developing economies (Komatsuzaki and Brito, 2019; Bespalova and Rousset,	2019)
 
 
 ## Contribution
@@ -399,19 +305,19 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 \begin{itemize}
   \setlength\itemsep{3em}
   \item
-  Improve understanding of macro-financial linkages in Israel:
-  \begin{itemize}
-    \item
-    Provide empirical evidence to support macro-financial modeling
-    (joint project with IMF)
-  \end{itemize}
-  \item
   Tools for regular assessment of risks:
   \begin{itemize}
     \item
     5th percentile of forecast
     \item
     State-dependent fan charts
+  \end{itemize}
+  \item
+  Improve understanding of macro-financial linkages in Israel:
+  \begin{itemize}
+    \item
+    Provide empirical evidence to support macro-financial modeling
+    (joint project with IMF)
   \end{itemize}
 \end{itemize}
 
@@ -421,19 +327,27 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 \begin{itemize}
 \setlength\itemsep{1.5em}
 \item
-In-sample properties of the predictive distribution:
+In-sample properties of the distribution of expected GDP growth:
   \begin{enumerate}
 	\item
 	\textbf{Symmetric} -- upside and downside risks are balanced.
 	\item
 	\textbf{Forecast uncertainty} rises when the median forecast decreases.
 	\item
-	\textbf{``Volatility paradox''} -- an increase in credit or asset prices is correlated with short-term gdp growth, but contributes to long-term downside risks.
+	\textbf{Financial Vulnerabilities} -- accomodative financial conditions contribute to
+	        medium term risks to growth.
   \end{enumerate}
 \item
 These properties are robust to variable selection.
 \item
 Out-of-sample forecast performance is impaired.
+\item
+Out-of-sample forecast performance in distribution tails is similar to benchmark models.
+
+  \begin{itemize}
+    \item but GaR allows state-dependent evaluation of risks
+  \end{itemize}
+  
 \end{itemize}
 
 
@@ -446,13 +360,13 @@ Out-of-sample forecast performance is impaired.
 \tableofcontents
 
 
-# Methodology and Data  
+# Methodology and Estimation Results
 ## Methodology
 
 
 \label{methodology}
 
-[@Prasad2019]
+(IMF: Prasad et al., 2019)
 \begin{enumerate}
 	\item
 	\textbf{Partition data:} divide a large number of variables
@@ -473,9 +387,9 @@ Out-of-sample forecast performance is impaired.
 	$$
 	Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{t,h}
 	$$
-	
+
 	\vspace{0.5em}
-	
+
 	where $ X_t=[1, x^1_t, ... , x^K_t]$
 	\vspace{1em}
 	\begin{flushright}
@@ -490,29 +404,49 @@ Out-of-sample forecast performance is impaired.
 \label{DataPartitioning}
 
 Sample: 1997Q3-2019Q4
-\tiny
-\begin{tabularx}{\linewidth}{X |X |X | X}
-	Macro 						& Global & Fin.  Conditions & Fin. Cycle\\
-	\hline
-	& & & \\
-	gdp 						& gdp - US, Euro 			& BoI rate 				& credit\\
-	& & & \\
-	State-of-the-Economy index 	& OECD imports				& TA35 implied vol. 	& house prices \\
-	& & & \\
-	unemployment gap 			& monetary rate - US, Euro  & ILS-USD implied vol. 	& TA125  \\
-	& & & \\
-								& S\&P500					& corp. bond spreads &  \\
-	& & & \\
-								& eurostoxx600				& term-spread 			& \\
-	& & & \\
-								&  non-energy commodity prices			& US-Israel gov. bond spread &\\
-	& & & \\
-								& Brent oil price &  & \\
-	& & & \\
-								& US term spread			&						& \\
-	& & & \\
-								& VIX						& 						& \\
-\end{tabularx}
+
+<!-- \flushleft -->
+
+\vspace{1em}
+
+\scriptsize
+
+\begin{tabular}{cccc}
+
+  \vspace{2em}
+
+		\textbf{Domestic Macro} & \textbf{Domestic Financial Cond.} &
+		\textbf{External Macro}	& \textbf{External Financial Cond.} \\
+
+
+	\vspace{1em}
+
+
+		Private consumption & BOI rate & Exports & Federal Funds rate \\
+
+	\vspace{1em}
+
+		Real Investment & Private credit & Imports & Eonia \\
+
+	\vspace{1em}
+
+		Public consumption & House price index & OECD imports & SP500 \\
+
+	\vspace{1em}
+
+		Unemployment & TA125 &  & Eurostoxx600 \\
+
+	\vspace{1em}
+
+		&  &  & Brent oil price \\
+
+	\vspace{1em}
+
+		&  &  & Non energy commodity \\
+
+	\vspace{1em}
+
+\end{tabular}
 
 \vspace{1em}
 
@@ -529,8 +463,7 @@ Sample: 1997Q3-2019Q4
 
 
 
-# Estimation Results 
-## $1^{st}$ Principal Components 
+## $1^{st}$ Principal Components
 
 
 \label{PcaTimeseries}
@@ -538,16 +471,16 @@ Sample: 1997Q3-2019Q4
 
 ```{r plot_pca_timeseries}
 
-gar_analysis %>% 
-  extract_pca_timeseries_from_gar_model() %>% 
+gar_analysis %>%
+  extract_pca_timeseries_from_gar_model() %>%
   rename(`Dom. Macro` = dom_macro,
          `Ext. Macro` = ext_macro,
          `Dom. Fin. Cond` = dom_fin,
-         `Ext. Fin. Cond` = ext_fin) %>% 
-  pivot_longer(-date) %>% 
-  ggplot(aes(x = date, y = value)) + 
-  geom_line() + 
-  facet_wrap(~name, scales = "free") + 
+         `Ext. Fin. Cond` = ext_fin) %>%
+  pivot_longer(-date) %>%
+  ggplot(aes(x = date, y = value)) +
+  geom_line() +
+  facet_wrap(~name, scales = "free") +
   xlab(NULL) + ylab(NULL)
 
 ```
@@ -574,7 +507,7 @@ gar_analysis %>%
 
 \hyperlink{data_partitioning}{\beamerreturnbutton{Data partitioning}}
 
-## Macro shows cyclical pattern (high growth in the short term, low in the long term) 
+## Macro shows cyclical pattern (high growth in the short term, low in the long term)
 
 \label{MacroCoef}
 
@@ -588,13 +521,18 @@ gar_analysis %>%
   filter(partition %in% c("dom_macro", "ext_macro")) %>%
   mutate(partition = recode(partition,
                             "dom_macro" = "Dom. Macro", "ext_macro" = "Ext. Macro")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray")) + 
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") + 
-  xlab("Quantile") + ylab(NULL)
+                               "non_significant" = "gray"), labels) +
+  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
+  xlab("Quantile") + ylab(NULL) + 
+  labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
+                        "from the quantile regression at a specific forecast horizon. ",
+                        "Blue bars mark coefficients that are significant at 10%",
+                        "(see Koenker, 1994)"), title = "Sample: 1996Q3-2019Q4") + 
+  theme(plot.caption = element_text(size = 10, hjust = 0.5))
 
 
 
@@ -608,7 +546,7 @@ gar_analysis %>%
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
 
-## Fin.Cycle contributes to growth in the short term, and to risks in the long term
+## Fin.Conditions contribute to growth in the short term, and to risks in the long term
 
 ```{r fin_cycle_plot, fig.height=6.5}
 
@@ -618,13 +556,18 @@ gar_analysis %>%
   mutate(partition = recode(partition,
                             "dom_fin" = "Dom. Fin. Cond",
                             "ext_fin" = "Ext. Fin. Cond")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray")) + 
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") + 
-  xlab("Quantile") + ylab(NULL)
+                               "non_significant" = "gray")) +
+  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
+  xlab("Quantile") + ylab(NULL) + 
+  labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
+                        "from the quantile regression at a specific forecast horizon. ",
+                        "Blue bars mark coefficients that are significant at 10%",
+                        "(see Koenker, 1994)"), title = "Sample: 1996Q3-2019Q4") + 
+  theme(plot.caption = element_text(size = 10, hjust = 0.5))
 
 ```
 
@@ -634,60 +577,6 @@ gar_analysis %>%
 
 
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
-
-
-## Volatility Paradox
-
-\vspace{-1em}
-
-\begin{block}{\center{Brunnermeir and Sannikov 2014}}
-\vspace{0.5em}
-	Low risks (which contribute to short-term growth), encourage the
-	accumulation of risks in the medium-to-long term.
-\end{block}
-
-
-* Financial Cycle factor is correlated with growth in the short term,
-  but also with elevated risks in the long term.
-
-* Mechanisms:
-
-
-\begin{tikzpicture}
-			[nodestyle/.style={rounded rectangle,draw=blue!50,fill=blue!20,thick,
-				inner sep=2pt,minimum width=10mm},
-			%transition/.style={rectangle,draw=black!50,fill=black!20,thick,
-			%	inner sep=0pt,minimum size=4mm}
-			greynodestyle/.style={rounded rectangle,draw=black!50,fill=black!20,thick,
-				inner sep=2pt,minimum width=10mm}]
-			
-			%Nodes
-			\node       (Risk)          	[nodestyle]							{risk today $\downarrow$};			
-			\node  	    (Spreads)       	[nodestyle, right=of Risk,xshift=-2mm]		{ spreads $\downarrow$};
-			\node       (AssetPrices)      [nodestyle,above right=of Spreads, yshift=-4mm, xshift=4mm] 	{asset prices $\uparrow$};
-			\node       (Debt)      [nodestyle,below right=of Spreads, yshift=4mm, xshift=4mm] 	{ \quad{} debt  $\uparrow$ \quad{ } };
-			\node       (FutureRisk)      [nodestyle, right=of Spreads, xshift=35mm] 	{ future risk  $\uparrow$ };
-			\node       (FinCyc)      [greynodestyle, below=of Debt, yshift=3mm] 	{ Financial Cycle };
-			\node       (FCI)      [greynodestyle, left=of FinCyc, xshift=4mm] 	{ Fin. Cond. };
-			
-			
-			
-			
-			%Lines
-			\draw[->, thick] (Risk.east) -- (Spreads.west) node[midway,above] {};
-			\draw[->, thick] (Spreads.east) -- (AssetPrices.west) node[midway,above] {};
-			\draw[->, thick] (Spreads.east) -- (Debt.west) node[midway,above] {};
-			\draw[->, thick] (AssetPrices.east) -- (FutureRisk.west) node[midway,above] {};
-			\draw[->, thick] (Debt.east) -- (FutureRisk.west) node[midway,above] {};
-			
-			
-			%		\onslide<2->				
-			%		%Nodes
-			%		\node       (FinCyc)        [greynodestyle, below=of Debt]		{financial cycle};
-			%		\node  	    (FCI)       	[greynodestyle, left=of FinCyc, xshift=-2mm]		{ FCI };
-			%		
-			
-\end{tikzpicture}
 
 
 # In-sample Properties of Risks to Growth
@@ -712,7 +601,7 @@ events = read.csv(paste0(
 
 gar_analysis$fitted_df %>%
   filter(horizon %in% c(1, 12)) %>%
-  filter(quantile == "0.05") %>% 
+  filter(quantile == "0.05") %>%
   ggplot() +
   ylim(c(-0.12, 0.08)) +
   geom_point(aes(x = date, y = fitted_values, color = horizon)) +
@@ -721,6 +610,7 @@ gar_analysis$fitted_df %>%
                                             ymin = -Inf,ymax = Inf),
             fill = "lightblue", alpha = 0.5) +
   ylab(NULL) + xlab(NULL) +
+  scale_y_continuous(labels = scales::percent_format()) +
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
   geom_point(data = . %>% filter(date %in% events$Start),
              aes(x = date, y = fitted_values),color = "blue") +
@@ -742,47 +632,47 @@ gar_analysis$fitted_df %>%
 ```
 
 
-## The Global factor contributes to risk identification in the short term, Financial Cycle -- in the long term
+## Global factors contribute to risk identification in the short term, domestic financial factors -- in the long term
 
 ```{r plot_factor_decomposition}
 
 
-gar_analysis %>% 
-  extract_factor_contribution_from_gar_model() %>% 
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
-  select(-intercept) %>% 
+gar_analysis %>%
+  extract_factor_contribution_from_gar_model() %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
+  select(-intercept) %>%
   rename(`Dom. Macro` = dom_macro,
          `Ext. Macro` = ext_macro,
          `Dom. Fin. Cond` = dom_fin,
-         `Ext. Fin. Cond` = ext_fin) %>% 
-  pivot_longer(-c("date","horizon")) %>% 
-  ggplot(aes(x = date, y = value, fill = name)) + 
-  geom_col() + 
-  facet_wrap(~horizon, scales = "free") + 
+         `Ext. Fin. Cond` = ext_fin) %>%
+  pivot_longer(-c("date","horizon")) %>%
+  ggplot(aes(x = date, y = value, fill = name)) +
+  geom_col() +
+  facet_wrap(~horizon, scales = "free") +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste("Factors contribution to the",
                  "GaR forecast \n (5th percentile)")) +
   scale_fill_viridis_d(option = "plasma")
-  
- 
+
+
 
 ```
 
-## Forecast Median and Dispersion are Negatively Correlated
+## Low Median Forecasts are Associated with Higher Uncertainty
 
 ```{r plot_median_iqr_scatter}
 
-gar_analysis %>% 
-  calculate_skew_and_iqr() %>% 
-  inner_join(gar_analysis$fitted_df %>% 
-               filter(quantile == "0.5") %>% 
-               select(-quantile), by = c("date","horizon")) %>% 
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
-  ggplot(aes(x = iqr, y = fitted_values)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  xlab("Dispersion") + ylab("Median") + 
-  facet_wrap(~horizon, scales = "free") + 
+gar_analysis %>%
+  calculate_skew_and_iqr() %>%
+  inner_join(gar_analysis$fitted_df %>%
+               filter(quantile == "0.5") %>%
+               select(-quantile), by = c("date","horizon")) %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
+  ggplot(aes(x = iqr, y = fitted_values)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  xlab("Dispersion") + ylab("Median") +
+  facet_wrap(~horizon, scales = "free") +
   theme(axis.text = element_text(size = 8))
 
 
@@ -811,23 +701,23 @@ gar_analysis %>%
 
 Consistent with features of past gdp growth
 
-```{r plot_gdp_growth, fig.height=3}
+```{r plot_gdp_growth, fig.height=3, eval=FALSE}
 
 df %>%
   select(date,gdp_us, gdp_euro, gdp) %>%
-  filter(date < as.yearqtr("2020 Q1")) %>% 
+  filter(complete.cases(.)) %>%
   rename(US = gdp_us, Euro = gdp_euro, Israel = gdp) %>%
-  mutate(across(-date, ~scale(.,center = TRUE, scale = FALSE))) %>% 
+  mutate(across(-date, ~scale(.,center = TRUE, scale = TRUE))) %>%
   pivot_longer(-date) %>%
   ggplot(aes(x = value, fill = name)) +
-  geom_density(alpha = 0.5) + 
-  scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  geom_density(alpha = 0.5) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
   xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
 
 ```
 
 
-# Sensitivity to Variable Selection{.unlisted .unnumbered}
+# Sensitivity to Variable Selection
 ## Sub-Sampling Bootstrap Analysis
 
 \vspace{1em}
@@ -838,107 +728,48 @@ to construct the four factors.
 \vspace{1em}
 
 * For robustness, we perform a sub-sampling bootstrap procedure
-[@Politis1994]
+(Politis and Romano, 1994):
   + We determine a minimal set of variables to be included
   in each group and go over all the different combinations
   of the other variables.
-  
-  
+
+
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
 ## 5th Percentile Forecast
 
-```{r, cache=TRUE, dev="png", eval=FALSE}
+```{r, out.height="85%"}
 
-
-gar_plot_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE")),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\gar_plot_df.RDS"))
-
-gar_plot_df %>% 
-  ggplot(aes(x = date, y = GaR_fitted, group = rowname)) + 
-  geom_line() + 
-  xlab(NULL) + ylab(NULL) + 
-  gghighlight(rowname == 4599,
-              calculate_per_facet = TRUE,
-              use_direct_label = FALSE,use_group_by = FALSE,
-              unhighlighted_params = list(alpha = 0.1)) + 
-  facet_wrap(~Horizon, scales = "free", labeller = labeller(Horizon = my_lab),nrow = 2)
+knitr::include_graphics("Figures/fig_bootstrap_5per.png")
 
 ```
 
+## Financial Vulnerabilities
 
+Financial factors coefficients at different quantiles
 
-## "Volatility Paradox"
+```{r, out.height="85%"}
 
-Financial Cycle coefficients at different quantiles (stacked histograms)
-
-```{r plot_coefs_hist, eval=FALSE}
-
-coeff_plot_data = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\coeffs_df.RDS"))
-
-coeff_plot_data %>% 
-  rename(Quantile = Tau) %>%  
-  mutate(Horizon = factor(Horizon, levels = c(1,4,8,12))) %>%  
-  ggplot(aes(x = Coeff, fill = Quantile)) + 
-  geom_histogram() + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  xlab(NULL) + ylab(NULL) + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) + 
-  theme(legend.title = element_text(size = 15))
+knitr::include_graphics("Figures/fig_bootstrap_FinCoefs.png")
 
 ```
 
 
 ## Negative Correlation between Median and Dispersion
 
-```{r plot_median_iqr_correlations, eval=FALSE}
+```{r, out.height="85%"}
 
-med_iqr_plot_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE")),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI\\",
-  "GaR_Data\\med_iqr_plot_data.RDS"))
-  
-med_iqr_plot_df %>% 
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%
-  ggplot(aes(x = cor)) +
-  geom_histogram() +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste0("Correlaltion between the median",
-                 " and IQR \n of the predictive distribution")) +
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") +
-  facet_wrap(~Horizon, scales = "free_y",
-             labeller = labeller(Horizon = my_lab))
+knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
 
 ```
 
+
 ## Symmetric Distribution
 
-```{r plot_skew_robustness, cache=TRUE, dev="png", eval=FALSE}
+```{r, out.height="85%"}
 
-skew_plot = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\",
-  "BoI\\GaR_Data\\Old_data\\skew_plot.RDS"))
-
-skew_plot +
-  ggtitle("Quartile skewness") + 
-  facet_wrap(~Horizon,scales = "free",nrow = 2,
-             labeller = labeller(Horizon = my_lab)) + 
-            theme(title = element_text(size = 20),
-                axis.text = element_text(size = 15),
-                axis.title = element_text(size = 15),
-                strip.text = element_text(size = 15),
-                legend.position = "bottom",
-                legend.title = element_blank(),
-                legend.text = element_text(size = 15))
-
+knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
 
 ```
 
@@ -957,10 +788,10 @@ skew_plot +
 		Intercep only -- partial GaR model without financial variables
 		(domestic and global)
 		\item
-		Staff forecast + DSGE fan chart (symmetric, constant width)
+		DSGE model (Argov et al., 2012), fan chart (symmetric, constant width)
 	\end{enumerate}
 	\item
-	All models evaluated out of sample (expanding window starts at
+	All models are evaluated out of sample (expanding window starts at
 	40 observations and adds one observation in each step)
 \end{itemize}
 
@@ -972,21 +803,21 @@ gar_pit = quantile_pit_score(
   forecast_df = gar_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
   actual_df = select(df, actual_values = gdp, date)
-) %>% 
+) %>%
   rename(gar = pit)
 
 intercept_pit = quantile_pit_score(
   forecast_df = intercept_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
   actual_df = select(df, actual_values = gdp, date)
-) %>% 
+) %>%
   rename(intercept = pit)
 
 dsge_pit = quantile_pit_score(
   forecast_df = dsge_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
   actual_df = select(df, actual_values = gdp, date)
-) %>% 
+) %>%
   rename(dsge = pit)
 
 list(gar_pit, intercept_pit, dsge_pit) %>%
@@ -1007,14 +838,16 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
     color = "black",
     linetype = "dashed"
   ) +
-  facet_wrap( ~ horizon)
+  scale_fill_discrete(labels = c("DSGE","GaR")) +
+  facet_wrap(~horizon) +
+  xlab("Quantile") + ylab(NULL)
 
 
 
 ```
 
 ## Quantile R-Squared
-Quantile R-sq. [@Giglio2016] compares forecast performance to a
+Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
 constant quantile benchmark:
 
 $$
@@ -1052,7 +885,7 @@ gar_r2 = quantile_r2_score(
   rename(gar_r2 = quantile_r2)
 
 dsge_r2 = quantile_r2_score(
-  forecast_df = dsge_forecast %>% 
+  forecast_df = dsge_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25) %>%
     rename(forecast_values = forecast),
   actual_df = select(df, actual_values = gdp, date),
@@ -1062,14 +895,16 @@ dsge_r2 = quantile_r2_score(
   ) %>%
   rename(dsge_r2 = quantile_r2)
 
-gar_r2 %>% 
-  inner_join(dsge_r2,by = c("horizon", "quantile")) %>% 
-  pivot_longer(-c(horizon, quantile)) %>% 
-  mutate(quantile = factor(quantile, levels = quantile_vec)) %>% 
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
-  ggplot(aes(x = quantile, y = value, fill = name)) + 
-  geom_col(position = "dodge") + 
-  facet_wrap(~horizon)
+gar_r2 %>%
+  inner_join(dsge_r2,by = c("horizon", "quantile")) %>%
+  pivot_longer(-c(horizon, quantile)) %>%
+  mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
+  ggplot(aes(x = quantile, y = value, fill = name)) +
+  geom_col(position = "dodge") +
+  scale_fill_discrete(labels = c("DSGE","GaR")) +
+  facet_wrap(~horizon) +
+  xlab("Quantile") + ylab(NULL)
 
 ```
 
@@ -1079,25 +914,41 @@ gar_r2 %>%
 \begin{itemize}
 \setlength\itemsep{2em}
   \item
-  The Financial Cycle (credit and assets prices) is correlated with higher growth
-  in the short term and elevated risks in the long term.
+  Global conditions affect downside risks in the short term, local financial
+  conditions in the long term.
   \item
   Growth distribution in Israel is "balanced" and unskewed
   \item
   Forecast uncertainty rises when the median forecast decreases
-  \item
-  Future effort will be devoted to development of a forecasting tool
-  and extension to other fields (Inflation at Risk)
 \end{itemize}
 
 
 # Appendix {.unlisted .unnumbered}
-## Appendix 
-## Quantile Regression 
+## Probability Integral Transform (PIT)
+For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
+	$$
+	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
+	$$
+\begin{itemize}
+\setlength\itemsep{1em}
+	\item
+	A model is better fitted the closer $\varphi_{\tau,h}$ is to
+	45-degree line.
+	\item
+	If the model perfectly fits the empirical  distribution, then
+	the fraction of observations falling below quantile $\tau$
+	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
+\end{itemize}
+
+## Probability Integral Transform (PIT)
+
+
+
+## Quantile Regression
 
 \label{QuantileReg}
 
-Model: for quantile $\tau$ and horizon $h$, 
+Model: for quantile $\tau$ and horizon $h$,
 $$
 Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{h,t}
 $$
@@ -1106,7 +957,7 @@ $\beta^{\tau}$ is  estimated by solving the minimization problem
 
 $$
 \min_{\beta^{\tau}}
-\sum_{t=1}^T 
+\sum_{t=1}^T
 \max \bigg\{
 \tau \big( y_{t+h}- \beta^{\tau}X_t \big)
 \, ,\,
@@ -1119,26 +970,25 @@ Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 \begin{flushleft}
 \hyperlink{methodology}{\beamergotobutton{Methodology}}
 \end{flushleft}
-	
-	
 
-## 1st PC loadings  
+
+
+## 1st PC loadings
 
 \label{PcaLoadings}
 
-\label{pca_loadings}
 
 ```{r plot_pc_loadings}
 
-gar_analysis %>% 
-  extract_pca_loadings_from_gar_model() %>% 
-  ggplot(aes(x = rowname, y = coeff)) + 
-  geom_col(width = 0.5) + 
-  facet_wrap(~partition, scales = "free") + 
+gar_analysis %>%
+  extract_pca_loadings_from_gar_model() %>%
+  ggplot(aes(x = rowname, y = coeff)) +
+  geom_col(width = 0.5) +
+  facet_wrap(~partition, scales = "free") +
   theme(axis.text.x = element_text(size = 13))
 
-
 ```
+
 
 \vspace{-0.5em}
 
@@ -1154,18 +1004,18 @@ gar_analysis %>%
 
 gar_analysis %>%
   extract_coeffs_from_gar_model() %>%
-  filter(!partition == "Intercept") %>% 
+  filter(!partition == "Intercept") %>%
   mutate(partition = recode(partition,
                             "dom_macro" = "Dom. Macro",
                             "ext_macro" = "Ext. Macro",
                             "dom_fin" = "Dom. Fin. Cond.",
                             "ext_fin" = "Ext. Fin. Cond.")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray")) + 
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") + 
+                               "non_significant" = "gray")) +
+  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
   xlab("Quantile") + ylab(NULL)
 
 
