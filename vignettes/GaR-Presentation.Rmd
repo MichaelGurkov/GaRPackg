@@ -126,9 +126,6 @@ vars_to_diff = c("unemployment",
                  "rate_us")
 )
 
-df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4"))
-
 
 ```
 
@@ -136,7 +133,8 @@ df = df %>%
 
 gar_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
-  vars_df = df,
+  vars_df = df %>% 
+  filter(date <= as.yearqtr("2019 Q4")),
   target_var_name = "gdp",
   horizon_list = horizon_list,
   quantile_vec = quantile_vec,
@@ -355,11 +353,6 @@ Out-of-sample forecast performance in distribution tails is similar to benchmark
 
 
 
-## Outline
-
-\tableofcontents
-
-
 # Methodology and Estimation Results
 ## Methodology
 
@@ -403,7 +396,7 @@ Out-of-sample forecast performance in distribution tails is similar to benchmark
 
 \label{DataPartitioning}
 
-Sample: 1997Q3-2019Q4
+Sample: 1996Q1-2019Q4
 
 <!-- \flushleft -->
 
@@ -745,9 +738,9 @@ knitr::include_graphics("Figures/fig_bootstrap_5per.png")
 
 ```
 
-## Financial Vulnerabilities
+## Financial Vulnerabilities in the medium term
 
-Financial factors coefficients at different quantiles
+Financial factors coefficients 12 quarters ahead at different quantiles
 
 ```{r, out.height="85%"}
 
@@ -788,10 +781,11 @@ knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
 		Intercep only -- partial GaR model without financial variables
 		(domestic and global)
 		\item
-		DSGE model (Argov et al., 2012), fan chart (symmetric, constant width)
+		DSGE model (Argov et al., 2012), fan chart (symmetric, constant width).
+		\textcolor{blue}{DSGE model was reestimated in 2019 so it's prediction are "in sample"}
 	\end{enumerate}
 	\item
-	All models are evaluated out of sample (expanding window starts at
+	The models are evaluated out of sample (expanding window starts at
 	40 observations and adds one observation in each step)
 \end{itemize}
 
@@ -848,7 +842,7 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
 
 ## Quantile R-Squared
 Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
-constant quantile benchmark:
+intercept only quantile benchmark:
 
 $$
 R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
@@ -857,14 +851,14 @@ $$
 $\hat{Q}^{\tau}_{t,h}$  -- model's forecasts for quantile
 $\tau$ at horizon $h$
 
-$\hat{c}^{\tau}_{t,h}$ -- ``constant'' forecast
+$\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
 
 
 \begin{itemize}
 	\item
 	higher values -- better forecast
 	\item
-	negative values -- model inferior to the constant benchmark
+	negative values -- model inferior to the intercept only benchmark
 \end{itemize}
 
 
@@ -920,8 +914,38 @@ gar_r2 %>%
   Growth distribution in Israel is "balanced" and unskewed
   \item
   Forecast uncertainty rises when the median forecast decreases
+  \item
+  
 \end{itemize}
 
+
+# Current uses
+
+```{r }
+
+current_analysis = run_GaR_analysis(
+  partitions_list = partitions_list,
+  vars_df = df %>% 
+  filter(date <= as.yearqtr("2019 Q4")),
+  target_var_name = "gdp",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list = list(dom_macro = "private_consumption",
+                        ext_macro = "exports",
+                        dom_fin = "credit",
+                        ext_fin = "sp500"))
+
+
+current_analysis$fitted_df %>%
+  filter(horizon %in% c(1, 12)) %>%
+  filter(quantile == "0.05") %>%
+  ggplot(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_line()
+  ylab(NULL) + xlab(NULL) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead")
+
+```
 
 # Appendix {.unlisted .unnumbered}
 ## Probability Integral Transform (PIT)
