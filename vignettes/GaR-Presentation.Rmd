@@ -582,7 +582,7 @@ gar_analysis %>%
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
 
-```{r plot_events_plot, eval=FALSE}
+```{r plot_events_plot}
 
 recessions = read.csv(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
@@ -630,7 +630,7 @@ gar_analysis$fitted_df %>%
 ```
 
 
-```{r events_figure, out.height="85%"}
+```{r events_figure, out.height="85%", eval=FALSE}
 
 knitr::include_graphics("Figures/events_plot.png")
 
