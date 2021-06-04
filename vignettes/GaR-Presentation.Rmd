@@ -124,7 +124,8 @@ vars_to_diff = c("unemployment",
                  "boi_rate",
                  "rate_euro",
                  "rate_us")
-)
+) %>% 
+filter(date < as.yearqtr("2021 Q1"))
 
 
 ```
@@ -185,7 +186,7 @@ fit_df = read_rds(paste0(
 
 ```
 
-# Outline
+## Outline
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
 
@@ -523,14 +524,17 @@ gar_analysis %>%
   xlab("Quantile") + ylab(NULL) + 
   labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
                         "from the quantile regression at a specific forecast horizon. ",
-                        "Blue bars mark coefficients that are significant at 10%",
-                        "(see Koenker, 1994)"), title = "Sample: 1996Q3-2019Q4") + 
+                        "\n Blue bars mark coefficients that are significant at 10%",
+                        "(see Koenker, 1994)"),
+       title = "Sample: 1996Q1-2019Q4") + 
   theme(plot.caption = element_text(size = 10, hjust = 0.5))
 
 
 
 
 ```
+
+
 
 \vspace{-1em}
 
@@ -558,8 +562,9 @@ gar_analysis %>%
   xlab("Quantile") + ylab(NULL) + 
   labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
                         "from the quantile regression at a specific forecast horizon. ",
-                        "Blue bars mark coefficients that are significant at 10%",
-                        "(see Koenker, 1994)"), title = "Sample: 1996Q3-2019Q4") + 
+                        "\n  Blue bars mark coefficients that are significant at 10%",
+                        "(see Koenker, 1994)"),
+       title = "Sample: 1996Q1-2019Q4") + 
   theme(plot.caption = element_text(size = 10, hjust = 0.5))
 
 ```
@@ -577,7 +582,7 @@ gar_analysis %>%
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
 
-```{r plot_events_plot}
+```{r plot_events_plot, eval=FALSE}
 
 recessions = read.csv(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
@@ -625,9 +630,18 @@ gar_analysis$fitted_df %>%
 ```
 
 
+```{r events_figure, out.height="85%"}
+
+knitr::include_graphics("Figures/events_plot.png")
+
+
+```
+
+
+
 ## Global factors contribute to risk identification in the short term, domestic financial factors -- in the long term
 
-```{r plot_factor_decomposition}
+```{r plot_factor_decomposition, eval=FALSE}
 
 
 gar_analysis %>%
@@ -651,9 +665,20 @@ gar_analysis %>%
 
 ```
 
+
+```{r factors_figure, out.height="85%"}
+
+knitr::include_graphics("Figures/GaR_factor_all.png")
+
+
+```
+
+
+
+
 ## Low Median Forecasts are Associated with Higher Uncertainty
 
-```{r plot_median_iqr_scatter}
+```{r plot_median_iqr_scatter, eval=FALSE}
 
 gar_analysis %>%
   calculate_skew_and_iqr() %>%
@@ -672,10 +697,19 @@ gar_analysis %>%
 ```
 
 
+```{r med_variance_figure, out.height="85%"}
+
+knitr::include_graphics("Figures/fig_MedianVarCorr.png")
+
+
+```
+
+
+
 ## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
-```{r plot_skewness_1_quarter, fig.height=3}
+```{r plot_skewness_1_quarter, fig.height=3, eval=FALSE}
 
 gar_analysis %>%
   calculate_skew_and_iqr() %>%
@@ -689,6 +723,15 @@ gar_analysis %>%
   labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead")
 
 ```
+
+
+```{r skewness_figure, out.height="60%"}
+
+knitr::include_graphics("Figures/Risk_assymetry_h1.png")
+
+
+```
+
 
 \pause
 
@@ -791,7 +834,7 @@ knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
 
 ## PIT score
 
-```{r pit_score}
+```{r pit_score, eval=FALSE}
 
 gar_pit = quantile_pit_score(
   forecast_df = gar_forecast %>%
@@ -840,6 +883,16 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
 
 ```
 
+
+```{r pit_figure, out.height="85%"}
+
+knitr::include_graphics("Figures/PIT.png")
+
+
+```
+
+
+
 ## Quantile R-Squared
 Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
 intercept only quantile benchmark:
@@ -866,12 +919,14 @@ $\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
 
 ## Quantile R-Squared
 
-```{r plot_r2_score}
+```{r plot_r2_score, eval=FALSE}
 
 gar_r2 = quantile_r2_score(
   forecast_df = gar_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = gdp, date),
+  actual_df = df %>% 
+    filter(date) < as.yearqtr("2019 Q4") %>% 
+    select(date, actual_values = gdp),
   benchmark_df = intercept_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25) %>%
     rename(benchmark_values = forecast_values)
@@ -882,7 +937,9 @@ dsge_r2 = quantile_r2_score(
   forecast_df = dsge_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25) %>%
     rename(forecast_values = forecast),
-  actual_df = select(df, actual_values = gdp, date),
+  actual_df = df %>% 
+    filter(date) < as.yearqtr("2019 Q4") %>% 
+    select(date, actual_values = gdp),
   benchmark_df = intercept_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25) %>%
     rename(benchmark_values = forecast_values)
@@ -903,6 +960,14 @@ gar_r2 %>%
 ```
 
 
+```{r r2_figure, out.height="85%"}
+
+knitr::include_graphics("Figures/R2.png")
+
+
+```
+
+
 ## Conclusion
 
 \begin{itemize}
@@ -915,6 +980,7 @@ gar_r2 %>%
   \item
   Forecast uncertainty rises when the median forecast decreases
   \item
+  External vars
   
 \end{itemize}
 
@@ -926,7 +992,7 @@ gar_r2 %>%
 current_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
   vars_df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4")),
+  filter(date <= as.yearqtr("2021 Q1")),
   target_var_name = "gdp",
   horizon_list = horizon_list,
   quantile_vec = quantile_vec,
@@ -940,7 +1006,7 @@ current_analysis$fitted_df %>%
   filter(horizon %in% c(1, 12)) %>%
   filter(quantile == "0.05") %>%
   ggplot(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_line()
+  geom_line() + 
   ylab(NULL) + xlab(NULL) +
   scale_y_continuous(labels = scales::percent_format()) +
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead")
