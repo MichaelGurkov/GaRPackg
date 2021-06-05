@@ -339,8 +339,6 @@ In-sample properties of the distribution of expected GDP growth:
 \item
 These properties are robust to variable selection.
 \item
-Out-of-sample forecast performance is impaired.
-\item
 Out-of-sample forecast performance in distribution tails is similar to benchmark models.
 
   \begin{itemize}
@@ -519,7 +517,8 @@ gar_analysis %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"), labels) +
+                               "non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
   facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
   xlab("Quantile") + ylab(NULL) + 
   labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
@@ -557,7 +556,8 @@ gar_analysis %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray")) +
+                               "non_significant" = "gray"),,
+                    labels = c("Significant", "Non significant")) +
   facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
   xlab("Quantile") + ylab(NULL) + 
   labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
@@ -968,7 +968,7 @@ knitr::include_graphics("Figures/R2.png")
 ```
 
 
-## Conclusion
+# Conclusion
 
 \begin{itemize}
 \setlength\itemsep{2em}
@@ -985,9 +985,9 @@ knitr::include_graphics("Figures/R2.png")
 \end{itemize}
 
 
-# Current uses
+## Current uses
 
-```{r }
+```{r left_tail}
 
 current_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
@@ -1003,13 +1003,13 @@ current_analysis = run_GaR_analysis(
 
 
 current_analysis$fitted_df %>%
-  filter(horizon %in% c(1, 12)) %>%
+  filter(horizon %in% c(1, 4)) %>%
   filter(quantile == "0.05") %>%
   ggplot(aes(x = date, y = fitted_values, color = horizon)) +
   geom_line() + 
   ylab(NULL) + xlab(NULL) +
   scale_y_continuous(labels = scales::percent_format()) +
-  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead")
+  ggtitle("Forecast of 5th Percentile, 1Q and 4Q Ahead")
 
 ```
 
@@ -1029,10 +1029,6 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 	the fraction of observations falling below quantile $\tau$
 	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
 \end{itemize}
-
-## Probability Integral Transform (PIT)
-
-
 
 ## Quantile Regression
 
@@ -1072,10 +1068,18 @@ Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
 
 gar_analysis %>%
   extract_pca_loadings_from_gar_model() %>%
+  mutate(partition = factor(
+    partition,
+    levels = c("dom_fin", "dom_macro","ext_fin",  "ext_macro"),
+    labels = c("Dom. Fin. Cond", "Dom Macro", "Ext. Fin. Cond",  "Ext Macro"))) %>%
+  mutate(rowname = str_to_title(rowname)) %>% 
+  mutate(rowname = str_replace_all(rowname,"_"," ")) %>% 
   ggplot(aes(x = rowname, y = coeff)) +
   geom_col(width = 0.5) +
-  facet_wrap(~partition, scales = "free") +
-  theme(axis.text.x = element_text(size = 13))
+  facet_wrap( ~ partition, scales = "free") +
+  theme(axis.text.x = element_text(size = 13)) +
+  coord_flip() +
+  xlab(NULL) + ylab(NULL)
 
 ```
 
@@ -1090,7 +1094,7 @@ gar_analysis %>%
 
 \label{CoeffPanel}
 
-```{r coeff_panel_plot, fig.height=7}
+```{r coeff_panel_plot, fig.height=7.5}
 
 gar_analysis %>%
   extract_coeffs_from_gar_model() %>%
@@ -1104,7 +1108,8 @@ gar_analysis %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray")) +
+                               "non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
   facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
   xlab("Quantile") + ylab(NULL)
 
