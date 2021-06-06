@@ -102,6 +102,8 @@ run_GaR_analysis = function(partitions_list, vars_df,
 
   return_list$fitted_df = fitted_df
 
+  return_list$partitions_list = partitions_list
+
   if(length(reg_df_list) == 2){
     return_list$pca_obj = reg_df_list$pca_obj}
 
