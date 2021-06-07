@@ -60,6 +60,8 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #' @import dplyr
 #'
+#' @importFrom zoo as.yearqtr
+#'
 #' @param forecast_df data frame with predicted values
 #' by horizon, quantile, date, forecast_values
 #'
@@ -70,16 +72,7 @@ quantile_r2_score_calculation = function(realized_values,
 #' by horizon, quantile, date and benchmark_values
 #'
 #'
-#' @details The evaluation between predicted and actual (benchmark) values is
-#' done by comparing the values for a given date. That is based on the
-#' assumption that the dates are correctly aligned. For instance, if the metric
-#' is Year on Year growth that means that on a given day we have the change
-#' for the previous year. So on 2000 Q1 we know the realized change for
-#' the period 1999 Q1-2000 Q1. Since the forecast is given for various horizons
-#' that means that a given date is the combination of the actual forecast date
-#' and the forecast horizon. So a forecast for an horizon of 4 quarters on
-#' 1999 Q1 and a forecast for an horizon of 8 quarters on 1998 Q3 both predict
-#' the realized change for the period 1999 Q1-2000 Q1.
+#' @details The evaluation is based on the assumption that the date in \code{forecast_df} refers to the time in which the forecast was performed. Namely, the function offsets each forecast date in \code{forecast_df} by the relevant horizon and matches it with the respective date in \code{actual_df}. For example, a forecast for the horizon of 4 quarters in 1999 Q1 is compared to an actual value in 2000 Q1.
 
 #'
 #' @export
@@ -121,9 +114,12 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
 
   df = forecast_df %>%
-    inner_join(benchmark_df,
+    mutate(date = as.yearqtr(date) + as.numeric(horizon) * 0.25) %>%
+    inner_join(benchmark_df %>%
+                 mutate(date = as.yearqtr(date) + as.numeric(horizon) * 0.25),
               by = c("date", "horizon", "quantile")) %>%
-    inner_join(actual_df, by = "date") %>%
+    inner_join(actual_df %>%
+                 mutate(date = as.yearqtr(date)), by = "date") %>%
     mutate(quantile = as.numeric(.data$quantile))
 
   score_df = df %>%
