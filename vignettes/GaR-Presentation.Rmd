@@ -2,7 +2,7 @@
 title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department"
-date: "16 July, 2021"
+date: "16 June, 2021"
 classoption: t
 output:
   beamer_presentation:
@@ -463,16 +463,28 @@ Sample: 1996Q1-2019Q4
 
 ```{r plot_pca_timeseries}
 
+var_exp_df = gar_analysis %>% 
+  extract_pca_exlained_variance_from_gar_model() %>% 
+  mutate(explained_variance = round(explained_variance * 100 , 2))
+
+
+plot_names = c("Dom. Macro",
+               "Ext. Macro",
+               "Dom. Fin. Cond",
+               "Ext. Fin. Cond") %>%
+  paste(paste0(" (", var_exp_df$explained_variance, "%)")) %>%
+  set_names(c("dom_macro", "ext_macro", "dom_fin", "ext_fin"))
+
 gar_analysis %>%
   extract_pca_timeseries_from_gar_model() %>%
-  rename(`Dom. Macro` = dom_macro,
-         `Ext. Macro` = ext_macro,
-         `Dom. Fin. Cond` = dom_fin,
-         `Ext. Fin. Cond` = ext_fin) %>%
+  # rename(`Dom. Macro` = dom_macro,
+  #        `Ext. Macro` = ext_macro,
+  #        `Dom. Fin. Cond` = dom_fin,
+  #        `Ext. Fin. Cond` = ext_fin) %>%
   pivot_longer(-date) %>%
   ggplot(aes(x = date, y = value)) +
   geom_line() +
-  facet_wrap(~name, scales = "free") +
+  facet_wrap(~name, scales = "free",labeller = labeller(name = plot_names)) +
   xlab(NULL) + ylab(NULL)
 
 ```
@@ -534,8 +546,6 @@ gar_analysis %>%
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
 
 
-# In-sample Properties of Risks to Growth
-
 <!-- ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast -->
 
 
@@ -593,6 +603,7 @@ gar_analysis %>%
 
 
 <!-- ``` -->
+# In-sample Properties of Risks to Growth
 ## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
@@ -629,11 +640,12 @@ Consistent with features of past gdp growth
 df %>%
   select(date,gdp_us, gdp_euro, gdp) %>%
   filter(complete.cases(.)) %>%
+  filter(date <= as.yearqtr("2019 Q4")) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = gdp) %>%
-  mutate(across(-date, ~scale(.,center = TRUE, scale = TRUE))) %>%
+  # mutate(across(-date, ~scale(.,center = TRUE, scale = TRUE))) %>%
   pivot_longer(-date) %>%
   ggplot(aes(x = value, fill = name)) +
-  geom_density(alpha = 0.5) +
+  geom_histogram(alpha = 0.5) +
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
   xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
 
@@ -727,13 +739,14 @@ to construct the four factors.
   + In each iteration, we estimate a GaR model on the
   implied subset of	variables.
 
-## 5th Percentile Forecast
+## Symmetric Distribution
 
 ```{r, out.height="85%"}
 
-knitr::include_graphics("Figures/fig_bootstrap_5per.png")
+knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
 
 ```
+
 
 ## Financial Vulnerabilities in the medium term
 
@@ -751,15 +764,6 @@ knitr::include_graphics("Figures/fig_bootstrap_FinCoefs.png")
 ```{r, out.height="85%"}
 
 knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
-
-```
-
-
-## Symmetric Distribution
-
-```{r, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
 
 ```
 
@@ -926,15 +930,18 @@ knitr::include_graphics("Figures/R2.png")
 
 \begin{itemize}
 \setlength\itemsep{2em}
+
+  \item
+  Growth distribution in Israel is "balanced" and unskewed
   \item
   Global conditions affect downside risks in the short term, local financial
   conditions in the long term.
   \item
-  Growth distribution in Israel is "balanced" and unskewed
+  Evidence of "volatility paradox" - loose financial conditions stimulate
+  growth in the near term and risk accumulation in the long term.
   \item
   Forecast uncertainty rises when the median forecast decreases
-  \item
-  External vars
+  
   
 \end{itemize}
 
@@ -1010,6 +1017,14 @@ gar_analysis %>%
 
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
+
+## 5th Percentile Forecast
+
+```{r, out.height="85%"}
+
+knitr::include_graphics("Figures/fig_bootstrap_5per.png")
+
+```
 
 ## Probability Integral Transform (PIT)
 For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
