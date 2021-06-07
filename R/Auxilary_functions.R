@@ -391,6 +391,55 @@ extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
 }
 
 
+#' @title Extract PCA explained variance share
+#'
+#' @description This function extracts PCA explained variance share data frame
+#'  from gar model
+#'
+#' @importFrom  purrr map_dfr
+#'
+#' @importFrom tibble rownames_to_column
+#'
+#' @importFrom stats setNames
+#'
+#' @importFrom magrittr %>%
+#'
+#' @param gar_model model object with run_GaR_analysis result
+#'
+#' @param n_comp number of PCA components to return
+#'
+#' @return pca explained variance share
+#'
+#' @export
+
+extract_pca_exlained_variance_from_gar_model = function(gar_model, n_comp = 1) {
+
+  if(!"pca_obj" %in% names(gar_model)){
+
+    stop("The pca object is missing")
+  }
+
+  pca_expained_var_df = map2_dfr(gar_model$pca_obj, names(gar_model$pca_obj),
+                         function(temp_pca, temp_name) {
+
+                           temp_pca_share = tibble(
+                             explained_variance = temp_pca$pca_obj$sdev ^ 2) %>%
+                             mutate(explained_variance = explained_variance
+                                    / sum(explained_variance)) %>%
+                             rownames_to_column(var = "component") %>%
+                             slice(1:n_comp)
+
+                           return(temp_pca_share)
+
+
+                         },.id = "partition")
+
+
+  return(pca_expained_var_df)
+
+}
+
+
 #' @description  This function compares two partitions
 #'
 #' @title compare two partitions
