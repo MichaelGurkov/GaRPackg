@@ -1,7 +1,7 @@
 ---
 title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
 author: "Michael Gurkov and Osnat Zohar"
-institute: "Bank of Israel \\newline Research Department"
+institute: "Bank of Israel \\newline Research Department \\newline \\newline Any views expressed in the Discussion Paper are those of the authors and do not necessarily reflect those of the Bank of Israel"
 date: "16 June, 2021"
 classoption: t
 output:
@@ -467,6 +467,18 @@ var_exp_df = gar_analysis %>%
   extract_pca_exlained_variance_from_gar_model() %>% 
   mutate(explained_variance = round(explained_variance * 100 , 2))
 
+events_plot = tribble(
+  ~ event,
+  ~ start_date,
+  ~ end_date,
+  "intifada",
+  as.yearqtr("2000 Q1"),
+  as.yearqtr("2003 Q1"),
+  "gfc",
+  as.yearqtr("2007 Q1"),
+  as.yearqtr("2009 Q1")
+)
+
 
 plot_names = c("Dom. Macro",
                "Ext. Macro",
@@ -475,17 +487,20 @@ plot_names = c("Dom. Macro",
   paste(paste0(" (", var_exp_df$explained_variance, "%)")) %>%
   set_names(c("dom_macro", "ext_macro", "dom_fin", "ext_fin"))
 
-gar_analysis %>%
+
+pca_series_df = gar_analysis %>%
   extract_pca_timeseries_from_gar_model() %>%
-  # rename(`Dom. Macro` = dom_macro,
-  #        `Ext. Macro` = ext_macro,
-  #        `Dom. Fin. Cond` = dom_fin,
-  #        `Ext. Fin. Cond` = ext_fin) %>%
-  pivot_longer(-date) %>%
-  ggplot(aes(x = date, y = value)) +
-  geom_line() +
-  facet_wrap(~name, scales = "free",labeller = labeller(name = plot_names)) +
-  xlab(NULL) + ylab(NULL)
+  pivot_longer(-date)
+
+ggplot() +
+geom_line(data = pca_series_df, aes(x = date, y = value)) +
+geom_rect(data = events_plot,mapping = aes(xmin =start_date,xmax = end_date,
+                                          ymin = -Inf,ymax = Inf),
+          fill = "lightblue", alpha = 0.5) +
+facet_wrap(~name, scales = "free",labeller = labeller(name = plot_names)) +
+xlab(NULL) + ylab(NULL)
+
+rm(pca_series_df, events_plot, plot_names)
 
 ```
 
@@ -525,7 +540,7 @@ gar_analysis %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col() +
   scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),,
+                               "non_significant" = "gray"),
                     labels = c("Significant", "Non significant")) +
   facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
   xlab("Quantile") + ylab(NULL) + 
@@ -546,63 +561,6 @@ gar_analysis %>%
 \hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
 
 
-<!-- ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast -->
-
-
-<!-- ```{r plot_events_plot} -->
-
-<!-- recessions = read.csv(paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"),fsep="\\"), -->
-<!--   "\\OneDrive - Bank Of Israel\\", -->
-<!--   "Data\\BoI\\GaR_Data","\\recessions.csv")) %>% -->
-<!--   mutate(across(c(Start, End), ~as.yearqtr(.))) -->
-
-<!-- events = read.csv(paste0( -->
-<!--   file.path(Sys.getenv("USERPROFILE"),fsep="\\"), -->
-<!--   "\\OneDrive - Bank Of Israel\\", -->
-<!--   "Data\\BoI\\GaR_Data","\\events.csv")) %>% -->
-<!--   mutate(across(c(Start, End), ~as.yearqtr(.))) -->
-
-
-<!-- gar_analysis$fitted_df %>% -->
-<!--   filter(horizon %in% c(1, 12)) %>% -->
-<!--   filter(quantile == "0.05") %>% -->
-<!--   ggplot() + -->
-<!--   ylim(c(-0.12, 0.08)) + -->
-<!--   geom_point(aes(x = date, y = fitted_values, color = horizon)) + -->
-<!--   geom_line(aes(x = date, y = fitted_values, color = horizon)) + -->
-<!--   geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End, -->
-<!--                                             ymin = -Inf,ymax = Inf), -->
-<!--             fill = "lightblue", alpha = 0.5) + -->
-<!--   ylab(NULL) + xlab(NULL) + -->
-<!--   scale_y_continuous(labels = scales::percent_format()) + -->
-<!--   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") + -->
-<!--   geom_point(data = . %>% filter(date %in% events$Start), -->
-<!--              aes(x = date, y = fitted_values),color = "blue") + -->
-<!--   geom_segment(data = . %>%filter(date %in% events$Start), -->
-<!--                aes(x = date,y = c(0.0745, 0.0745, -0.0745, -->
-<!--                                   0.0745, +0.0745, -0.0745), -->
-<!--                    xend = date, -->
-<!--                    yend = fitted_values), -->
-<!--                arrow = arrow(length = unit(0.1, "cm")), color = "blue") + -->
-<!--   geom_text(data = events,mapping = aes(x = Start + 1, -->
-<!--                                         y = c(0.08, 0.08, -0.08), -->
-<!--                                         label = Event),color = "blue") + -->
-<!--   labs(caption = paste0( -->
-<!--     "Notes: Shaded areas depict US and Euro", -->
-<!--     " recessions (NBER and CEPR recessions)")) + -->
-<!--   theme(plot.caption = element_text(hjust = 0)) -->
-
-
-<!-- ``` -->
-
-
-<!-- ```{r events_figure, out.height="85%", eval=FALSE} -->
-
-<!-- knitr::include_graphics("Figures/events_plot.png") -->
-
-
-<!-- ``` -->
 # In-sample Properties of Risks to Growth
 ## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
@@ -790,7 +748,7 @@ knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
 	40 observations and adds one observation in each step)
 \end{itemize}
 
-## PIT score
+## Goodness of fit -- PIT score \newline (the closer to the black line the better)
 
 ```{r pit_score, eval=FALSE}
 
@@ -851,7 +809,7 @@ knitr::include_graphics("Figures/PIT.png")
 
 
 
-## Quantile R-Squared
+## Goodness of fit --Quantile R-Squared
 Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
 intercept only quantile benchmark:
 
@@ -875,7 +833,7 @@ $\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
 
 
 
-## Quantile R-Squared
+## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept)
 
 ```{r plot_r2_score, eval=FALSE}
 
@@ -975,6 +933,63 @@ current_analysis$fitted_df %>%
 ```
 
 # Appendix {.unlisted .unnumbered}
+## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
+
+
+```{r plot_events_plot}
+
+recessions = read.csv(paste0(
+  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+  "\\OneDrive - Bank Of Israel\\",
+  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>%
+  mutate(across(c(Start, End), ~as.yearqtr(.)))
+
+events = read.csv(paste0(
+  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
+  "\\OneDrive - Bank Of Israel\\",
+  "Data\\BoI\\GaR_Data","\\events.csv")) %>%
+  mutate(across(c(Start, End), ~as.yearqtr(.)))
+
+
+gar_analysis$fitted_df %>%
+  filter(horizon %in% c(1, 12)) %>%
+  filter(quantile == "0.05") %>%
+  ggplot() +
+  ylim(c(-0.12, 0.08)) +
+  geom_point(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_line(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End,
+                                            ymin = -Inf,ymax = Inf),
+            fill = "lightblue", alpha = 0.5) +
+  ylab(NULL) + xlab(NULL) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
+  geom_point(data = . %>% filter(date %in% events$Start),
+             aes(x = date, y = fitted_values),color = "blue") +
+  geom_segment(data = . %>%filter(date %in% events$Start),
+               aes(x = date,y = c(0.0745, 0.0745, -0.0745,
+                                  0.0745, +0.0745, -0.0745),
+                   xend = date,
+                   yend = fitted_values),
+               arrow = arrow(length = unit(0.1, "cm")), color = "blue") +
+  geom_text(data = events,mapping = aes(x = Start + 1,
+                                        y = c(0.08, 0.08, -0.08),
+                                        label = Event),color = "blue") +
+  labs(caption = paste0(
+    "Notes: Shaded areas depict US and Euro",
+    " recessions (NBER and CEPR recessions)")) +
+  theme(plot.caption = element_text(hjust = 0))
+
+
+```
+
+
+```{r events_figure, out.height="85%", eval=FALSE}
+
+knitr::include_graphics("Figures/events_plot.png")
+
+
+```
 ## Macro shows cyclical pattern (high growth in the short term, low in the long term)
 
 \label{MacroCoef}
