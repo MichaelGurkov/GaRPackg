@@ -3,6 +3,11 @@
 #'
 plot_fan_chart = function(forecast_df, realized_df, fan_chart_date){
 
+  if(!fan_chart_date %in% forecast_df$date){
+
+    stop("fan_chart_date is not found in forecast_df")
+  }
+
   fan_chart_forecast_df = forecast_df %>%
     filter(date == fan_chart_date) %>%
     pivot_wider(values_from = "forecast_values",
@@ -12,7 +17,7 @@ plot_fan_chart = function(forecast_df, realized_df, fan_chart_date){
 
   fan_chart_realized_df = tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
     mutate(date = fan_chart_date + horizon * 0.25) %>%
-    inner_join(realized_df, by = "date")
+    left_join(realized_df, by = "date")
 
   fan_chart_forecast_df = tibble(horizon = 0,
          date = fan_chart_date,
@@ -40,6 +45,8 @@ plot_fan_chart = function(forecast_df, realized_df, fan_chart_date){
     geom_line(data = fan_chart_forecast_df, aes(x = horizon, y = q_0.50), color =
                 "skyblue4") +
     geom_line(data = fan_chart_realized_df,
+              aes(x = horizon, y = gdp, color = "Realized GDP")) +
+    geom_point(data = fan_chart_realized_df,
               aes(x = horizon, y = gdp, color = "Realized GDP")) +
     scale_y_continuous(labels = scales::percent_format()) +
     scale_x_continuous(breaks = fan_chart_realized_df$horizon) +

@@ -3,6 +3,7 @@
 export(calculate_skew_and_iqr)
 export(extract_coeffs_from_gar_model)
 export(extract_factor_contribution_from_gar_model)
+export(extract_pca_exlained_variance_from_gar_model)
 export(extract_pca_loadings_from_gar_model)
 export(extract_pca_timeseries_from_gar_model)
 export(fit_t_skew)

@@ -102,30 +102,34 @@ raw_df = import_from_fame_template(
 )
 
 df = raw_df %>%
-  select(date,starts_with("gdp"),
-         any_of(unlist(partitions_list,use.names = FALSE))) %>% 
-  preprocess_df(vars_to_yoy = c(
-    "gdp",
-    "private_consumption",
-    "public_consumption",
-    "investment",
-    "oecd_imp",
-    "exports",
-    "imports",
-    "sp500",
-    "eurostoxx600",
-    "oil_p",
-    "non_energy_p",
-    "credit",
-    "house_price",
-    "ta125_close"
-  ),
-vars_to_diff = c("unemployment",
-                 "boi_rate",
-                 "rate_euro",
-                 "rate_us")
-) %>% 
-filter(date < as.yearqtr("2021 Q1"))
+  select(date, starts_with("gdp"),
+         any_of(unlist(partitions_list, use.names = FALSE))) %>%
+  preprocess_df(
+    vars_to_yoy = c(
+      "gdp",
+      "private_consumption",
+      "public_consumption",
+      "investment",
+      "oecd_imp",
+      "exports",
+      "imports",
+      "sp500",
+      "eurostoxx600",
+      "oil_p",
+      "non_energy_p",
+      "credit",
+      "house_price",
+      "ta125_close"
+    ),
+    vars_to_diff = c("unemployment",
+                     "boi_rate",
+                     "rate_euro",
+                     "rate_us"),
+    vars_to_4_ma = c("gdp_us",
+                     "gdp_euro")
+  ) %>%
+  mutate(across(c("gdp_euro", "gdp_us"), ~ . / 25))
+
 
 
 ```
@@ -158,7 +162,8 @@ dsge_forecast = import_dsge_forecasts(
   select(-target_var)
 
 gar_forecast = get_gar_forecast(partitions_list = partitions_list,
-                                vars_df = df,
+                                vars_df = df %>% 
+                                  filter(date <= as.yearqtr("2019 Q4")),
                                 target_var_name = "gdp",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
@@ -166,7 +171,8 @@ gar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 win_type_expanding = TRUE)
 
 intercept_forecast = get_gar_forecast(partitions_list = NULL,
-                                vars_df = df,
+                                vars_df = df %>% 
+                                  filter(date <= as.yearqtr("2019 Q4")),
                                 target_var_name = "gdp",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
@@ -316,7 +322,6 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
   \begin{itemize}
     \item
     Provide empirical evidence to support macro-financial modeling
-    (joint project with IMF)
   \end{itemize}
 \end{itemize}
 
@@ -471,13 +476,14 @@ events_plot = tribble(
   ~ event,
   ~ start_date,
   ~ end_date,
-  "intifada",
+  "Second Intifada",
   as.yearqtr("2000 Q1"),
   as.yearqtr("2003 Q1"),
-  "gfc",
+  "Great Financial Crises",
   as.yearqtr("2007 Q1"),
   as.yearqtr("2009 Q1")
-)
+) %>% 
+  mutate(event = factor(event, levels = c("Second Intifada","Great Financial Crises")))
 
 
 plot_names = c("Dom. Macro",
@@ -493,12 +499,24 @@ pca_series_df = gar_analysis %>%
   pivot_longer(-date)
 
 ggplot() +
-geom_line(data = pca_series_df, aes(x = date, y = value)) +
-geom_rect(data = events_plot,mapping = aes(xmin =start_date,xmax = end_date,
-                                          ymin = -Inf,ymax = Inf),
-          fill = "lightblue", alpha = 0.5) +
-facet_wrap(~name, scales = "free",labeller = labeller(name = plot_names)) +
-xlab(NULL) + ylab(NULL)
+  geom_line(data = pca_series_df, aes(x = date, y = value)) +
+  geom_rect(
+    data = events_plot,
+    mapping = aes(
+      xmin = start_date,
+      xmax = end_date,
+      ymin = -Inf,
+      ymax = Inf,
+      fill = event
+    ),
+    alpha = 0.5
+  ) +
+  facet_wrap( ~ name,
+              scales = "free",
+              labeller = labeller(name = plot_names)) +
+  xlab(NULL) + ylab(NULL) + 
+  scale_fill_viridis_d(option = "plasma")
+  
 
 rm(pca_series_df, events_plot, plot_names)
 
@@ -519,14 +537,9 @@ rm(pca_series_df, events_plot, plot_names)
 \hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
 
 
-
-\flushright
-
-\vspace{-2em}
-
-\hyperlink{data_partitioning}{\beamerreturnbutton{Data partitioning}}
-
 ## Fin.Conditions contribute to growth in the short term, and to risks in the long term
+
+\label{FinCoef}
 
 ```{r fin_cycle_plot, fig.height=6.5}
 
@@ -549,7 +562,8 @@ gar_analysis %>%
                         "\n  Blue bars mark coefficients that are significant at 10%",
                         "(see Koenker, 1994)"),
        title = "Sample: 1996Q1-2019Q4") + 
-  theme(plot.caption = element_text(size = 10, hjust = 0.5))
+  theme(plot.caption = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 12))
 
 ```
 
@@ -581,17 +595,64 @@ gar_analysis %>%
 ```
 
 
-```{r skewness_figure, out.height="60%"}
+```{r skewness_figure, out.height="85%"}
 
 knitr::include_graphics("Figures/Risk_assymetry_h1.png")
 
 
 ```
 
+## Risk dist. symmetry  consistent with features of past GDP growth
 
-\pause
+```{r growth_dist}
 
-Consistent with features of past gdp growth
+growth_dist_plot = df %>%
+  select(date, starts_with("gdp")) %>%
+  pivot_longer(-date) %>%
+  filter(complete.cases(.)) %>%
+  mutate(name = recode(
+    name,
+    "gdp" = "Israel",
+    "gdp_us" = "US",
+    "gdp_euro" = "Euro"
+  )) %>%
+  ggplot(aes(x = value, fill = name)) +
+  geom_density(alpha = 0.5) +
+  scale_x_continuous(labels = scales::percent_format()) +
+  xlab(NULL) + ylab(NULL) +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+        legend.position = "none")
+
+growth_timeseries_plot = df %>% 
+  select(date, starts_with("gdp")) %>% 
+  pivot_longer(-date) %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(name = recode(
+    name,
+    "gdp" = "Israel",
+    "gdp_us" = "US",
+    "gdp_euro" = "Euro"
+  )) %>% 
+  ggplot(aes(x = date, y = value, color = name)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + 
+  scale_y_continuous(labels = scales::percent_format()) + 
+  theme(legend.position = "none")
+
+
+plot_list = list(growth_dist_plot, growth_timeseries_plot)
+
+legend_p = get_legend(
+  plot_list[[1]] + theme(legend.position = "bottom",
+                         legend.title = element_blank()))
+
+plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
+          nrow = 2,
+          legend_p, rel_heights = c(1,0.2))
+
+
+```
+
 
 ```{r plot_gdp_growth, fig.height=3, eval=FALSE}
 
@@ -833,7 +894,7 @@ $\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
 
 
 
-## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept)
+## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
 
 ```{r plot_r2_score, eval=FALSE}
 
@@ -932,6 +993,33 @@ current_analysis$fitted_df %>%
 
 ```
 
+## Fan chart
+
+```{r fan_chart}
+
+fan_forecast_df = get_gar_forecast(
+  partitions_list = partitions_list,
+  vars_df = df %>% 
+  filter(date <= as.yearqtr("2021 Q1")),
+  target_var_name = "gdp",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list = list(dom_macro = "private_consumption",
+                        ext_macro = "exports",
+                        dom_fin = "credit",
+                        ext_fin = "sp500"))
+
+fan_forecast_df %>% 
+  plot_fan_chart(realized_df = df %>% 
+                   select(date, gdp),
+                 fan_chart_date = as.yearqtr("2019 Q4")) + 
+  ggtitle("Fan chart at 2019 Q4")
+
+
+
+```
+
+
 # Appendix {.unlisted .unnumbered}
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
@@ -1017,7 +1105,8 @@ gar_analysis %>%
                         "\n Blue bars mark coefficients that are significant at 10%",
                         "(see Koenker, 1994)"),
        title = "Sample: 1996Q1-2019Q4") + 
-  theme(plot.caption = element_text(size = 10, hjust = 0.5))
+  theme(plot.caption = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 12))
 
 
 
@@ -1078,7 +1167,7 @@ $$
 \bigg\}
 $$
 
-Note: "Quantile crossing" handled using the method of [@Chernozhukov2010]
+Note: "Quantile crossing" handled using the method of Chernozhukov et al. (2010).
 
 \begin{flushleft}
 \hyperlink{methodology}{\beamergotobutton{Methodology}}
@@ -1121,7 +1210,7 @@ gar_analysis %>%
 
 \label{CoeffPanel}
 
-```{r coeff_panel_plot, fig.height=7.5}
+```{r coeff_panel_plot, fig.height=7}
 
 gar_analysis %>%
   extract_coeffs_from_gar_model() %>%
@@ -1138,7 +1227,9 @@ gar_analysis %>%
                                "non_significant" = "gray"),
                     labels = c("Significant", "Non significant")) +
   facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
-  xlab("Quantile") + ylab(NULL)
+  xlab("Quantile") + ylab(NULL) + 
+  theme(plot.caption = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 12),strip.text.y = element_text(size = 14))
 
 
 ```
@@ -1146,7 +1237,7 @@ gar_analysis %>%
 
 \vspace{-0.5em}
 
-\hyperlink{MacroCoef}{\beamergotobutton{Macro coeff}}
+\hyperlink{FinCoef}{\beamergotobutton{FinCoef}}
 
 
 # References {.unlisted .unnumbered}
