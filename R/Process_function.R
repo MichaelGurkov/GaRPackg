@@ -716,7 +716,7 @@ preprocess_df = function(df,
   if(convert_to_percent_units){
 
     df = df %>%
-      mutate(across(any_of(c(vars_to_yoy, vars_to_percent_changes)),
+      mutate(across(any_of(c(vars_to_yoy, vars_to_percent_changes,vars_to_4_ma)),
                     ~ . * 100))
 
   }

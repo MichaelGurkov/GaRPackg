@@ -22,7 +22,7 @@ test_that("all preprocess transformations work", {
       mutate(across(c("boi_rate"), ~ c(NA, diff(.)))) %>%
       mutate(across(
         c("ind_prod_euro"),
-        ~ slide_dbl(., mean, .before = 3, .complete = TRUE)
+        ~ slide_dbl(., mean, .before = 3, .complete = TRUE) * 100
       )) %>%
       mutate(across(
         c("sp500","dxy"),
