@@ -476,14 +476,16 @@ events_plot = tribble(
   ~ event,
   ~ start_date,
   ~ end_date,
-  "Second Intifada",
+  "The Dot Com (and the Second Intifada)",
   as.yearqtr("2000 Q1"),
   as.yearqtr("2003 Q1"),
   "Great Financial Crises",
   as.yearqtr("2007 Q1"),
   as.yearqtr("2009 Q1")
 ) %>% 
-  mutate(event = factor(event, levels = c("Second Intifada","Great Financial Crises")))
+  mutate(event = factor(event,
+                        levels = c("The Dot Com (and the Second Intifada)",
+                                   "Great Financial Crises")))
 
 
 plot_names = c("Dom. Macro",
@@ -496,6 +498,7 @@ plot_names = c("Dom. Macro",
 
 pca_series_df = gar_analysis %>%
   extract_pca_timeseries_from_gar_model() %>%
+  filter(date >= as.yearqtr("1996 Q1")) %>% 
   pivot_longer(-date)
 
 ggplot() +
@@ -537,7 +540,7 @@ rm(pca_series_df, events_plot, plot_names)
 \hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
 
 
-## Fin.Conditions contribute to growth in the short term, and to risks in the long term
+## Financial Conditions contribute to growth in the short term, and to risks in the long term
 
 \label{FinCoef}
 
@@ -579,7 +582,7 @@ gar_analysis %>%
 ## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
-```{r plot_skewness_1_quarter, fig.height=3, eval=FALSE}
+```{r plot_skewness_1_quarter, fig.height=6}
 
 gar_analysis %>%
   calculate_skew_and_iqr() %>%
@@ -590,24 +593,28 @@ gar_analysis %>%
   geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
              color = "blue") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead")
+  labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead",
+       caption = "Note: the dashed lines represent ± 2 standard error estimates") + 
+  theme(plot.caption = element_text(hjust = 0.5))
+  
 
 ```
 
 
-```{r skewness_figure, out.height="85%"}
+```{r skewness_figure, out.height="85%", eval=FALSE}
 
 knitr::include_graphics("Figures/Risk_assymetry_h1.png")
 
 
 ```
 
-## Risk dist. symmetry  consistent with features of past GDP growth
+## Risk distribution symmetry is consistent with features of past GDP growth
 
-```{r growth_dist}
+```{r growth_dist, eval=FALSE}
 
 growth_dist_plot = df %>%
   select(date, starts_with("gdp")) %>%
+  filter(date <=as.yearqtr("2019 Q4")) %>% 
   pivot_longer(-date) %>%
   filter(complete.cases(.)) %>%
   mutate(name = recode(
@@ -625,6 +632,7 @@ growth_dist_plot = df %>%
 
 growth_timeseries_plot = df %>% 
   select(date, starts_with("gdp")) %>% 
+  filter(date <=as.yearqtr("2019 Q4")) %>% 
   pivot_longer(-date) %>% 
   filter(complete.cases(.)) %>% 
   mutate(name = recode(
@@ -654,19 +662,19 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 ```
 
 
-```{r plot_gdp_growth, fig.height=3, eval=FALSE}
+```{r plot_gdp_growth}
 
 df %>%
   select(date,gdp_us, gdp_euro, gdp) %>%
-  filter(complete.cases(.)) %>%
   filter(date <= as.yearqtr("2019 Q4")) %>% 
+  # mutate(across(starts_with("gdp"), ~scale(., scale = FALSE))) %>% 
   rename(US = gdp_us, Euro = gdp_euro, Israel = gdp) %>%
-  # mutate(across(-date, ~scale(.,center = TRUE, scale = TRUE))) %>%
   pivot_longer(-date) %>%
+  filter(complete.cases(.)) %>%
   ggplot(aes(x = value, fill = name)) +
   geom_histogram(alpha = 0.5) +
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY gdp growth density")
+  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth distribution")
 
 ```
 
