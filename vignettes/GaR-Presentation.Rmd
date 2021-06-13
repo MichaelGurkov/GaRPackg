@@ -610,41 +610,56 @@ knitr::include_graphics("Figures/Risk_assymetry_h1.png")
 
 ## Risk distribution symmetry is consistent with features of past GDP growth
 
-```{r growth_dist, eval=FALSE}
+```{r growth_dist}
 
 growth_dist_plot = df %>%
   select(date, starts_with("gdp")) %>%
-  filter(date <=as.yearqtr("2019 Q4")) %>% 
+  filter(date <= as.yearqtr("2019 Q4")) %>%
   pivot_longer(-date) %>%
   filter(complete.cases(.)) %>%
-  mutate(name = recode(
+  mutate(name = factor(
     name,
-    "gdp" = "Israel",
-    "gdp_us" = "US",
-    "gdp_euro" = "Euro"
+    levels = c("gdp", "gdp_us", "gdp_euro"),
+    labels = c("Israel", "US", "Euro")
   )) %>%
+  group_by(name) %>%
+  mutate(value = scale(value, scale = FALSE)) %>%
+  ungroup %>%
   ggplot(aes(x = value, fill = name)) +
-  geom_density(alpha = 0.5) +
+  geom_histogram(position = "dodge") +
   scale_x_continuous(labels = scales::percent_format()) +
-  xlab(NULL) + ylab(NULL) +
-  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-        legend.position = "none")
-
-growth_timeseries_plot = df %>% 
-  select(date, starts_with("gdp")) %>% 
-  filter(date <=as.yearqtr("2019 Q4")) %>% 
-  pivot_longer(-date) %>% 
-  filter(complete.cases(.)) %>% 
-  mutate(name = recode(
-    name,
-    "gdp" = "Israel",
-    "gdp_us" = "US",
-    "gdp_euro" = "Euro"
-  )) %>% 
-  ggplot(aes(x = date, y = value, color = name)) + 
-  geom_line() + 
+  scale_fill_manual(values = c(
+    "Israel" = "skyblue",
+    "US" = "darkgray",
+    "Euro" = "lightpink"
+  ))   +
   xlab(NULL) + ylab(NULL) + 
-  scale_y_continuous(labels = scales::percent_format()) + 
+  ggtitle("Centered GDP growth \n (year on year) distribution") + 
+  theme(
+  axis.text.y = element_blank(),
+  axis.ticks.y = element_blank(),
+  legend.position = "none"
+)
+
+growth_timeseries_plot = df %>%
+  select(date, starts_with("gdp")) %>%
+  filter(date <= as.yearqtr("2019 Q4")) %>%
+  pivot_longer(-date) %>%
+  filter(complete.cases(.)) %>%
+  mutate(name = factor(
+    name,
+    levels = c("gdp", "gdp_us", "gdp_euro"),
+    labels = c("Israel", "US", "Euro")
+  )) %>%
+  ggplot(aes(x = date, y = value, color = name)) +
+  geom_line() +
+  xlab(NULL) + ylab(NULL) + ggtitle("Growth (year on year) rates") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_color_manual(values = c(
+    "Israel" = "skyblue",
+    "US" = "darkgray",
+    "Euro" = "lightpink"
+  ))   +
   theme(legend.position = "none")
 
 
@@ -662,7 +677,7 @@ plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
 ```
 
 
-```{r plot_gdp_growth}
+```{r plot_gdp_growth, eval=FALSE}
 
 df %>%
   select(date,gdp_us, gdp_euro, gdp) %>%
@@ -672,7 +687,7 @@ df %>%
   pivot_longer(-date) %>%
   filter(complete.cases(.)) %>%
   ggplot(aes(x = value, fill = name)) +
-  geom_histogram(alpha = 0.5) +
+  geom_density(alpha = 0.3) +
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
   xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth distribution")
 
