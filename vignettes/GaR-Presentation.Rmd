@@ -653,7 +653,7 @@ growth_timeseries_plot = df %>%
   )) %>%
   ggplot(aes(x = date, y = value, color = name)) +
   geom_line() +
-  xlab(NULL) + ylab(NULL) + ggtitle("Growth (year on year) rates") +
+  xlab(NULL) + ylab(NULL) + ggtitle("GDP growth (year on year)") +
   scale_y_continuous(labels = scales::percent_format()) +
   scale_color_manual(values = c(
     "Israel" = "skyblue",
@@ -834,6 +834,8 @@ knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
 
 ## Goodness of fit -- PIT score \newline (the closer to the black line the better)
 
+\label{PITscore}
+
 ```{r pit_score, eval=FALSE}
 
 gar_pit = quantile_pit_score(
@@ -884,14 +886,14 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
 ```
 
 
-```{r pit_figure, out.height="85%"}
+```{r pit_figure, out.height="80%"}
 
 knitr::include_graphics("Figures/PIT.png")
 
 
 ```
 
-
+\hyperlink{PIT}{\beamergotobutton{PIT}}
 
 ## Goodness of fit --Quantile R-Squared
 Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
@@ -1016,7 +1018,7 @@ current_analysis$fitted_df %>%
 
 ```
 
-## Fan chart
+## Current uses
 
 ```{r fan_chart}
 
@@ -1154,6 +1156,10 @@ knitr::include_graphics("Figures/fig_bootstrap_5per.png")
 ```
 
 ## Probability Integral Transform (PIT)
+
+\label{PIT}
+
+
 For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
 	$$
 	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
@@ -1168,6 +1174,9 @@ For each quantile $\tau$ and horizon $h$, we compute  the percentage of observat
 	the fraction of observations falling below quantile $\tau$
 	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
 \end{itemize}
+
+
+\hyperlink{PITscore}{\beamergotobutton{PITscore}}
 
 ## Quantile Regression
 
@@ -1262,9 +1271,4 @@ gar_analysis %>%
 
 \hyperlink{FinCoef}{\beamergotobutton{FinCoef}}
 
-
-# References {.unlisted .unnumbered}
-## References {.allowframebreaks}
-
-<div id="refs"></div>
 
