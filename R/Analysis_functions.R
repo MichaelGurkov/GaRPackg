@@ -25,8 +25,6 @@
 #'
 #' @param preprocess_method string a method that aggregates the data to partitions
 #'
-#' @param run_ols_reg boolean indicator that adds an OLS regression
-#'
 #'
 #' @param pca.align.list (Optional) A list that specifies the PCA aligning variable for
 #' each partition and alignment direction (default is positive direction).
@@ -55,7 +53,6 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             horizon_list,
                             quantile_vec,
                             preprocess_method = "inner_join_pca",
-                            run_ols_reg = FALSE,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 
