@@ -59,8 +59,10 @@ import_from_fame_template = function(template_path,
   # Substitute empty strings with NA
 
   fame_df = fame_df %>%
-    mutate_all( ~ na_if(., "")) %>%
-    mutate_if(is.character, .funs = list( ~ as.numeric(.)))
+    mutate(across(everything(),~ na_if(., ""))) %>%
+    mutate(across(where(is.character),~str_remove_all(.,","))) %>%
+    mutate(across(where(is.character), as.numeric))
+
 
   # Append missing series
 

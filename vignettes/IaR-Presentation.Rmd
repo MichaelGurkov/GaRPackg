@@ -1,5 +1,5 @@
 ---
-title: "Growth at Risk: The Distribution of Future GDP Growth in Israel"
+title: "Inflation at Risk: The Distribution of Future Inflation in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department \\newline \\newline Any views expressed in the Discussion Paper are those of the authors and do not necessarily reflect those of the Bank of Israel"
 date: "16 June, 2021"
@@ -29,11 +29,13 @@ devtools::load_all()
 
 library(GaRPackg)
 
-setwd(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
-  "\\Documents\\GaRPackg\\vignettes"))
+library(mFilter)
 
 library(tidyverse)
+
+library(lubridate)
+
+library(slider)
 
 library(cowplot)
 
@@ -41,43 +43,29 @@ library(broom)
 
 library(gghighlight)
 
+setwd(paste0(
+  file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
+  "\\Documents\\GaRPackg\\vignettes"))
+
+
 ```
 
 
 ```{r set_params}
 
 partitions_list = list(
-  dom_macro = c(
-    "private_consumption",
-    "public_consumption",
-    "investment",
-    "unemployment"),
-  ext_macro = c(
-    "oecd_imp",
-    "exports",
-    "imports"
-  ),
-  dom_fin = c(
-    "credit",
-    "house_price",
-    "ta125_close",
-    "boi_rate"
-  ),
-  ext_fin = c(
-    "rate_euro",
-    "rate_us",
-    "sp500",
-    "eurostoxx600",
-    "oil_p",
-    "non_energy_p"
-  )
+  inflation = c("cpi"),
+  exchange_rate = c("nis_usd"),
+  oil_p = c("brent_usd"),
+  output_gap = c("meshulav_hpcyc")
 )
 
 
 
-horizon_list=c(1,4,8,12)
+horizon_list=c(12)
 
-quantile_vec=c(0.05,0.25,0.5,0.75,0.95)
+quantile_vec=c(0.10,0.25,0.5,0.75,0.90)
+
 
 
 theme_set(theme_bw() + 
@@ -89,6 +77,20 @@ theme_set(theme_bw() +
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15)))
 
+# plot_names = tribble(
+#   ~var_name, ~plot_name,
+#   "Intercept", "Intercept",
+#   "cpi", "Inflation",
+#   "cpi_lag", "Inflation",
+#   "spf1y","Expectations",
+#   "beir5y5y","LT Expect.",
+#   "nis_usd", "Exchange Rate",
+#   "rel_tradables", "Tradables",
+#   "brent_usd", "Oil Prices",
+#   "meshulav_hpcyc","Output Gap"
+# )
+
+
 
 ```
 
@@ -97,38 +99,40 @@ theme_set(theme_bw() +
 raw_df = import_from_fame_template(
   paste0(
     file.path(Sys.getenv("USERPROFILE")),
-    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\Working_data\\data_fame.csv"
-  )
+    "\\OneDrive - Bank Of Israel\\Data\\BoI\\IaR_data\\data_Inflation_at_Risk_monthly.csv"
+  ),data_frequency = "monthly"
 )
 
-df = raw_df %>%
-  select(date, starts_with("gdp"),
-         any_of(unlist(partitions_list, use.names = FALSE))) %>%
+df = raw_df %>% 
+  mutate(rel_tradables = cpi_tradables / cpi_nontradables_excl_fv_hous) %>%
   preprocess_df(
     vars_to_yoy = c(
-      "gdp",
-      "private_consumption",
-      "public_consumption",
-      "investment",
-      "oecd_imp",
-      "exports",
-      "imports",
-      "sp500",
-      "eurostoxx600",
-      "oil_p",
-      "non_energy_p",
-      "credit",
+      "cpi",
+      "cpi_excl_fv",
+      "cpi_excl_fv_hous",
+      "cpi_excl_hous",
+      "rel_tradables",
+      "cpi_oecd",
+      "cpi_us",
+      "cpi_euro",
+      "debt_business",
+      "debt_households",
       "house_price",
-      "ta125_close"
+      "ta125"
     ),
-    vars_to_diff = c("unemployment",
-                     "boi_rate",
-                     "rate_euro",
-                     "rate_us"),
-    vars_to_4_ma = c("gdp_us",
-                     "gdp_euro")
+    vars_to_percent_changes = c("nis_usd",
+                                "neer",
+                                "brent_usd",
+                                "brent_nis",
+                                "non_energy_p"),
+    convert_to_percent_units = TRUE
   ) %>%
-  mutate(across(c("gdp_euro", "gdp_us"), ~ . / 25))
+  mutate(target = target * 100) %>% 
+  mutate(cpi_orig = cpi) %>% 
+  mutate(cpi = cpi_excl_fv_hous) %>% 
+  mutate(cpi_lag = lag(cpi)) %>% 
+  filter(year(date) >= 2004 & year(date) <= 2019) %>% 
+  mutate(meshulav_hpcyc = hpfilter(madad_meshulav,freq = 1600)$cycle)
 
 
 
@@ -136,21 +140,34 @@ df = raw_df %>%
 
 ```{r run_analysis}
 
-gar_analysis = run_GaR_analysis(
+iar_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4")),
-  target_var_name = "gdp",
+  vars_df = df,
+  target_var_name = "cpi",
   horizon_list = horizon_list,
   quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
+  pca.align.list = list(
+    output_gap = list("output_gap", TRUE),
+    expect = list("beir1y", TRUE)
+  )
+)
+
+ols_coeffs = iar_analysis$reg_df %>% 
+  select(cpi_12, ends_with("xreg")) %>% 
+  lm("cpi_12 ~ .",.) %>% 
+  tidy() %>% 
+  filter(!term == "(Intercept)") %>% 
+  mutate(term = str_remove_all(term, "_xreg")) %>% 
+  mutate(partition = factor(term,
+                       levels = c("nis_usd","cpi","brent_usd","meshulav_hpcyc"),
+                       labels = c("Exchange Rate","Inflation","Oil prices",
+                                       "Output Gap"))) %>% 
+  select(partition, estimate)
+
 
 ```
 
-```{r out_of_sample_forecast}
+```{r out_of_sample_forecast, eval=FALSE}
 
 dsge_forecast = import_dsge_forecasts(
   paste0(
@@ -183,15 +200,6 @@ intercept_forecast = get_gar_forecast(partitions_list = NULL,
 ```
 
 
-```{r import_robustness_data, eval=FALSE}
-
-fit_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
-
-```
-
 ## Outline
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
@@ -223,62 +231,21 @@ fit_df = read_rds(paste0(
 
 ## Motivation
 
-\centering
-Quantile Regressions of YoY GDP Growth Four Quarters Ahead
+```{r plot_inf_rates}
 
-\vspace{3mm}
+df %>% 
+  select(date, cpi) %>% 
+  mutate(cpi_ma = slide_dbl(cpi,mean,.before = 48,.complete = TRUE)) %>% 
+  mutate(cpi_sd = slide_dbl(cpi,sd,.before = 48,.complete = TRUE)) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(x = date, y = value, color = name)) + 
+  geom_line() + 
+  scale_color_discrete(labels = c("CPI Inflation","CPI Moving Average (48 periods)",
+                                "CPI Standard Deviation (48 periods)")) + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
+                 " Vegetables, and Housing (Monthly,2004-2019)"))
 
-```{r plot_gdp_credit}
-
-temp_df = df %>%
-  select(all_of(c("gdp","credit"))) %>%
-  add_leads_to_target_var(target_var_name = "gdp",
-                          leads_vector = 4) %>%
-  filter(complete.cases(.))
-
-plot_list = map(list("gdp","credit"), function(temp_var){
-
-temp_qreq = rq(paste0("gdp_4","~",temp_var),
-               tau = c(0.05,0.5,0.95),
-               data = temp_df) %>%
-  coefficients() %>%
-  t() %>%
-  as.data.frame() %>%
-  rownames_to_column() %>%
-  mutate(rowname = str_remove_all(rowname, "tau= ")) %>%
-  rename(Quantile = rowname,
-         my_int = `(Intercept)`,
-         my_slope = !!sym(temp_var))
-
-temp_plot = temp_df %>%
-  ggplot(aes(x = !!sym(temp_var),
-             y = gdp_4)) +
-  geom_point() +
-  geom_abline(data = temp_qreq,
-              aes(intercept = my_int,
-                  slope = my_slope,
-                  color = Quantile)) +
-  scale_x_continuous(
-    labels = scales::percent_format(accuracy = 1)) +
-  scale_y_continuous(
-    labels = scales::percent_format(accuracy = 1)) +
-  scale_color_manual(values = c("red","black","green")) +
-  xlab(paste("YoY", temp_var, "growth")) +
-  ylab((paste("YoY gdp growth 4 quarters ahead"))) +
-  ggtitle(if_else(temp_var == "gdp","GDP","Credit")) +
-  theme(legend.position = "none")
-
-  return(temp_plot)
-
-})
-
-legend_p = get_legend(
-  plot_list[[1]] + theme(legend.position = "bottom",
-                         legend.title = element_text(size = 15)))
-
-plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
-          nrow = 2,
-          legend_p, rel_heights = c(1,0.2))
 
 ```
 
@@ -459,113 +426,38 @@ Sample: 1996Q1-2019Q4
 
 
 
-## $1^{st}$ Principal Components
-
-
-\label{PcaTimeseries}
-
-
-```{r plot_pca_timeseries}
-
-var_exp_df = gar_analysis %>% 
-  extract_pca_exlained_variance_from_gar_model() %>% 
-  mutate(explained_variance = round(explained_variance * 100 , 2))
-
-events_plot = tribble(
-  ~ event,
-  ~ start_date,
-  ~ end_date,
-  "The Dot Com (and the Second Intifada)",
-  as.yearqtr("2000 Q1"),
-  as.yearqtr("2003 Q1"),
-  "Great Financial Crises",
-  as.yearqtr("2007 Q1"),
-  as.yearqtr("2009 Q1")
-) %>% 
-  mutate(event = factor(event,
-                        levels = c("The Dot Com (and the Second Intifada)",
-                                   "Great Financial Crises")))
-
-
-plot_names = c("Dom. Macro",
-               "Ext. Macro",
-               "Dom. Fin. Cond",
-               "Ext. Fin. Cond") %>%
-  paste(paste0(" (", var_exp_df$explained_variance, "%)")) %>%
-  set_names(c("dom_macro", "ext_macro", "dom_fin", "ext_fin"))
-
-
-pca_series_df = gar_analysis %>%
-  extract_pca_timeseries_from_gar_model() %>%
-  filter(date >= as.yearqtr("1996 Q1")) %>% 
-  pivot_longer(-date)
-
-ggplot() +
-  geom_line(data = pca_series_df, aes(x = date, y = value)) +
-  geom_rect(
-    data = events_plot,
-    mapping = aes(
-      xmin = start_date,
-      xmax = end_date,
-      ymin = -Inf,
-      ymax = Inf,
-      fill = event
-    ),
-    alpha = 0.5
-  ) +
-  facet_wrap( ~ name,
-              scales = "free",
-              labeller = labeller(name = plot_names)) +
-  xlab(NULL) + ylab(NULL) + 
-  scale_fill_viridis_d(option = "plasma")
-  
-
-rm(pca_series_df, events_plot, plot_names)
-
-```
-
-
-\vspace{-1em}
-
-\flushleft
-
-\hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
-
-
-\vspace{-1.5em}
-
-\flushright
-
-\hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
-
-
 ## Financial Conditions contribute to growth in the short term, and to risks in the long term
 
-\label{FinCoef}
+\label{Coeffs}
 
-```{r fin_cycle_plot, fig.height=6.5}
+```{r plot_coeffs, fig.height=6.5}
 
-gar_analysis %>%
+iar_analysis %>%
   extract_coeffs_from_gar_model() %>%
-  filter(partition %in% c("dom_fin", "ext_fin")) %>%
-  mutate(partition = recode(partition,
-                            "dom_fin" = "Dom. Fin. Cond",
-                            "ext_fin" = "Ext. Fin. Cond")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
+  filter(!partition == "Intercept") %>%
+  mutate(partition = factor(partition,
+                            levels = c("nis_usd","cpi","brent_usd","meshulav_hpcyc"),
+                            labels = c("Exchange Rate","Inflation","Oil prices",
+                                       "Output Gap"))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
-  geom_col() +
+  geom_col(width = 0.3) +
   scale_fill_manual(values = c("significant" = "lightblue",
                                "non_significant" = "gray"),
                     labels = c("Significant", "Non significant")) +
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
+  facet_grid(rows = vars(partition), scales = "free") +
+  geom_hline(aes(yintercept = estimate), data = ols_coeffs,
+             color = "blue", linetype = "dashed") +
+  geom_hline(yintercept = 0) + 
   xlab("Quantile") + ylab(NULL) + 
   labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
                         "from the quantile regression at a specific forecast horizon. ",
                         "\n  Blue bars mark coefficients that are significant at 10%",
                         "(see Koenker, 1994)"),
-       title = "Sample: 1996Q1-2019Q4") + 
+       title = "Sample: 1996Q1-2019Q4") +
   theme(plot.caption = element_text(size = 10, hjust = 0.5),
-        axis.text.x = element_text(size = 12))
+        axis.text.x = element_text(size = 12)) + 
+  # theme_classic() +
+  NULL
 
 ```
 
@@ -578,117 +470,63 @@ gar_analysis %>%
 
 
 # In-sample Properties of Risks to Growth
+## 5th Percentile Forecast
+
+```{r plot_fan}
+
+
+iar_analysis$fitted_df %>%
+  filter(quantile %in% c(0.25,0.5,0.75)) %>%
+  select(-horizon) %>% 
+  ggplot(aes(x = date, y = fitted)) +
+  geom_point(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_line(aes(x = date, y = fitted_values, color = horizon)) +
+  geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End,
+                                            ymin = -Inf,ymax = Inf),
+            fill = "lightblue", alpha = 0.5) +
+  ylab(NULL) + xlab(NULL) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
+  geom_point(data = . %>% filter(date %in% events$Start),
+             aes(x = date, y = fitted_values),color = "blue")
+ 
+
+```
+
+
 ## Risks to Growth are generally balanced
 Contrary to other countries **no evidence of skewed distribution**
 
 ```{r plot_skewness_1_quarter, fig.height=6}
 
-gar_analysis %>%
+skew_df = iar_analysis %>%
   calculate_skew_and_iqr() %>%
-  filter(horizon == 1) %>%
-  select(date, skew) %>%
-  ggplot(aes(x = date, y = skew)) +
+  select(-horizon) %>% 
+  pivot_longer(-date) %>% 
+  group_by(date = as.yearqtr(date), name) %>% 
+  summarise(value = mean(value), .groups = "drop") %>% 
+  mutate(name = factor(name, levels = c("iqr","skew"),
+                       labels = c("Dispersion","Skewness")))
+
+mean_df = skew_df %>% 
+  group_by(name) %>% 
+  summarise(avg = mean(value))
+
+ skew_df%>% 
+  ggplot(aes(x = date, y = value)) +
   geom_line() +
-  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
-             color = "blue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  labs(x = "", y = "", title = "Quartile Skewness 1Q Ahead",
+  # geom_hline(aes(yintercept = mean(value)), color = "blue") + 
+  facet_wrap(~name, scales = "free") + 
+  geom_hline(aes(yintercept = avg), color = "blue", data = mean_df) + 
+  # geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed",
+  #            color = "blue") +
+  # geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  labs(x = "", y = "", title = "High Moments of the Forecast Distribution",
        caption = "Note: the dashed lines represent ± 2 standard error estimates") + 
   theme(plot.caption = element_text(hjust = 0.5))
-  
 
-```
-
-
-```{r skewness_figure, out.height="85%", eval=FALSE}
-
-knitr::include_graphics("Figures/Risk_assymetry_h1.png")
-
-
-```
-
-## Risk distribution symmetry is consistent with features of past GDP growth
-
-```{r growth_dist}
-
-growth_dist_plot = df %>%
-  select(date, starts_with("gdp")) %>%
-  filter(date <= as.yearqtr("2019 Q4")) %>%
-  pivot_longer(-date) %>%
-  filter(complete.cases(.)) %>%
-  mutate(name = factor(
-    name,
-    levels = c("gdp", "gdp_us", "gdp_euro"),
-    labels = c("Israel", "US", "Euro")
-  )) %>%
-  group_by(name) %>%
-  mutate(value = scale(value, scale = FALSE)) %>%
-  ungroup %>%
-  ggplot(aes(x = value, fill = name)) +
-  geom_histogram(position = "dodge") +
-  scale_x_continuous(labels = scales::percent_format()) +
-  scale_fill_manual(values = c(
-    "Israel" = "skyblue",
-    "US" = "darkgray",
-    "Euro" = "lightpink"
-  ))   +
-  xlab(NULL) + ylab(NULL) + 
-  ggtitle("Centered GDP growth \n (year on year) distribution") + 
-  theme(
-  axis.text.y = element_blank(),
-  axis.ticks.y = element_blank(),
-  legend.position = "none"
-)
-
-growth_timeseries_plot = df %>%
-  select(date, starts_with("gdp")) %>%
-  filter(date <= as.yearqtr("2019 Q4")) %>%
-  pivot_longer(-date) %>%
-  filter(complete.cases(.)) %>%
-  mutate(name = factor(
-    name,
-    levels = c("gdp", "gdp_us", "gdp_euro"),
-    labels = c("Israel", "US", "Euro")
-  )) %>%
-  ggplot(aes(x = date, y = value, color = name)) +
-  geom_line() +
-  xlab(NULL) + ylab(NULL) + ggtitle("GDP growth (year on year)") +
-  scale_y_continuous(labels = scales::percent_format()) +
-  scale_color_manual(values = c(
-    "Israel" = "skyblue",
-    "US" = "darkgray",
-    "Euro" = "lightpink"
-  ))   +
-  theme(legend.position = "none")
-
-
-plot_list = list(growth_dist_plot, growth_timeseries_plot)
-
-legend_p = get_legend(
-  plot_list[[1]] + theme(legend.position = "bottom",
-                         legend.title = element_blank()))
-
-plot_grid(plot_grid(plotlist = plot_list,ncol = 2),
-          nrow = 2,
-          legend_p, rel_heights = c(1,0.2))
-
-
-```
-
-
-```{r plot_gdp_growth, eval=FALSE}
-
-df %>%
-  select(date,gdp_us, gdp_euro, gdp) %>%
-  filter(date <= as.yearqtr("2019 Q4")) %>% 
-  # mutate(across(starts_with("gdp"), ~scale(., scale = FALSE))) %>% 
-  rename(US = gdp_us, Euro = gdp_euro, Israel = gdp) %>%
-  pivot_longer(-date) %>%
-  filter(complete.cases(.)) %>%
-  ggplot(aes(x = value, fill = name)) +
-  geom_density(alpha = 0.3) +
-  scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-  xlab(NULL) + ylab(NULL) + ggtitle("YoY GDP growth distribution")
+ 
+ rm(skew_df, mean_df)
 
 ```
 
@@ -1074,54 +912,6 @@ fan_forecast_df %>%
 ## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
 
 
-```{r plot_events_plot}
-
-recessions = read.csv(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-  "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>%
-  mutate(across(c(Start, End), ~as.yearqtr(.)))
-
-events = read.csv(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-  "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\events.csv")) %>%
-  mutate(across(c(Start, End), ~as.yearqtr(.)))
-
-
-gar_analysis$fitted_df %>%
-  filter(horizon %in% c(1, 12)) %>%
-  filter(quantile == "0.05") %>%
-  ggplot() +
-  ylim(c(-0.12, 0.08)) +
-  geom_point(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_line(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End,
-                                            ymin = -Inf,ymax = Inf),
-            fill = "lightblue", alpha = 0.5) +
-  ylab(NULL) + xlab(NULL) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
-  geom_point(data = . %>% filter(date %in% events$Start),
-             aes(x = date, y = fitted_values),color = "blue") +
-  geom_segment(data = . %>%filter(date %in% events$Start),
-               aes(x = date,y = c(0.0745, 0.0745, -0.0745,
-                                  0.0745, +0.0745, -0.0745),
-                   xend = date,
-                   yend = fitted_values),
-               arrow = arrow(length = unit(0.1, "cm")), color = "blue") +
-  geom_text(data = events,mapping = aes(x = Start + 1,
-                                        y = c(0.08, 0.08, -0.08),
-                                        label = Event),color = "blue") +
-  labs(caption = paste0(
-    "Notes: Shaded areas depict US and Euro",
-    " recessions (NBER and CEPR recessions)")) +
-  theme(plot.caption = element_text(hjust = 0))
-
-
-```
-
-
 ```{r events_figure, out.height="85%", eval=FALSE}
 
 knitr::include_graphics("Figures/events_plot.png")
@@ -1171,14 +961,6 @@ gar_analysis %>%
 
 \hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
 
-
-## 5th Percentile Forecast
-
-```{r, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_bootstrap_5per.png")
-
-```
 
 ## Probability Integral Transform (PIT)
 
@@ -1294,6 +1076,6 @@ gar_analysis %>%
 
 \vspace{-0.5em}
 
-\hyperlink{FinCoef}{\beamergotobutton{FinCoef}}
+\hyperlink{Coeffs}{\beamergotobutton{Coeffs}}
 
 
