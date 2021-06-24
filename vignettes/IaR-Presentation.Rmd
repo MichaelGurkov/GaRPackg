@@ -236,12 +236,12 @@ intercept_forecast = get_gar_forecast(partitions_list = NULL,
 df %>% 
   select(date, cpi) %>% 
   mutate(cpi_ma = slide_dbl(cpi,mean,.before = 48,.complete = TRUE)) %>% 
-  mutate(cpi_sd = slide_dbl(cpi,sd,.before = 48,.complete = TRUE)) %>% 
+  mutate(cpi_var = slide_dbl(cpi,var,.before = 48,.complete = TRUE)) %>% 
   pivot_longer(-date) %>% 
   ggplot(aes(x = date, y = value, color = name)) + 
   geom_line() + 
   scale_color_discrete(labels = c("CPI Inflation","CPI Moving Average (48 periods)",
-                                "CPI Standard Deviation (48 periods)")) + 
+                                "CPI Variance (48 periods)")) + 
   xlab(NULL) + ylab(NULL) + 
   ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
                  " Vegetables, and Housing (Monthly,2004-2019)"))
@@ -426,7 +426,7 @@ Sample: 1996Q1-2019Q4
 
 
 
-## Financial Conditions contribute to growth in the short term, and to risks in the long term
+## Persistent inflation, positive factor and negative output gap
 
 \label{Coeffs}
 
@@ -474,21 +474,23 @@ iar_analysis %>%
 
 ```{r plot_fan}
 
-
-iar_analysis$fitted_df %>%
-  filter(quantile %in% c(0.25,0.5,0.75)) %>%
+plot_df = iar_analysis$fitted_df %>%
+  filter(quantile %in% c(0.25,0.5,0.75)) %>% 
   select(-horizon) %>% 
-  ggplot(aes(x = date, y = fitted)) +
-  geom_point(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_line(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End,
-                                            ymin = -Inf,ymax = Inf),
-            fill = "lightblue", alpha = 0.5) +
-  ylab(NULL) + xlab(NULL) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
-  geom_point(data = . %>% filter(date %in% events$Start),
-             aes(x = date, y = fitted_values),color = "blue")
+  group_by(date = as.yearqtr(date), quantile) %>% 
+  summarise(avg_values = mean(fitted_values), .groups = "drop")
+
+ggplot() + 
+  geom_line(data = plot_df %>%
+              filter(quantile == "0.5"), aes(x = date, y = avg_values)) +
+  geom_ribbon(data = plot_df %>%
+                filter(quantile %in% c(0.25,0.75)) %>%
+                pivot_wider(names_from = "quantile",
+                            names_prefix = "q_",
+                            values_from = "avg_values"),
+              aes(x = date, ymin = q_0.25, ymax = q_0.75), alpha = 0.5) +
+  ylab("Percent") + xlab(NULL) +
+  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead")
  
 
 ```
@@ -572,9 +574,9 @@ knitr::include_graphics("Figures/GaR_factor_all.png")
 
 ```{r plot_median_iqr_scatter, eval=FALSE}
 
-gar_analysis %>%
+iar_analysis %>%
   calculate_skew_and_iqr() %>%
-  inner_join(gar_analysis$fitted_df %>%
+  inner_join(iar_analysis$fitted_df %>%
                filter(quantile == "0.5") %>%
                select(-quantile), by = c("date","horizon")) %>%
   mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
@@ -582,7 +584,6 @@ gar_analysis %>%
   geom_point() +
   geom_smooth(method = "lm") +
   xlab("Dispersion") + ylab("Median") +
-  facet_wrap(~horizon, scales = "free") +
   theme(axis.text = element_text(size = 8))
 
 
