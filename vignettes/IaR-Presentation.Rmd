@@ -169,32 +169,31 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 ```{r out_of_sample_forecast, eval=FALSE}
 
-dsge_forecast = import_dsge_forecasts(
-  paste0(
-    file.path(Sys.getenv("USERPROFILE")),
-    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\DSGE forecasts.xlsx"
-  )
-) %>% 
-  filter(target_var == "gdp") %>% 
-  select(-target_var)
-
-gar_forecast = get_gar_forecast(partitions_list = partitions_list,
-                                vars_df = df %>% 
-                                  filter(date <= as.yearqtr("2019 Q4")),
-                                target_var_name = "gdp",
+iar_forecast = get_gar_forecast(partitions_list = partitions_list,
+                                vars_df = df,
+                                target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 40,
+                                win_len = 96,
                                 win_type_expanding = TRUE)
 
 intercept_forecast = get_gar_forecast(partitions_list = NULL,
-                                vars_df = df %>% 
-                                  filter(date <= as.yearqtr("2019 Q4")),
-                                target_var_name = "gdp",
+                                vars_df = df,
+                                target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 40,
+                                win_len = 96,
                                 win_type_expanding = TRUE)
+
+inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
+                                vars_df = df,
+                                target_var_name = "cpi",
+                                horizon_list = horizon_list,
+                                quantile_vec = quantile_vec,
+                                win_len = 96,
+                                win_type_expanding = TRUE)
+
+
 
 
 ```
@@ -538,23 +537,34 @@ mean_df = skew_df %>%
 ```{r plot_factor_decomposition, eval=FALSE}
 
 
-gar_analysis %>%
-  extract_factor_contribution_from_gar_model() %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
-  select(-intercept) %>%
-  rename(`Dom. Macro` = dom_macro,
-         `Ext. Macro` = ext_macro,
-         `Dom. Fin. Cond` = dom_fin,
-         `Ext. Fin. Cond` = ext_fin) %>%
-  pivot_longer(-c("date","horizon")) %>%
-  ggplot(aes(x = date, y = value, fill = name)) +
-  geom_col() +
-  facet_wrap(~horizon, scales = "free") +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste("Factors contribution to the",
-                 "GaR forecast \n (5th percentile)")) +
-  scale_fill_viridis_d(option = "plasma")
+factor_plot_data = iar_analysis %>%
+  extract_factor_contribution_from_gar_model(target_quantile = "0.25") %>%
+  mutate(quantile = 0.25) %>% 
+  bind_rows(iar_analysis %>%
+  extract_factor_contribution_from_gar_model(target_quantile = "0.75") %>%
+  mutate(quantile = 0.75)) %>% 
+  bind_rows(iar_analysis %>%
+  extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>%
+  mutate(quantile = 0.5)) %>% 
+  select(-horizon) %>% 
+  pivot_longer(-c(date,quantile)) %>% 
+  filter(!name == "intercept") %>% 
+  pivot_wider(names_from = quantile,names_prefix = "q_") %>% 
+  mutate(dispersion = q_0.75 - q_0.25) %>% 
+  mutate(skewness = q_0.75 + q_0.25 - 2 * q_0.5) %>% 
+  mutate(name = factor(name,
+                       levels = c("cpi","nis_usd","brent_usd","meshulav_hpcyc"),
+                       labels = c("Inflation","Exchange Rate","Oil prices",
+                                  "Output Gap")))
 
+
+factor_plot_data %>% 
+  ggplot(aes(x = date, y = dispersion, fill = name)) + 
+  geom_col()
+
+factor_plot_data %>% 
+  ggplot(aes(x = date, y = skewness, fill = name)) + 
+  geom_col()
 
 
 ```
@@ -599,55 +609,6 @@ knitr::include_graphics("Figures/fig_MedianVarCorr.png")
 
 
 
-# Sensitivity to Variable Selection
-## Sub-Sampling Bootstrap Analysis
-
-\vspace{1em}
-
-* Our results might be affected by the set of variables we used
-to construct the four factors.
-
-\vspace{1em}
-
-* For robustness, we perform a sub-sampling bootstrap procedure
-(Politis and Romano, 1994):
-  + We determine a minimal set of variables to be included
-  in each group and go over all the different combinations
-  of the other variables.
-
-
-  + In each iteration, we estimate a GaR model on the
-  implied subset of	variables.
-
-## Symmetric Distribution
-
-```{r, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
-
-```
-
-
-## Financial Vulnerabilities in the medium term
-
-Financial factors coefficients 12 quarters ahead at different quantiles
-
-```{r, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_bootstrap_FinCoefs.png")
-
-```
-
-
-## Negative Correlation between Median and Dispersion
-
-```{r, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
-
-```
-
-
 # Out-of-Sample Forecast Performance
 ## Out-of-Sample Forecast Performance
 
@@ -676,38 +637,31 @@ knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
 
 ```{r pit_score, eval=FALSE}
 
-gar_pit = quantile_pit_score(
-  forecast_df = gar_forecast %>%
+iar_pit = quantile_pit_score(
+  forecast_df = iar_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = gdp, date)
-) %>%
-  rename(gar = pit)
+  actual_df = select(df, actual_values = cpi, date)) %>%
+  rename(iar = pit)
 
 intercept_pit = quantile_pit_score(
   forecast_df = intercept_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = gdp, date)
+  actual_df = select(df, actual_values = cpi, date)
 ) %>%
   rename(intercept = pit)
 
-dsge_pit = quantile_pit_score(
-  forecast_df = dsge_forecast %>%
+inflation_pit = quantile_pit_score(
+  forecast_df = inflation_forecast %>%
     mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = gdp, date)
+  actual_df = select(df, actual_values = cpi, date)
 ) %>%
-  rename(dsge = pit)
+  rename(realized_inflation = pit)
 
-list(gar_pit, intercept_pit, dsge_pit) %>%
+list(iar_pit, intercept_pit, inflation_pit) %>%
   reduce(inner_join, by = c("quantile", "horizon")) %>%
   pivot_longer(-c("quantile", "horizon")) %>%
-  mutate(horizon = factor(horizon, levels = c(1, 4, 8, 12))) %>%
   mutate(quantile = as.numeric(quantile)) %>%
-  ggplot(aes(
-    x = quantile,
-    y = value,
-    color = name,
-    group = name
-  )) +
+  ggplot(aes(x = quantile,y = value,color = name,group = name)) +
   geom_line(width = 0.5) +
   geom_abline(
     slope = 1,
@@ -715,8 +669,7 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
     color = "black",
     linetype = "dashed"
   ) +
-  scale_fill_discrete(labels = c("DSGE","GaR")) +
-  facet_wrap(~horizon) +
+  # scale_fill_discrete(labels = c("DSGE","GaR")) +
   xlab("Quantile") + ylab(NULL)
 
 
