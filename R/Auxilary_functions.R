@@ -195,7 +195,13 @@ extract_coeffs_from_gar_model = function(gar_model,
 
 extract_factor_contribution_from_gar_model = function(
   gar_model, target_quantile = "0.05") {
+
   stopifnot("qreg_result" %in% names(gar_model))
+
+  if(!target_quantile %in% gar_model$qreg_result[[1]]$tau){
+
+    stop("The target quantile is not in estimated quantiles")
+  }
 
   data_mat = gar_model$reg_df %>%
     select(ends_with("_xreg")) %>%

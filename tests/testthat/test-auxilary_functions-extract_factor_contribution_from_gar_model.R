@@ -57,3 +57,8 @@ test_that("returns a tibble with factors for median quantile",
               expected = test_factors_df
             )
           })
+
+
+test_that("produces error if missing quantile is asked",
+          expect_error(extract_factor_contribution_from_gar_model(test_obj,
+                                                                  target_quantile = "0.08")))
