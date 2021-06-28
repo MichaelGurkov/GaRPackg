@@ -60,7 +60,7 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #' @import dplyr
 #'
-#' @importFrom zoo as.yearqtr
+#' @importFrom zoo as.yearqtr as.yearmon
 #'
 #' @param forecast_df data frame with predicted values
 #' by horizon, quantile, date, forecast_values
@@ -73,11 +73,21 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #'
 #' @details The evaluation is based on the assumption that the date in \code{forecast_df} refers to the time in which the forecast was performed. Namely, the function offsets each forecast date in \code{forecast_df} by the relevant horizon and matches it with the respective date in \code{actual_df}. For example, a forecast for the horizon of 4 quarters in 1999 Q1 is compared to an actual value in 2000 Q1.
-
+#'
+#' @param frequency the period frequency of the data.
+#' This parameter determines the step size (number of periods in a year). Default is
+#' "quarterly".
+#' \itemize{
+#'  \item{"quarterly" : the step size is 4}
+#'  \item{"monthly" : the step size is 12}
+#' }
 #'
 #' @export
 #'
-quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
+quantile_r2_score = function(forecast_df, actual_df, benchmark_df,
+                             frequency = "quarterly"){
+
+  # Arguments Validation
 
   var_names = c("horizon","quantile","date")
 
@@ -106,6 +116,9 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
   }
 
+  if(!frequency %in% c("quarterly","monthly")){
+    stop("frequency parametr is set incorrectly")}
+
   names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
 
   names(benchmark_df)[!names(benchmark_df) %in% var_names] = "benchmark_values"
@@ -113,14 +126,34 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
 
 
-  df = forecast_df %>%
-    mutate(date = as.yearqtr(date) + as.numeric(horizon) * 0.25) %>%
-    inner_join(benchmark_df %>%
-                 mutate(date = as.yearqtr(date) + as.numeric(horizon) * 0.25),
-              by = c("date", "horizon", "quantile")) %>%
-    inner_join(actual_df %>%
-                 mutate(date = as.yearqtr(date)), by = "date") %>%
-    mutate(quantile = as.numeric(.data$quantile))
+  if(frequency == "quarterly"){
+
+    df = forecast_df %>%
+      mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4) %>%
+      inner_join(benchmark_df %>%
+                   mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4),
+                 by = c("date", "horizon", "quantile")) %>%
+      inner_join(actual_df %>%
+                   mutate(date = as.yearqtr(date)), by = "date") %>%
+      mutate(quantile = as.numeric(.data$quantile))
+
+  }
+
+  if (frequency == "monthly"){
+
+    df = forecast_df %>%
+      mutate(date = as.yearmon(date) + as.numeric(horizon) / 12) %>%
+      inner_join(benchmark_df %>%
+                   mutate(date = as.yearmon(date) + as.numeric(horizon) / 12),
+                 by = c("date", "horizon", "quantile")) %>%
+      inner_join(actual_df %>%
+                   mutate(date = as.yearmon(date)), by = "date") %>%
+      mutate(quantile = as.numeric(.data$quantile))
+  }
+
+
+
+
 
   score_df = df %>%
     group_by(.data$horizon, .data$quantile) %>%
@@ -151,23 +184,35 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 #'
 #' @details This function calculates the Probability Integral
 #' Transformation to evaluate goodness of fit.
-#' The value represents the relative frequency of the
-#' data points in the sample
+#' The value represents the calibration - the relative frequency of the
+#' data points in the sample.
 #'
 #' @importFrom rlang .data
 #'
 #' @import dplyr
 #'
 #' @param forecast_df data frame with predicted values
-#' by horizon, quantile and date
+#' by horizon, quantile and date (the date is the forecast date, on which the forecast
+#'  was made, the target date is calculated by taking the forecast date \code{horizon}
+#'  steps ahead)
 #'
 #' @param actual_df data frame with actual values
 #' by value and date
 #'
+#' @param frequency the period frequency of the data.
+#' This parameter determines the step size (number of periods in a year). Default is
+#' "quarterly".
+#' \itemize{
+#'  \item{"quarterly" : the step size is 4}
+#'  \item{"monthly" : the step size is 12}
+#' }
+#'
 #' @export
 #'
 
-quantile_pit_score = function(forecast_df, actual_df){
+quantile_pit_score = function(forecast_df, actual_df, frequency = "quarterly"){
+
+  # Arguments Validation
 
   var_names = c("horizon","quantile","date")
 
@@ -187,15 +232,30 @@ quantile_pit_score = function(forecast_df, actual_df){
 
   }
 
+  if(!frequency %in% c("quarterly","monthly")){
+    stop("frequency parametr is set incorrectly")}
+
   names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
 
 
-  prediction_df = forecast_df %>%
-    mutate(date = as.yearqtr(.data$date) + as.numeric(.data$horizon) * 0.25) %>%
-    left_join(actual_df %>%
-                mutate(date = as.yearqtr(.data$date)), by = c("date"))
+  if(frequency == "quarterly"){
+
+    prediction_df = forecast_df %>%
+      mutate(date = as.yearqtr(.data$date) + as.numeric(.data$horizon) / 4) %>%
+      left_join(actual_df %>%
+                  mutate(date = as.yearqtr(.data$date)), by = c("date"))
+
+  }
+
+  if (frequency == "monthly"){
+
+    prediction_df = forecast_df %>%
+      mutate(date = as.yearmon(.data$date) + as.numeric(.data$horizon) / 12) %>%
+      left_join(actual_df %>%
+                  mutate(date = as.yearmon(.data$date)), by = c("date"))
+  }
 
 
   if(sum(is.na(prediction_df$actual_values)) > 0){
@@ -244,6 +304,8 @@ quantile_pit_score = function(forecast_df, actual_df){
 #'
 
 quantile_prediction_score = function(forecast_dist_df, actual_df){
+
+  # Arguments validation
 
   var_names = c("parameter", "value")
 
