@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 
 devtools::load_all()
 
-library(GaRPackg)
+library(ggcorrplot)
 
 library(mFilter)
 
@@ -49,6 +49,7 @@ setwd(paste0(
 
 
 ```
+
 
 
 ```{r set_params}
@@ -248,7 +249,7 @@ df %>%
 
 ```
 
-## The Growth at Risk (GaR) Approach
+## The Inflation at Risk (GaR) Approach
 
 \vspace{1em}
 
@@ -440,9 +441,10 @@ iar_analysis %>%
                                        "Output Gap"))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col(width = 0.3) +
-  scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),
-                    labels = c("Significant", "Non significant")) +
+  # scale_fill_manual(values = c("significant" = "lightblue",
+  #                              "non_significant" = "gray"),
+  #                   labels = c("Significant", "Non significant")) +
+  scale_fill_discrete(labels = c("Significant", "Non significant")) +
   facet_grid(rows = vars(partition), scales = "free") +
   geom_hline(aes(yintercept = estimate), data = ols_coeffs,
              color = "blue", linetype = "dashed") +
@@ -469,7 +471,7 @@ iar_analysis %>%
 
 
 # In-sample Properties of Risks to Growth
-## 5th Percentile Forecast
+## IQR and median
 
 ```{r plot_fan}
 
@@ -489,7 +491,7 @@ ggplot() +
                             values_from = "avg_values"),
               aes(x = date, ymin = q_0.25, ymax = q_0.75), alpha = 0.5) +
   ylab("Percent") + xlab(NULL) +
-  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead")
+  ggtitle("Quantiles of inflation")
  
 
 ```
@@ -530,6 +532,24 @@ mean_df = skew_df %>%
  rm(skew_df, mean_df)
 
 ```
+
+## Correlations
+
+```{r cor_mat}
+
+df %>% 
+  select(date, unlist(partitions_list,use.names = FALSE)) %>% 
+  left_join(iar_analysis %>% 
+              calculate_skew_and_iqr() %>% 
+              select(-horizon), by = "date") %>% 
+  select(-date) %>% 
+  cor() %>% 
+  ggcorrplot(type = "lower",lab = TRUE)
+
+
+```
+
+
 
 
 ## Global factors contribute to risk identification in the short term, domestic financial factors -- in the long term
@@ -610,6 +630,43 @@ knitr::include_graphics("Figures/fig_MedianVarCorr.png")
 
 
 # Out-of-Sample Forecast Performance
+## Out-of-Sample Forecast
+
+```{r out_of_sample_forecast}
+
+
+ggplot() + 
+  geom_line(data = iar_forecast %>%
+              filter(quantile == "0.50") %>% 
+              mutate(date = date + as.numeric(horizon)  / 12),
+            aes(x = date, y = forecast_values )) +
+  geom_line(data = df %>% 
+              filter(date >= min(iar_forecast$date + 1)),
+            aes(x = date, y = cpi), color = "red") +
+  geom_ribbon(data = iar_forecast %>%
+                filter(quantile %in% c(0.25,0.75)) %>%
+                mutate(date = date + as.numeric(horizon)  / 12) %>%
+                pivot_wider(names_from = "quantile",
+                            names_prefix = "q_",
+                            values_from = "forecast_values"),
+              aes(x = date, ymin = q_0.25, ymax = q_0.75), alpha = 0.3,
+              color = "lightgrey") +
+  geom_ribbon(data = iar_forecast %>%
+                filter(quantile %in% c("0.10","0.90")) %>%
+                mutate(date = date + as.numeric(horizon)  / 12) %>%
+                pivot_wider(names_from = "quantile",
+                            names_prefix = "q_",
+                            values_from = "forecast_values"),
+              aes(x = date, ymin = q_0.10, ymax = q_0.90), alpha = 0.3,
+              color = "grey") + 
+  ylab("Percent") + xlab(NULL) +
+  ggtitle("Quantiles of inflation")
+
+
+
+```
+
+
 ## Out-of-Sample Forecast Performance
 
 \vspace{2em}
@@ -638,22 +695,22 @@ knitr::include_graphics("Figures/fig_MedianVarCorr.png")
 ```{r pit_score, eval=FALSE}
 
 iar_pit = quantile_pit_score(
-  forecast_df = iar_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = cpi, date)) %>%
+  forecast_df = iar_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  frequency = "monthly") %>%
   rename(iar = pit)
 
 intercept_pit = quantile_pit_score(
-  forecast_df = intercept_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = cpi, date)
+  forecast_df = intercept_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  frequency = "monthly"
 ) %>%
   rename(intercept = pit)
 
 inflation_pit = quantile_pit_score(
-  forecast_df = inflation_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = select(df, actual_values = cpi, date)
+  forecast_df = inflation_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  frequency = "monthly"
 ) %>%
   rename(realized_inflation = pit)
 
@@ -661,28 +718,24 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
   reduce(inner_join, by = c("quantile", "horizon")) %>%
   pivot_longer(-c("quantile", "horizon")) %>%
   mutate(quantile = as.numeric(quantile)) %>%
+  mutate(name = factor(name,
+                       levels = c("realized_inflation","iar","intercept"),
+                       labels = c("CPI only","Inflation at risk","intercept"))) %>% 
   ggplot(aes(x = quantile,y = value,color = name,group = name)) +
-  geom_line(width = 0.5) +
+  geom_line() +
   geom_abline(
     slope = 1,
     intercept = 0,
     color = "black",
     linetype = "dashed"
   ) +
-  # scale_fill_discrete(labels = c("DSGE","GaR")) +
+  xlim(0,1) + 
   xlab("Quantile") + ylab(NULL)
 
 
 
 ```
 
-
-```{r pit_figure, out.height="80%"}
-
-knitr::include_graphics("Figures/PIT.png")
-
-
-```
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
 
@@ -714,40 +767,31 @@ $\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
 
 ```{r plot_r2_score, eval=FALSE}
 
-gar_r2 = quantile_r2_score(
-  forecast_df = gar_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25),
-  actual_df = df %>% 
-    filter(date) < as.yearqtr("2019 Q4") %>% 
-    select(date, actual_values = gdp),
+iar_r2 = quantile_r2_score(
+  forecast_df = iar_forecast,
+  actual_df = select(df, actual_values = cpi, date),
   benchmark_df = intercept_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25) %>%
-    rename(benchmark_values = forecast_values)
+    rename(benchmark_values = forecast_values),
+  frequency = "monthly"
 ) %>%
-  rename(gar_r2 = quantile_r2)
+  rename(iar_r2 = quantile_r2)
 
-dsge_r2 = quantile_r2_score(
-  forecast_df = dsge_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25) %>%
-    rename(forecast_values = forecast),
-  actual_df = df %>% 
-    filter(date) < as.yearqtr("2019 Q4") %>% 
-    select(date, actual_values = gdp),
+inflation_r2 = quantile_r2_score(
+  forecast_df = inflation_forecast,
+  actual_df = select(df, actual_values = cpi, date),
   benchmark_df = intercept_forecast %>%
-    mutate(date = date + as.numeric(horizon) * 0.25) %>%
-    rename(benchmark_values = forecast_values)
+    rename(benchmark_values = forecast_values),
+  frequency = "monthly"
   ) %>%
-  rename(dsge_r2 = quantile_r2)
+  rename(inflation = quantile_r2)
 
-gar_r2 %>%
-  inner_join(dsge_r2,by = c("horizon", "quantile")) %>%
+iar_r2 %>%
+  inner_join(inflation_r2,by = c("horizon", "quantile")) %>%
   pivot_longer(-c(horizon, quantile)) %>%
   mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
   ggplot(aes(x = quantile, y = value, fill = name)) +
   geom_col(position = "dodge") +
-  scale_fill_discrete(labels = c("DSGE","GaR")) +
-  facet_wrap(~horizon) +
+  # scale_fill_discrete(labels = c("DSGE","GaR")) +
   xlab("Quantile") + ylab(NULL)
 
 ```
