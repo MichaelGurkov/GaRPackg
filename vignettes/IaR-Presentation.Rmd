@@ -168,7 +168,7 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 ```
 
-```{r out_of_sample_forecast, eval=FALSE}
+```{r out_of_sample_forecast}
 
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
@@ -209,19 +209,19 @@ inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
 \begin {itemize}
 \itemsep3em
 	\item
-	Assessing risks to future economic activity is essential for making knowledgeable forecasts.
+	Assessing risks to future inflation is essential for making knowledgeable
+	forecasts.
 	\item
-	An important factor: financial vulnerabilities.
-	\item
-	We provide a methodological tool for assessing risks to growth in Israel using real and financial variables:
+	We provide a methodological tool for assessing risks to inflation in Israel
+	using Philips curve specification:
 
 	\vspace{1em}
 
 \begin{center}
 \begin{block}{}
 
-	Given current macro-financial conditions, what is the distribution of
-	expected economic growth?
+	Given current Philips curve "state", what is the distribution of
+	expected inflation?
 
 \end{block}
 \end{center}
@@ -249,24 +249,24 @@ df %>%
 
 ```
 
-## The Inflation at Risk (GaR) Approach
+## The Inflation at Risk (IaR) Approach
 
 \vspace{1em}
 
-* GaR is a linear model of density forecasts
+* IaR is a linear model of density forecasts
   + Based on quantile regression
   + Parsimonious
   + Easy to interpret
 
 \vspace{1em}
 
-* Proposed by Adrian et al. (2019), operationalized by the IMF (Prasad et al., 2019).
+* Based on Adrian et al. (2019), operationalized by the IMF (Prasad et al., 2019).
 
 \vspace{1em}
 
 * Applied to:
-  + Advanced economies (Aikman et al., 2018, 2019; Alessandri et al., 2019)
-  + Developing economies (Komatsuzaki and Brito, 2019; Bespalova and Rousset,	2019)
+  + Advanced economies ()
+  + Developing economies ()
 
 
 ## Contribution
@@ -297,23 +297,24 @@ df %>%
 \begin{itemize}
 \setlength\itemsep{1.5em}
 \item
-In-sample properties of the distribution of expected GDP growth:
+In-sample properties of the distribution of expected inflation:
   \begin{enumerate}
 	\item
-	\textbf{Symmetric} -- upside and downside risks are balanced.
+	Balanced risk and stable uncertainty before 2011, decrease in uncertainty
+	and (relative) increase in downside risks after
 	\item
-	\textbf{Forecast uncertainty} rises when the median forecast decreases.
+	Realized inflation is the predominant factor explaining the changes in the
+	features of the forecast distribution.
 	\item
-	\textbf{Financial Vulnerabilities} -- accomodative financial conditions contribute to
-	        medium term risks to growth.
+	Oil prices and the exchange rate play an important role in the
+	evolution of forecast uncertainty, the output gap explains variation in
+	skewness.
   \end{enumerate}
-\item
-These properties are robust to variable selection.
 \item
 Out-of-sample forecast performance in distribution tails is similar to benchmark models.
 
   \begin{itemize}
-    \item but GaR allows state-dependent evaluation of risks
+    \item but IaR allows state-dependent evaluation of risks
   \end{itemize}
   
 \end{itemize}
@@ -326,111 +327,34 @@ Out-of-sample forecast performance in distribution tails is similar to benchmark
 # Methodology and Estimation Results
 ## Methodology
 
-
 \label{methodology}
 
-(IMF: Prasad et al., 2019)
-\begin{enumerate}
-	\item
-	\textbf{Partition data:} divide a large number of variables
-	into $K$ groups ($K$ small).
-	\item
-	\textbf{Dimension reduction} to alleviate overfitting:
-	\begin{itemize}
-		\item
-		From each group $k\in\{1,...,K\}$, generate a single
-		regressor $x^k_t$
-		\item
-		Method: first principal component
-	\end{itemize}
-	\item
-	\textbf{Quantile regressions --}
+\textbf{Quantile regressions --}
 	estimate a forecast equation for each quantile $\tau$
 	and horizon $h$:
 	$$
 	Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{t,h}
 	$$
 
-	\vspace{0.5em}
+\vspace{0.5em}
 
-	where $ X_t=[1, x^1_t, ... , x^K_t]$
-	\vspace{1em}
-	\begin{flushright}
-		\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
-	\end{flushright}
-\end{enumerate}
+	where: $X_t=[1, x^1_t, ... , x^K_t]$
+
+\begin{flushright}
+	\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
+\end{flushright}
 
 
 
 ## Data Partitioning
 
-\label{DataPartitioning}
-
-Sample: 1996Q1-2019Q4
-
-<!-- \flushleft -->
-
-\vspace{1em}
-
-\scriptsize
-
-\begin{tabular}{cccc}
-
-  \vspace{2em}
-
-		\textbf{Domestic Macro} & \textbf{Domestic Financial Cond.} &
-		\textbf{External Macro}	& \textbf{External Financial Cond.} \\
-
-
-	\vspace{1em}
-
-
-		Private consumption & BOI rate & Exports & Federal Funds rate \\
-
-	\vspace{1em}
-
-		Real Investment & Private credit & Imports & Eonia \\
-
-	\vspace{1em}
-
-		Public consumption & House price index & OECD imports & SP500 \\
-
-	\vspace{1em}
-
-		Unemployment & TA125 &  & Eurostoxx600 \\
-
-	\vspace{1em}
-
-		&  &  & Brent oil price \\
-
-	\vspace{1em}
-
-		&  &  & Non energy commodity \\
-
-	\vspace{1em}
-
-\end{tabular}
-
-\vspace{1em}
-
-\flushright
-
-\hyperlink{PcaLoadings}{\beamergotobutton{PCA loadings}}
-
-\vspace{-1em}
-
-\flushleft
-
-\hyperlink{PcaTimeseries}{\beamergotobutton{PCA time-series}}
 
 
 
+## Persistent Inflation, Positive Oil Price and Negative Output Gap
 
-## Persistent inflation, positive factor and negative output gap
 
-\label{Coeffs}
-
-```{r plot_coeffs, fig.height=6.5}
+```{r plot_coeffs, fig.height=7}
 
 iar_analysis %>%
   extract_coeffs_from_gar_model() %>%
@@ -441,10 +365,10 @@ iar_analysis %>%
                                        "Output Gap"))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col(width = 0.3) +
-  # scale_fill_manual(values = c("significant" = "lightblue",
-  #                              "non_significant" = "gray"),
-  #                   labels = c("Significant", "Non significant")) +
-  scale_fill_discrete(labels = c("Significant", "Non significant")) +
+  scale_fill_manual(values = c("significant" = "lightblue",
+                               "non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
+  # scale_fill_discrete(labels = c("Significant", "Non significant")) +
   facet_grid(rows = vars(partition), scales = "free") +
   geom_hline(aes(yintercept = estimate), data = ols_coeffs,
              color = "blue", linetype = "dashed") +
@@ -453,8 +377,7 @@ iar_analysis %>%
   labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
                         "from the quantile regression at a specific forecast horizon. ",
                         "\n  Blue bars mark coefficients that are significant at 10%",
-                        "(see Koenker, 1994)"),
-       title = "Sample: 1996Q1-2019Q4") +
+                        "(see Koenker, 1994)")) +
   theme(plot.caption = element_text(size = 10, hjust = 0.5),
         axis.text.x = element_text(size = 12)) + 
   # theme_classic() +
@@ -462,18 +385,11 @@ iar_analysis %>%
 
 ```
 
-\vspace{-1em}
 
-\flushleft
-
-
-\hyperlink{CoeffPanel}{\beamergotobutton{Coefficients Panel}}
-
-
-# In-sample Properties of Risks to Growth
+# In-sample Features of the Forecast Distribution
 ## IQR and median
 
-```{r plot_fan}
+```{r plot_dist_timeseries}
 
 plot_df = iar_analysis$fitted_df %>%
   filter(quantile %in% c(0.25,0.5,0.75)) %>% 
@@ -497,10 +413,9 @@ ggplot() +
 ```
 
 
-## Risks to Growth are generally balanced
-Contrary to other countries **no evidence of skewed distribution**
+## Risks to Inflation 
 
-```{r plot_skewness_1_quarter, fig.height=6}
+```{r plot_skewness_1_quarter, fig.height=7}
 
 skew_df = iar_analysis %>%
   calculate_skew_and_iqr() %>%
@@ -552,9 +467,9 @@ df %>%
 
 
 
-## Global factors contribute to risk identification in the short term, domestic financial factors -- in the long term
+## Realized Inflation is Dominant in Both Risk Metrics. \newline Output Gap also Dominant in Skewness
 
-```{r plot_factor_decomposition, eval=FALSE}
+```{r plot_factor_decomposition}
 
 
 factor_plot_data = iar_analysis %>%
@@ -578,31 +493,34 @@ factor_plot_data = iar_analysis %>%
                                   "Output Gap")))
 
 
-factor_plot_data %>% 
+disp_plot = factor_plot_data %>% 
   ggplot(aes(x = date, y = dispersion, fill = name)) + 
-  geom_col()
+  geom_col() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Dispertion")
 
-factor_plot_data %>% 
+skew_plot = factor_plot_data %>% 
   ggplot(aes(x = date, y = skewness, fill = name)) + 
-  geom_col()
+  geom_col() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Skewness")
+
+plot_legend = get_legend(disp_plot)
+
+plots_row = plot_grid(disp_plot + 
+            theme(legend.position = "none"),
+          skew_plot + 
+            theme(legend.position = "none"))
+
+plot_grid(plots_row, plot_legend,nrow = 2,rel_heights = c(4,1))
+
+rm(disp_plot, skew_plot, plot_legend, plots_row)
 
 
 ```
-
-
-```{r factors_figure, out.height="85%"}
-
-knitr::include_graphics("Figures/GaR_factor_all.png")
-
-
-```
-
-
 
 
 ## Low Median Forecasts are Associated with Higher Uncertainty
 
-```{r plot_median_iqr_scatter, eval=FALSE}
+```{r plot_median_iqr_scatter}
 
 iar_analysis %>%
   calculate_skew_and_iqr() %>%
@@ -619,20 +537,10 @@ iar_analysis %>%
 
 ```
 
-
-```{r med_variance_figure, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_MedianVarCorr.png")
-
-
-```
-
-
-
 # Out-of-Sample Forecast Performance
 ## Out-of-Sample Forecast
 
-```{r out_of_sample_forecast}
+```{r out_of_sample_forecast_plot}
 
 
 ggplot() + 
@@ -674,25 +582,23 @@ ggplot() +
 \begin{itemize}
 \setlength\itemsep{2em}
 	\item
-	GaR model compared to two alternatives:
+	IaR model compared to two alternatives:
 	\begin{enumerate}
 		\item
-		Intercep only -- partial GaR model without financial variables
-		(domestic and global)
+		Intercept only -- partial IaR model without explanatory variables
 		\item
-		DSGE model (Argov et al., 2012), fan chart (symmetric, constant width).
-		\textcolor{blue}{DSGE model was reestimated in 2019 so it's prediction are "in sample"}
+		Intercept and realized inflation -- partial IaR model
 	\end{enumerate}
 	\item
 	The models are evaluated out of sample (expanding window starts at
-	40 observations and adds one observation in each step)
+	96 observations and adds one observation in each step)
 \end{itemize}
 
 ## Goodness of fit -- PIT score \newline (the closer to the black line the better)
 
 \label{PITscore}
 
-```{r pit_score, eval=FALSE}
+```{r pit_score}
 
 iar_pit = quantile_pit_score(
   forecast_df = iar_forecast,
@@ -765,7 +671,7 @@ $\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
 
 ## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
 
-```{r plot_r2_score, eval=FALSE}
+```{r plot_r2_score}
 
 iar_r2 = quantile_r2_score(
   forecast_df = iar_forecast,
@@ -791,175 +697,15 @@ iar_r2 %>%
   mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
   ggplot(aes(x = quantile, y = value, fill = name)) +
   geom_col(position = "dodge") +
-  # scale_fill_discrete(labels = c("DSGE","GaR")) +
+  scale_fill_discrete(labels = c("IaR","Inflation only")) +
   xlab("Quantile") + ylab(NULL)
-
-```
-
-
-```{r r2_figure, out.height="85%"}
-
-knitr::include_graphics("Figures/R2.png")
-
 
 ```
 
 
 # Summary
 
-\begin{itemize}
-\setlength\itemsep{2em}
-
-  \item
-  Growth distribution in Israel is "balanced" and unskewed
-  \item
-  Global conditions affect downside risks in the short term, local financial
-  conditions in the long term.
-  \item
-  Evidence of "volatility paradox" - loose financial conditions stimulate
-  growth in the near term and risk accumulation in the long term.
-  \item
-  Forecast uncertainty rises when the median forecast decreases
-  
-  
-\end{itemize}
-
-
-## Current uses
-
-```{r left_tail}
-
-current_analysis = run_GaR_analysis(
-  partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2021 Q1")),
-  target_var_name = "gdp",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
-
-
-current_analysis$fitted_df %>%
-  filter(horizon %in% c(1, 4)) %>%
-  filter(quantile == "0.05") %>%
-  ggplot(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_line() + 
-  ylab(NULL) + xlab(NULL) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  ggtitle("Forecast of 5th Percentile, 1Q and 4Q Ahead")
-
-```
-
-## Current uses
-
-```{r fan_chart_2019_4}
-
-fan_forecast_df = get_gar_forecast(
-  partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4")),
-  target_var_name = "gdp",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
-
-fan_forecast_df %>% 
-  plot_fan_chart(realized_df = df %>% 
-                   select(date, gdp),
-                 fan_chart_date = as.yearqtr("2019 Q4")) + 
-  ggtitle("Fan chart at 2019 Q4")
-
-
-
-```
-
-## Current uses
-
-```{r fan_chart_2020_4}
-
-fan_forecast_df = get_gar_forecast(
-  partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2020 Q4")),
-  target_var_name = "gdp",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
-
-fan_forecast_df %>% 
-  plot_fan_chart(realized_df = df %>% 
-                   select(date, gdp),
-                 fan_chart_date = as.yearqtr("2020 Q4")) + 
-  ggtitle("Fan chart at 2020 Q4")
-
-
-
-```
-
-
 # Appendix {.unlisted .unnumbered}
-## Short-Term Forecast of 5th Percentile More Volatile Than Long-Term Forecast
-
-
-```{r events_figure, out.height="85%", eval=FALSE}
-
-knitr::include_graphics("Figures/events_plot.png")
-
-
-```
-## Macro shows cyclical pattern (high growth in the short term, low in the long term)
-
-\label{MacroCoef}
-
-\label{selected_coeffs}
-
-```{r dom_macro_plot, fig.height=6.5}
-
-
-gar_analysis %>%
-  extract_coeffs_from_gar_model() %>%
-  filter(partition %in% c("dom_macro", "ext_macro")) %>%
-  mutate(partition = recode(partition,
-                            "dom_macro" = "Dom. Macro", "ext_macro" = "Ext. Macro")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
-  geom_col() +
-  scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),
-                    labels = c("Significant", "Non significant")) +
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
-  xlab("Quantile") + ylab(NULL) + 
-  labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
-                        "from the quantile regression at a specific forecast horizon. ",
-                        "\n Blue bars mark coefficients that are significant at 10%",
-                        "(see Koenker, 1994)"),
-       title = "Sample: 1996Q1-2019Q4") + 
-  theme(plot.caption = element_text(size = 10, hjust = 0.5),
-        axis.text.x = element_text(size = 12))
-
-
-
-
-```
-
-
-
-\vspace{-1em}
-
-\flushleft
-
-\hyperlink{coeffs_panel}{\beamergotobutton{Coefficients Panel}}
-
-
 ## Probability Integral Transform (PIT)
 
 \label{PIT}
@@ -1010,70 +756,5 @@ Note: "Quantile crossing" handled using the method of Chernozhukov et al. (2010)
 \hyperlink{methodology}{\beamergotobutton{Methodology}}
 \end{flushleft}
 
-
-
-## 1st PC loadings
-
-\label{PcaLoadings}
-
-
-```{r plot_pc_loadings}
-
-gar_analysis %>%
-  extract_pca_loadings_from_gar_model() %>%
-  mutate(partition = factor(
-    partition,
-    levels = c("dom_fin", "dom_macro","ext_fin",  "ext_macro"),
-    labels = c("Dom. Fin. Cond", "Dom Macro", "Ext. Fin. Cond",  "Ext Macro"))) %>%
-  mutate(rowname = str_to_title(rowname)) %>% 
-  mutate(rowname = str_replace_all(rowname,"_"," ")) %>% 
-  ggplot(aes(x = rowname, y = coeff)) +
-  geom_col(width = 0.5) +
-  facet_wrap( ~ partition, scales = "free") +
-  theme(axis.text.x = element_text(size = 13)) +
-  coord_flip() +
-  xlab(NULL) + ylab(NULL)
-
-```
-
-
-\vspace{-0.5em}
-
-\hyperlink{DataPartitioning}{\beamergotobutton{Data Partitioning}}
-
-
-## Quantile Regression Coefficients
-
-
-\label{CoeffPanel}
-
-```{r coeff_panel_plot, fig.height=7}
-
-gar_analysis %>%
-  extract_coeffs_from_gar_model() %>%
-  filter(!partition == "Intercept") %>%
-  mutate(partition = recode(partition,
-                            "dom_macro" = "Dom. Macro",
-                            "ext_macro" = "Ext. Macro",
-                            "dom_fin" = "Dom. Fin. Cond.",
-                            "ext_fin" = "Ext. Fin. Cond.")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
-  geom_col() +
-  scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),
-                    labels = c("Significant", "Non significant")) +
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
-  xlab("Quantile") + ylab(NULL) + 
-  theme(plot.caption = element_text(size = 10, hjust = 0.5),
-        axis.text.x = element_text(size = 12),strip.text.y = element_text(size = 14))
-
-
-```
-
-
-\vspace{-0.5em}
-
-\hyperlink{Coeffs}{\beamergotobutton{Coeffs}}
 
 
