@@ -58,7 +58,7 @@ partitions_list = list(
   inflation = c("cpi"),
   exchange_rate = c("nis_usd"),
   oil_p = c("brent_usd"),
-  output_gap = c("meshulav_hpcyc")
+  output_gap = c("meshulav_gap")
 )
 
 
@@ -88,7 +88,7 @@ theme_set(theme_bw() +
 #   "nis_usd", "Exchange Rate",
 #   "rel_tradables", "Tradables",
 #   "brent_usd", "Oil Prices",
-#   "meshulav_hpcyc","Output Gap"
+#   "meshulav_gap","Output Gap"
 # )
 
 
@@ -132,9 +132,12 @@ df = raw_df %>%
   mutate(cpi_orig = cpi) %>% 
   mutate(cpi = cpi_excl_fv_hous) %>% 
   mutate(cpi_lag = lag(cpi)) %>% 
-  filter(year(date) >= 2004 & year(date) <= 2019) %>% 
-  mutate(meshulav_hpcyc = hpfilter(madad_meshulav,freq = 1600)$cycle)
+  filter(year(date) >= 2004 & year(date) <= 2019)
 
+filter_obj =  hpfilter(df$madad_meshulav,freq = 1600)
+
+df = df %>% 
+  mutate(meshulav_gap = filter_obj$cycle / filter_obj$trend * 100)
 
 
 ```
@@ -160,7 +163,7 @@ ols_coeffs = iar_analysis$reg_df %>%
   filter(!term == "(Intercept)") %>% 
   mutate(term = str_remove_all(term, "_xreg")) %>% 
   mutate(partition = factor(term,
-                       levels = c("nis_usd","cpi","brent_usd","meshulav_hpcyc"),
+                       levels = c("nis_usd","cpi","brent_usd","meshulav_gap"),
                        labels = c("Exchange Rate","Inflation","Oil prices",
                                        "Output Gap"))) %>% 
   select(partition, estimate)
@@ -177,6 +180,9 @@ iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 quantile_vec = quantile_vec,
                                 win_len = 96,
                                 win_type_expanding = TRUE)
+
+iar_forecast_smoothed = iar_forecast %>% 
+  fit_t_skew_to_gar_df(return_smoothed_quantiles = TRUE)
 
 intercept_forecast = get_gar_forecast(partitions_list = NULL,
                                 vars_df = df,
@@ -360,7 +366,7 @@ iar_analysis %>%
   extract_coeffs_from_gar_model() %>%
   filter(!partition == "Intercept") %>%
   mutate(partition = factor(partition,
-                            levels = c("nis_usd","cpi","brent_usd","meshulav_hpcyc"),
+                            levels = c("nis_usd","cpi","brent_usd","meshulav_gap"),
                             labels = c("Exchange Rate","Inflation","Oil prices",
                                        "Output Gap"))) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
@@ -488,7 +494,7 @@ factor_plot_data = iar_analysis %>%
   mutate(dispersion = q_0.75 - q_0.25) %>% 
   mutate(skewness = q_0.75 + q_0.25 - 2 * q_0.5) %>% 
   mutate(name = factor(name,
-                       levels = c("cpi","nis_usd","brent_usd","meshulav_hpcyc"),
+                       levels = c("cpi","nis_usd","brent_usd","meshulav_gap"),
                        labels = c("Inflation","Exchange Rate","Oil prices",
                                   "Output Gap")))
 
