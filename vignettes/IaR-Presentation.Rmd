@@ -137,7 +137,7 @@ df = raw_df %>%
 filter_obj =  hpfilter(df$madad_meshulav,freq = 1600)
 
 df = df %>% 
-  mutate(meshulav_gap = filter_obj$cycle / filter_obj$trend * 100)
+  mutate(meshulav_gap = filter_obj$cycle / filter_obj$trend[,1] * 100)
 
 
 ```
@@ -173,23 +173,22 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 ```{r out_of_sample_forecast}
 
+win_len = 85
+
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
                                 target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 96,
+                                win_len = win_len,
                                 win_type_expanding = TRUE)
-
-iar_forecast_smoothed = iar_forecast %>% 
-  fit_t_skew_to_gar_df(time_limit = 150,return_smoothed_quantiles = TRUE)
 
 intercept_forecast = get_gar_forecast(partitions_list = NULL,
                                 vars_df = df,
                                 target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 96,
+                                win_len = win_len,
                                 win_type_expanding = TRUE)
 
 inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
@@ -197,10 +196,10 @@ inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
                                 target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 96,
+                                win_len = win_len,
                                 win_type_expanding = TRUE)
 
-
+rm(win_len)
 
 
 ```
@@ -215,8 +214,8 @@ inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
 \begin {itemize}
 \itemsep3em
 	\item
-	Assessing risks to future inflation is essential for making knowledgeable
-	forecasts.
+	Analyzing the distribution of future inflation in the "post" disinflation
+	period.
 	\item
 	We provide a methodological tool for assessing risks to inflation in Israel
 	using Philips curve specification:
@@ -266,7 +265,7 @@ df %>%
 
 \vspace{1em}
 
-* Based on Adrian et al. (2019), operationalized by the IMF (Prasad et al., 2019).
+* Based on Adrian et al. (2019), operationalized by Banerjee et al. (2020).
 
 \vspace{1em}
 
@@ -277,25 +276,6 @@ df %>%
 
 ## Contribution
 
-\vspace{3em}
-
-\begin{itemize}
-  \setlength\itemsep{3em}
-  \item
-  Tools for regular assessment of risks:
-  \begin{itemize}
-    \item
-    5th percentile of forecast
-    \item
-    State-dependent fan charts
-  \end{itemize}
-  \item
-  Improve understanding of macro-financial linkages in Israel:
-  \begin{itemize}
-    \item
-    Provide empirical evidence to support macro-financial modeling
-  \end{itemize}
-\end{itemize}
 
 
 ## Main Results
@@ -317,7 +297,7 @@ In-sample properties of the distribution of expected inflation:
 	skewness.
   \end{enumerate}
 \item
-Out-of-sample forecast performance in distribution tails is similar to benchmark models.
+Out-of-sample forecast performance is similar to benchmark models.
 
   \begin{itemize}
     \item but IaR allows state-dependent evaluation of risks
@@ -360,32 +340,44 @@ Out-of-sample forecast performance in distribution tails is similar to benchmark
 ## Persistent Inflation, Positive Oil Price and Negative Output Gap
 
 
-```{r plot_coeffs, fig.height=7}
+```{r plot_coeffs, fig.height=7.5}
 
 iar_analysis %>%
   extract_coeffs_from_gar_model() %>%
   filter(!partition == "Intercept") %>%
-  mutate(partition = factor(partition,
-                            levels = c("nis_usd","cpi","brent_usd","meshulav_gap"),
-                            labels = c("Exchange Rate","Inflation","Oil prices",
-                                       "Output Gap"))) %>%
+  mutate(partition = factor(
+    partition,
+    levels = c("nis_usd", "cpi", "brent_usd", "meshulav_gap"),
+    labels = c("Exchange Rate", "Inflation", "Oil prices",
+               "Output Gap")
+  )) %>%
   ggplot(aes(x = quantile, y = coeff, fill = significant)) +
   geom_col(width = 0.3) +
-  scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),
-                    labels = c("Significant", "Non significant")) +
-  # scale_fill_discrete(labels = c("Significant", "Non significant")) +
+  scale_fill_manual(
+    values = c("significant" = "lightblue",
+               "non_significant" = "gray"),
+    labels = c("Significant", "Non significant")
+  ) +
   facet_grid(rows = vars(partition), scales = "free") +
-  geom_hline(aes(yintercept = estimate), data = ols_coeffs,
-             color = "blue", linetype = "dashed") +
-  geom_hline(yintercept = 0) + 
-  xlab("Quantile") + ylab(NULL) + 
-  labs(caption = paste0("Notes: Each column shows the estimated coefficients ",
-                        "from the quantile regression at a specific forecast horizon. ",
-                        "\n  Blue bars mark coefficients that are significant at 10%",
-                        "(see Koenker, 1994)")) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs,
+    color = "blue",
+    linetype = "dashed"
+  ) +
+  geom_hline(yintercept = 0) +
+  xlab("Quantile") + ylab(NULL) +
+  labs(
+    caption = paste0(
+      "Notes: Each column shows the estimated coefficients ",
+      "from the quantile regression at a specific forecast horizon. ",
+      "\n  Blue bars mark coefficients that are significant at 10%",
+      "(see Koenker, 1994)"
+    )
+  ) +
   theme(plot.caption = element_text(size = 10, hjust = 0.5),
-        axis.text.x = element_text(size = 12)) + 
+        axis.text.x = element_text(size = 12),
+        strip.text = element_text(size = 14)) +
   # theme_classic() +
   NULL
 
@@ -632,7 +624,7 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
   mutate(quantile = as.numeric(quantile)) %>%
   mutate(name = factor(name,
                        levels = c("realized_inflation","iar","intercept"),
-                       labels = c("CPI only","Inflation at risk","intercept"))) %>% 
+                       labels = c("CPI only","Inflation at risk","Intercept"))) %>% 
   ggplot(aes(x = quantile,y = value,color = name,group = name)) +
   geom_line() +
   geom_abline(
@@ -641,7 +633,7 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
     color = "black",
     linetype = "dashed"
   ) +
-  xlim(0,1) + 
+  xlim(0,1) + ylim(0,1) + 
   xlab("Quantile") + ylab(NULL)
 
 
@@ -687,18 +679,6 @@ iar_r2 = quantile_r2_score(
   frequency = "monthly"
 ) %>%
   rename(iar_r2 = quantile_r2)
-
-
-# iar_r2 = quantile_r2_score(
-#   forecast_df = iar_forecast_smoothed %>% 
-#     mutate(quantile = as.character(quantile)) %>% 
-#     select(date, quantile, horizon, forecast_values = value),
-#   actual_df = select(df, actual_values = cpi, date),
-#   benchmark_df = intercept_forecast %>%
-#     rename(benchmark_values = forecast_values),
-#   frequency = "monthly"
-# ) %>%
-#   rename(iar_r2 = quantile_r2)
 
 inflation_r2 = quantile_r2_score(
   forecast_df = inflation_forecast,
