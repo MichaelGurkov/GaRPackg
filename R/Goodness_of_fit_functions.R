@@ -72,7 +72,12 @@ quantile_r2_score_calculation = function(realized_values,
 #' by horizon, quantile, date and benchmark_values
 #'
 #'
-#' @details The evaluation is based on the assumption that the date in \code{forecast_df} refers to the time in which the forecast was performed. Namely, the function offsets each forecast date in \code{forecast_df} by the relevant horizon and matches it with the respective date in \code{actual_df}. For example, a forecast for the horizon of 4 quarters in 1999 Q1 is compared to an actual value in 2000 Q1.
+#' @details The evaluation is based on the assumption that the date in
+#' \code{forecast_df} refers to the time in which the forecast was performed.
+#' Namely, the function offsets each forecast date in \code{forecast_df} by the
+#' relevant horizon and matches it with the respective date in \code{actual_df}.
+#' For example, a forecast for the horizon of 4 quarters in 1999 Q1 is compared
+#' to an actual value in 2000 Q1.
 #'
 #' @param frequency the period frequency of the data.
 #' This parameter determines the step size (number of periods in a year). Default is
@@ -206,6 +211,13 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df,
 #'  \item{"quarterly" : the step size is 4}
 #'  \item{"monthly" : the step size is 12}
 #' }
+#'
+#' @details The evaluation is based on the assumption that the date in
+#' \code{forecast_df} refers to the time in which the forecast was performed.
+#' Namely, the function offsets each forecast date in \code{forecast_df} by the
+#' relevant horizon and matches it with the respective date in \code{actual_df}.
+#' For example, a forecast for the horizon of 4 quarters in 1999 Q1 is compared
+#' to an actual value in 2000 Q1.
 #'
 #' @export
 #'
