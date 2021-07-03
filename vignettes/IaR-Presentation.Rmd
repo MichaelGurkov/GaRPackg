@@ -137,7 +137,7 @@ df = raw_df %>%
 filter_obj =  hpfilter(df$madad_meshulav,freq = 1600)
 
 df = df %>% 
-  mutate(meshulav_gap = filter_obj$cycle / filter_obj$trend * 100)
+  mutate(meshulav_gap = filter_obj$cycle / filter_obj$trend[,1] * 100)
 
 
 ```
@@ -173,23 +173,22 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 ```{r out_of_sample_forecast}
 
+win_len = 85
+
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
                                 target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 96,
+                                win_len = win_len,
                                 win_type_expanding = TRUE)
-
-iar_forecast_smoothed = iar_forecast %>% 
-  fit_t_skew_to_gar_df(time_limit = 150,return_smoothed_quantiles = TRUE)
 
 intercept_forecast = get_gar_forecast(partitions_list = NULL,
                                 vars_df = df,
                                 target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 96,
+                                win_len = win_len,
                                 win_type_expanding = TRUE)
 
 inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
@@ -197,10 +196,10 @@ inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
                                 target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
-                                win_len = 96,
+                                win_len = win_len,
                                 win_type_expanding = TRUE)
 
-
+rm(win_len)
 
 
 ```
@@ -687,18 +686,6 @@ iar_r2 = quantile_r2_score(
   frequency = "monthly"
 ) %>%
   rename(iar_r2 = quantile_r2)
-
-
-# iar_r2 = quantile_r2_score(
-#   forecast_df = iar_forecast_smoothed %>% 
-#     mutate(quantile = as.character(quantile)) %>% 
-#     select(date, quantile, horizon, forecast_values = value),
-#   actual_df = select(df, actual_values = cpi, date),
-#   benchmark_df = intercept_forecast %>%
-#     rename(benchmark_values = forecast_values),
-#   frequency = "monthly"
-# ) %>%
-#   rename(iar_r2 = quantile_r2)
 
 inflation_r2 = quantile_r2_score(
   forecast_df = inflation_forecast,
