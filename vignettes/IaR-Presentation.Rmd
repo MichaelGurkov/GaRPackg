@@ -284,7 +284,14 @@ df %>%
   + Developing economies ()
 
 
-## Contribution
+## Literature
+
+\begin{itemize}
+  \item Lopez-Salido and Loria (2019) - United States and Euro area predictive inflation
+  distribution. Conditional mean of inflation does not convey an adequate representation
+  of the overall pattern of inflation dynamics. Changes in credit conditions are also key
+  to understand the dynamics of the inflation tails.
+\end{itemize}
 
 
 
