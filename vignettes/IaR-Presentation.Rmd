@@ -63,7 +63,7 @@ partitions_list = list(
 
 
 
-horizon_list=c(12)
+horizon_list=c(1,12)
 
 quantile_vec=c(0.10,0.25,0.5,0.75,0.90)
 
@@ -204,6 +204,13 @@ rm(win_len)
 
 ```
 
+```{r iqr_df}
+
+iqr_df = iar_analysis %>% 
+  calculate_skew_and_iqr()
+
+```
+
 
 ## Outline
 
@@ -213,6 +220,9 @@ rm(win_len)
 
 \begin {itemize}
 \itemsep3em
+  \item
+  A risk management approach to monetary policy requires the distribution around most
+  likely inflation path
 	\item
 	Analyzing the distribution of future inflation in the "post" disinflation
 	period.
@@ -358,7 +368,7 @@ iar_analysis %>%
                "non_significant" = "gray"),
     labels = c("Significant", "Non significant")
   ) +
-  facet_grid(rows = vars(partition), scales = "free") +
+  facet_grid(cols = vars(horizon),rows = vars(partition), scales = "free") +
   geom_hline(
     aes(yintercept = estimate),
     data = ols_coeffs,
@@ -377,9 +387,173 @@ iar_analysis %>%
   ) +
   theme(plot.caption = element_text(size = 10, hjust = 0.5),
         axis.text.x = element_text(size = 12),
-        strip.text = element_text(size = 14)) +
-  # theme_classic() +
-  NULL
+        strip.text = element_text(size = 14))
+
+```
+
+
+
+```{r inflation, eval=FALSE}
+
+iar_analysis %>% 
+  extract_coeffs_from_gar_model() %>% 
+  filter(partition == "cpi") %>% 
+  filter(horizon == 12) %>% 
+  mutate(quantile = as.numeric(quantile)) %>% 
+  ggplot() + 
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) + 
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) + 
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Inflation",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+```{r fx_rate, eval=FALSE}
+
+iar_analysis %>% 
+  extract_coeffs_from_gar_model() %>% 
+  filter(partition == "nis_usd") %>% 
+  filter(horizon == 12) %>% 
+  mutate(quantile = as.numeric(quantile)) %>% 
+  ggplot() + 
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) + 
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) + 
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Exchange Rate",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+```{r oil_price, eval=FALSE}
+
+iar_analysis %>% 
+  extract_coeffs_from_gar_model() %>% 
+  filter(partition == "brent_usd") %>% 
+  filter(horizon == 12) %>% 
+  mutate(quantile = as.numeric(quantile)) %>% 
+  ggplot() + 
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) + 
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) + 
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Oil prices",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+```{r output, eval=FALSE}
+
+iar_analysis %>% 
+  extract_coeffs_from_gar_model() %>% 
+  filter(partition == "meshulav_gap") %>% 
+  filter(horizon == 12) %>% 
+  mutate(quantile = as.numeric(quantile)) %>% 
+  ggplot() + 
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) + 
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) + 
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Output Gap",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+
+
+## Ralized inflation increases upside risks and uncertainty
+
+
+```{r inflation_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, cpi))) %>% 
+  select(-date) %>% 
+  pivot_longer(cols = c(skew,iqr)) %>% 
+  ggplot(aes(x = cpi, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab("Realized inflation") + ylab(NULL)
+
+```
+
+
+
+
+
+## Output gap increases upside risks
+
+
+```{r output_gap_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, x = meshulav_gap))) %>% 
+  select(-date) %>% 
+  pivot_longer(cols = c(skew,iqr)) %>% 
+  ggplot(aes(x = x, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab("Ouput gap") + ylab(NULL)
+
+```
+
+
+## Oil price increases downside risks
+
+
+```{r oil_gap_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, x = brent_nis))) %>% 
+  select(-date) %>% 
+  pivot_longer(cols = c(skew,iqr)) %>% 
+  ggplot(aes(x = x, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab("Oil price") + ylab(NULL)
+
+```
+
+
+## Exchange rate increases downside risks and uncertainty
+
+
+```{r fx_rate_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, x = nis_usd))) %>% 
+  select(-date) %>% 
+  pivot_longer(cols = c(skew,iqr)) %>% 
+  ggplot(aes(x = x, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab("Exchange rate") + ylab(NULL)
 
 ```
 
@@ -391,9 +565,10 @@ iar_analysis %>%
 
 plot_df = iar_analysis$fitted_df %>%
   filter(quantile %in% c(0.25,0.5,0.75)) %>% 
+  filter(horizon == 12) %>% 
   select(-horizon) %>% 
   group_by(date = as.yearqtr(date), quantile) %>% 
-  summarise(avg_values = mean(fitted_values), .groups = "drop")
+  summarise(avg_values = mean(fitted_values) * 4, .groups = "drop")
 
 ggplot() + 
   geom_line(data = plot_df %>%
@@ -479,6 +654,7 @@ factor_plot_data = iar_analysis %>%
   bind_rows(iar_analysis %>%
   extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>%
   mutate(quantile = 0.5)) %>% 
+  filter(horizon == 12) %>% 
   select(-horizon) %>% 
   pivot_longer(-c(date,quantile)) %>% 
   filter(!name == "intercept") %>% 
@@ -516,12 +692,11 @@ rm(disp_plot, skew_plot, plot_legend, plots_row)
 ```
 
 
-## Low Median Forecasts are Associated with Higher Uncertainty
+## Higher Median Forecasts are Associated with Higher Uncertainty
 
 ```{r plot_median_iqr_scatter}
 
-iar_analysis %>%
-  calculate_skew_and_iqr() %>%
+iqr_df %>%
   inner_join(iar_analysis$fitted_df %>%
                filter(quantile == "0.5") %>%
                select(-quantile), by = c("date","horizon")) %>%
@@ -530,6 +705,7 @@ iar_analysis %>%
   geom_point() +
   geom_smooth(method = "lm") +
   xlab("Dispersion") + ylab("Median") +
+  facet_wrap(~horizon, scales = "free") + 
   theme(axis.text = element_text(size = 8))
 
 
@@ -544,13 +720,17 @@ iar_analysis %>%
 ggplot() + 
   geom_line(data = iar_forecast %>%
               filter(quantile == "0.50") %>% 
+              filter(horizon == 12) %>% 
               mutate(date = date + as.numeric(horizon)  / 12),
             aes(x = date, y = forecast_values )) +
   geom_line(data = df %>% 
-              filter(date >= min(iar_forecast$date + 1)),
+              filter(date >= iar_forecast %>%
+                       filter(horizon == 12) %>%
+                       pull(date) %>% min() + 1),
             aes(x = date, y = cpi), color = "red") +
   geom_ribbon(data = iar_forecast %>%
                 filter(quantile %in% c(0.25,0.75)) %>%
+                filter(horizon == 12) %>% 
                 mutate(date = date + as.numeric(horizon)  / 12) %>%
                 pivot_wider(names_from = "quantile",
                             names_prefix = "q_",
@@ -558,6 +738,7 @@ ggplot() +
               aes(x = date, ymin = q_0.25, ymax = q_0.75), alpha = 0.3,
               color = "lightgrey") +
   geom_ribbon(data = iar_forecast %>%
+                filter(horizon == 12) %>% 
                 filter(quantile %in% c("0.10","0.90")) %>%
                 mutate(date = date + as.numeric(horizon)  / 12) %>%
                 pivot_wider(names_from = "quantile",
@@ -599,20 +780,23 @@ ggplot() +
 ```{r pit_score}
 
 iar_pit = quantile_pit_score(
-  forecast_df = iar_forecast,
+  forecast_df = iar_forecast %>% 
+    filter(horizon == 12),
   actual_df = select(df, actual_values = cpi, date),
   frequency = "monthly") %>%
   rename(iar = pit)
 
 intercept_pit = quantile_pit_score(
-  forecast_df = intercept_forecast,
+  forecast_df = intercept_forecast  %>% 
+    filter(horizon == 12),
   actual_df = select(df, actual_values = cpi, date),
   frequency = "monthly"
 ) %>%
   rename(intercept = pit)
 
 inflation_pit = quantile_pit_score(
-  forecast_df = inflation_forecast,
+  forecast_df = inflation_forecast %>% 
+    filter(horizon == 12),
   actual_df = select(df, actual_values = cpi, date),
   frequency = "monthly"
 ) %>%
@@ -642,64 +826,6 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
-
-## Goodness of fit --Quantile R-Squared
-Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
-intercept only quantile benchmark:
-
-$$
-R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
-$$
-
-$\hat{Q}^{\tau}_{t,h}$  -- model's forecasts for quantile
-$\tau$ at horizon $h$
-
-$\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
-
-
-\begin{itemize}
-	\item
-	higher values -- better forecast
-	\item
-	negative values -- model inferior to the intercept only benchmark
-\end{itemize}
-
-
-
-
-## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
-
-```{r plot_r2_score}
-
-iar_r2 = quantile_r2_score(
-  forecast_df = iar_forecast,
-  actual_df = select(df, actual_values = cpi, date),
-  benchmark_df = intercept_forecast %>%
-    rename(benchmark_values = forecast_values),
-  frequency = "monthly"
-) %>%
-  rename(iar_r2 = quantile_r2)
-
-inflation_r2 = quantile_r2_score(
-  forecast_df = inflation_forecast,
-  actual_df = select(df, actual_values = cpi, date),
-  benchmark_df = intercept_forecast %>%
-    rename(benchmark_values = forecast_values),
-  frequency = "monthly"
-  ) %>%
-  rename(inflation = quantile_r2)
-
-iar_r2 %>%
-  inner_join(inflation_r2,by = c("horizon", "quantile")) %>%
-  pivot_longer(-c(horizon, quantile)) %>%
-  mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
-  ggplot(aes(x = quantile, y = value, fill = name)) +
-  geom_col(position = "dodge") +
-  scale_fill_discrete(labels = c("IaR","Inflation only")) +
-  xlab("Quantile") + ylab(NULL)
-
-```
-
 
 # Summary
 
