@@ -119,6 +119,18 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
   }
 
+  if(!any(is.character(forecast_df$horizon),is.numeric(forecast_df$horizon))){
+
+    stop("horizon must be of class character or numeric")
+
+  }
+
+  if(!any(is.character(forecast_df$quantile),is.numeric(forecast_df$quantile))){
+
+    stop("quantile must be of class character or numeric")
+
+  }
+
   # Frequency identification
 
   if (class(forecast_df$date) == "yearmon") {
@@ -248,6 +260,18 @@ quantile_pit_score = function(forecast_df, actual_df){
 
     stop("The date variable is missing in actual df ")
 
+
+  }
+
+  if(!any(is.character(forecast_df$horizon),is.numeric(forecast_df$horizon))){
+
+    stop("horizon must be of class character or numeric")
+
+  }
+
+  if(!any(is.character(forecast_df$quantile),is.numeric(forecast_df$quantile))){
+
+    stop("quantile must be of class character or numeric")
 
   }
 

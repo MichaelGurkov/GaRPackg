@@ -105,3 +105,24 @@ test_that(
   )
 )
 
+
+test_that("quantile_R2_issues_error_on_wrong_class_in_horizon",
+          code = expect_error(
+            object = quantile_r2_score(
+              forecast_df = test_predict_df_quarterly %>%
+                mutate(horizon = factor(horizon)),
+              actual_df = test_actual_df_quarterly,
+              benchmark_df = test_benchmark_df_quarterly
+            )
+          ))
+
+test_that("quantile_R2_issues_error_on_wrong_class_in_quantile",
+          code = expect_error(
+            object = quantile_r2_score(
+              forecast_df = test_predict_df_quarterly %>%
+                mutate(quantile = factor(horizon)),
+              actual_df = test_actual_df_quarterly,
+              benchmark_df = test_benchmark_df_quarterly
+            )
+          ))
+

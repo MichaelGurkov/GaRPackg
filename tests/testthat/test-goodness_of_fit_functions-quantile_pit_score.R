@@ -80,3 +80,21 @@ test_that(paste0("quantile_pit_score survives",
           )
 )
 
+
+test_that(paste0("quantile_pit_score issues error",
+                 " on wrong horizon class"),
+          expect_error(
+            object = quantile_pit_score(forecast_df = test_forecast_df_monthly %>%
+                                          mutate(horizon = factor(horizon)),
+                                        actual_df = test_actual_df_monthly))
+)
+
+
+test_that(paste0("quantile_pit_score issues error",
+                 " on wrong quantile class"),
+          expect_error(
+            object = quantile_pit_score(forecast_df = test_forecast_df_monthly %>%
+                                          mutate(quantile = factor(quantile)),
+                                        actual_df = test_actual_df_monthly))
+)
+
