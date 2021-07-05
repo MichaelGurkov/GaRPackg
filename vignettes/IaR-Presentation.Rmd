@@ -496,101 +496,6 @@ iar_analysis %>%
 
 
 # In-sample Features of the Forecast Distribution
-## Realized inflation increases upside risks and uncertainty in the long term
-
-
-```{r inflation_iqr}
-
-iqr_df %>% 
-  filter(horizon == 12) %>% 
-  left_join(select(df, c(date, cpi)), by = "date") %>% 
-  left_join(iar_analysis$fitted_df %>% 
-              filter(quantile == 0.5) %>% 
-              select(date, horizon, median = fitted_values)) %>% 
-  pivot_longer(cols = c(skew,iqr,median)) %>% 
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>% 
-  ggplot(aes(x = cpi, y = value)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_wrap(~name, scales = "free") + 
-  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
-  xlab("Realized inflation") + ylab(NULL)
-
-```
-
-
-## Output gap increases uncertainty and depresses inflation in the long term
-
-
-```{r output_gap_iqr}
-
-iqr_df %>% 
-  filter(horizon == 12) %>% 
-  left_join(select(df, c(date, x = meshulav_gap)), by = "date") %>% 
-  left_join(iar_analysis$fitted_df %>% 
-              filter(quantile == 0.5) %>% 
-              select(date, horizon, median = fitted_values)) %>% 
-  pivot_longer(cols = c(skew,iqr,median)) %>% 
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>%
-  ggplot(aes(x = x, y = value)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_wrap(~name, scales = "free") + 
-  xlab("Output gap") + ylab(NULL)
-
-```
-
-
-## Oil price stimulate inflation and decreases uncertainty in the long term
-
-
-```{r oil_gap_iqr}
-
-iqr_df %>% 
-  filter(horizon == 12) %>% 
-  left_join(select(df, c(date, x = brent_nis))) %>% 
-  left_join(iar_analysis$fitted_df %>% 
-              filter(quantile == 0.5) %>% 
-              select(date, horizon, median = fitted_values)) %>% 
-  pivot_longer(cols = c(skew,iqr,median)) %>% 
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>% 
-  ggplot(aes(x = x, y = value)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_wrap(~name, scales = "free") + 
-  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
-  xlab("Oil price") + ylab(NULL)
-
-```
-
-
-## Exchange rate increases downside risks and lowers uncertainty in the long term
-
-
-```{r fx_rate_iqr}
-
-iqr_df %>% 
-  filter(horizon == 12) %>% 
-  left_join(select(df, c(date, x = nis_usd))) %>% 
-  left_join(iar_analysis$fitted_df %>% 
-              filter(quantile == 0.5) %>% 
-              select(date, horizon, median = fitted_values)) %>% 
-  pivot_longer(cols = c(skew,iqr,median)) %>% 
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>% 
-  ggplot(aes(x = x, y = value)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_wrap(~name, scales = "free") + 
-  scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
-  xlab("Exchange rate") + ylab(NULL)
-```
-
-
-
 ## Downside Risks Increase After 2014
 
 ```{r plot_dist_timeseries}
@@ -707,26 +612,121 @@ rm(disp_plot, skew_plot, plot_legend, plots_row)
 ```
 
 
-## Higher Median Forecasts are Associated with Higher Uncertainty
+## Realized inflation increases upside risks and uncertainty in the long term
 
-```{r plot_median_iqr_scatter}
 
-iqr_df %>%
-  inner_join(iar_analysis$fitted_df %>%
-               filter(quantile == "0.5") %>%
-               select(-quantile), by = c("date","horizon")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
-  ggplot(aes(x = iqr, y = fitted_values)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  xlab("Dispersion") + ylab("Median") +
-  facet_wrap(~horizon, scales = "free") + 
-  theme(axis.text = element_text(size = 8))
+```{r inflation_iqr}
 
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, cpi)), by = "date") %>% 
+  left_join(iar_analysis$fitted_df %>% 
+              filter(quantile == 0.5) %>% 
+              select(date, horizon, median = fitted_values)) %>% 
+  pivot_longer(cols = c(skew,iqr,median)) %>% 
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>% 
+  ggplot(aes(x = cpi, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
+  xlab("Realized inflation") + ylab(NULL)
 
 ```
 
+
+## Output gap increases uncertainty and depresses inflation in the long term
+
+
+```{r output_gap_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, x = meshulav_gap)), by = "date") %>% 
+  left_join(iar_analysis$fitted_df %>% 
+              filter(quantile == 0.5) %>% 
+              select(date, horizon, median = fitted_values)) %>% 
+  pivot_longer(cols = c(skew,iqr,median)) %>% 
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>%
+  ggplot(aes(x = x, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab("Output gap") + ylab(NULL)
+
+```
+
+
+## Oil price stimulate inflation and decreases uncertainty in the long term
+
+
+```{r oil_gap_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, x = brent_nis))) %>% 
+  left_join(iar_analysis$fitted_df %>% 
+              filter(quantile == 0.5) %>% 
+              select(date, horizon, median = fitted_values)) %>% 
+  pivot_longer(cols = c(skew,iqr,median)) %>% 
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>% 
+  ggplot(aes(x = x, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
+  xlab("Oil price") + ylab(NULL)
+
+```
+
+
+## Exchange rate increases downside risks and lowers uncertainty in the long term
+
+
+```{r fx_rate_iqr}
+
+iqr_df %>% 
+  filter(horizon == 12) %>% 
+  left_join(select(df, c(date, x = nis_usd))) %>% 
+  left_join(iar_analysis$fitted_df %>% 
+              filter(quantile == 0.5) %>% 
+              select(date, horizon, median = fitted_values)) %>% 
+  pivot_longer(cols = c(skew,iqr,median)) %>% 
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>% 
+  ggplot(aes(x = x, y = value)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
+  xlab("Exchange rate") + ylab(NULL)
+```
+
+
+
 # Out-of-Sample Forecast Performance
+## Out-of-Sample Forecast Performance
+
+\vspace{2em}
+
+\begin{itemize}
+\setlength\itemsep{2em}
+	\item
+	IaR model compared to two alternatives:
+	\begin{enumerate}
+		\item
+		Intercept only -- partial IaR model without explanatory variables
+		\item
+		Intercept and realized inflation -- partial IaR model
+	\end{enumerate}
+	\item
+	The models are evaluated out of sample (expanding window starts at
+	85 observations and adds one observation in each step)
+\end{itemize}
+
 ## Out-of-Sample Forecast
 
 ```{r out_of_sample_forecast_plot}
@@ -768,25 +768,6 @@ ggplot() +
 
 ```
 
-
-## Out-of-Sample Forecast Performance
-
-\vspace{2em}
-
-\begin{itemize}
-\setlength\itemsep{2em}
-	\item
-	IaR model compared to two alternatives:
-	\begin{enumerate}
-		\item
-		Intercept only -- partial IaR model without explanatory variables
-		\item
-		Intercept and realized inflation -- partial IaR model
-	\end{enumerate}
-	\item
-	The models are evaluated out of sample (expanding window starts at
-	85 observations and adds one observation in each step)
-\end{itemize}
 
 ## Goodness of fit -- PIT score \newline (the closer to the black line the better)
 
