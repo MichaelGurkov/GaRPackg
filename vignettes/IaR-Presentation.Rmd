@@ -224,8 +224,8 @@ iqr_df = iar_analysis %>%
   A risk management approach to monetary policy requires the distribution around most
   likely inflation path
 	\item
-	Analyzing the distribution of future inflation in the "post" disinflation
-	period.
+	Analyzing the distribution of future inflation since the current inflation target
+	range was set.
 	\item
 	We provide a methodological tool for assessing risks to inflation in Israel
 	using Philips curve specification:
@@ -235,7 +235,7 @@ iqr_df = iar_analysis %>%
 \begin{center}
 \begin{block}{}
 
-	Given current Philips curve "state", what is the distribution of
+	Given current real and nominal conditions, what is the distribution of
 	expected inflation?
 
 \end{block}
@@ -275,13 +275,10 @@ df %>%
 
 \vspace{1em}
 
-* Based on Adrian et al. (2019), operationalized by Banerjee et al. (2020).
+* Based on Banerjee et al. (2020)
+* Similar to the Growth at Risk approach (Adrian et al, Gurkov and Zohar)
 
 \vspace{1em}
-
-* Applied to:
-  + Advanced economies ()
-  + Developing economies ()
 
 
 ## Literature Review
@@ -309,7 +306,7 @@ df %>%
 In-sample properties of the distribution of expected inflation:
   \begin{enumerate}
 	\item
-	Balanced risk and stable uncertainty before 2011, decrease in uncertainty
+	Balanced risk and stable uncertainty before 2014, decrease in uncertainty
 	and (relative) increase in downside risks after
 	\item
 	Realized inflation is the predominant factor explaining the changes in the
@@ -319,13 +316,10 @@ In-sample properties of the distribution of expected inflation:
 	evolution of forecast uncertainty, the output gap explains variation in
 	skewness.
   \end{enumerate}
-\item
-Out-of-sample forecast performance is similar to benchmark models.
-
-  \begin{itemize}
-    \item but IaR allows state-dependent evaluation of risks
-  \end{itemize}
   
+  \item
+  Out-of-sample forecast performance is similar to benchmark models.
+ 
 \end{itemize}
 
 
@@ -612,7 +606,7 @@ rm(disp_plot, skew_plot, plot_legend, plots_row)
 ```
 
 
-## Realized inflation increases upside risks and uncertainty in the long term
+## Realized inflation increases upside risks and uncertainty one year ahead
 
 
 ```{r inflation_iqr}
@@ -636,7 +630,7 @@ iqr_df %>%
 ```
 
 
-## Output gap increases uncertainty and depresses inflation in the long term
+## Output gap increases uncertainty and depresses inflation one year ahead
 
 
 ```{r output_gap_iqr}
@@ -659,7 +653,7 @@ iqr_df %>%
 ```
 
 
-## Oil price stimulate inflation and decreases uncertainty in the long term
+## Oil price stimulate inflation and decreases uncertainty one year ahead
 
 
 ```{r oil_gap_iqr}
@@ -683,7 +677,7 @@ iqr_df %>%
 ```
 
 
-## Exchange rate increases downside risks and lowers uncertainty in the long term
+## Exchange rate increases downside risks and lowers uncertainty one year ahead
 
 
 ```{r fx_rate_iqr}
@@ -731,36 +725,57 @@ iqr_df %>%
 
 ```{r out_of_sample_forecast_plot}
 
-
-ggplot() + 
-  geom_line(data = iar_forecast %>%
-              filter(quantile == "0.50") %>% 
-              filter(horizon == 12) %>% 
-              mutate(date = date + as.numeric(horizon)  / 12),
-            aes(x = date, y = forecast_values )) +
-  geom_line(data = df %>% 
-              filter(date >= iar_forecast %>%
-                       filter(horizon == 12) %>%
-                       pull(date) %>% min() + 1),
-            aes(x = date, y = cpi), color = "red") +
-  geom_ribbon(data = iar_forecast %>%
-                filter(quantile %in% c(0.25,0.75)) %>%
-                filter(horizon == 12) %>% 
-                mutate(date = date + as.numeric(horizon)  / 12) %>%
-                pivot_wider(names_from = "quantile",
-                            names_prefix = "q_",
-                            values_from = "forecast_values"),
-              aes(x = date, ymin = q_0.25, ymax = q_0.75), alpha = 0.3,
-              color = "lightgrey") +
-  geom_ribbon(data = iar_forecast %>%
-                filter(horizon == 12) %>% 
-                filter(quantile %in% c("0.10","0.90")) %>%
-                mutate(date = date + as.numeric(horizon)  / 12) %>%
-                pivot_wider(names_from = "quantile",
-                            names_prefix = "q_",
-                            values_from = "forecast_values"),
-              aes(x = date, ymin = q_0.10, ymax = q_0.90), alpha = 0.3,
-              color = "grey") + 
+ggplot() +
+  geom_line(
+    data = iar_forecast %>%
+      filter(quantile == "0.50") %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12),
+    aes(x = date, y = forecast_values, color = "Forecasted Median 12 Month Earlier")
+  ) +
+  geom_line(
+    data = df %>%
+      filter(
+        date >= iar_forecast %>%
+          filter(horizon == 12) %>%
+          pull(date) %>% min() + 1
+      ),
+    aes(x = date, y = cpi, color = "Realized Inflation")
+  ) +
+  geom_ribbon(
+    data = iar_forecast %>%
+      filter(quantile %in% c(0.25, 0.75)) %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.25,
+      ymax = q_0.75,
+      fill = "50% of Distribution"
+    ),
+    alpha = 0.3) +
+  geom_ribbon(
+    data = iar_forecast %>%
+      filter(horizon == 12) %>%
+      filter(quantile %in% c("0.10", "0.90")) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.10,
+      ymax = q_0.90,
+      fill = "80% of Distribution"
+    ),
+    alpha = 0.3) +
   ylab("Percent") + xlab(NULL) +
   ggtitle("Quantiles of inflation")
 
@@ -778,24 +793,19 @@ ggplot() +
 iar_pit = quantile_pit_score(
   forecast_df = iar_forecast %>% 
     filter(horizon == 12),
-  actual_df = select(df, actual_values = cpi, date),
-  frequency = "monthly") %>%
+  actual_df = select(df, actual_values = cpi, date)) %>%
   rename(iar = pit)
 
 intercept_pit = quantile_pit_score(
   forecast_df = intercept_forecast  %>% 
     filter(horizon == 12),
-  actual_df = select(df, actual_values = cpi, date),
-  frequency = "monthly"
-) %>%
+  actual_df = select(df, actual_values = cpi, date)) %>%
   rename(intercept = pit)
 
 inflation_pit = quantile_pit_score(
   forecast_df = inflation_forecast %>% 
     filter(horizon == 12),
-  actual_df = select(df, actual_values = cpi, date),
-  frequency = "monthly"
-) %>%
+  actual_df = select(df, actual_values = cpi, date)) %>%
   rename(realized_inflation = pit)
 
 list(iar_pit, intercept_pit, inflation_pit) %>%
