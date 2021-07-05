@@ -87,8 +87,7 @@ test_that(
     object = quantile_r2_score(
       forecast_df = test_predict_df_quarterly,
       actual_df = test_actual_df_quarterly,
-      benchmark_df = test_benchmark_df_quarterly,
-      frequency = "quarterly"
+      benchmark_df = test_benchmark_df_quarterly
     ),
     expected = test_df_quarterly
   )
@@ -100,8 +99,7 @@ test_that(
     object = quantile_r2_score(
       forecast_df = test_predict_df_quarterly,
       actual_df = test_actual_df_quarterly,
-      benchmark_df = test_benchmark_df_quarterly,
-      frequency = "monthly"
+      benchmark_df = test_benchmark_df_quarterly
     ),
     expected = test_df_quarterly
   )

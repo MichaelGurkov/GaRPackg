@@ -45,8 +45,7 @@ test_that(paste0("quantile_pit_score survives",
                  " balanced numeric example at quartely frequency"),
           expect_equal(
             object = quantile_pit_score(forecast_df = test_forecast_df_quarterly,
-                                        actual_df = test_actual_df_quarterly,
-                                        frequency = "quarterly"),
+                                        actual_df = test_actual_df_quarterly),
             expected = test_forecast_df_quarterly %>%
               mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4) %>%
               left_join(test_actual_df_quarterly %>%
@@ -66,8 +65,7 @@ test_that(paste0("quantile_pit_score survives",
                  " balanced numeric example at monthly frequency"),
           expect_equal(
             object = quantile_pit_score(forecast_df = test_forecast_df_monthly,
-                                        actual_df = test_actual_df_monthly,
-                                        frequency = "monthly"),
+                                        actual_df = test_actual_df_monthly),
             expected = test_forecast_df_monthly %>%
               mutate(date = as.yearmon(date) + as.numeric(horizon) / 12) %>%
               left_join(test_actual_df_monthly %>%

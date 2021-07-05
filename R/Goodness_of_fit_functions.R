@@ -63,13 +63,19 @@ quantile_r2_score_calculation = function(realized_values,
 #' @importFrom zoo as.yearqtr as.yearmon
 #'
 #' @param forecast_df data frame with predicted values
-#' by horizon, quantile, date, forecast_values
+#' by horizon, quantile, date, forecast_values.The date is the forecast date,
+#' on which the forecast was made, the target date is calculated by taking the
+#' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
+#' frequency is supported.
 #'
 #' @param actual_df data frame with actual values
 #' by date and actual_values
 #'
 #' @param benchmark_df data frame with predicted values
-#' by horizon, quantile, date and benchmark_values
+#' by horizon, quantile, date, forecast_values.The date is the forecast date,
+#' on which the forecast was made, the target date is calculated by taking the
+#' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
+#' frequency is supported.
 #'
 #'
 #' @details The evaluation is based on the assumption that the date in
@@ -79,13 +85,6 @@ quantile_r2_score_calculation = function(realized_values,
 #' For example, a forecast for the horizon of 4 quarters in 1999 Q1 is compared
 #' to an actual value in 2000 Q1.
 #'
-#' @param frequency the period frequency of the data.
-#' This parameter determines the step size (number of periods in a year). Default is
-#' "quarterly".
-#' \itemize{
-#'  \item{"quarterly" : the step size is 4}
-#'  \item{"monthly" : the step size is 12}
-#' }
 #'
 #' @export
 #'
@@ -121,8 +120,25 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df,
 
   }
 
-  if(!frequency %in% c("quarterly","monthly")){
-    stop("frequency parametr is set incorrectly")}
+  # Frequency identification
+
+  if (class(forecast_df$date) == "yearmon") {
+
+    frequency = "monthly"
+
+  } else if (class(forecast_df$date) == "yearqtr") {
+
+    frequency = "quarterly"
+
+  } else if (class(as.yearmon(forecast_df$date)) == "yearmon"){
+
+    frequency = "monthly"
+
+  } else if (class(as.yearqtr(forecast_df$date)) == "yearqtr"){
+
+    frequency = "quarterly"
+
+  }
 
   names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
 
@@ -155,9 +171,6 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df,
                    mutate(date = as.yearmon(date)), by = "date") %>%
       mutate(quantile = as.numeric(.data$quantile))
   }
-
-
-
 
 
   score_df = df %>%
@@ -197,20 +210,15 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df,
 #' @import dplyr
 #'
 #' @param forecast_df data frame with predicted values
-#' by horizon, quantile and date (the date is the forecast date, on which the forecast
-#'  was made, the target date is calculated by taking the forecast date \code{horizon}
-#'  steps ahead)
+#' by horizon, quantile, date, forecast_values.The date is the forecast date,
+#' on which the forecast was made, the target date is calculated by taking the
+#' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
+#' frequency is supported.
 #'
 #' @param actual_df data frame with actual values
-#' by value and date
+#' by date and actual_values
 #'
-#' @param frequency the period frequency of the data.
-#' This parameter determines the step size (number of periods in a year). Default is
-#' "quarterly".
-#' \itemize{
-#'  \item{"quarterly" : the step size is 4}
-#'  \item{"monthly" : the step size is 12}
-#' }
+#'
 #'
 #' @details The evaluation is based on the assumption that the date in
 #' \code{forecast_df} refers to the time in which the forecast was performed.
@@ -222,7 +230,7 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df,
 #' @export
 #'
 
-quantile_pit_score = function(forecast_df, actual_df, frequency = "quarterly"){
+quantile_pit_score = function(forecast_df, actual_df){
 
   # Arguments Validation
 
@@ -244,12 +252,30 @@ quantile_pit_score = function(forecast_df, actual_df, frequency = "quarterly"){
 
   }
 
-  if(!frequency %in% c("quarterly","monthly")){
-    stop("frequency parametr is set incorrectly")}
-
   names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
+
+  # Frequency identification
+
+  if (class(forecast_df$date) == "yearmon") {
+
+    frequency = "monthly"
+
+  } else if (class(forecast_df$date) == "yearqtr") {
+
+    frequency = "quarterly"
+
+  } else if (class(as.yearmon(forecast_df$date)) == "yearmon"){
+
+    frequency = "monthly"
+
+  } else if (class(as.yearqtr(forecast_df$date)) == "yearqtr"){
+
+    frequency = "quarterly"
+
+  }
+
 
 
   if(frequency == "quarterly"){
