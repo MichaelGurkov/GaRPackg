@@ -173,7 +173,7 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 ```{r out_of_sample_forecast}
 
-win_len = 85
+win_len = 109
 
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
@@ -390,29 +390,27 @@ The explanatory variables are:
 
 ```{r plot_coeffs, fig.height=7.5}
 
-iar_analysis %>%
+coeff_df = iar_analysis %>%
   extract_coeffs_from_gar_model() %>%
   filter(!partition == "Intercept") %>%
+  filter(horizon == 12) %>% 
+  select(-horizon) %>% 
   mutate(partition = factor(
     partition,
     levels = c("cpi", "meshulav_gap","brent_usd","nis_usd"),
     labels = c("Inflation","Output Gap", "Oil prices","Exchange Rate")
-  )) %>%
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
-  geom_col(width = 0.3) +
-  scale_fill_manual(
-    values = c("significant" = "lightblue",
-               "non_significant" = "gray"),
-    labels = c("Significant", "Non significant")
-  ) +
-  facet_grid(cols = vars(horizon),rows = vars(partition), scales = "free") +
-  geom_hline(
-    aes(yintercept = estimate),
-    data = ols_coeffs,
-    color = "blue",
-    linetype = "dashed"
-  ) +
-  geom_hline(yintercept = 0) +
+  ))
+
+
+ggplot() +
+  geom_col(data = coeff_df, aes(x = quantile, y = coeff, fill = significant),
+           width = 0.3) +
+  scale_fill_manual(values = c("significant" = "lightblue","non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
+  facet_grid(rows = vars(partition), scales = "free") +
+  geom_hline(data = ols_coeffs,aes(yintercept = estimate,linetype = "OLS"),
+             color = "blue") +
+  scale_linetype_manual(values = "dashed") + 
   xlab("Quantile") + ylab(NULL) +
   labs(
     caption = paste0(
@@ -549,6 +547,10 @@ ggplot() +
 
 ```{r plot_skewness_1_quarter, fig.height=6}
 
+n = nrow(df)
+
+skew_se=sqrt( 6*n*(n-1) / ((n-2)*(n+1)*(n+3)) )
+
 skew_df = iar_analysis %>%
   calculate_skew_and_iqr() %>%
   select(-horizon) %>%
@@ -560,19 +562,24 @@ skew_df = iar_analysis %>%
 
 mean_df = skew_df %>%
   group_by(name) %>%
-  summarise(avg = mean(value))
+  summarise(val = mean(value))
 
- skew_df%>%
+band_df = tibble(name = rep("Skewness",2), val = c(skew_se, -skew_se))
+
+skew_df%>%
   ggplot(aes(x = date, y = value)) +
   geom_line() +
   facet_wrap(~name, scales = "free") +
-  geom_hline(aes(yintercept = avg), color = "blue", data = mean_df) +
+  geom_hline(aes(yintercept = val), color = "blue", data = mean_df) + 
+  geom_hline(aes(yintercept = val), color = "black", data = band_df,
+              linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "black") +
   labs(x = "", y = "",
        caption = "Note: the dashed lines represent ± 2 standard error estimates") +
   theme(plot.caption = element_text(hjust = 0.5))
 
 
- rm(skew_df, mean_df)
+ rm(skew_df, mean_df, band_df, skew_se, n)
 
 ```
 
@@ -875,6 +882,36 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
+
+## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
+
+```{r plot_r2_score}
+
+iar_r2 = quantile_r2_score(
+  forecast_df = iar_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  benchmark_df = intercept_forecast %>%
+    rename(benchmark_values = forecast_values)) %>%
+  rename(iar_r2 = quantile_r2)
+
+inflation_r2 = quantile_r2_score(
+  forecast_df = inflation_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  benchmark_df = intercept_forecast %>%
+    rename(benchmark_values = forecast_values)) %>%
+  rename(inflation = quantile_r2)
+
+iar_r2 %>%
+  inner_join(inflation_r2,by = c("horizon", "quantile")) %>%
+  pivot_longer(-c(horizon, quantile)) %>%
+  mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
+  ggplot(aes(x = quantile, y = value, fill = name)) +
+  geom_col(position = "dodge") +
+  scale_fill_discrete(labels = c("IaR","Inflation only")) +
+  xlab("Quantile") + ylab(NULL) + 
+  facet_wrap(~horizon, scales = "free")
+
+```
 
 # Summary
 
