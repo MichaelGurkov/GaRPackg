@@ -1,8 +1,8 @@
 ---
-title: "Inflation at Risk: The Distribution of Future Inflation in Israel"
+title: "Inflation Risks in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department \\newline \\newline Any views expressed in the Discussion Paper are those of the authors and do not necessarily reflect those of the Bank of Israel"
-date: "16 June, 2021"
+date: "25 July, 2021"
 classoption: t
 output:
   beamer_presentation:
@@ -58,7 +58,8 @@ partitions_list = list(
   inflation = c("cpi"),
   exchange_rate = c("nis_usd"),
   oil_p = c("brent_usd"),
-  output_gap = c("meshulav_gap")
+  output_gap = c("meshulav_gap"),
+  expectation = c("beir5y5y")
 )
 
 
@@ -152,20 +153,27 @@ iar_analysis = run_GaR_analysis(
   quantile_vec = quantile_vec,
   pca.align.list = list(
     output_gap = list("output_gap", TRUE),
-    expect = list("beir1y", TRUE)
+    expectation = list("beir5y5y", TRUE)
   )
 )
 
-ols_coeffs = iar_analysis$reg_df %>% 
-  select(cpi_12, ends_with("xreg")) %>% 
-  lm(paste("cpi_12 ~ ."),.) %>% 
-  tidy() %>% 
-  filter(!term == "(Intercept)") %>% 
-  mutate(term = str_remove_all(term, "_xreg")) %>% 
-  mutate(partition = factor(term,
-                       levels = c("nis_usd","cpi","brent_usd","meshulav_gap"),
-                       labels = c("Exchange Rate","Inflation","Oil prices",
-                                       "Output Gap"))) %>% 
+ols_coeffs = iar_analysis$reg_df %>%
+  select(cpi_12, ends_with("xreg")) %>%
+  lm(paste("cpi_12 ~ ."), .) %>%
+  tidy() %>%
+  filter(!term == "(Intercept)") %>%
+  mutate(term = str_remove_all(term, "_xreg")) %>%
+  mutate(partition = factor(
+    term,
+    levels = c("cpi", "beir5y5y" , "meshulav_gap", "brent_usd", "nis_usd"),
+    labels = c(
+      "Inflation",
+      "Expectations",
+      "Output Gap",
+      "Oil prices",
+      "Exchange Rate"
+    )
+  )) %>%
   select(partition, estimate)
 
 
@@ -217,19 +225,31 @@ iqr_df = iar_analysis %>%
 
 ## Motivation
 
+
+
+\begin{quote}
+
+\small
+
+"Monetary policy responded first in the summer of 2012 by acting to defuse the sovereign debt crisis, which had evolved from a \textbf{tail risk for inflation} into a material threat to price stability."
+
+\vspace{1em}
+
+Mario Draghi, ECB President, Sintra, June 2019
+
+\end{quote}
+
+\vspace{2em}
+
 \begin {itemize}
-\itemsep3em
-  \item
-  A risk management approach to monetary policy requires the distribution around most
-  likely inflation path
+\setlength\itemsep{1em}
 	\item
-	Analyzing the distribution of future inflation since the current inflation target
+	We analyze the distribution of future inflation since the current inflation target
 	range was set.
 	\item
 	We provide a methodological tool for assessing risks to inflation in Israel
 	using Philips curve specification:
 
-	\vspace{1em}
 
 \begin{center}
 \begin{block}{}
@@ -258,7 +278,8 @@ df %>%
                                 "CPI Variance (48 periods)")) +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
-                 " Vegetables, and Housing (Monthly,2004-2019)"))
+                 " Vegetables, and Housing \n (Monthly,2004-2019)")) + 
+  theme(plot.title = element_text(size = 17))
 
 
 ```
@@ -275,10 +296,12 @@ df %>%
 \vspace{1em}
 
 * Based on Banerjee et al. (2020)
+
+\vspace{1em}
+
 * Similar to the Growth at Risk approach (Adrian et al 2019,
 Gurkov and Zohar 2021)
 
-\vspace{1em}
 
 
 ## Literature Review
@@ -309,12 +332,11 @@ In-sample properties of the distribution of expected inflation:
 	Balanced risk and stable uncertainty before 2014, decrease in uncertainty
 	and (relative) increase in downside risks after
 	\item
-	Realized inflation is the predominant factor explaining the changes in the
-	features of the forecast distribution.
+	Realized inflation and long term expectations are the predominant factor explaining
+	the changes in the features of the forecast distribution.
 	\item
-	Oil prices and the exchange rate play an important role in the
-	evolution of forecast uncertainty, the output gap explains variation in
-	skewness.
+	Oil prices and the output gap contribute to the	evolution of forecast uncertainty,
+	declining inflation environment explains variation	in skewness.
   \end{enumerate}
 
   \item
@@ -333,13 +355,13 @@ In-sample properties of the distribution of expected inflation:
 \label{methodology}
 
 \textbf{Quantile regressions --} estimate an equation for each quantile
-$\tau$	and horizon 12 months ahead:
+$\tau$	and horizon 12 months ahead. The sample period is 2004-2019 at monthly frequency.
 
 $Q^{\tau}_{t,h}=\beta^{\tau}_{h}X_t+\epsilon^{\tau}_{t,h}$
 
-$X_t=[1, \pi_{t}, \hat{y}_{t}, oil_{t}, s_{t}]$
+$X_t=[1, \pi_{t},\pi^{e}_{t}, \hat{y}_{t}, oil_{t}, s_{t}]$
 
-\small
+\footnotesize
 
 where:
 
@@ -347,6 +369,9 @@ where:
   \item
   $\pi_{t}$ is the YoY CPI inflation excluding fruits, vegetables, and housing
   in month $t$
+  \item
+  $\pi^{e}_{t}$ - is the monthly average of five-year five-year forward breakeven
+  in inflation rates.
   \item
   $\hat{y}_{t}$ is a monthly estimate of the output gap (HP filtered
   State-of-the Economy Index).
@@ -362,30 +387,7 @@ where:
 \end{flushright}
 
 
-
-## Data Partitioning
-
-* The sample period is 2004-2019 at monthly frequency
-
-* We focus on 12 months ahead horizon
-
-The explanatory variables are:
-
-\begin{itemize}
-  \item
-  Inflation
-  \item
-  Output Gap
-  \item
-  Exchange Rate
-  \item
-  Oil Prices
-\end{itemize}
-
-
-
-
-## Persistent Inflation, Positive Oil Price and Negative Output Gap
+## Positive Inflation and Oil Price Coefficients, Negative Output Gap
 
 
 ```{r plot_coeffs, fig.height=7.5}
@@ -397,8 +399,8 @@ coeff_df = iar_analysis %>%
   select(-horizon) %>% 
   mutate(partition = factor(
     partition,
-    levels = c("cpi", "meshulav_gap","brent_usd","nis_usd"),
-    labels = c("Inflation","Output Gap", "Oil prices","Exchange Rate")
+    levels = c("cpi","beir5y5y" ,"meshulav_gap","brent_usd","nis_usd"),
+    labels = c("Inflation","Expectations","Output Gap", "Oil prices","Exchange Rate")
   ))
 
 
@@ -422,7 +424,7 @@ ggplot() +
   ) +
   theme(plot.caption = element_text(size = 10, hjust = 0.5),
         axis.text.x = element_text(size = 12),
-        strip.text = element_text(size = 14))
+        strip.text = element_text(size = 12))
 
 ```
 
@@ -560,34 +562,42 @@ skew_df = iar_analysis %>%
   mutate(name = factor(name, levels = c("iqr","skew"),
                        labels = c("Dispersion","Skewness")))
 
-mean_df = skew_df %>%
+hline_df = skew_df %>%
   group_by(name) %>%
-  summarise(val = mean(value))
-
-band_df = tibble(name = rep("Skewness",2), val = c(skew_se, -skew_se))
+  summarise(val = mean(value)) %>% 
+  mutate(color = "blue") %>% 
+  mutate(linetype = "solid") %>% 
+  bind_rows(tibble(name = rep("Skewness",2),
+                   val = c(skew_se, -skew_se),
+                   color = "black",
+                   linetype = "dashed")) %>% 
+  bind_rows(tibble(name = "Skewness",
+                   val = 0,
+                   color = "black",
+                   linetype = "solid"))
 
 skew_df%>%
   ggplot(aes(x = date, y = value)) +
   geom_line() +
   facet_wrap(~name, scales = "free") +
-  geom_hline(aes(yintercept = val), color = "blue", data = mean_df) + 
-  geom_hline(aes(yintercept = val), color = "black", data = band_df,
-              linetype = "dashed") +
-  geom_hline(yintercept = 0, color = "black") +
+  geom_hline(aes(yintercept = val, color = color, linetype = linetype),
+             data = hline_df, show.legend = FALSE) + 
+  scale_color_manual(values = c("black" = "black","blue" = "blue")) + 
+  scale_linetype_manual(values = c("solid" = "solid", "dashed" = "dashed")) + 
   labs(x = "", y = "",
        caption = "Note: the dashed lines represent ± 2 standard error estimates") +
   theme(plot.caption = element_text(hjust = 0.5))
 
 
- rm(skew_df, mean_df, band_df, skew_se, n)
+ rm(skew_df, hline_df, skew_se, n)
 
 ```
 
-$Dispersion_{t} \equiv Q^{0.75}_{t} - Q^{0.25}_{t} \quad Skeweness_{t} \equiv \frac{Q^{0.75}_{t} + Q^{0.25}_{t} -2Q^{0.5}_{t}}{Dispersion_{t}}$
+$Dispersion_{t} \equiv Q^{75}_{t} - Q^{25}_{t} \quad Skeweness_{t} \equiv \frac{Q^{75}_{t} + Q^{25}_{t} -2Q^{50}_{t}}{Dispersion_{t}}$
 
-## Realized Inflation is Dominant in Both Risk Metrics. \newline Output Gap also Dominant in Skewness
+## Inflation environment and oil prices are the dominant risk factors
 
-```{r plot_factor_decomposition, fig.height=6}
+```{r plot_factor_decomposition, fig.height=6, eval=FALSE}
 
 
 factor_plot_data = iar_analysis %>%
@@ -600,16 +610,18 @@ factor_plot_data = iar_analysis %>%
   extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>%
   mutate(quantile = 0.5)) %>%
   filter(horizon == 12) %>%
-  select(-horizon) %>%
+  select(-horizon) %>% 
+  mutate(exp_int = intercept + beir5y5y) %>% 
+  select(-c(intercept,beir5y5y)) %>% 
   pivot_longer(-c(date,quantile)) %>%
   filter(!name == "intercept") %>%
   pivot_wider(names_from = quantile,names_prefix = "q_") %>%
   mutate(dispersion = q_0.75 - q_0.25) %>%
   mutate(skewness = (q_0.75 + q_0.25 - 2 * q_0.5)) %>%
   mutate(name = factor(name,
-                       levels = c("cpi","nis_usd","brent_usd","meshulav_gap"),
-                       labels = c("Inflation","Exchange Rate","Oil prices",
-                                  "Output Gap"))) %>% 
+                       levels = c("cpi","exp_int","nis_usd","brent_usd","meshulav_gap"),
+                       labels = c("Inflation","Expectations","Exchange Rate",
+                                  "Oil prices","Output Gap"))) %>% 
   select(date, name, dispersion, skewness) %>% 
   group_by(date = as.yearqtr(date), name) %>% 
   summarise(across(c(dispersion, skewness),mean), .groups = "drop")
@@ -649,9 +661,9 @@ rm(disp_plot, skew_plot, plot_legend, plots_row)
 
 ```
 
-\small
+\scriptsize
 
-$E(Dispersion_{t + 12}|X_{t}) = (\beta^{0.75} - \beta^{0.25})X_{t} \quad E(Skeweness_{t + 12}|X_{t}) = \frac{(\beta^{0.75}_{t} + \beta^{0.25}_{t} -2\beta^{0.5}_{t})X_{t}}{Dispersion_{t+12}}$
+$E(Disp_{t + 12}|X_{t}) = (\beta^{75} - \beta^{25})X_{t} \quad E(Skew_{t + 12}|X_{t}) = \frac{(\beta^{75}_{t}+\beta^{25}_{t}-2\beta^{50}_{t})X_{t}}{Disp_{t+12}}$
 
 
 ## Realized inflation increases upside risks and uncertainty one year ahead
@@ -672,8 +684,33 @@ iqr_df %>%
   geom_point() +
   geom_smooth(method = "lm") +
   facet_wrap(~name, scales = "free") +
-  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_x_continuous(labels = scales::percent_format(scale = 1, accuracy = 1)) +
   xlab("Realized inflation") + ylab(NULL)
+
+```
+
+
+## Inflation expectation increases upside risks and lowers uncertainty one year ahead
+
+
+```{r expectation_iqr}
+
+iqr_df %>%
+  filter(horizon == 12) %>%
+  left_join(select(df, c(date, beir5y5y)), by = "date") %>%
+  left_join(iar_analysis$fitted_df %>%
+              filter(quantile == 0.5) %>%
+              select(date, horizon, median = fitted_values)) %>%
+  pivot_longer(cols = c(skew,iqr,median)) %>%
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>%
+  ggplot(aes(x = beir5y5y, y = value)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~name, scales = "free") +
+  scale_x_continuous(labels = scales::percent_format(scale = 1, accuracy = 0.1)) +
+  xlab("Realized inflation") + ylab(NULL) + 
+  theme(axis.text.x = element_text(hjust = 0.25))
 
 ```
 
@@ -744,7 +781,8 @@ iqr_df %>%
   geom_smooth(method = "lm") +
   facet_wrap(~name, scales = "free") +
   scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
-  xlab("Exchange rate") + ylab(NULL)
+  xlab("Exchange rate") + ylab(NULL) + 
+  theme(axis.text.x = element_text(hjust = 0.25))
 ```
 
 
@@ -774,39 +812,6 @@ iqr_df %>%
 ```{r out_of_sample_forecast_plot}
 
 ggplot() +
-  geom_line(
-    data = iar_forecast %>%
-      filter(quantile == "0.50") %>%
-      filter(horizon == 12) %>%
-      mutate(date = date + as.numeric(horizon)  / 12),
-    aes(x = date, y = forecast_values, color = "Forecasted Median 12 Month Earlier")
-  ) +
-  geom_line(
-    data = df %>%
-      filter(
-        date >= iar_forecast %>%
-          filter(horizon == 12) %>%
-          pull(date) %>% min() + 1
-      ),
-    aes(x = date, y = cpi, color = "Realized Inflation")
-  ) +
-  geom_ribbon(
-    data = iar_forecast %>%
-      filter(quantile %in% c(0.25, 0.75)) %>%
-      filter(horizon == 12) %>%
-      mutate(date = date + as.numeric(horizon)  / 12) %>%
-      pivot_wider(
-        names_from = "quantile",
-        names_prefix = "q_",
-        values_from = "forecast_values"
-      ),
-    aes(
-      x = date,
-      ymin = q_0.25,
-      ymax = q_0.75,
-      fill = "50% of Distribution"
-    ),
-    alpha = 0.3) +
   geom_ribbon(
     data = iar_forecast %>%
       filter(horizon == 12) %>%
@@ -823,11 +828,45 @@ ggplot() +
       ymax = q_0.90,
       fill = "80% of Distribution"
     ),
-    alpha = 0.3) +
+    alpha = 0.5) +
+    geom_ribbon(
+    data = iar_forecast %>%
+      filter(quantile %in% c(0.25, 0.75)) %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.25,
+      ymax = q_0.75,
+      fill = "50% of Distribution"
+    ),
+    alpha = 0.8) +
+    geom_line(
+    data = iar_forecast %>%
+      filter(quantile == "0.50") %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12),
+    aes(x = date, y = forecast_values, color = "Forecasted Median 12 Month Earlier")
+  ) +
+  geom_line(
+    data = df %>%
+      filter(
+        date >= iar_forecast %>%
+          filter(horizon == 12) %>%
+          pull(date) %>% min() + 1
+      ),
+    aes(x = date, y = cpi, color = "Realized Inflation")
+  ) + 
   ylab("Percent") + xlab(NULL) +
   ggtitle("Quantiles of inflation") + 
-  scale_fill_manual(values = c("grey","darkgrey")) + 
-  scale_color_manual(values = c("black","red"))
+  scale_fill_manual(values = c("grey","lightblue")) + 
+  scale_color_manual(values = c("black","red")) + 
+  theme(legend.text = element_text(size = 12))
 
 
 
@@ -883,37 +922,20 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
 
-## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
-
-```{r plot_r2_score}
-
-iar_r2 = quantile_r2_score(
-  forecast_df = iar_forecast,
-  actual_df = select(df, actual_values = cpi, date),
-  benchmark_df = intercept_forecast %>%
-    rename(benchmark_values = forecast_values)) %>%
-  rename(iar_r2 = quantile_r2)
-
-inflation_r2 = quantile_r2_score(
-  forecast_df = inflation_forecast,
-  actual_df = select(df, actual_values = cpi, date),
-  benchmark_df = intercept_forecast %>%
-    rename(benchmark_values = forecast_values)) %>%
-  rename(inflation = quantile_r2)
-
-iar_r2 %>%
-  inner_join(inflation_r2,by = c("horizon", "quantile")) %>%
-  pivot_longer(-c(horizon, quantile)) %>%
-  mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
-  ggplot(aes(x = quantile, y = value, fill = name)) +
-  geom_col(position = "dodge") +
-  scale_fill_discrete(labels = c("IaR","Inflation only")) +
-  xlab("Quantile") + ylab(NULL) + 
-  facet_wrap(~horizon, scales = "free")
-
-```
-
 # Summary
+
+\begin{itemize}
+\setlength\itemsep{3em}
+  \item
+  The decline in inflation since 2014 was associated with a decline in uncertainty
+  and a relative rise in downside risks to inflation.
+  \item
+  The decline in long-term expectations and oil prices played a prominent role
+  in these developments.
+  \item
+  The model can also be used to assess inflation risks regularly. 
+  
+\end{itemize}
 
 # Appendix {.unlisted .unnumbered}
 ## Probability Integral Transform (PIT)
@@ -990,3 +1012,33 @@ tibble(acf = out_gap_ar$acf[,,1], lag = out_gap_ar$lag[,,1]) %>%
 
 
 
+
+## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
+
+```{r plot_r2_score}
+
+iar_r2 = quantile_r2_score(
+  forecast_df = iar_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  benchmark_df = intercept_forecast %>%
+    rename(benchmark_values = forecast_values)) %>%
+  rename(iar_r2 = quantile_r2)
+
+inflation_r2 = quantile_r2_score(
+  forecast_df = inflation_forecast,
+  actual_df = select(df, actual_values = cpi, date),
+  benchmark_df = intercept_forecast %>%
+    rename(benchmark_values = forecast_values)) %>%
+  rename(inflation = quantile_r2)
+
+iar_r2 %>%
+  inner_join(inflation_r2,by = c("horizon", "quantile")) %>%
+  pivot_longer(-c(horizon, quantile)) %>%
+  mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
+  ggplot(aes(x = quantile, y = value, fill = name)) +
+  geom_col(position = "dodge") +
+  scale_fill_discrete(labels = c("IaR","Inflation only")) +
+  xlab("Quantile") + ylab(NULL) + 
+  facet_wrap(~horizon, scales = "free")
+
+```
