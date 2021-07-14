@@ -179,6 +179,14 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 ```
 
+```{r iqr_df}
+
+iqr_df = iar_analysis %>% 
+  calculate_skew_and_iqr()
+
+```
+
+
 ```{r out_of_sample_forecast}
 
 win_len = 109
@@ -212,16 +220,6 @@ rm(win_len)
 
 ```
 
-```{r iqr_df}
-
-iqr_df = iar_analysis %>% 
-  calculate_skew_and_iqr()
-
-```
-
-## Outline
-
-\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
 
 ## Motivation
 
@@ -284,6 +282,10 @@ df %>%
 
 ```
 
+## Outline
+
+\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
+
 ## The Inflation at Risk (IaR) Approach
 
 \vspace{1em}
@@ -328,19 +330,19 @@ Gurkov and Zohar 2021)
 \item
 In-sample properties of the distribution of expected inflation:
   \begin{enumerate}
+  \setlength\itemsep{2em}
 	\item
 	Balanced risk and stable uncertainty before 2014, decrease in uncertainty
 	and (relative) increase in downside risks after
 	\item
 	Realized inflation and long term expectations are the predominant factor explaining
-	the changes in the features of the forecast distribution.
+	the changes in the features of the forecast distribution.	
 	\item
-	Oil prices and the output gap contribute to the	evolution of forecast uncertainty,
-	declining inflation environment explains variation	in skewness.
+	Oil prices contribute to
+	the	evolution of forecast uncertainty, declining inflation environment explains
+	variation	in skewness.
   \end{enumerate}
 
-  \item
-  Out-of-sample forecast performance is similar to benchmark models.
 
 \end{itemize}
 
@@ -357,7 +359,7 @@ In-sample properties of the distribution of expected inflation:
 \textbf{Quantile regressions --} estimate an equation for each quantile
 $\tau$	and horizon 12 months ahead. The sample period is 2004-2019 at monthly frequency.
 
-$Q^{\tau}_{t,h}=\beta^{\tau}_{h}X_t+\epsilon^{\tau}_{t,h}$
+$Q^{\tau}_{t + 12}=\beta^{\tau}X_t+\epsilon^{\tau}_{t}$
 
 $X_t=[1, \pi_{t},\pi^{e}_{t}, \hat{y}_{t}, oil_{t}, s_{t}]$
 
@@ -367,19 +369,15 @@ where:
 
 \begin{itemize}
   \item
-  $\pi_{t}$ is the YoY CPI inflation excluding fruits, vegetables, and housing
-  in month $t$
+  $\pi_{t}$ YoY CPI inflation excluding fruits, vegetables, and housing
   \item
-  $\pi^{e}_{t}$ - is the monthly average of five-year five-year forward breakeven
-  in inflation rates.
+  $\pi^{e}_{t}$ - five-year five-year forward breakeven inflation rates.
   \item
-  $\hat{y}_{t}$ is a monthly estimate of the output gap (HP filtered
-  State-of-the Economy Index).
+  $\hat{y}_{t}$ the output gap (HP filtered State-of-the Economy Index).
   \item
-  $oil_{t}$ - is the monthly percentage change in Brent Crude oil prices,
-  denominated in USD.
+  $oil_{t}$ - the change in Brent Crude oil prices (USD).
   \item
-  $s_{t}$ - is the monthly percentage change in the NIS-USD exchange rate.
+  $s_{t}$ - the change in the NIS-USD exchange rate.
 \end{itemize}
 
 \begin{flushright}
@@ -553,12 +551,12 @@ n = nrow(df)
 
 skew_se=sqrt( 6*n*(n-1) / ((n-2)*(n+1)*(n+3)) )
 
-skew_df = iar_analysis %>%
-  calculate_skew_and_iqr() %>%
+skew_df = iqr_df %>%
+  filter(horizon == 12) %>% 
   select(-horizon) %>%
   pivot_longer(-date) %>%
-  group_by(date = as.yearqtr(date), name) %>%
-  summarise(value = mean(value), .groups = "drop") %>%
+  # group_by(date = as.yearqtr(date), name) %>%
+  # summarise(value = mean(value), .groups = "drop") %>%
   mutate(name = factor(name, levels = c("iqr","skew"),
                        labels = c("Dispersion","Skewness")))
 
@@ -568,7 +566,7 @@ hline_df = skew_df %>%
   mutate(color = "blue") %>% 
   mutate(linetype = "solid") %>% 
   bind_rows(tibble(name = rep("Skewness",2),
-                   val = c(skew_se, -skew_se),
+                   val = c(2 * skew_se, -2 * skew_se),
                    color = "black",
                    linetype = "dashed")) %>% 
   bind_rows(tibble(name = "Skewness",
@@ -597,10 +595,20 @@ $Dispersion_{t} \equiv Q^{75}_{t} - Q^{25}_{t} \quad Skeweness_{t} \equiv \frac{
 
 ## Inflation environment and oil prices are the dominant risk factors
 
-```{r plot_factor_decomposition, fig.height=6, eval=FALSE}
+
+```{r}
+
+means_vec = iqr_df %>% 
+  filter(horizon == 12) %>% 
+  select(skew,iqr) %>% 
+  summarise(across(everything(), mean))
 
 
-factor_plot_data = iar_analysis %>%
+labels_df = tibble(level = c("cpi","nis_usd","brent_usd","meshulav_gap","exp_int"),
+                   label = c("Inflation","Exchange Rate","Oil prices","Output Gap",
+                             "Exp. and Intercept"))
+
+factors_cont_df = iar_analysis %>%
   extract_factor_contribution_from_gar_model(target_quantile = "0.25") %>%
   mutate(quantile = 0.25) %>%
   bind_rows(iar_analysis %>%
@@ -609,43 +617,60 @@ factor_plot_data = iar_analysis %>%
   bind_rows(iar_analysis %>%
   extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>%
   mutate(quantile = 0.5)) %>%
-  filter(horizon == 12) %>%
-  select(-horizon) %>% 
-  mutate(exp_int = intercept + beir5y5y) %>% 
-  select(-c(intercept,beir5y5y)) %>% 
-  pivot_longer(-c(date,quantile)) %>%
-  filter(!name == "intercept") %>%
-  pivot_wider(names_from = quantile,names_prefix = "q_") %>%
-  mutate(dispersion = q_0.75 - q_0.25) %>%
-  mutate(skewness = (q_0.75 + q_0.25 - 2 * q_0.5)) %>%
-  mutate(name = factor(name,
-                       levels = c("cpi","exp_int","nis_usd","brent_usd","meshulav_gap"),
-                       labels = c("Inflation","Expectations","Exchange Rate",
-                                  "Oil prices","Output Gap"))) %>% 
-  select(date, name, dispersion, skewness) %>% 
+  filter(horizon == 12) %>% 
+  filter(date >= as.yearmon("Jan 2007")) %>% 
+  pivot_longer(-c(date, quantile, horizon))
+
+
+skew_plot_df = factors_cont_df %>% 
+  pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
+              names_prefix = "q_") %>% 
+  left_join(iqr_df, by = c("date", "horizon")) %>% 
+  mutate(skew_cont = (q_0.75 + q_0.25 - 2 * q_0.5) / iqr) %>% 
+  select(-starts_with("q_"),-horizon,-iqr) %>% 
   group_by(date = as.yearqtr(date), name) %>% 
-  summarise(across(c(dispersion, skewness),mean), .groups = "drop")
+  summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
+  pivot_wider(names_from = name, values_from = skew_cont) %>% 
+  mutate(exp_int = intercept + beir5y5y - means_vec$skew) %>% 
+  mutate(skew = skew - means_vec$skew) %>%
+  select(-c(intercept,beir5y5y)) %>% 
+  pivot_longer(-c(date,skew)) %>% 
+  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
 
 
-disp_plot = ggplot() +
-  geom_col(data = factor_plot_data,  aes(x = date, y = dispersion, fill = name)) +
-  geom_line(
-    data = factor_plot_data %>%
-      group_by(date) %>%
-      summarise(total_disp = sum(dispersion), .groups = "drop"),
-    aes(x = date, y = total_disp), size = 1
-  ) +
-  xlab(NULL) + ylab(NULL) + ggtitle("Dispertion")
+disp_plot_df = factors_cont_df %>% 
+  pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
+              names_prefix = "q_") %>% 
+  left_join(iqr_df, by = c("date", "horizon")) %>% 
+  mutate(iqr_cont = q_0.75 - q_0.25) %>%
+  select(-starts_with("q_"),-horizon,-skew) %>% 
+  group_by(date = as.yearqtr(date), name) %>% 
+  summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
+  pivot_wider(names_from = name, values_from = iqr_cont) %>% 
+  mutate(exp_int = intercept + beir5y5y - means_vec$iqr) %>% 
+  mutate(iqr = iqr - means_vec$iqr) %>% 
+  select(-c("intercept","beir5y5y")) %>% 
+  pivot_longer(-c(date,iqr)) %>% 
+  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
 
-skew_plot = ggplot() +
-  geom_col(data = factor_plot_data,  aes(x = date, y = skewness, fill = name)) +
-  geom_line(
-    data = factor_plot_data %>%
-      group_by(date) %>%
-      summarise(total_skew = sum(skewness), .groups = "drop"),
-    aes(x = date, y = total_skew), size = 1
-  ) +
+
+
+```
+
+
+```{r plot_factor_decomposition, fig.height=6, eval=FALSE}
+
+skew_plot = ggplot() + 
+  geom_col(aes(x = date, y = value, fill = name), data = skew_plot_df) + 
+  geom_line(aes(x = date, y = skew), data = skew_plot_df, size = 1) + 
   xlab(NULL) + ylab(NULL) + ggtitle("Skewness")
+
+
+disp_plot =  ggplot() + 
+  geom_col(aes(x = date, y = value, fill = name), data = disp_plot_df) + 
+  geom_line(aes(x = date, y = iqr), data = disp_plot_df, size = 1) + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Dispersion")
+
 
 plot_legend = get_legend(disp_plot)
 
@@ -709,36 +734,13 @@ iqr_df %>%
   geom_smooth(method = "lm") +
   facet_wrap(~name, scales = "free") +
   scale_x_continuous(labels = scales::percent_format(scale = 1, accuracy = 0.1)) +
-  xlab("Realized inflation") + ylab(NULL) + 
+  xlab("Inflation expectations") + ylab(NULL) + 
   theme(axis.text.x = element_text(hjust = 0.25))
 
 ```
 
 
-## Output gap increases uncertainty and depresses inflation one year ahead
-
-
-```{r output_gap_iqr}
-
-iqr_df %>%
-  filter(horizon == 12) %>%
-  left_join(select(df, c(date, x = meshulav_gap)), by = "date") %>%
-  left_join(iar_analysis$fitted_df %>%
-              filter(quantile == 0.5) %>%
-              select(date, horizon, median = fitted_values)) %>%
-  pivot_longer(cols = c(skew,iqr,median)) %>%
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>%
-  ggplot(aes(x = x, y = value)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  facet_wrap(~name, scales = "free") +
-  xlab("Output gap") + ylab(NULL)
-
-```
-
-
-## Oil price stimulate inflation and decreases uncertainty one year ahead
+## Oil price stimulate inflation and decreases uncertainty and skeweness one year ahead
 
 
 ```{r oil_gap_iqr}
@@ -760,31 +762,6 @@ iqr_df %>%
   xlab("Oil price") + ylab(NULL)
 
 ```
-
-
-## Exchange rate increases downside risks and lowers uncertainty one year ahead
-
-
-```{r fx_rate_iqr}
-
-iqr_df %>%
-  filter(horizon == 12) %>%
-  left_join(select(df, c(date, x = nis_usd))) %>%
-  left_join(iar_analysis$fitted_df %>%
-              filter(quantile == 0.5) %>%
-              select(date, horizon, median = fitted_values)) %>%
-  pivot_longer(cols = c(skew,iqr,median)) %>%
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>%
-  ggplot(aes(x = x, y = value)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  facet_wrap(~name, scales = "free") +
-  scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
-  xlab("Exchange rate") + ylab(NULL) + 
-  theme(axis.text.x = element_text(hjust = 0.25))
-```
-
 
 
 # Out-of-Sample Forecast Performance
@@ -938,6 +915,54 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 \end{itemize}
 
 # Appendix {.unlisted .unnumbered}
+## Output gap depresses inflation while increasing upside risks one year ahead
+
+
+```{r output_gap_iqr}
+
+iqr_df %>%
+  filter(horizon == 12) %>%
+  left_join(select(df, c(date, x = meshulav_gap)), by = "date") %>%
+  left_join(iar_analysis$fitted_df %>%
+              filter(quantile == 0.5) %>%
+              select(date, horizon, median = fitted_values)) %>%
+  pivot_longer(cols = c(skew,iqr,median)) %>%
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>%
+  ggplot(aes(x = x, y = value)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~name, scales = "free") +
+  xlab("Output gap") + ylab(NULL)
+
+```
+
+
+## Exchange rate increases downside risks and lowers uncertainty one year ahead
+
+
+```{r fx_rate_iqr}
+
+iqr_df %>%
+  filter(horizon == 12) %>%
+  left_join(select(df, c(date, x = nis_usd))) %>%
+  left_join(iar_analysis$fitted_df %>%
+              filter(quantile == 0.5) %>%
+              select(date, horizon, median = fitted_values)) %>%
+  pivot_longer(cols = c(skew,iqr,median)) %>%
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>%
+  ggplot(aes(x = x, y = value)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~name, scales = "free") +
+  scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
+  xlab("Exchange rate") + ylab(NULL) + 
+  theme(axis.text.x = element_text(hjust = 0.25))
+```
+
+
+
 ## Probability Integral Transform (PIT)
 
 \label{PIT}
