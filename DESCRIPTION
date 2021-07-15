@@ -20,6 +20,7 @@ Imports:
     magrittr,
     pls,
     purrr,
+    scales,
     quantreg,
     readr,
     readxl,
@@ -28,6 +29,7 @@ Imports:
     slider,
     sn,
     stringr,
+    tidyselect,
     tibble,
     tidyr,
     zoo

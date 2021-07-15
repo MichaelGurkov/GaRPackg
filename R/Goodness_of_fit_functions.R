@@ -90,6 +90,8 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
+  horizon = NULL
+
   # Arguments Validation
 
   var_names = c("horizon","quantile","date")
@@ -221,7 +223,7 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 #' @import dplyr
 #'
 #' @param forecast_df data frame with predicted values
-#' by horizon, quantile, date, forecast_values.The date is the forecast date,
+#' by horizon, quantile, date, forecast_values. The date is the forecast date,
 #' on which the forecast was made, the target date is calculated by taking the
 #' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
 #' frequency is supported.
