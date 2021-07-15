@@ -262,6 +262,7 @@ extract_factor_contribution_from_gar_model = function(
 #'
 calculate_skew_and_iqr = function(gar_obj,
                                   quantile_values = c("0.25","0.5","0.75")) {
+  quantile = NULL
 
   quantile_names = c("low","mid","high")
 
@@ -419,6 +420,8 @@ extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
 #' @export
 
 extract_pca_exlained_variance_from_gar_model = function(gar_model, n_comp = 1) {
+
+  explained_variance = NULL
 
   if(!"pca_obj" %in% names(gar_model)){
 

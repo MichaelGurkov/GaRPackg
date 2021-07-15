@@ -14,8 +14,6 @@ Depends:
 Imports:
     dplyr,
     furrr,
-    future,
-    ggplot2,
     lubridate,
     magrittr,
     pls,
@@ -31,7 +29,10 @@ Imports:
     tibble,
     tidyr,
     zoo
-Suggests: 
+Suggests:
+    scales,
+    future,
+    ggplot2,
     knitr,
     rmarkdown,
 VignetteBuilder: knitr
