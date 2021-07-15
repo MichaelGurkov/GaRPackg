@@ -26,6 +26,7 @@ Imports:
     slider,
     sn,
     stringr,
+    tidyselect,
     tibble,
     tidyr,
     zoo
