@@ -2,15 +2,7 @@
 
 #' This function produces the fan chart plots
 #'
-#'
-#' @param forecast_df data frame with predicted values
-#' by horizon, quantile, date, forecast_values. The date is the forecast date,
-#' on which the forecast was made, the target date is calculated by taking the
-#' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
-#' frequency is supported.
-#'
-#' @param actual_df data frame with actual values
-#' by date and actual_values
+#' @inheritParams quantile_r2_score
 #'
 #' @param fan_chart_date a date of the initial time point in the fan chart
 #'
