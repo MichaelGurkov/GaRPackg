@@ -28,9 +28,22 @@ plot_fan_chart = function(forecast_df, actual_df, fan_chart_date){
                 names_prefix = "q_") %>%
     mutate(horizon = as.numeric(horizon))
 
-  fan_chart_actual_df = tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
-    mutate(date = fan_chart_date + horizon * 0.25) %>%
-    left_join(actual_df, by = "date")
+  time_frequency = identify_frequency(forecast_df$date)
+
+  if(time_frequency == "quarterly"){
+
+    fan_chart_actual_df = tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
+      mutate(date = fan_chart_date + horizon / 4) %>%
+      left_join(actual_df, by = "date")
+
+  } else if(time_frequency == "monthly"){
+
+    fan_chart_actual_df = tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
+      mutate(date = fan_chart_date + horizon / 12) %>%
+      left_join(actual_df, by = "date")
+
+
+  }
 
   fan_chart_forecast_df = tibble(horizon = 0,
                                  date = fan_chart_date,
