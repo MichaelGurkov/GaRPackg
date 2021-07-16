@@ -1101,6 +1101,7 @@ gar_analysis$fitted_df %>%
             fill = "lightblue", alpha = 0.5) +
   ylab(NULL) + xlab(NULL) +
   scale_y_continuous(labels = scales::percent_format()) +
+  scale_color_manual(values = c("red","magenta")) + 
   ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
   geom_point(data = . %>% filter(date %in% events$Start),
              aes(x = date, y = fitted_values),color = "blue") +
