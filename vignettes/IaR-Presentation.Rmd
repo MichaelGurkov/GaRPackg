@@ -286,6 +286,48 @@ df %>%
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
 
+<!-- ## Quantile regression -->
+
+<!-- ```{r} -->
+<!-- temp_df = df %>% -->
+<!--   select("cpi") %>% -->
+<!--   add_leads_to_target_var(target_var_name = "cpi", -->
+<!--                           leads_vector = 12) %>% -->
+<!--   filter(complete.cases(.)) -->
+
+<!-- temp_qreq = rq("cpi_12 ~ cpi", -->
+<!--                tau = c(0.05,0.5,0.95), -->
+<!--                data = temp_df) %>% -->
+<!--   coefficients() %>% -->
+<!--   t() %>% -->
+<!--   as.data.frame() %>% -->
+<!--   rownames_to_column() %>% -->
+<!--   mutate(rowname = str_remove_all(rowname, "tau= ")) %>% -->
+<!--   rename(quantile = rowname, -->
+<!--          my_int = `(Intercept)`, -->
+<!--          my_slope = cpi_12) -->
+
+<!-- temp_df %>% -->
+<!--   ggplot(aes(x = cpi, -->
+<!--              y = cpi_12)) + -->
+<!--   geom_point() + -->
+<!--   geom_abline(data = temp_qreq, -->
+<!--               aes(intercept = my_int, -->
+<!--                   slope = my_slope, -->
+<!--                   color = quantile)) + -->
+<!--   scale_x_continuous( -->
+<!--     labels = scales::percent_format(accuracy = 1)) + -->
+<!--   scale_y_continuous( -->
+<!--     labels = scales::percent_format(accuracy = 1)) + -->
+<!--   scale_color_manual(values = c("red","black","green")) + -->
+<!--   xlab("Lagged inflation") + -->
+<!--   ylab("Inflation") + -->
+<!--   theme(legend.position = "none") -->
+
+
+<!-- ``` -->
+
+
 ## The Inflation at Risk (IaR) Approach
 
 \vspace{1em}
@@ -332,7 +374,7 @@ In-sample properties of the distribution of expected inflation:
   \begin{enumerate}
   \setlength\itemsep{2em}
 	\item
-	Balanced risk and stable uncertainty before 2014, decrease in uncertainty
+	Relatively balanced risk and stable uncertainty before 2014, decrease in uncertainty
 	and (relative) increase in downside risks after
 	\item
 	Realized inflation and long term expectations are the predominant factor explaining
@@ -388,7 +430,7 @@ where:
 ## Positive Inflation and Oil Price Coefficients, Negative Output Gap
 
 
-```{r plot_coeffs, fig.height=7.5}
+```{r plot_coeffs_draft, fig.height=7.5,eval=FALSE}
 
 coeff_df = iar_analysis %>%
   extract_coeffs_from_gar_model() %>%
@@ -411,6 +453,46 @@ ggplot() +
   geom_hline(data = ols_coeffs,aes(yintercept = estimate,linetype = "OLS"),
              color = "blue") +
   scale_linetype_manual(values = "dashed") + 
+  xlab("Quantile") + ylab(NULL) +
+  labs(
+    caption = paste0(
+      "Notes: Each column shows the estimated coefficients ",
+      "from the quantile regression at a specific forecast horizon. ",
+      "\n  Blue bars mark coefficients that are significant at 10%",
+      "(see Koenker, 1994)"
+    )
+  ) +
+  theme(plot.caption = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 12),
+        strip.text = element_text(size = 12))
+
+```
+
+
+```{r plot_coeffs,fig.width=13, fig.height=8}
+
+coeff_df = iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(!partition == "Intercept") %>%
+  filter(horizon == 12) %>% 
+  select(-horizon) %>% 
+  mutate(partition = factor(
+    partition,
+    levels = c("cpi","beir5y5y" ,"meshulav_gap","brent_usd","nis_usd"),
+    labels = c("Inflation","Expectations","Output Gap", "Oil prices","Exchange Rate")
+  ))
+
+
+ggplot() +
+  geom_col(data = coeff_df, aes(x = quantile, y = coeff, fill = significant),
+           width = 0.3) +
+  scale_fill_manual(values = c("significant" = "lightblue","non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
+  facet_wrap(~partition, scales = "free",nrow = 1) +
+  geom_hline(data = ols_coeffs,aes(yintercept = estimate,linetype = "OLS"),
+             color = "blue") +
+  scale_linetype_manual(values = "dashed") + 
+  geom_hline(yintercept = 0, color = "black") + 
   xlab("Quantile") + ylab(NULL) +
   labs(
     caption = paste0(
@@ -658,7 +740,7 @@ disp_plot_df = factors_cont_df %>%
 ```
 
 
-```{r plot_factor_decomposition, fig.height=6, eval=FALSE}
+```{r plot_factor_decomposition, fig.height=6}
 
 skew_plot = ggplot() + 
   geom_col(aes(x = date, y = value, fill = name), data = skew_plot_df) + 

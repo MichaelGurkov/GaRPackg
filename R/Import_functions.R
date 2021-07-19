@@ -20,6 +20,7 @@
 #'
 #' @importFrom utils read.csv
 #'
+#'
 #' @param template_path file path to template file
 #'
 #' @param data_frequency string that specifies time frequency of the data.
@@ -36,6 +37,9 @@
 
 import_from_fame_template = function(template_path,
                                      data_frequency = "quarterly") {
+
+  where = NULL
+
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
     slice(-(1:10)) %>%
     rename(date = 1) %>%
