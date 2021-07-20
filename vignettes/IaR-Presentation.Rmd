@@ -248,7 +248,7 @@ Mario Draghi, ECB President, Sintra, June 2019
 	range was set.
 	\item
 	We provide a methodological tool for assessing risks to inflation in Israel
-	using Philips curve specification:
+	using a Philips curve specification:
 
 
 \begin{center}
@@ -293,15 +293,12 @@ df %>%
 ```{r quantile_plot}
 
 temp_df = df %>%
-  select(cpi,beir5y5y,brent_usd, meshulav_gap) %>%
-  mutate(across(everything(), ~lead(.,12),.names = "{.col}_12")) %>%
+  select(cpi,beir5y5y) %>%
+  add_leads_to_target_var("cpi",leads_vector = 12) %>%
   filter(complete.cases(.))
 
 
-temp_qreq = map_dfr(c("cpi","beir5y5y","brent_usd","meshulav_gap"),
-                    function(temp_var){
-  
-  temp_qreq = rq(formula = formula(glue("cpi_12 ~ ",temp_var)),
+temp_qreq = rq(formula = formula("cpi_12 ~ beir5y5y"),
                tau = c(0.05,0.5,0.95),
                data = temp_df) %>%
   coefficients() %>%
@@ -311,27 +308,21 @@ temp_qreq = map_dfr(c("cpi","beir5y5y","brent_usd","meshulav_gap"),
   mutate(rowname = str_remove_all(rowname, "tau= ")) %>%
   rename(quantile = rowname,
          int = `(Intercept)`,
-         slope = temp_var) %>% 
-    mutate(feature = temp_var)
-  
-  return(temp_qreq)
-  
-  
-})
+         slope = beir5y5y)
 
 
 
 ggplot() +
   geom_point(data = temp_df,
-             aes(x = cpi, y = cpi_12)) +
-  geom_abline(data =  filter(temp_qreq,feature == "cpi"),
+             aes(x = beir5y5y, y = cpi_12)) +
+  geom_abline(data =  temp_qreq,
               aes(intercept = int,
                   slope = slope,
                   color = quantile)) +
   scale_color_manual(values = c("red","black","green")) +
-  xlim(c(-4,4)) + 
-  ylim(c(-6,7)) +
-  xlab("Realized inflation") +
+  xlim(c(1,3)) +
+  # ylim(c(-6,7)) +
+  xlab("Inflation long-term expectations") +
   ylab("Inflation one year ahead") +
   ggtitle("Realized inflation one year ahead")
 
@@ -344,7 +335,7 @@ ggplot() +
 \vspace{1em}
 
 * IaR is a linear model of density forecasts
-  + Based on quantile regression
+  + Based on quantile regressions
   + Parsimonious
   + Easy to interpret
 
@@ -385,10 +376,10 @@ In-sample properties of the distribution of expected inflation:
   \begin{enumerate}
   \setlength\itemsep{2em}
 	\item
-	Relatively balanced risk and stable uncertainty before 2014, decrease in uncertainty
+	Relatively balanced risks and stable uncertainty before 2014, decrease in uncertainty
 	and (relative) increase in downside risks after
 	\item
-	Realized inflation and long term expectations are the predominant factor explaining
+	Realized inflation and long-term expectations are the predominant factors explaining
 	the changes in the features of the forecast distribution.	
 	\item
 	Oil prices contribute to
@@ -499,7 +490,7 @@ ggplot() +
            width = 0.3) +
   scale_fill_manual(values = c("significant" = "lightblue","non_significant" = "gray"),
                     labels = c("Significant", "Non significant")) +
-  facet_wrap(~partition, scales = "free",nrow = 1) +
+  facet_wrap(~partition, scales = "free") +
   geom_hline(data = ols_coeffs,aes(yintercept = estimate,linetype = "OLS"),
              color = "blue") +
   scale_linetype_manual(values = "dashed") + 
@@ -689,13 +680,18 @@ $Dispersion_{t} \equiv Q^{75}_{t} - Q^{25}_{t} \quad Skeweness_{t} \equiv \frac{
 ## Inflation environment and oil prices are the dominant risk factors
 
 
-```{r}
+```{r factor_decomposition_deviations}
 
 means_vec = iqr_df %>% 
   filter(horizon == 12) %>% 
   select(skew,iqr) %>% 
   summarise(across(everything(), mean))
 
+
+median_mean = iar_analysis$fitted_df %>% 
+  filter(quantile == "0.5") %>% 
+  pull(fitted_values) %>% 
+  mean()
 
 labels_df = tibble(level = c("cpi","nis_usd","brent_usd","meshulav_gap","exp_int"),
                    label = c("Inflation","Exchange Rate","Oil prices","Output Gap",
@@ -748,10 +744,25 @@ disp_plot_df = factors_cont_df %>%
 
 
 
+median_plot_df = factors_cont_df %>% 
+  pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
+              names_prefix = "q_") %>% 
+  mutate(med_cont = q_0.5) %>%
+  select(-starts_with("q_"),-horizon) %>% 
+  group_by(date = as.yearqtr(date), name) %>% 
+  summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
+  pivot_wider(names_from = name, values_from = med_cont) %>% 
+  mutate(exp_int = intercept + beir5y5y - median_mean) %>% 
+  select(-c("intercept","beir5y5y")) %>% 
+  pivot_longer(-c(date)) %>% 
+  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
+
+
+
 ```
 
 
-```{r plot_factor_decomposition, fig.height=6}
+```{r plot_factor_decomposition, fig.height=7}
 
 skew_plot = ggplot() + 
   geom_col(aes(x = date, y = value, fill = name), data = skew_plot_df) + 
@@ -764,20 +775,49 @@ disp_plot =  ggplot() +
   geom_line(aes(x = date, y = iqr), data = disp_plot_df, size = 1) + 
   xlab(NULL) + ylab(NULL) + ggtitle("Dispersion")
 
+med_plot =  ggplot() + 
+  geom_col(aes(x = date, y = value, fill = name), data = median_plot_df) + 
+  geom_line(aes(x = date, y = value), data = median_plot_df %>% 
+              group_by(date) %>% 
+              summarise(value = sum(value), .groups = "drop"), size = 1) +
+  xlab(NULL) + ylab(NULL) + ggtitle("Median") + 
+  labs(caption = "Deviations from the mean")
+
 
 plot_legend = get_legend(disp_plot)
 
 plots_row = plot_grid(disp_plot +
             theme(legend.position = "none"),
           skew_plot +
+            theme(legend.position = "none"),
+          med_plot +
             theme(legend.position = "none"))
 
 plot_grid(plots_row, plot_legend,nrow = 2,rel_heights = c(4,1))
+# 
+# ggdraw(add_sub(plots_row, "Deviations from the mean"))
 
-rm(disp_plot, skew_plot, plot_legend, plots_row)
+# rm(disp_plot, skew_plot, plot_legend, plots_row)
 
 
 ```
+
+
+```{r eval=FALSE}
+
+iar_analysis %>% 
+  extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>% 
+  filter(horizon == 12) %>% 
+  select(-horizon) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(x = date, y = value, fill = name)) + 
+  geom_col()
+
+
+
+```
+
+
 
 \scriptsize
 
@@ -808,7 +848,7 @@ iqr_df %>%
 ```
 
 
-## Inflation expectation increases upside risks and lowers uncertainty one year ahead
+## Inflation expectations increase upside risks and lowers uncertainty one year ahead
 
 
 ```{r expectation_iqr}
@@ -833,7 +873,7 @@ iqr_df %>%
 ```
 
 
-## Oil price stimulate inflation and decreases uncertainty and skeweness one year ahead
+## Oil prices stimulate inflation and decreases uncertainty and skeweness one year ahead
 
 
 ```{r oil_gap_iqr}
