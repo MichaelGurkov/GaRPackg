@@ -43,6 +43,8 @@ library(broom)
 
 library(gghighlight)
 
+library(glue)
+
 setwd(paste0(
   file.path(Sys.getenv("USERPROFILE"),fsep = "\\"),
   "\\Documents\\GaRPackg\\vignettes"))
@@ -286,46 +288,55 @@ df %>%
 
 \tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
 
-<!-- ## Quantile regression -->
+## Quantile regression
 
-<!-- ```{r} -->
-<!-- temp_df = df %>% -->
-<!--   select("cpi") %>% -->
-<!--   add_leads_to_target_var(target_var_name = "cpi", -->
-<!--                           leads_vector = 12) %>% -->
-<!--   filter(complete.cases(.)) -->
+```{r quantile_plot}
 
-<!-- temp_qreq = rq("cpi_12 ~ cpi", -->
-<!--                tau = c(0.05,0.5,0.95), -->
-<!--                data = temp_df) %>% -->
-<!--   coefficients() %>% -->
-<!--   t() %>% -->
-<!--   as.data.frame() %>% -->
-<!--   rownames_to_column() %>% -->
-<!--   mutate(rowname = str_remove_all(rowname, "tau= ")) %>% -->
-<!--   rename(quantile = rowname, -->
-<!--          my_int = `(Intercept)`, -->
-<!--          my_slope = cpi_12) -->
-
-<!-- temp_df %>% -->
-<!--   ggplot(aes(x = cpi, -->
-<!--              y = cpi_12)) + -->
-<!--   geom_point() + -->
-<!--   geom_abline(data = temp_qreq, -->
-<!--               aes(intercept = my_int, -->
-<!--                   slope = my_slope, -->
-<!--                   color = quantile)) + -->
-<!--   scale_x_continuous( -->
-<!--     labels = scales::percent_format(accuracy = 1)) + -->
-<!--   scale_y_continuous( -->
-<!--     labels = scales::percent_format(accuracy = 1)) + -->
-<!--   scale_color_manual(values = c("red","black","green")) + -->
-<!--   xlab("Lagged inflation") + -->
-<!--   ylab("Inflation") + -->
-<!--   theme(legend.position = "none") -->
+temp_df = df %>%
+  select(cpi,beir5y5y,brent_usd, meshulav_gap) %>%
+  mutate(across(everything(), ~lead(.,12),.names = "{.col}_12")) %>%
+  filter(complete.cases(.))
 
 
-<!-- ``` -->
+temp_qreq = map_dfr(c("cpi","beir5y5y","brent_usd","meshulav_gap"),
+                    function(temp_var){
+  
+  temp_qreq = rq(formula = formula(glue("cpi_12 ~ ",temp_var)),
+               tau = c(0.05,0.5,0.95),
+               data = temp_df) %>%
+  coefficients() %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  mutate(rowname = str_remove_all(rowname, "tau= ")) %>%
+  rename(quantile = rowname,
+         int = `(Intercept)`,
+         slope = temp_var) %>% 
+    mutate(feature = temp_var)
+  
+  return(temp_qreq)
+  
+  
+})
+
+
+
+ggplot() +
+  geom_point(data = temp_df,
+             aes(x = cpi, y = cpi_12)) +
+  geom_abline(data =  filter(temp_qreq,feature == "cpi"),
+              aes(intercept = int,
+                  slope = slope,
+                  color = quantile)) +
+  scale_color_manual(values = c("red","black","green")) +
+  xlim(c(-4,4)) + 
+  ylim(c(-6,7)) +
+  xlab("Realized inflation") +
+  ylab("Inflation one year ahead") +
+  ggtitle("Realized inflation one year ahead")
+
+
+```
 
 
 ## The Inflation at Risk (IaR) Approach
