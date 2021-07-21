@@ -2,7 +2,7 @@
 title: "Inflation Risks in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department \\newline \\newline Any views expressed in the Discussion Paper are those of the authors and do not necessarily reflect those of the Bank of Israel"
-date: "25 July, 2021"
+date: "27 July, 2021"
 classoption: t
 output:
   beamer_presentation:
@@ -355,7 +355,7 @@ Gurkov and Zohar 2021)
 \begin{itemize}
   \setlength\itemsep{1em}
   \item
-  Banerjee et al. (2020) - Panel quantile regression on advanved and emerging
+  Banerjee et al. (2020) - Quantile regression on a panel of advanced and emerging
   markets sample.
   \item
   Lopez-Salido and Loria (2019) - United States (and Euro area) predictive inflation
@@ -430,6 +430,8 @@ where:
 
 
 ## Positive Inflation and Oil Price Coefficients, Negative Output Gap
+
+\label{coef_results}
 
 
 ```{r plot_coeffs_draft, fig.height=7.5,eval=FALSE}
@@ -510,6 +512,7 @@ ggplot() +
 
 ```
 
+\hyperlink{OutAcf}{\beamerbutton{Output gap ACF}}
 
 
 ```{r inflation, eval=FALSE}
@@ -762,7 +765,7 @@ median_plot_df = factors_cont_df %>%
 ```
 
 
-```{r plot_factor_decomposition, fig.height=9}
+```{r plot_factor_decomposition, fig.height=9.5, fig.height=7}
 
 skew_plot = ggplot() + 
   geom_col(aes(x = date, y = value, fill = name), data = skew_plot_df) + 
@@ -896,25 +899,6 @@ iqr_df %>%
 
 
 # Out-of-Sample Forecast Performance
-## Out-of-Sample Forecast Performance
-
-\vspace{2em}
-
-\begin{itemize}
-\setlength\itemsep{2em}
-	\item
-	IaR model compared to two alternatives:
-	\begin{enumerate}
-		\item
-		Intercept only -- partial IaR model without explanatory variables
-		\item
-		Intercept and realized inflation -- partial IaR model
-	\end{enumerate}
-	\item
-	The models are evaluated out of sample (expanding window starts at
-	85 observations and adds one observation in each step)
-\end{itemize}
-
 ## Out-of-Sample Forecast
 
 ```{r out_of_sample_forecast_plot}
@@ -980,6 +964,48 @@ ggplot() +
 
 ```
 
+
+## Out-of-Sample Forecast Performance
+
+\vspace{2em}
+
+\begin{itemize}
+\setlength\itemsep{2em}
+	\item
+	IaR model compared to two alternatives:
+	\begin{enumerate}
+		\item
+		Intercept only -- partial IaR model without explanatory variables
+		\item
+		Intercept and realized inflation -- partial IaR model
+	\end{enumerate}
+	\item
+	The models are evaluated out of sample (expanding window starts at
+	85 observations and adds one observation in each step)
+\end{itemize}
+
+## Probability Integral Transform (PIT)
+
+\label{PIT}
+
+
+For each quantile $\tau$ we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t}$:
+	$$
+	\varphi_{\tau} \equiv \frac{1}{T} \sum_{t=1}^{T} \mathbb{I}_{ \left\{ y_{t} <  \hat{Q}^{\tau}_{t} \right\} }.
+	$$
+\begin{itemize}
+\setlength\itemsep{1em}
+	\item
+	A model is better fitted the closer $\varphi_{\tau}$ is to
+	45-degree line.
+	\item
+	If the model perfectly fits the empirical  distribution, then
+	the fraction of observations falling below quantile $\tau$
+	should be exactly $\tau$, namely, $\varphi_{\tau}=\tau$.
+\end{itemize}
+
+
+\hyperlink{PITscore}{\beamergotobutton{PITscore}}
 
 ## Goodness of fit -- PIT score \newline (the closer to the black line the better)
 
@@ -1094,28 +1120,6 @@ iqr_df %>%
 
 
 
-## Probability Integral Transform (PIT)
-
-\label{PIT}
-
-
-For each quantile $\tau$ and horizon $h$, we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t,h}$:
-	$$
-	\varphi_{\tau,h} \equiv \frac{1}{T-h} \sum_{t=1}^{T-h} \mathbb{I}_{ \left\{ y_{t+h} <  \hat{Q}^{\tau}_{t,h} \right\} }.
-	$$
-\begin{itemize}
-\setlength\itemsep{1em}
-	\item
-	A model is better fitted the closer $\varphi_{\tau,h}$ is to
-	45-degree line.
-	\item
-	If the model perfectly fits the empirical  distribution, then
-	the fraction of observations falling below quantile $\tau$
-	should be exactly $\tau$, namely, $\varphi_{\tau,h}=\tau$.
-\end{itemize}
-
-
-\hyperlink{PITscore}{\beamergotobutton{PITscore}}
 
 ## Quantile Regression
 
@@ -1149,6 +1153,8 @@ Note: "Quantile crossing" handled using the method of Chernozhukov et al. (2010)
 
 ## Autoregression in Output Gap
 
+\label{OutACF}
+
 ```{r output_gap_ar}
 
 
@@ -1167,6 +1173,7 @@ tibble(acf = out_gap_ar$acf[,,1], lag = out_gap_ar$lag[,,1]) %>%
 ```
 
 
+\hyperlink{coef_results}{\beamerbutton{coeffs}}
 
 
 ## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
