@@ -499,7 +499,7 @@ ggplot() +
   labs(
     caption = paste0(
       "Notes: Each column shows the estimated coefficients ",
-      "from the quantile regression at a specific forecast horizon. ",
+      "from the quantile regression. ",
       "\n  Blue bars mark coefficients that are significant at 10%",
       "(see Koenker, 1994)"
     )
@@ -762,7 +762,7 @@ median_plot_df = factors_cont_df %>%
 ```
 
 
-```{r plot_factor_decomposition, fig.height=7}
+```{r plot_factor_decomposition, fig.height=9}
 
 skew_plot = ggplot() + 
   geom_col(aes(x = date, y = value, fill = name), data = skew_plot_df) + 
@@ -791,13 +791,11 @@ plots_row = plot_grid(disp_plot +
           skew_plot +
             theme(legend.position = "none"),
           med_plot +
-            theme(legend.position = "none"))
+            theme(legend.position = "none",
+                  plot.caption = element_text(hjust = 0)))
 
 plot_grid(plots_row, plot_legend,nrow = 2,rel_heights = c(4,1))
-# 
-# ggdraw(add_sub(plots_row, "Deviations from the mean"))
 
-# rm(disp_plot, skew_plot, plot_legend, plots_row)
 
 
 ```
