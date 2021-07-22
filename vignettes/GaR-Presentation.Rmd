@@ -702,11 +702,11 @@ gar_analysis %>%
   extract_factor_contribution_from_gar_model() %>%
   mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
   select(-intercept) %>%
-  rename(`Dom. Macro` = dom_macro,
-         `Ext. Macro` = ext_macro,
-         `Dom. Fin. Cond` = dom_fin,
-         `Ext. Fin. Cond` = ext_fin) %>%
   pivot_longer(-c("date","horizon")) %>%
+  mutate(name = factor(name,
+                       levels = c("dom_macro","dom_fin","ext_macro","ext_fin"),
+                       labels =  c("Dom. Macro","Dom. Fin. Cond.",
+                                   "External Macro","External Fin. Cond."))) %>%
   ggplot(aes(x = date, y = value, fill = name)) +
   geom_col() +
   facet_wrap(~horizon, scales = "free") +
@@ -1034,7 +1034,7 @@ fan_forecast_df = get_gar_forecast(
                         ext_fin = "sp500"))
 
 fan_forecast_df %>% 
-  plot_fan_chart(realized_df = df %>% 
+  plot_fan_chart(actual_df = df %>% 
                    select(date, gdp),
                  fan_chart_date = as.yearqtr("2019 Q4")) + 
   ggtitle("Fan chart at 2019 Q4")
@@ -1060,7 +1060,7 @@ fan_forecast_df = get_gar_forecast(
                         ext_fin = "sp500"))
 
 fan_forecast_df %>% 
-  plot_fan_chart(realized_df = df %>% 
+  plot_fan_chart(actual_df = df %>% 
                    select(date, gdp),
                  fan_chart_date = as.yearqtr("2020 Q4")) + 
   ggtitle("Fan chart at 2020 Q4")
