@@ -377,7 +377,7 @@ In-sample properties of the distribution of expected inflation:
   \setlength\itemsep{2em}
 	\item
 	Relatively balanced risks and stable uncertainty before 2014, decrease in uncertainty
-	and (relative) increase in downside risks after
+	and (relative) increase in downside risks after 2014.
 	\item
 	Realized inflation and long-term expectations are the predominant factors explaining
 	the changes in the features of the forecast distribution.	
@@ -512,7 +512,7 @@ ggplot() +
 
 ```
 
-\hyperlink{OutAcf}{\beamerbutton{Output gap ACF}}
+\hyperlink{OutACf}{\beamerbutton{Output gap ACF}}
 
 
 ```{r inflation, eval=FALSE}
@@ -682,6 +682,8 @@ $Dispersion_{t} \equiv Q^{75}_{t} - Q^{25}_{t} \quad Skeweness_{t} \equiv \frac{
 
 ## Inflation environment and oil prices are the dominant risk factors
 
+\label{FactorPlot}
+
 
 ```{r factor_decomposition_deviations}
 
@@ -765,7 +767,7 @@ median_plot_df = factors_cont_df %>%
 ```
 
 
-```{r plot_factor_decomposition, fig.height=9.5, fig.height=7}
+```{r plot_factor_decomposition, fig.height=7.5}
 
 skew_plot = ggplot() + 
   geom_col(aes(x = date, y = value, fill = name), data = skew_plot_df) + 
@@ -818,11 +820,16 @@ iar_analysis %>%
 
 ```
 
+\vspace{-2em}
 
 
-\scriptsize
+\begin{flushright}
+\hyperlink{OutGap}{\beamerbutton{Output gap}}
+\end{flushright}
 
-$E(Disp_{t + 12}|X_{t}) = (\beta^{75} - \beta^{25})X_{t} \quad E(Skew_{t + 12}|X_{t}) = \frac{(\beta^{75}_{t}+\beta^{25}_{t}-2\beta^{50}_{t})X_{t}}{Disp_{t+12}}$
+<!-- \scriptsize -->
+
+<!-- $E(Disp_{t + 12}|X_{t}) = (\beta^{75} - \beta^{25})X_{t} \quad E(Skew_{t + 12}|X_{t}) = \frac{(\beta^{75}_{t}+\beta^{25}_{t}-2\beta^{50}_{t})X_{t}}{Disp_{t+12}}$ -->
 
 
 ## Realized inflation increases upside risks and uncertainty one year ahead
@@ -1153,7 +1160,7 @@ Note: "Quantile crossing" handled using the method of Chernozhukov et al. (2010)
 
 ## Autoregression in Output Gap
 
-\label{OutACF}
+\label{OutACf}
 
 ```{r output_gap_ar}
 
@@ -1175,6 +1182,22 @@ tibble(acf = out_gap_ar$acf[,,1], lag = out_gap_ar$lag[,,1]) %>%
 
 \hyperlink{coef_results}{\beamerbutton{coeffs}}
 
+
+## Output Gap
+
+\label{OutGap}
+
+```{r output_gap}
+
+df %>% 
+  ggplot(aes(x = date, y = meshulav_gap)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Output gap")
+
+```
+
+\hyperlink{FactorPlot}{\beamerbutton{Factor decomposition}}
 
 ## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
 
