@@ -1,0 +1,176 @@
+---
+title: "Report"
+---
+
+```{r include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, error = FALSE, warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r load_library}
+
+library(tidyverse)
+
+library(sn)
+
+devtools::load_all()
+
+```
+
+
+```{r import_and_preprocess_data}
+
+raw_df = import_from_fame_template(paste0(
+  file.path(
+    Sys.getenv("USERPROFILE"),
+    "\\OneDrive - Bank Of Israel\\Data\\BoI",
+    "\\GaR_Data\\Working_data\\data_fame.csv"
+  )
+)) %>% 
+  filter_at(vars(-date),any_vars(!is.na(.)))
+
+df = raw_df %>%
+  preprocess_df(
+    vars_to_yoy = c(
+      "private_consumption",
+      "public_consumption",
+      "investment",
+      "oecd_imp",
+      "exports",
+      "imports",
+      "sp500",
+      "eurostoxx600",
+      "oil_p",
+      "non_energy_p",
+      "credit",
+      "house_price",
+      "ta125_close"
+    ),
+    vars_to_diff = c("unemployment",
+                     "boi_rate",
+                     "rate_euro",
+                     "rate_us"),
+    vars_to_4_ma = c("gdp_us",
+                     "gdp_euro")
+  )
+
+df = df %>% 
+  mutate(gdp = gdp / lag(gdp) - 1)
+
+```
+
+```{r set_params}
+
+partitions_list = list(
+  dom_macro = c(
+    "private_consumption",
+    "public_consumption",
+    "investment",
+    "unemployment"
+  ),
+  ext_macro = c("oecd_imp",
+                "exports",
+                "imports"),
+  dom_fin = c("credit",
+              "house_price",
+              "ta125_close",
+              "boi_rate"),
+  ext_fin = c(
+    "rate_euro",
+    "rate_us",
+    "sp500",
+    "eurostoxx600",
+    "oil_p",
+    "non_energy_p"
+  )
+)
+
+horizon_list = c(1, 4, 8, 12)
+
+quantile_vec = c(0.05, 0.25, 0.5, 0.75, 0.95)
+
+```
+
+
+```{r cross_validation}
+
+models_list = list(intercept = NULL,
+                   real_only = partitions_list[c("dom_macro","ext_macro")],
+                   gar = partitions_list)
+
+
+gar_forecast = map_dfr(models_list, function(temp__part){
+  
+  temp_forecast = get_gar_forecast(
+    partitions_list = temp__part,
+    vars_df = df,
+    target_var_name = "gdp",
+    horizon_list = horizon_list,
+    quantile_vec = quantile_vec
+  )
+  
+  
+},.id = "model") %>% 
+  mutate(date = as.yearqtr(date))
+
+
+
+```
+
+
+```{r analisys}
+
+analysis_res = run_GaR_analysis(partitions_list = partitions_list,
+                                vars_df = df,
+                                target_var_name = "gdp",
+                                horizon_list = horizon_list,
+                                quantile_vec = quantile_vec)
+
+```
+
+
+# Analysis results
+
+```{r plot_gar_timeseries}
+
+analysis_res$fitted_df %>%
+  filter(quantile == "0.05") %>% 
+  filter(horizon %in% c("1","4")) %>% 
+  ggplot(aes(x = date, y = fitted_values, color = horizon)) + 
+  geom_line()
+
+```
+
+```{r plot_gar_density_dist}
+
+t_params = analysis_res$gar_fitted_df %>% 
+  filter(horizon == 4) %>% 
+  filter(date %in% c(max(date),as.yearqtr("2020 Q3"))) %>% 
+  fit_t_skew_to_gar_df()
+
+t_params_corona = analysis_res$gar_fitted_df %>% 
+  filter(date == max(date)) %>% 
+  select(quantile, values = fitted_values) %>% 
+  fit_t_skew()
+  
+dist_df = tibble(x_range = seq(-10,10, by = 0.25) / 100) %>% 
+  mutate(prob = dst(x_range,dp = t_params))
+
+gar_point_df = tibble(x_range = qst(0.05, dp = t_params)) %>% 
+  mutate(prob = dst(x_range,dp = t_params))
+
+
+dist_df %>% 
+  ggplot(aes(x = x_range, y = prob)) + 
+  geom_line() + 
+  geom_point(data = gar_point_df, aes(x = x_range, y = prob), color = "red") + 
+  xlab(NULL) + ylab(NULL) + 
+  scale_x_continuous(labels = scales::percent_format()) + 
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+
+```
+
+
