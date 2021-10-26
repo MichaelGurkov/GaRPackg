@@ -1,5 +1,5 @@
 ---
-title: "Inflation Risks in Israel - with CPI (excl_fv_hous)"
+title: "Inflation Risks in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department \\newline \\newline Any views expressed in the Discussion Paper are those of the authors and do not necessarily reflect those of the Bank of Israel"
 date: "27 July, 2021"
@@ -57,7 +57,7 @@ setwd(paste0(
 ```{r set_params}
 
 partitions_list = list(
-  inflation = c("cpi_excl_fv_hous"),
+  inflation = c("cpi"),
   exchange_rate = c("nis_usd"),
   oil_p = c("brent_usd"),
   output_gap = c("meshulav_gap"),
@@ -132,8 +132,6 @@ df = raw_df %>%
     convert_to_percent_units = TRUE
   ) %>%
   mutate(target = target * 100) %>% 
-  mutate(cpi_orig = cpi) %>% 
-  mutate(cpi = cpi_excl_fv_hous) %>% 
   mutate(cpi_lag = lag(cpi)) %>% 
   filter(year(date) >= 2004 & year(date) <= 2019)
 
@@ -150,7 +148,7 @@ df = df %>%
 iar_analysis = run_GaR_analysis(
   partitions_list = partitions_list,
   vars_df = df,
-  target_var_name = "cpi_excl_fv_hous",
+  target_var_name = "cpi",
   horizon_list = horizon_list,
   quantile_vec = quantile_vec,
   pca.align.list = list(
@@ -160,14 +158,14 @@ iar_analysis = run_GaR_analysis(
 )
 
 ols_coeffs = iar_analysis$reg_df %>%
-  select(cpi_excl_fv_hous_12, ends_with("xreg")) %>%
-  lm(paste("cpi_excl_fv_hous_12 ~ ."), .) %>%
+  select(cpi_12, ends_with("xreg")) %>%
+  lm(paste("cpi_12 ~ ."), .) %>%
   tidy() %>%
   filter(!term == "(Intercept)") %>%
   mutate(term = str_remove_all(term, "_xreg")) %>%
   mutate(partition = factor(
     term,
-    levels = c("cpi_excl_fv_hous", "beir5y5y" , "meshulav_gap", "brent_usd", "nis_usd"),
+    levels = c("cpi", "beir5y5y" , "meshulav_gap", "brent_usd", "nis_usd"),
     labels = c(
       "Inflation",
       "Expectations",
@@ -195,7 +193,7 @@ win_len = 109
 
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
-                                target_var_name = "cpi_excl_fv_hous",
+                                target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
                                 win_len = win_len,
@@ -203,21 +201,19 @@ iar_forecast = get_gar_forecast(partitions_list = partitions_list,
 
 intercept_forecast = get_gar_forecast(partitions_list = NULL,
                                 vars_df = df,
-                                target_var_name = "cpi_excl_fv_hous",
+                                target_var_name = "cpi",
                                 horizon_list = horizon_list,
                                 quantile_vec = quantile_vec,
                                 win_len = win_len,
                                 win_type_expanding = TRUE)
 
-inflation_forecast = get_gar_forecast(
-  partitions_list = list(inflation = "cpi_excl_fv_hous"),
-  vars_df = df,
-  target_var_name = "cpi_excl_fv_hous",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  win_len = win_len,
-  win_type_expanding = TRUE
-)
+inflation_forecast = get_gar_forecast(partitions_list = list(inflation = "cpi"),
+                                vars_df = df,
+                                target_var_name = "cpi",
+                                horizon_list = horizon_list,
+                                quantile_vec = quantile_vec,
+                                win_len = win_len,
+                                win_type_expanding = TRUE)
 
 rm(win_len)
 
@@ -225,9 +221,211 @@ rm(win_len)
 ```
 
 
+## Motivation
 
 
-## Estimation Results
+
+\begin{quote}
+
+\small
+
+"Monetary policy responded first in the summer of 2012 by acting to defuse the sovereign debt crisis, which had evolved from a \textbf{tail risk for inflation} into a material threat to price stability."
+
+\vspace{1em}
+
+Mario Draghi, ECB President, Sintra, June 2019
+
+\end{quote}
+
+\vspace{2em}
+
+\begin {itemize}
+\setlength\itemsep{1em}
+	\item
+	We analyze the distribution of future inflation since the current inflation target
+	range was set.
+	\item
+	We provide a methodological tool for assessing risks to inflation in Israel
+	using a Philips curve specification:
+
+
+\begin{center}
+\begin{block}{}
+
+	Given current real and nominal conditions, what is the distribution of
+	expected inflation?
+
+\end{block}
+\end{center}
+
+\end{itemize}
+
+
+## Motivation
+
+```{r plot_inf_rates}
+
+df %>%
+  select(date, cpi) %>%
+  mutate(cpi_ma = slide_dbl(cpi,mean,.before = 48,.complete = TRUE)) %>%
+  mutate(cpi_var = slide_dbl(cpi,var,.before = 48,.complete = TRUE)) %>%
+  pivot_longer(-date) %>%
+  ggplot(aes(x = date, y = value, color = name)) +
+  geom_line() +
+  scale_color_discrete(labels = c("CPI Inflation","CPI Moving Average (48 periods)",
+                                "CPI Variance (48 periods)")) +
+  xlab(NULL) + ylab(NULL) +
+  ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
+                 " Vegetables, and Housing \n (Monthly,2004-2019)")) + 
+  theme(plot.title = element_text(size = 17))
+
+
+```
+
+## Outline
+
+\tableofcontents[sectionstyle=show/show,subsectionstyle=hide/hide]
+
+## Quantile regression
+
+```{r quantile_plot}
+
+temp_df = df %>%
+  select(cpi,beir5y5y) %>%
+  add_leads_to_target_var("cpi",leads_vector = 12) %>%
+  filter(complete.cases(.))
+
+
+temp_qreq = rq(formula = formula("cpi_12 ~ beir5y5y"),
+               tau = c(0.05,0.5,0.95),
+               data = temp_df) %>%
+  coefficients() %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column() %>%
+  mutate(rowname = str_remove_all(rowname, "tau= ")) %>%
+  rename(quantile = rowname,
+         int = `(Intercept)`,
+         slope = beir5y5y)
+
+
+
+ggplot() +
+  geom_point(data = temp_df,
+             aes(x = beir5y5y, y = cpi_12)) +
+  geom_abline(data =  temp_qreq,
+              aes(intercept = int,
+                  slope = slope,
+                  color = quantile)) +
+  scale_color_manual(values = c("red","black","green")) +
+  xlim(c(1,3)) +
+  # ylim(c(-6,7)) +
+  xlab("Inflation long-term expectations") +
+  ylab("Inflation one year ahead") +
+  ggtitle("Realized inflation one year ahead")
+
+
+```
+
+
+## The Inflation at Risk (IaR) Approach
+
+\vspace{1em}
+
+* IaR is a linear model of density forecasts
+  + Based on quantile regressions
+  + Parsimonious
+  + Easy to interpret
+
+\vspace{1em}
+
+* Based on Banerjee et al. (2020)
+
+\vspace{1em}
+
+* Similar to the Growth at Risk approach (Adrian et al 2019,
+Gurkov and Zohar 2021)
+
+
+
+## Literature Review
+
+\begin{itemize}
+  \setlength\itemsep{1em}
+  \item
+  Banerjee et al. (2020) - Quantile regression on a panel of advanced and emerging
+  markets sample.
+  \item
+  Lopez-Salido and Loria (2019) - United States (and Euro area) predictive inflation
+  distribution using quantile regression.  Conditional mean of inflation does not convey
+  an adequate representation of the overall pattern of inflation dynamics.
+  \item
+  Busetti et al (2015) - Euro area inflation using Philips curve and quantile regression.
+\end{itemize}
+
+
+
+## Main Results
+
+\begin{itemize}
+\setlength\itemsep{1.5em}
+\item
+In-sample properties of the distribution of expected inflation:
+  \begin{enumerate}
+  \setlength\itemsep{2em}
+	\item
+	Relatively balanced risks and stable uncertainty before 2014, decrease in uncertainty
+	and (relative) increase in downside risks after 2014.
+	\item
+	Realized inflation and long-term expectations are the predominant factors explaining
+	the changes in the features of the forecast distribution.	
+	\item
+	Oil prices contribute to
+	the	evolution of forecast uncertainty, declining inflation environment explains
+	variation	in skewness.
+  \end{enumerate}
+
+
+\end{itemize}
+
+
+
+
+
+
+# Methodology and Estimation Results
+## Methodology
+
+\label{methodology}
+
+\textbf{Quantile regressions --} estimate an equation for each quantile
+$\tau$	and horizon 12 months ahead. The sample period is 2004-2019 at monthly frequency.
+
+$Q^{\tau}_{t + 12}=\beta^{\tau}X_t+\epsilon^{\tau}_{t}$
+
+$X_t=[1, \pi_{t},\pi^{e}_{t}, \hat{y}_{t}, oil_{t}, s_{t}]$
+
+\footnotesize
+
+where:
+
+\begin{itemize}
+  \item
+  $\pi_{t}$ YoY CPI inflation excluding fruits, vegetables, and housing
+  \item
+  $\pi^{e}_{t}$ - five-year five-year forward breakeven inflation rates.
+  \item
+  $\hat{y}_{t}$ the output gap (HP filtered State-of-the Economy Index).
+  \item
+  $oil_{t}$ - the change in Brent Crude oil prices (USD).
+  \item
+  $s_{t}$ - the change in the NIS-USD exchange rate.
+\end{itemize}
+
+\begin{flushright}
+	\hyperlink{QuantileReg}{\beamerbutton{quantile reg}}
+\end{flushright}
+
 
 ## Positive Inflation and Oil Price Coefficients, Negative Output Gap
 
@@ -243,7 +441,7 @@ coeff_df = iar_analysis %>%
   select(-horizon) %>% 
   mutate(partition = factor(
     partition,
-    levels = c("cpi_excl_fv_hous","beir5y5y" ,"meshulav_gap","brent_usd","nis_usd"),
+    levels = c("cpi","beir5y5y" ,"meshulav_gap","brent_usd","nis_usd"),
     labels = c("Inflation","Expectations","Output Gap", "Oil prices","Exchange Rate")
   ))
 
@@ -282,7 +480,7 @@ coeff_df = iar_analysis %>%
   select(-horizon) %>% 
   mutate(partition = factor(
     partition,
-    levels = c("cpi_excl_fv_hous","beir5y5y" ,"meshulav_gap","brent_usd","nis_usd"),
+    levels = c("cpi","beir5y5y" ,"meshulav_gap","brent_usd","nis_usd"),
     labels = c("Inflation","Expectations","Output Gap", "Oil prices","Exchange Rate")
   ))
 
@@ -313,6 +511,92 @@ ggplot() +
 ```
 
 \hyperlink{OutACf}{\beamerbutton{Output gap ACF}}
+
+
+```{r inflation, eval=FALSE}
+
+iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition == "cpi") %>%
+  filter(horizon == 12) %>%
+  mutate(quantile = as.numeric(quantile)) %>%
+  ggplot() +
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) +
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Inflation",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+```{r fx_rate, eval=FALSE}
+
+iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition == "nis_usd") %>%
+  filter(horizon == 12) %>%
+  mutate(quantile = as.numeric(quantile)) %>%
+  ggplot() +
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) +
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Exchange Rate",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+```{r oil_price, eval=FALSE}
+
+iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition == "brent_usd") %>%
+  filter(horizon == 12) %>%
+  mutate(quantile = as.numeric(quantile)) %>%
+  ggplot() +
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) +
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Oil prices",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
+```{r output, eval=FALSE}
+
+iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition == "meshulav_gap") %>%
+  filter(horizon == 12) %>%
+  mutate(quantile = as.numeric(quantile)) %>%
+  ggplot() +
+  geom_line(aes(x = quantile, y = coeff, color = horizon)) +
+  # geom_errorbar(aes(x = quantile, ymax = high, ymin = low, color = horizon),
+  #               width = 0.05) +
+  geom_hline(
+    aes(yintercept = estimate),
+    data = ols_coeffs[ols_coeffs$partition == "Output Gap",],
+    color = "blue",
+    linetype = "dashed"
+  )
+
+```
+
+
 
 
 # In-sample Features of the Forecast Distribution
@@ -412,22 +696,9 @@ median_mean = iar_analysis$fitted_df %>%
   pull(fitted_values) %>% 
   mean()
 
-labels_df = tibble(
-  level = c(
-    "cpi_excl_fv_hous",
-    "nis_usd",
-    "brent_usd",
-    "meshulav_gap",
-    "exp_int"
-  ),
-  label = c(
-    "Inflation",
-    "Exchange Rate",
-    "Oil prices",
-    "Output Gap",
-    "Exp. and Intercept"
-  )
-)
+labels_df = tibble(level = c("cpi","nis_usd","brent_usd","meshulav_gap","exp_int"),
+                   label = c("Inflation","Exchange Rate","Oil prices","Output Gap",
+                             "Exp. and Intercept"))
 
 factors_cont_df = iar_analysis %>%
   extract_factor_contribution_from_gar_model(target_quantile = "0.25") %>%
@@ -532,6 +803,20 @@ plot_grid(plots_row, plot_legend,nrow = 2,rel_heights = c(4,1))
 
 ```
 
+
+```{r eval=FALSE}
+
+iar_analysis %>% 
+  extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>% 
+  filter(horizon == 12) %>% 
+  select(-horizon) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(x = date, y = value, fill = name)) + 
+  geom_col()
+
+
+
+```
 
 \vspace{-2em}
 
@@ -685,6 +970,47 @@ ggplot() +
 ```
 
 
+## Out-of-Sample Forecast Performance
+
+\vspace{2em}
+
+\begin{itemize}
+\setlength\itemsep{2em}
+	\item
+	IaR model compared to two alternatives:
+	\begin{enumerate}
+		\item
+		Intercept only -- partial IaR model without explanatory variables
+		\item
+		Intercept and realized inflation -- partial IaR model
+	\end{enumerate}
+	\item
+	The models are evaluated out of sample (expanding window starts at
+	85 observations and adds one observation in each step)
+\end{itemize}
+
+## Probability Integral Transform (PIT)
+
+\label{PIT}
+
+
+For each quantile $\tau$ we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t}$:
+	$$
+	\varphi_{\tau} \equiv \frac{1}{T} \sum_{t=1}^{T} \mathbb{I}_{ \left\{ y_{t} <  \hat{Q}^{\tau}_{t} \right\} }.
+	$$
+\begin{itemize}
+\setlength\itemsep{1em}
+	\item
+	A model is better fitted the closer $\varphi_{\tau}$ is to
+	45-degree line.
+	\item
+	If the model perfectly fits the empirical  distribution, then
+	the fraction of observations falling below quantile $\tau$
+	should be exactly $\tau$, namely, $\varphi_{\tau}=\tau$.
+\end{itemize}
+
+
+\hyperlink{PITscore}{\beamergotobutton{PITscore}}
 
 ## Goodness of fit -- PIT score \newline (the closer to the black line the better)
 
@@ -734,6 +1060,21 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
+
+# Summary
+
+\begin{itemize}
+\setlength\itemsep{3em}
+  \item
+  The decline in inflation since 2014 was associated with a decline in uncertainty
+  and a relative rise in downside risks to inflation.
+  \item
+  The decline in long-term expectations and oil prices played a prominent role
+  in these developments.
+  \item
+  The model can also be used to assess inflation risks regularly. 
+  
+\end{itemize}
 
 # Appendix {.unlisted .unnumbered}
 ## Output gap depresses inflation while increasing upside risks one year ahead
