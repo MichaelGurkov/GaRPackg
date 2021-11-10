@@ -261,8 +261,6 @@ rm(win_len)
 
 
 
-
-
 ## Positive Inflation and Oil Price Coefficients, Negative Output Gap
 
 \label{coef_results}
@@ -466,6 +464,18 @@ factors_cont_df = iar_analysis %>%
   filter(date >= as.yearmon("Jan 2007")) %>% 
   pivot_longer(-c(date, quantile, horizon))
 
+factors_cont_df  = factors_cont_df %>% 
+  mutate(name = factor(name)) %>% 
+  mutate(name = fct_collapse(name,
+                             cpi = c("cpi", "cpi_zlb"),
+                             nis_usd = c("nis_usd", "nis_usd_zlb"),
+                             brent_usd = c("brent_usd", "brent_usd_zlb"),
+                             meshulav_gap = c("meshulav_gap", "meshulav_gap_zlb"),
+                             beir5y5y = c("beir5y5y", "beir5y5y_zlb"),
+                             intercept = c("intercept","zlb_indicator"))) %>% 
+  group_by(date, horizon,quantile, name) %>% 
+  summarise(value = sum(value), .groups = "drop")
+
 
 skew_plot_df = factors_cont_df %>% 
   pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
@@ -480,7 +490,13 @@ skew_plot_df = factors_cont_df %>%
   mutate(skew = skew - means_vec$skew) %>%
   select(-c(intercept,beir5y5y)) %>% 
   pivot_longer(-c(date,skew)) %>% 
-  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
+  mutate(name = factor(name,
+                       levels = labels_df %>% 
+                         filter(!str_detect(label,"ZLB")) %>% 
+                         pull(level),
+                       labels = labels_df %>% 
+                         filter(!str_detect(label,"ZLB")) %>% 
+                         pull(label)))
 
 
 disp_plot_df = factors_cont_df %>% 
@@ -496,7 +512,13 @@ disp_plot_df = factors_cont_df %>%
   mutate(iqr = iqr - means_vec$iqr) %>% 
   select(-c("intercept","beir5y5y")) %>% 
   pivot_longer(-c(date,iqr)) %>% 
-  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
+  mutate(name = factor(name,
+                       levels = labels_df %>% 
+                         filter(!str_detect(label,"ZLB")) %>% 
+                         pull(level),
+                       labels = labels_df %>% 
+                         filter(!str_detect(label,"ZLB")) %>% 
+                         pull(label)))
 
 
 
