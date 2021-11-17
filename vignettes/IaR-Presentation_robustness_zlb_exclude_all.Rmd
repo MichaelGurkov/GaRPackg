@@ -486,9 +486,10 @@ skew_plot_df = factors_cont_df %>%
   group_by(date = as.yearqtr(date), name) %>% 
   summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
   pivot_wider(names_from = name, values_from = skew_cont) %>% 
-  mutate(exp_int = intercept + beir5y5y - means_vec$skew) %>% 
+  # mutate(exp_int = intercept + beir5y5y - means_vec$skew) %>%
+  mutate(intercept = intercept - means_vec$skew) %>%
   mutate(skew = skew - means_vec$skew) %>%
-  select(-c(intercept,beir5y5y)) %>% 
+  # select(-c(intercept,beir5y5y)) %>% 
   pivot_longer(-c(date,skew)) %>% 
   mutate(name = factor(name,
                        levels = labels_df %>% 
@@ -508,9 +509,10 @@ disp_plot_df = factors_cont_df %>%
   group_by(date = as.yearqtr(date), name) %>% 
   summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
   pivot_wider(names_from = name, values_from = iqr_cont) %>% 
-  mutate(exp_int = intercept + beir5y5y - means_vec$iqr) %>% 
+  # mutate(exp_int = intercept + beir5y5y - means_vec$iqr) %>% 
+  mutate(intercept = intercept - means_vec$iqr) %>% 
   mutate(iqr = iqr - means_vec$iqr) %>% 
-  select(-c("intercept","beir5y5y")) %>% 
+  # select(-c("intercept","beir5y5y")) %>% 
   pivot_longer(-c(date,iqr)) %>% 
   mutate(name = factor(name,
                        levels = labels_df %>% 
@@ -530,8 +532,9 @@ median_plot_df = factors_cont_df %>%
   group_by(date = as.yearqtr(date), name) %>% 
   summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
   pivot_wider(names_from = name, values_from = med_cont) %>% 
-  mutate(exp_int = intercept + beir5y5y - median_mean) %>% 
-  select(-c("intercept","beir5y5y")) %>% 
+  # mutate(exp_int = intercept + beir5y5y - median_mean) %>% 
+  mutate(intercept = intercept - median_mean) %>%
+  # select(-c("intercept","beir5y5y")) %>% 
   pivot_longer(-c(date)) %>% 
   mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
 
