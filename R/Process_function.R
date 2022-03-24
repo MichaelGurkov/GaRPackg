@@ -273,7 +273,7 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 make_quant_reg_df = function(vars_df,
                              target_var_name,
                              horizon_list,
-                             preprocess_method = "inner_join_pca",
+                             preprocess_method = "pca",
                              partitions_list = NULL,
                              pca.align.list = NULL,
                              return_objects_list = FALSE

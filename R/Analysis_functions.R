@@ -3,7 +3,8 @@
 #' @description This is a convenient function that encapsulates the GaR analysis.
 #' The stages of the analysis are :
 #' \itemize{
-#'   \item Perform PCA
+#'   \item Perform dimension reduction by aggregating features
+#'    to partitions (default method is PCA)
 #'   \item Run quantile regression
 #' }
 #'
@@ -16,14 +17,20 @@
 #'
 #' @param vars_df data frame with input variables
 #'
-#' @param target_var_name string that specifies outcome feature
+#' @param target_var_name string. that specifies outcome feature
 #'
-#' @param horizon_list list of forecast horizon
+#' @param horizon_list list of forecast horizon(s)
 #'
 #' @param quantile_vec vector of required quantiles in quantile
 #' regression (corresponds to tau argument in rq)
 #'
-#' @param preprocess_method string a method that aggregates the data to partitions
+#' @param preprocess_method string. a method that aggregates the data
+#' to partitions \cr
+#' Possible options are:
+#' \itemize{
+#'  \item {pca}{ (the default)}
+#'  \item {pls}
+#' }
 #'
 #'
 #' @param pca.align.list (Optional) A list that specifies the PCA aligning variable for
@@ -52,7 +59,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
-                            preprocess_method = "inner_join_pca",
+                            preprocess_method = "pca",
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 

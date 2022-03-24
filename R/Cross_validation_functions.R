@@ -45,7 +45,7 @@ get_gar_forecast = function(partitions_list,
                             horizon_list,
                             quantile_vec,
                             pca.align.list = NULL,
-                            preprocess_method = "inner_join_pca",
+                            preprocess_method = "pca",
                             win_len = 30,
                             win_type_expanding = TRUE){
 

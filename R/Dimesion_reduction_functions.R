@@ -423,7 +423,7 @@ reduce_data_dimension = function(vars_df,
                                  target_var_name = NULL,
                                  n_components = 1,
                                  pca_align_list = NULL,
-                                 preprocess_method = "inner_join_pca",
+                                 preprocess_method = "pca",
                                  return_objects_list = FALSE) {
   # Validation
 
@@ -463,7 +463,7 @@ reduce_data_dimension = function(vars_df,
 
 
   if (length(multi_feature_partitions) > 0) {
-    if (preprocess_method == "inner_join_pca") {
+    if (preprocess_method == "pca") {
       multi_part_return_list = map_pca_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,
