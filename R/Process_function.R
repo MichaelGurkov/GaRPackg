@@ -646,9 +646,8 @@ preprocess_df = function(df,
     df = df %>%
       mutate(across(
         any_of(vars_to_yoy),
-        calculate_yoy_changes,
-        data_frequency = data_frequency
-      ))
+        list(yoy = ~calculate_yoy_changes(.,
+                                          data_frequency = data_frequency))))
 
 
 
@@ -668,7 +667,8 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      mutate(across(any_of(vars_to_percent_changes),  ~ . / lag(., 1) - 1))
+      mutate(across(any_of(vars_to_percent_changes),
+                    list(percent_change = ~ . / lag(., 1) - 1)))
 
   }
 
@@ -686,7 +686,8 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      mutate(across(any_of(vars_to_diff), ~c(NA, diff(.))))
+      mutate(across(any_of(vars_to_diff),
+                    list(diff = ~c(NA, diff(.)))))
 
 
 
@@ -706,12 +707,12 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      mutate(across(any_of(vars_to_4_ma), calculate_four_quarters_ma))
+      mutate(across(any_of(vars_to_4_ma),
+                    list(`_4_ma` = ~calculate_four_quarters_ma(.))))
 
 
 
   }
-
 
   if(convert_to_percent_units){
 
