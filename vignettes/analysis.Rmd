@@ -1,0 +1,82 @@
+---
+title: "analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+
+library(GaRPackg)
+
+library(dplyr)
+
+```
+
+
+```{r import_process_data}
+
+data("gar_data")
+
+```
+
+
+We'll set partitions
+
+```{r, echo=TRUE}
+
+partitions_list = list(
+  macro = c("gdp", "ind_prod_israel"),
+  fin = c("credit", "house_price")
+)
+
+horizon_list = c(1,4)
+
+quantile_vec = c(0.05,0.5,0.95)
+
+```
+
+For data preprocessing we'll transform the features to
+"year on year" changes and add a 4 period (annual) lead to the target
+feature.
+
+```{r preprocess_data, echo=TRUE}
+
+df = gar_data %>%
+  select(date,
+         starts_with("gdp"),
+         unlist(partitions_list, use.names = FALSE)) %>%
+  mutate(date = as.yearqtr(date)) %>%
+  preprocess_df(vars_to_yoy = unlist(partitions_list,
+                                     use.names = FALSE)) %>% 
+  add_leads_to_target_var("gdp",leads_vector = horizon_list)
+
+```
+
+
+The main analysis function is 'run_GaR_analysis'
+
+```{r run_analysis, echo=TRUE}
+
+result = run_GaR_analysis(partitions_list = partitions_list,
+                          vars_df = df,
+                          target_var_name = "gdp",
+                          horizon_list = horizon_list,
+                          quantile_vec = quantile_vec)
+
+```
+
+
+```{r}
+names(result)
+```
+
