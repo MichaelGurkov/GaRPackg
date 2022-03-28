@@ -101,3 +101,12 @@ test_that(paste0("reduce_data_dimension skips reduction",
               select(date,unlist(one_feature_part, use.names = FALSE)))
 )
 
+
+test_that(paste0("reduce_data_dimension returns error",
+                 " when vars df has missing values"),
+          expect_error(object = reduce_data_dimension(
+            vars_df = gar_data %>%
+              mutate(across(unlist(mult_feature_part,
+                                   use.names = FALSE),~NA)),
+            partition_list = mult_feature_part))
+)

@@ -10,24 +10,21 @@ test_that("all preprocess transformations work", {
     object = gar_data %>%
       preprocess_df(
         vars_to_yoy = c("gdp", "ind_prod_israel"),
-        vars_to_percent_changes = c("sp500","dxy"),
-        vars_to_diff = "boi_rate",
-        vars_to_4_ma = "ind_prod_euro",
+        vars_to_percent_changes = c("gdp", "ind_prod_israel"),
+        vars_to_diff = c("gdp", "ind_prod_israel"),
+        vars_to_4_ma = c("gdp", "ind_prod_israel"),
         convert_to_percent_units = TRUE
       ),
     expected = gar_data %>%
-      mutate(across(
-        c("gdp", "ind_prod_israel"), ~ (./ lag(., 4) - 1) * 100
-      )) %>%
-      mutate(across(c("boi_rate"), ~ c(NA, diff(.)))) %>%
-      mutate(across(
-        c("ind_prod_euro"),
-        ~ slide_dbl(., mean, .before = 3, .complete = TRUE) * 100
-      )) %>%
-      mutate(across(
-        c("sp500","dxy"),
-        ~ (. / lag(.) - 1) * 100
-      ))
+      mutate(across(c("gdp", "ind_prod_israel"),
+                    list(yoy = ~(./ lag(., 4) - 1) * 100))) %>%
+      mutate(across(c("gdp", "ind_prod_israel"),
+                    list(percent_change = ~ (. / lag(.) - 1) * 100))) %>%
+      mutate(across(c("gdp", "ind_prod_israel"),
+                    list(diff = ~ c(NA, diff(.))))) %>%
+      mutate(across(c("gdp", "ind_prod_israel"),
+                    list(`4_ma` = ~ slide_dbl(., mean, .before = 3,
+                                            .complete = TRUE) * 100)))
   )
 })
 

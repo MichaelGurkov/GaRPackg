@@ -403,7 +403,7 @@ map_pls_reduction = function(multi_feature_partitions,
 #' @param n_components number of components that should be returned
 #'
 #' @param preprocess_method (optional) string that specifies preprocess method
-#' (default is PCA)
+#' (default is pca)
 #'
 #' @param pca_align_list (optional) a named list of alignment parameters.
 #' The name is the name of the targeted partition. The first element in
@@ -443,6 +443,22 @@ reduce_data_dimension = function(vars_df,
 
   }
 
+  number_of_na = suppressWarnings(
+    vars_df %>%
+      select(unlist(partition_list, use.names = FALSE)) %>%
+      mutate(across(everything(),as.numeric)) %>%
+      is.na.data.frame() %>%
+      sum()
+    )
+
+  if(number_of_na > 0){
+
+    stop(paste0("vars df has missing values, dimesion reduction failed"),
+         call. = FALSE)
+
+
+  }
+
   return_list = list()
 
   one_feature_partitions = partition_list[sapply(partition_list, length) == 1]
@@ -461,9 +477,15 @@ reduce_data_dimension = function(vars_df,
 
   # Reduce multi variable partitions
 
-
   if (length(multi_feature_partitions) > 0) {
+
+
+
+
+
+
     if (preprocess_method == "pca") {
+
       multi_part_return_list = map_pca_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,

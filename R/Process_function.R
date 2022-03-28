@@ -320,9 +320,10 @@ make_quant_reg_df = function(vars_df,
   if(!length(setdiff(unlist(partitions_list, use.names = FALSE),
                     names(vars_df))) == 0){
 
-    warning(paste("The following variables are missing :",
+    stop(paste("Can't make quant reg df. The following variables are missing :",
                   paste0(setdiff(unlist(partitions_list, use.names = FALSE),
-                                 names(vars_df)), collapse = ",")))
+                                 names(vars_df)), collapse = ",")),
+         call. = FALSE)
 
 
 
@@ -708,7 +709,7 @@ preprocess_df = function(df,
 
     df = df %>%
       mutate(across(any_of(vars_to_4_ma),
-                    list(`_4_ma` = ~calculate_four_quarters_ma(.))))
+                    list(`4_ma` = ~calculate_four_quarters_ma(.))))
 
 
 
@@ -716,9 +717,12 @@ preprocess_df = function(df,
 
   if(convert_to_percent_units){
 
+    target_vars = c(paste0(vars_to_yoy,"_yoy"),
+                    paste0(vars_to_percent_changes,"_percent_change"),
+                    paste0(vars_to_4_ma,"_4_ma"))
+
     df = df %>%
-      mutate(across(any_of(c(vars_to_yoy, vars_to_percent_changes,vars_to_4_ma)),
-                    ~ . * 100))
+      mutate(across(any_of(target_vars), ~ . * 100))
 
   }
 

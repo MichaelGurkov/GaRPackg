@@ -8,7 +8,7 @@ test_params$quantile_vec = c(0.05,0.5)
 
 test_obj = run_GaR_analysis(
   partitions_list = list(dom_macro = c("gdp","ind_prod_israel"),
-                         fin_cycle = c("credit","ta125_close")),
+                         fin_cycle = c("credit","house_price")),
   vars_df = gar_data,
   target_var_name = "gdp",
   horizon_list = test_params$horizon_list,
