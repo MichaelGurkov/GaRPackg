@@ -1,0 +1,93 @@
+
+```{r set_params}
+
+partitions_list_ear = list(
+  Inflation = c("Infl"),
+  Firm_Performance_indicatores = c("PE_Ratio", "Div_Yield",
+                                   "Price_to_Book", "de"),
+  Market_indicatores = c("US_Gov_10Y_Rate", "US_Gov_3M_Rate",
+                         "Term_Spread"),
+  Risk_indicatores = c("VIX", "dfy")
+)
+
+target_var_name = "Eq_Premium"
+
+horizon_list=c(1,4)
+
+quantile_vec= c(0.10,0.25,0.5,0.75,0.90)
+
+pca.align.list =  list(
+                       Market_indicatores=list("US_Gov_10Y_Rate",TRUE),
+                       Firm_Performance_indicatores=list("de",TRUE),
+                       Risk_indicatores=list("VIX",TRUE)
+                       )
+
+
+plot_names = tribble(
+  ~var_name, ~plot_name,
+  "Intercept", "Intercept",
+  "Infl", "Inflation",
+  "Firm_Performance_indicatores", "Firm Perf",
+  "Market_indicatores", "Market ind",
+  "Risk_indicatores", "Risk"
+  )
+
+
+
+```
+
+```{r load_libraries}
+
+library(GaRPackg)
+
+library(tidyverse)
+
+library(readxl)
+
+library(zoo)
+
+```
+
+```{r import_data}
+
+Raw_data <- read_excel(
+  paste0("C:\\Users\\internet",
+         "\\OneDrive - Bank Of Israel\\Data\\BoI",
+         "\\var_data\\Data_for_R.xlsx"),
+  sheet = "Quarterly")
+
+ear_data = Raw_data %>%
+  select(Date,Eq_Premium,
+         unlist(partitions_list_ear, use.names = FALSE)) %>%
+  mutate(date = as.yearqtr(Date)) %>%
+  mutate(across(-date, as.numeric)) %>%
+  filter(complete.cases(.))
+
+
+
+```
+
+```{r run_analysis}
+
+EARModel=run_GaR_analysis(
+  partitions_list = partitions_list_ear,
+  vars_df = ear_data,
+  target_var_name = target_var_name,
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  preprocess_method = "pca",
+  pca.align.list = pca.align.list,
+  return_objects_list = TRUE
+)
+
+
+```
+
+
+
+```{r pca_loadings}
+
+
+
+```
+
