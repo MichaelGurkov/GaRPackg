@@ -60,7 +60,8 @@ test_that("reduce_data_dimension returns one feature data",
             vars_df = gar_data,
             partition_list = one_feature_part)[[1]],
             expected = gar_data %>%
-              dplyr::select(date,unlist(one_feature_part, use.names = FALSE))
+              dplyr::select(date,unlist(one_feature_part,
+                                        use.names = FALSE))
             )
           )
 
@@ -83,11 +84,20 @@ test_that("reduce_data_dimension returns multi feature data",
           )
 
 
-test_that(paste0("reduce_data_dimension issues warning",
+test_that(paste0("reduce_data_dimension returns error",
                  " when partition_list is NULL"),
-          expect_warning(object = reduce_data_dimension(
+          expect_error(object = reduce_data_dimension(
             vars_df = gar_data,
             partition_list = NULL))
+)
+
+
+test_that(paste0("reduce_data_dimension returns error",
+                 " when preprocess_method is incorrect"),
+          expect_error(object = reduce_data_dimension(
+            vars_df = gar_data,
+            partition_list = mult_feature_part,
+            preprocess_method = "inner_join_pca"))
 )
 
 

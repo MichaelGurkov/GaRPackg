@@ -428,17 +428,25 @@ reduce_data_dimension = function(vars_df,
   # Validation
 
   if (is.null(partition_list)) {
-    warning("The partition_list is NULL")
 
-    return(NULL)
+    stop("The partition_list is NULL",call. = FALSE)
 
   }
 
   if (is.null(target_var_name) & preprocess_method == "pls") {
-    message("Target variable is NULL")
 
-    return(NULL)
+        stop(paste0("Target variable for PLS dimesion",
+                    " reduction method is missing"),
+         call. = FALSE)
 
+
+
+  }
+
+  if(!preprocess_method %in% c("pca", "pls")){
+
+  stop("preprocess_method must be one of \"pca\" or \"pls\" ",
+       call. = FALSE)
 
 
   }
