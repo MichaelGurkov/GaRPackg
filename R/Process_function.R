@@ -160,7 +160,7 @@ get_time_indices_list = function(df){
 #'
 #' @param ... external optional arguments
 
-chain_index = function(df, preprocess_method = "PCA", ...){
+chain_index = function(df, preprocess_method = "pca", ...){
 
   . = NULL
 
@@ -175,20 +175,20 @@ chain_index = function(df, preprocess_method = "PCA", ...){
   reduced_list = lapply(time_indices_list,function(temp_ind){
 
     temp_df = df %>%
-      filter(!!sym(date_varname) %in% temp_ind) %>%
-      select_if(~sum(is.na(.)) == 0)
+      dplyr::filter(!!sym(date_varname) %in% temp_ind) %>%
+      dplyr::select_if(~sum(is.na(.)) == 0)
 
     temp_agg_series = temp_df %>%
       pca_reduction(...) %>%
-      mutate(PCA = scale(.data$PCA))
+      dplyr::mutate(PCA = scale(.data$PCA))
 
     # debugging
     # if(sum(is.na(temp_agg_series$PCA)) > 0){browser()}
 
 
     temp_diff_series = temp_agg_series %>%
-      mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
-      slice(-nrow(.))
+      dplyr::mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
+      dplyr::slice(-nrow(.))
 
     return(list(agg_series = temp_diff_series,
                 num_vars = ncol(temp_df)))
@@ -233,7 +233,7 @@ chain_index = function(df, preprocess_method = "PCA", ...){
 
   chain_df = diff_df %>%
     arrange(desc(date)) %>%
-    mutate(PCA = cumsum(.data$PCA)) %>%
+    dplyr::mutate(PCA = cumsum(.data$PCA)) %>%
     arrange(date)
 
   return(chain_df)
@@ -304,8 +304,8 @@ make_quant_reg_df = function(vars_df,
   if(is.null(partitions_list)){
 
     reg_df = vars_df %>%
-      select(date, all_of(target_var_name)) %>%
-      filter(complete.cases(.)) %>%
+      dplyr::select(date, dplyr::all_of(target_var_name)) %>%
+      dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
 
@@ -344,12 +344,12 @@ make_quant_reg_df = function(vars_df,
     # Add lead values of target var
 
     reg_df = vars_df %>%
-      select(date, all_of(target_var_name)) %>%
-      inner_join(
+      dplyr::select(date, dplyr::all_of(target_var_name)) %>%
+      dplyr::inner_join(
         preproc_df_list$xreg_df %>%
           rename_at(vars(-date),~paste0(.,"_xreg")),
                  by = c("date" = "date")) %>%
-      filter(complete.cases(.)) %>%
+      dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
 
@@ -418,10 +418,11 @@ fill_na_average = function(data_vec, k = 4){
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
-    group_by(.data$horizon,.data$date) %>%
+    dplyr::group_by(.data$horizon,.data$date) %>%
     arrange(.data$quantile) %>%
-    mutate(across(matches("^(fitted|forecast)_values$"),~sort(.))) %>%
-    ungroup()
+    dplyr::mutate(across(matches("^(fitted|forecast)_values$"),
+                         ~sort(.))) %>%
+    dplyr::ungroup()
 
 
   return(prediction_df)
@@ -451,7 +452,7 @@ add_leads_to_target_var = function(df,
     target_var_name_lead = paste(target_var_name,temp_lead,sep = "_")
 
     df = df %>%
-      mutate(!!sym(target_var_name_lead) := lead(!!sym(target_var_name),temp_lead))
+      dplyr::mutate(!!sym(target_var_name_lead) := lead(!!sym(target_var_name),temp_lead))
 
   }
 
@@ -548,13 +549,13 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
   if(forward){
 
     ret_df = df %>%
-      mutate_at(vars(-date_varname),
+      dplyr::mutate_at(vars(-date_varname),
                 .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
 
   } else{
 
     ret_df = df %>%
-      mutate_at(vars(-date_varname),
+      dplyr::mutate_at(vars(-date_varname),
                 .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
 
 
@@ -562,7 +563,7 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
 
   ret_df = ret_df %>%
-    mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+    dplyr::mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
 
   return(ret_df)
 
@@ -645,8 +646,8 @@ preprocess_df = function(df,
 
 
     df = df %>%
-      mutate(across(
-        any_of(vars_to_yoy),
+      dplyr::mutate(across(
+        dplyr::any_of(vars_to_yoy),
         list(yoy = ~calculate_yoy_changes(.,
                                           data_frequency = data_frequency))))
 
@@ -668,7 +669,7 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      mutate(across(any_of(vars_to_percent_changes),
+      dplyr::mutate(across(dplyr::any_of(vars_to_percent_changes),
                     list(percent_change = ~ . / lag(., 1) - 1)))
 
   }
@@ -687,7 +688,7 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      mutate(across(any_of(vars_to_diff),
+      dplyr::mutate(across(dplyr::any_of(vars_to_diff),
                     list(diff = ~c(NA, diff(.)))))
 
 
@@ -708,7 +709,7 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      mutate(across(any_of(vars_to_4_ma),
+      dplyr::mutate(across(dplyr::any_of(vars_to_4_ma),
                     list(`4_ma` = ~calculate_four_quarters_ma(.))))
 
 
@@ -722,7 +723,7 @@ preprocess_df = function(df,
                     paste0(vars_to_4_ma,"_4_ma"))
 
     df = df %>%
-      mutate(across(any_of(target_vars), ~ . * 100))
+      dplyr::mutate(across(dplyr::any_of(target_vars), ~ . * 100))
 
   }
 

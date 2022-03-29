@@ -20,17 +20,17 @@ test_obj = run_GaR_analysis(
 test_that(desc = "run_GaR_analysis returns fitted values",
           expect_equal(
             object = test_obj$fitted_df %>%
-              select(-date) %>%
-              filter(horizon == test_params$horizon_list[1]),
-            expected = predict(test_obj$qreg_result[[1]],
+              dplyr::select(-date) %>%
+              dplyr::filter(horizon == test_params$horizon_list[1]),
+            expected = stats::predict(test_obj$qreg_result[[1]],
                                test_obj$reg_df) %>%
               as.data.frame() %>%
               setNames(test_params$quantile_vec) %>%
-              pivot_longer(cols = everything(),
+              tidyr::pivot_longer(cols = everything(),
                            names_to = "quantile",
                            values_to = "fitted_values") %>%
-              mutate(horizon = as.character(test_params$horizon_list[1])) %>%
-              mutate(quantile = as.numeric(quantile)) %>%
-              select(horizon, quantile, fitted_values) %>%
+              dplyr::mutate(horizon = as.character(test_params$horizon_list[1])) %>%
+              dplyr::mutate(quantile = as.numeric(quantile)) %>%
+              dplyr::select(horizon, quantile, fitted_values) %>%
               arrange(quantile)))
 

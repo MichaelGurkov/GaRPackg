@@ -12,7 +12,7 @@ gar_analisys = run_GaR_analysis(
     fin_cycle = c("credit", "house_price")
   ),
   vars_df = gar_data %>%
-    mutate(date = as.yearqtr(date)) %>%
+    dplyr::mutate(date = as.yearqtr(date)) %>%
     preprocess_df(
       vars_to_yoy = c("gdp", "ind_prod_israel", "credit", "house_price")
     ),
@@ -22,11 +22,11 @@ gar_analisys = run_GaR_analysis(
 )
 
 test_fit_skew_df = gar_analisys$fitted_df %>%
-  filter(date == as.yearqtr("2000 Q1")) %>%
+  dplyr::filter(date == as.yearqtr("2000 Q1")) %>%
   fit_t_skew_to_gar_df()
 
 test_smoothed_df = gar_analisys$fitted_df %>%
-  filter(date == as.yearqtr("2000 Q1")) %>%
+  dplyr::filter(date == as.yearqtr("2000 Q1")) %>%
   fit_t_skew_to_gar_df(return_smoothed_quantiles = TRUE)
 
 test_that("fit_t_skew_to_gar_df returns proper structure for dist params", {

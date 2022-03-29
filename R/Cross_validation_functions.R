@@ -62,13 +62,13 @@ get_gar_forecast = function(partitions_list,
   if(nrow(reg_df_list$reg_df) == 0){stop("The regression data frame is empty")}
 
 
-  prediction_df = map(horizon_list,run_cross_validation,
+  prediction_df = purrr::map(horizon_list,run_cross_validation,
                     reg_df = reg_df_list$reg_df,
                     target_var_name = target_var_name,
                     quantile_vec = quantile_vec,
                     win_len = win_len,
                     win_type_expanding = win_type_expanding) %>%
-    bind_rows() %>%
+    dplyr::bind_rows() %>%
     fix_quantile_crossing()
 
   return(prediction_df)
@@ -121,19 +121,19 @@ run_cross_validation = function(reg_df,
 
 
 roll_cv_list = reg_df %>%
-  rolling_origin(
+  rsample::rolling_origin(
     initial = win_len,
     assess = horizon,
     cumulative = win_type_expanding
   )
 
-predict_df = map(roll_cv_list$splits,
+predict_df = purrr::map(roll_cv_list$splits,
                  function(temp_split){
 
   analysis_set = analysis(temp_split)
 
   assessment_set = assessment(temp_split) %>%
-    slice(n())
+    dplyr::slice(n())
 
   qreg_result = run_quant_reg(
     reg_df = analysis_set,
@@ -143,21 +143,21 @@ predict_df = map(roll_cv_list$splits,
     ...
   )
 
-  temp_predict = map(names(qreg_result), function(temp_name){
+  temp_predict = purrr::map(names(qreg_result), function(temp_name){
 
     temp_pred = qreg_result[[temp_name]] %>%
-      predict(newdata = assessment_set) %>%
+      stats::predict(newdata = assessment_set) %>%
       as.data.frame() %>%
-      rename_all(~str_remove(.,"tau= ")) %>%
-      pivot_longer(cols = everything(),
+      dplyr::rename_all(~str_remove(.,"tau= ")) %>%
+      tidyr::pivot_longer(cols = everything(),
                    names_to = "quantile",
                    values_to = "forecast_values") %>%
-      mutate(horizon = temp_name) %>%
-      mutate(date = assessment_set$date)
+      dplyr::mutate(horizon = temp_name) %>%
+      dplyr::mutate(date = assessment_set$date)
 
     if(length(quantile_vec) == 1){
       temp_pred = temp_pred %>%
-        mutate(quantile = quantile_vec)
+        dplyr::mutate(quantile = quantile_vec)
       }
 
     return(temp_pred)
@@ -166,12 +166,12 @@ predict_df = map(roll_cv_list$splits,
 
 
   }) %>%
-    bind_rows()
+    dplyr::bind_rows()
 
 
 
 }) %>%
-  bind_rows()
+  dplyr::bind_rows()
 
 return(predict_df)
 

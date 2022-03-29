@@ -11,7 +11,7 @@ result_df = data.frame(
   horizon = rep(c(1, 4, 8), each = 6),
   forecast_values = c(1, 2, 3, 5, 8, 9, 6, 7, 10, 1, 2, 3, 5, 8, 9, 6, 7, 10)
 ) %>%
-  as_tibble()
+  tibble::as_tibble()
 
 
 test_that(

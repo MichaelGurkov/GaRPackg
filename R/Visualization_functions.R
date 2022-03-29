@@ -18,7 +18,7 @@ plot_fan_chart = function(forecast_df, actual_df, fan_chart_date = NULL){
   if("fitted_values" %in% names(forecast_df)){
 
     forecast_df = forecast_df %>%
-      rename(forecast_values = fitted_values)
+      dplyr::rename(forecast_values = fitted_values)
   }
 
   if(is.null(fan_chart_date)){fan_chart_date = max(forecast_df$date)}
@@ -31,38 +31,38 @@ plot_fan_chart = function(forecast_df, actual_df, fan_chart_date = NULL){
 
 
   fan_chart_forecast_df = forecast_df %>%
-    filter(date == fan_chart_date) %>%
-    mutate(quantile = as.numeric(quantile)) %>%
-    pivot_wider(values_from = "forecast_values",
+    dplyr::filter(date == fan_chart_date) %>%
+    dplyr::mutate(quantile = as.numeric(quantile)) %>%
+    tidyr::pivot_wider(values_from = "forecast_values",
                 names_from = "quantile",
                 names_prefix = "q_") %>%
-    mutate(horizon = as.numeric(horizon))
+    dplyr::mutate(horizon = as.numeric(horizon))
 
   time_frequency = identify_frequency(forecast_df$date)
 
   if(time_frequency == "quarterly"){
 
-    fan_chart_actual_df = tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
-      mutate(date = fan_chart_date + horizon / 4) %>%
-      left_join(actual_df, by = "date")
+    fan_chart_actual_df = tibble::tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
+      dplyr::mutate(date = fan_chart_date + horizon / 4) %>%
+      dplyr::left_join(actual_df, by = "date")
 
   } else if(time_frequency == "monthly"){
 
-    fan_chart_actual_df = tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
-      mutate(date = fan_chart_date + horizon / 12) %>%
-      left_join(actual_df, by = "date")
+    fan_chart_actual_df = tibble::tibble(horizon = 0:max(fan_chart_forecast_df$horizon)) %>%
+      dplyr::mutate(date = fan_chart_date + horizon / 12) %>%
+      dplyr::left_join(actual_df, by = "date")
 
 
   }
 
-  fan_chart_forecast_df = tibble(horizon = 0,
+  fan_chart_forecast_df = tibble::tibble(horizon = 0,
                                  date = fan_chart_date,
                                  q_0.05 = fan_chart_actual_df$gdp[1]) %>%
-    mutate(q_0.25 = q_0.05) %>%
-    mutate(q_0.5 = q_0.05) %>%
-    mutate(q_0.75 = q_0.05) %>%
-    mutate(q_0.95 = q_0.05) %>%
-    bind_rows(fan_chart_forecast_df)
+    dplyr::mutate(q_0.25 = q_0.05) %>%
+    dplyr::mutate(q_0.5 = q_0.05) %>%
+    dplyr::mutate(q_0.75 = q_0.05) %>%
+    dplyr::mutate(q_0.95 = q_0.05) %>%
+    dplyr::bind_rows(fan_chart_forecast_df)
 
 
   fan_plot = ggplot2::ggplot() +

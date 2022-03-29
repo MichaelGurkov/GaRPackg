@@ -2,7 +2,7 @@ test_estimated_quantiles = c(0.05,0.5,0.95)
 
 test_estimated_values = qt(p = test_estimated_quantiles,df = 30)
 
-test_df = tibble(quantile = rep(test_estimated_quantiles,2),
+test_df = tibble::tibble(quantile = rep(test_estimated_quantiles,2),
                  values = rep(test_estimated_values,2))
 
 test_params = c(0,1,0,30)

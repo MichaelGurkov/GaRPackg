@@ -12,7 +12,7 @@ gar_analisys = run_GaR_analysis(
     fin_cycle = c("credit", "house_price")
   ),
   vars_df = gar_data %>%
-    mutate(date = as.yearqtr(date)) %>%
+    dplyr::mutate(date = as.yearqtr(date)) %>%
     preprocess_df(
       vars_to_yoy = c("gdp", "ind_prod_israel", "credit", "house_price")
     ),
@@ -22,25 +22,25 @@ gar_analisys = run_GaR_analysis(
 )
 
 test_fit_skew_df = gar_analisys$fitted_df %>%
-  filter(date == as.yearqtr("2000 Q1")) %>%
+  dplyr::filter(date == as.yearqtr("2000 Q1")) %>%
   fit_t_skew_to_gar_df()
 
 
 test_smoothed = extract_smoothed_quantiles(test_fit_skew_df,
                                            gar_analisys$fitted_df %>%
-                                             filter(date %in% c(as.yearqtr("2000 Q1"),
+                                             dplyr::filter(date %in% c(as.yearqtr("2000 Q1"),
                                                                 as.yearqtr("2000 Q2"))) %>%
-                                             rename(values = fitted_values))
+                                             dplyr::rename(values = fitted_values))
 
 test_that(
   "smoothing returns smoothed values where available",
   expect_equal(
     test_smoothed %>%
-      filter(date == as.yearqtr("2000 Q1")) %>%
-      pull(values_smoothed),
+      dplyr::filter(date == as.yearqtr("2000 Q1")) %>%
+      dplyr::pull(values_smoothed),
     test_smoothed %>%
-      filter(date == as.yearqtr("2000 Q1")) %>%
-      pull(value)
+      dplyr::filter(date == as.yearqtr("2000 Q1")) %>%
+      dplyr::pull(value)
   )
 )
 
@@ -49,10 +49,10 @@ test_that(
   "smoothing returns raw  values where smoothed unavailable",
   expect_equal(
     test_smoothed %>%
-      filter(date == as.yearqtr("2000 Q2")) %>%
-      pull(values_raw),
+      dplyr::filter(date == as.yearqtr("2000 Q2")) %>%
+      dplyr::pull(values_raw),
     test_smoothed %>%
-      filter(date == as.yearqtr("2000 Q2")) %>%
-      pull(value)
+      dplyr::filter(date == as.yearqtr("2000 Q2")) %>%
+      dplyr::pull(value)
   )
 )

@@ -1,7 +1,7 @@
 data("gar_data")
 
 gar_data = gar_data %>%
-  mutate(date = as.yearqtr(date))
+  dplyr::mutate(date = as.yearqtr(date))
 
 
 
@@ -16,13 +16,13 @@ test_that("all preprocess transformations work", {
         convert_to_percent_units = TRUE
       ),
     expected = gar_data %>%
-      mutate(across(c("gdp", "ind_prod_israel"),
+      dplyr::mutate(across(c("gdp", "ind_prod_israel"),
                     list(yoy = ~(./ lag(., 4) - 1) * 100))) %>%
-      mutate(across(c("gdp", "ind_prod_israel"),
+      dplyr::mutate(across(c("gdp", "ind_prod_israel"),
                     list(percent_change = ~ (. / lag(.) - 1) * 100))) %>%
-      mutate(across(c("gdp", "ind_prod_israel"),
+      dplyr::mutate(across(c("gdp", "ind_prod_israel"),
                     list(diff = ~ c(NA, diff(.))))) %>%
-      mutate(across(c("gdp", "ind_prod_israel"),
+      dplyr::mutate(across(c("gdp", "ind_prod_israel"),
                     list(`4_ma` = ~ slide_dbl(., mean, .before = 3,
                                             .complete = TRUE) * 100)))
   )
@@ -30,22 +30,22 @@ test_that("all preprocess transformations work", {
 
 
 expect_error(gar_data %>%
-                 select(gdp) %>%
+                 dplyr::select(gdp) %>%
                  preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel")),
                "date variable is missing")
 
 expect_warning(gar_data %>%
-                 select(date, gdp) %>%
+                 dplyr::select(date, gdp) %>%
                  preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel")),
                "The following variables are missing : ind_prod_israel")
 
 expect_warning(gar_data %>%
-                 select(date, gdp) %>%
+                 dplyr::select(date, gdp) %>%
                  preprocess_df(vars_to_diff = c("gdp","ind_prod_israel")),
                "The following difference variables are missing : ind_prod_israel")
 
 expect_warning(gar_data %>%
-                 select(date, gdp) %>%
+                 dplyr::select(date, gdp) %>%
                  preprocess_df(vars_to_4_ma = c("gdp","ind_prod_israel")),
                "The following moving average variables are missing : ind_prod_israel")
 

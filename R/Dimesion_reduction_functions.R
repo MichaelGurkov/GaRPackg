@@ -108,7 +108,7 @@ pca_reduction = function(df,
 
   # Identify time index
 
-  time_index_var = str_subset(names(df), "[Dd]ate")
+  time_index_var = stringr::str_subset(names(df), "[Dd]ate")
 
   if (length(time_index_var) != 1) {
     message("Could not identify time index")
@@ -117,14 +117,14 @@ pca_reduction = function(df,
   # Extract PCA
 
   df = df %>%
-    filter(complete.cases(.))
+    dplyr::filter(complete.cases(.))
 
   if (ncol(df) == 1) {
     return(list(pca_obj = NULL, time_index = df[, time_index_var]))
   }
 
   temp_pca = df %>%
-    select(-all_of(time_index_var)) %>%
+    dplyr::select(-dplyr::all_of(time_index_var)) %>%
     prcomp(center = center, scale. = scale)
 
 
@@ -155,7 +155,7 @@ pca_reduction = function(df,
 
 
 
-#' This function maps pca reduction over partitions list
+#' This function purrr::maps pca reduction over partitions list
 #'
 #' @param multi_feature_partitions list of partitions
 #'
@@ -176,11 +176,11 @@ map_pca_reduction = function(multi_feature_partitions,
                              n_components = 1,
                              pca_align_list = NULL) {
 
-  reduction_objects_list = map2(
+  reduction_objects_list = purrr::map2(
     names(multi_feature_partitions),
     multi_feature_partitions, function(temp_name, temp_part) {
       temp_df = vars_df %>%
-        select(any_of(c(unlist(temp_part, use.names = FALSE), "date")))
+        dplyr::select(dplyr::any_of(c(unlist(temp_part, use.names = FALSE), "date")))
 
       # Set alignment params
 
@@ -202,7 +202,7 @@ map_pca_reduction = function(multi_feature_partitions,
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
-  xreg_df_multi = map(names(reduction_objects_list),function(temp_name) {
+  xreg_df_multi = purrr::map(names(reduction_objects_list),function(temp_name) {
     date_vec = reduction_objects_list[[temp_name]]$time_index
 
     data_df = reduction_objects_list[[temp_name]]$pca_obj$x[, 1:n_components]
@@ -230,7 +230,7 @@ map_pca_reduction = function(multi_feature_partitions,
     return(temp_df)
 
                       }) %>%
-    reduce(full_join, by = "date")
+    purrr::reduce(dplyr::full_join, by = "date")
 
   return_list = list()
 
@@ -264,7 +264,7 @@ map_pca_reduction = function(multi_feature_partitions,
 #'
 #' @importFrom  pls plsr
 #'
-#' @importFrom stringr str_remove_all
+#' @importFrom stringr stringr::str_remove_all
 #'
 pls_reduction = function(df,
                          target_var_name,
@@ -274,7 +274,7 @@ pls_reduction = function(df,
 
   # Identify time index
 
-  time_index_var = str_subset(names(df), "[Dd]ate")
+  time_index_var = stringr::str_subset(names(df), "[Dd]ate")
 
   if (length(time_index_var) != 1) {
     message("Could not identify time index")
@@ -283,8 +283,8 @@ pls_reduction = function(df,
   # Identify predictors names
 
   xvars_names = names(df) %>%
-    str_remove_all(target_var_name) %>%
-    str_remove_all(time_index_var)
+    stringr::str_remove_all(target_var_name) %>%
+    stringr::str_remove_all(time_index_var)
 
   xvars_names = xvars_names[sapply(xvars_names,
                                    function(temp) {
@@ -294,14 +294,14 @@ pls_reduction = function(df,
   # Extract PLS
 
   df = df %>%
-    filter(complete.cases(.))
+    dplyr::filter(complete.cases(.))
 
   pls_form = formula(paste(target_var_name, "~",
                            paste(xvars_names, collapse = "+")))
 
   temp_pls = df %>%
-    select(-all_of(time_index_var)) %>%
-    plsr(
+    dplyr::select(-dplyr::all_of(time_index_var)) %>%
+    pls::plsr(
       formula = pls_form,
       validation = "none",
       scale = scale,
@@ -334,11 +334,11 @@ map_pls_reduction = function(multi_feature_partitions,
     stop("The partitions must be a named list")
   }
 
-  reduction_objects_list = map2(names(multi_feature_partitions),
+  reduction_objects_list = purrr::map2(names(multi_feature_partitions),
                                 multi_feature_partitions,
                                 function(temp_name, temp_part) {
                                   temp_df = vars_df %>%
-                                    select(any_of(c(
+                                    dplyr::select(dplyr::any_of(c(
                                       unlist(temp_part), "date", target_var_name
                                     )))
                                   temp_pls = pls_reduction(df = temp_df,
@@ -349,7 +349,7 @@ map_pls_reduction = function(multi_feature_partitions,
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
-  xreg_df_multi = map(names(reduction_objects_list),
+  xreg_df_multi = purrr::map(names(reduction_objects_list),
                       function(temp_name) {
                         date_vec = reduction_objects_list[[temp_name]]$time_index
 
@@ -372,7 +372,7 @@ map_pls_reduction = function(multi_feature_partitions,
                         return(temp_df)
 
                       }) %>%
-    reduce(full_join, by = "date")
+    purrr::reduce(dplyr::full_join, by = "date")
 
   return_list = list()
 
@@ -445,8 +445,8 @@ reduce_data_dimension = function(vars_df,
 
   number_of_na = suppressWarnings(
     vars_df %>%
-      select(unlist(partition_list, use.names = FALSE)) %>%
-      mutate(across(everything(),as.numeric)) %>%
+      dplyr::select(unlist(partition_list, use.names = FALSE)) %>%
+      dplyr::mutate(across(everything(),as.numeric)) %>%
       is.na.data.frame() %>%
       sum()
     )
@@ -470,7 +470,7 @@ reduce_data_dimension = function(vars_df,
 
   if (length(one_feature_partitions) > 0) {
     xreg_df_one = vars_df %>%
-      select(date, any_of(unlist(one_feature_partitions, use.names = FALSE)))
+      dplyr::select(date, dplyr::any_of(unlist(one_feature_partitions, use.names = FALSE)))
 
   }
 
@@ -523,7 +523,7 @@ reduce_data_dimension = function(vars_df,
 
   if (length(one_feature_partitions) > 0 &
       length(multi_feature_partitions) > 0) {
-    return_list$xreg_df = inner_join(xreg_df_one,
+    return_list$xreg_df = dplyr::inner_join(xreg_df_one,
                                      multi_part_return_list$xreg_df_multi,
                                      by = "date")
 

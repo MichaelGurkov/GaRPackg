@@ -41,19 +41,19 @@ import_from_fame_template = function(template_path,
   where = NULL
 
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
-    slice(-(1:10)) %>%
-    rename(date = 1) %>%
-    mutate(date = parse_date_time(.data$date,orders = c("dmy","mdy")))
+    dplyr::slice(-(1:10)) %>%
+    dplyr::rename(date = 1) %>%
+    dplyr::mutate(date = parse_date_time(.data$date,orders = c("dmy","mdy")))
 
   if (data_frequency == "quarterly") {
 
     fame_df = fame_df %>%
-      mutate(date = as.yearqtr(.data$date))
+      dplyr::mutate(date = as.yearqtr(.data$date))
 
   }  else if (data_frequency == "monthly") {
 
     fame_df = fame_df %>%
-      mutate(date = as.yearmon(.data$date))
+      dplyr::mutate(date = as.yearmon(.data$date))
 
   }
 
@@ -63,20 +63,20 @@ import_from_fame_template = function(template_path,
   # Substitute empty strings with NA
 
   fame_df = fame_df %>%
-    mutate(across(everything(),~ na_if(., ""))) %>%
-    mutate(across(where(is.character),~str_remove_all(.,","))) %>%
-    mutate(across(where(is.character), as.numeric))
+    dplyr::mutate(across(everything(),~ na_if(., ""))) %>%
+    dplyr::mutate(across(where(is.character),~stringr::str_remove_all(.,","))) %>%
+    dplyr::mutate(across(where(is.character), as.numeric))
 
 
   # Append missing series
 
-  append_vars_list = str_subset(names(fame_df), "_append$")
+  append_vars_list = stringr::str_subset(names(fame_df), "_append$")
 
   for (append_var in append_vars_list) {
     target_var = str_remove(append_var, "_append$")
 
     fame_df = fame_df %>%
-      mutate(!!target_var := coalesce(!!sym(append_var), !!sym(target_var)))
+      dplyr::mutate(!!target_var := dplyr::coalesce(!!sym(append_var), !!sym(target_var)))
 
     rm(target_var)
 
@@ -84,8 +84,8 @@ import_from_fame_template = function(template_path,
   }
 
   fame_df = fame_df %>%
-    select(-all_of(append_vars_list)) %>%
-    rename_all(tolower)
+    dplyr::select(-dplyr::all_of(append_vars_list)) %>%
+    dplyr::rename_all(tolower)
 
 
   return(fame_df)
@@ -127,28 +127,28 @@ import_dsge_forecasts = function(file_path){
   . = NULL
 
 
-  cpi_table = tribble(
+  cpi_table = tibble::tribble(
     ~horizon,~`0.05`,~`0.25`,
     "1",-1.2,-0.5,
     "4",-3.25,-1.3,
     "8",-3.5,-1.45,
     "12",-3.75,-1.5) %>%
-    mutate(`0.5` = 0) %>%
-    mutate(`0.75` = abs(.data$`0.25`)) %>%
-    mutate(`0.95` = abs(.data$`0.05`)) %>%
-    mutate(across(-.data$horizon, ~./100))
+    dplyr::mutate(`0.5` = 0) %>%
+    dplyr::mutate(`0.75` = abs(.data$`0.25`)) %>%
+    dplyr::mutate(`0.95` = abs(.data$`0.05`)) %>%
+    dplyr::mutate(across(-.data$horizon, ~./100))
 
 
-  gdp_table = tribble(
+  gdp_table = tibble::tribble(
     ~horizon,~`0.05`,~`0.25`,
     "1",-1.98,-0.8,
     "4",-3.95,-1.6,
     "8",-4.6,-1.8,
     "12",-4.9,-2) %>%
-    mutate(`0.5` = 0) %>%
-    mutate(`0.75` = abs(.data$`0.25`)) %>%
-    mutate(`0.95` = abs(.data$`0.05`)) %>%
-    mutate(across(-.data$horizon, ~./100))
+    dplyr::mutate(`0.5` = 0) %>%
+    dplyr::mutate(`0.75` = abs(.data$`0.25`)) %>%
+    dplyr::mutate(`0.95` = abs(.data$`0.05`)) %>%
+    dplyr::mutate(across(-.data$horizon, ~./100))
 
 
 
@@ -156,23 +156,23 @@ import_dsge_forecasts = function(file_path){
                         gdp = "OB_DY_YOY")
 
 
-  forecast_df = map_dfr(
+  forecast_df = purrr::map_dfr(
     sheet_names_list,
     .id = "target_var",
     .f = function(temp_sheet) {
-      raw_data = read_xlsx(file_path, sheet = temp_sheet, skip = 1)
+      raw_data = readxl::read_xlsx(file_path, sheet = temp_sheet, skip = 1)
 
       data = raw_data %>%
-        rename(date = .data$OBS) %>%
-        select(matches("date|[0-9]")) %>%
-        mutate(date = as.yearqtr(.data$date)) %>%
-        pivot_longer(-"date",
+        dplyr::rename(date = .data$OBS) %>%
+        dplyr::select(matches("date|[0-9]")) %>%
+        dplyr::mutate(date = as.yearqtr(.data$date)) %>%
+        tidyr::pivot_longer(-"date",
                      names_to = "horizon",
                      values_to = "forecast") %>%
-        filter(complete.cases(.))
+        dplyr::filter(complete.cases(.))
 
       data = data %>%
-        mutate(date = .data$date - as.numeric(.data$horizon) * 0.25)
+        dplyr::mutate(date = .data$date - as.numeric(.data$horizon) * 0.25)
 
 
       return(data)
@@ -182,22 +182,22 @@ import_dsge_forecasts = function(file_path){
 
 
   result_df = forecast_df %>%
-    filter(.data$target_var == "gdp") %>%
-    left_join(gdp_table, by = "horizon") %>%
-    filter(complete.cases(.)) %>%
-    bind_rows(forecast_df %>%
-            filter(.data$target_var == "cpi") %>%
-            left_join(cpi_table, by = "horizon") %>%
-            filter(complete.cases(.))) %>%
-    mutate(across(matches("[0-9]"), ~ . + .data$forecast)) %>%
-    select(-.data$forecast) %>%
-    pivot_longer(-c("target_var","date", "horizon"),
+    dplyr::filter(.data$target_var == "gdp") %>%
+    dplyr::left_join(gdp_table, by = "horizon") %>%
+    dplyr::filter(complete.cases(.)) %>%
+    dplyr::bind_rows(forecast_df %>%
+            dplyr::filter(.data$target_var == "cpi") %>%
+            dplyr::left_join(cpi_table, by = "horizon") %>%
+            dplyr::filter(complete.cases(.))) %>%
+    dplyr::mutate(across(matches("[0-9]"), ~ . + .data$forecast)) %>%
+    dplyr::select(-.data$forecast) %>%
+    tidyr::pivot_longer(-c("target_var","date", "horizon"),
                  names_to = "quantile",
                  values_to = "forecast")
 
   result_df = result_df %>%
-    mutate(quantile = as.character(.data$quantile)) %>%
-    mutate(quantile = recode(.data$quantile, "0.5" = "0.50"))
+    dplyr::mutate(quantile = as.character(.data$quantile)) %>%
+    dplyr::mutate(quantile = recode(.data$quantile, "0.5" = "0.50"))
 
   return(result_df)
 

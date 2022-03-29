@@ -18,11 +18,11 @@ test_that("returns a tibble with loadings", {
   expect_equal(object = test_obj_with_pca %>%
                  extract_pca_loadings_from_gar_model(),
                expected = test_obj_with_pca$pca_obj %>%
-                 map_dfr(., function(temp_pca) {
+                 purrr::map_dfr(., function(temp_pca) {
                    temp_coeffs = temp_pca$pca_obj$rotation[, 1] %>%
                      as.data.frame() %>%
                      setNames("coeff") %>%
-                     rownames_to_column()
+                     tibble::rownames_to_column()
 
 
                  },

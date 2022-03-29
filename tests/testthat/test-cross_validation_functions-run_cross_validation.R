@@ -1,6 +1,6 @@
 data("gar_data")
 
-gar_data = gar_data %>% slice(1:40)
+gar_data = gar_data %>% dplyr::slice(1:40)
 
 test_params = list()
 
@@ -40,14 +40,14 @@ test_quant_reg_list_expanding = run_quant_reg(
 
 # Predict out of sample
 
-test_pred_fixed = predict(
+test_pred_fixed = stats::predict(
   test_quant_reg_list_fixed$`4`,
   newdata = test_reg_df[test_params$win_len +
                           unlist(test_params$horizon_list),]
   )
 
 
-test_pred_expanding = predict(
+test_pred_expanding = stats::predict(
   test_quant_reg_list_expanding$`4`,
   newdata = test_reg_df[nrow(test_reg_df),]
 )

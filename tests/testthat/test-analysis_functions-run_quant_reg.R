@@ -25,22 +25,22 @@ xreg_df = make_quant_reg_df(
   target_var_name = test_params$target_var_name,
   horizon_list = test_params$horizon_list)[[1]]
 
-test_reg = map(test_params$horizon_list,
+test_reg = purrr::map(test_params$horizon_list,
                  function(temp_horizon){
 
   x_mat = xreg_df %>%
-    select(ends_with("_xreg"),
+    dplyr::select(dplyr::ends_with("_xreg"),
            paste0(test_params$target_var_name,
                   "_",
                   temp_horizon)) %>%
-    filter(complete.cases(.)) %>%
-    select(ends_with("_xreg"))
+    dplyr::filter(complete.cases(.)) %>%
+    dplyr::select(dplyr::ends_with("_xreg"))
 
   y_vec = xreg_df %>%
-      select(paste0(test_params$target_var_name,
+      dplyr::select(paste0(test_params$target_var_name,
                     "_",
                     temp_horizon)) %>%
-      filter(complete.cases(.))
+      dplyr::filter(complete.cases(.))
 
 
 

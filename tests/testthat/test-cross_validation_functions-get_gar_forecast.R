@@ -1,7 +1,7 @@
 data("gar_data")
 
 gar_data = gar_data %>%
-  slice(1:35)
+  dplyr::slice(1:35)
 
 test_params = list()
 
@@ -26,7 +26,7 @@ reg_df = make_quant_reg_df(
   )[[1]]
 
 
-test_pred_df = map(
+test_pred_df = purrr::map(
   test_params$horizon_list,
   run_cross_validation,
   reg_df = reg_df,
@@ -34,7 +34,7 @@ test_pred_df = map(
   quantile_vec = test_params$quantile_vec,
   win_len = test_params$win_len
   ) %>%
-  bind_rows() %>%
+  dplyr::bind_rows() %>%
   arrange(date,horizon,quantile)
 
 test_that("get_gar_forecast returns proper predictions",

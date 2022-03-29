@@ -146,32 +146,32 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
   if(frequency == "quarterly"){
 
     df = forecast_df %>%
-      mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4) %>%
-      inner_join(benchmark_df %>%
-                   mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4),
+      dplyr::mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4) %>%
+      dplyr::inner_join(benchmark_df %>%
+                   dplyr::mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4),
                  by = c("date", "horizon", "quantile")) %>%
-      inner_join(actual_df %>%
-                   mutate(date = as.yearqtr(date)), by = "date") %>%
-      mutate(quantile = as.numeric(.data$quantile))
+      dplyr::inner_join(actual_df %>%
+                   dplyr::mutate(date = as.yearqtr(date)), by = "date") %>%
+      dplyr::mutate(quantile = as.numeric(.data$quantile))
 
   }
 
   if (frequency == "monthly"){
 
     df = forecast_df %>%
-      mutate(date = as.yearmon(date) + as.numeric(horizon) / 12) %>%
-      inner_join(benchmark_df %>%
-                   mutate(date = as.yearmon(date) + as.numeric(horizon) / 12),
+      dplyr::mutate(date = as.yearmon(date) + as.numeric(horizon) / 12) %>%
+      dplyr::inner_join(benchmark_df %>%
+                   dplyr::mutate(date = as.yearmon(date) + as.numeric(horizon) / 12),
                  by = c("date", "horizon", "quantile")) %>%
-      inner_join(actual_df %>%
-                   mutate(date = as.yearmon(date)), by = "date") %>%
-      mutate(quantile = as.numeric(.data$quantile))
+      dplyr::inner_join(actual_df %>%
+                   dplyr::mutate(date = as.yearmon(date)), by = "date") %>%
+      dplyr::mutate(quantile = as.numeric(.data$quantile))
   }
 
 
   score_df = df %>%
-    group_by(.data$horizon, .data$quantile) %>%
-    summarise(
+    dplyr::group_by(.data$horizon, .data$quantile) %>%
+    dplyr::summarise(
       quantile_r2 =
         quantile_r2_score_calculation(
           realized_values = .data$actual_values,
@@ -262,18 +262,18 @@ quantile_pit_score = function(forecast_df, actual_df){
   if(frequency == "quarterly"){
 
     prediction_df = forecast_df %>%
-      mutate(date = as.yearqtr(.data$date) + as.numeric(.data$horizon) / 4) %>%
-      left_join(actual_df %>%
-                  mutate(date = as.yearqtr(.data$date)), by = c("date"))
+      dplyr::mutate(date = as.yearqtr(.data$date) + as.numeric(.data$horizon) / 4) %>%
+      dplyr::left_join(actual_df %>%
+                  dplyr::mutate(date = as.yearqtr(.data$date)), by = c("date"))
 
   }
 
   if (frequency == "monthly"){
 
     prediction_df = forecast_df %>%
-      mutate(date = as.yearmon(.data$date) + as.numeric(.data$horizon) / 12) %>%
-      left_join(actual_df %>%
-                  mutate(date = as.yearmon(.data$date)), by = c("date"))
+      dplyr::mutate(date = as.yearmon(.data$date) + as.numeric(.data$horizon) / 12) %>%
+      dplyr::left_join(actual_df %>%
+                  dplyr::mutate(date = as.yearmon(.data$date)), by = c("date"))
   }
 
 
@@ -288,11 +288,11 @@ quantile_pit_score = function(forecast_df, actual_df){
 
 
   pit_score_df = prediction_df %>%
-    filter(!is.na(.data$actual_values)) %>%
-    group_by(.data$horizon, .data$quantile) %>%
-    mutate(pit = if_else(.data$actual_values < .data$predicted_values,
+    dplyr::filter(!is.na(.data$actual_values)) %>%
+    dplyr::group_by(.data$horizon, .data$quantile) %>%
+    dplyr::mutate(pit = if_else(.data$actual_values < .data$predicted_values,
                          1 /length(.data$date),0)) %>%
-    summarise(pit = sum(.data$pit), .groups = "drop")
+    dplyr::summarise(pit = sum(.data$pit), .groups = "drop")
 
   return(pit_score_df)
 
@@ -346,10 +346,10 @@ quantile_prediction_score = function(forecast_dist_df, actual_df){
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_value"
 
-  prediction_score = left_join(forecast_dist_df, actual_df,
+  prediction_score = dplyr::left_join(forecast_dist_df, actual_df,
                                by = "date") %>%
-    group_by(across(-c("parameter", "value"))) %>%
-    summarise(prob = dst(x = .data$actual_value[1], dp = .data$value),
+    dplyr::group_by(across(-c("parameter", "value"))) %>%
+    dplyr::summarise(prob = dst(x = .data$actual_value[1], dp = .data$value),
               .groups = "drop")
 
   return(prediction_score)

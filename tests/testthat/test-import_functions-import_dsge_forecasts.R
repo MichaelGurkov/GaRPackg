@@ -7,8 +7,8 @@ test_df = import_dsge_forecasts(
 
 
 expect_equal(test_df %>%
-               filter(target_var == "gdp") %>%
-               filter(date %in% c(zoo::as.yearqtr("1993 Q2"))) %>%
-               filter(horizon == 1) %>%
-               filter(quantile == 0.25) %>%
-               pull(forecast), (0.005042323 - 0.008))
+               dplyr::filter(target_var == "gdp") %>%
+               dplyr::filter(date %in% c(zoo::as.yearqtr("1993 Q2"))) %>%
+               dplyr::filter(horizon == 1) %>%
+               dplyr::filter(quantile == 0.25) %>%
+               dplyr::pull(forecast), (0.005042323 - 0.008))

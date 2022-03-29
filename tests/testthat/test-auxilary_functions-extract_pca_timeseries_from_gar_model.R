@@ -18,16 +18,16 @@ test_that("returns a tibble with timeseries", {
   expect_equal(object = test_obj_with_pca %>%
                  extract_pca_timeseries_from_gar_model(n_comp = 2),
                expected = test_obj_with_pca$pca_obj %>%
-                 map2(., names(.), function(temp_pca, temp_name) {
+                 purrr::map2(., names(.), function(temp_pca, temp_name) {
                    temp_coeffs = temp_pca$pca_obj$x[, 1:2] %>%
                      as.data.frame() %>%
                      cbind(temp_pca$time_index) %>%
                      setNames(c(paste(temp_name,1:2,sep = "_"), "date")) %>%
-                     relocate("date")
+                     dplyr::relocate("date")
 
 
                  }) %>%
-                 reduce(full_join, by = "date")
+                 purrr::reduce(dplyr::full_join, by = "date")
   )
 })
 

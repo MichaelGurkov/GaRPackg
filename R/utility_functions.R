@@ -32,8 +32,8 @@ get_partition_combs = function(partitions_list,
           names(partitions_list) == "required")) {
 
     temp_comb_df = partitions_list %>%
-      enframe %>%
-      mutate(value = map(.data$value, function(temp_vec) {
+      tibble::enframe() %>%
+      dplyr::mutate(value = purrr::map(.data$value, function(temp_vec) {
         temp_list = list(temp_vec)
 
         names(temp_list) = partition_name
@@ -41,8 +41,8 @@ get_partition_combs = function(partitions_list,
         return(temp_list)
 
       })) %>%
-      rename(!!sym(partition_name) := .data$value) %>%
-      mutate(name = paste(partition_name, 1, sep = "-"))
+      dplyr::rename(!!sym(partition_name) := .data$value) %>%
+      dplyr::mutate(name = paste(partition_name, 1, sep = "-"))
 
 
     return(temp_comb_df)
@@ -50,28 +50,28 @@ get_partition_combs = function(partitions_list,
 
   # make all combinations of optional category --> comb_df
 
-  comb_df = map(seq_along(partitions_list$optional),
+  comb_df = purrr::map(seq_along(partitions_list$optional),
                 function(temp_ind) {
                   comb_list =  utils::combn(partitions_list$optional,
                                             temp_ind, simplify = FALSE)
 
                   temp_comb_df = comb_list %>%
-                    enframe %>%
-                    mutate(name = paste(partition_name, temp_ind, sep = "-"))
+                    tibble::enframe() %>%
+                    dplyr::mutate(name = paste(partition_name, temp_ind, sep = "-"))
                 }) %>%
-    bind_rows() %>%
+    dplyr::bind_rows() %>%
     rbind(data.frame(name = paste0(partition_name, "-0"), value = ""))
 
   # if required category present add to each combination in comb_df
 
   if ("required" %in% names(partitions_list)) {
     comb_df = comb_df %>%
-      mutate(value = map(.data$value, ~ c(., partitions_list$required)))
+      dplyr::mutate(value = purrr::map(.data$value, ~ c(., partitions_list$required)))
   }
 
 
   comb_df = comb_df %>%
-    mutate(value = map(.data$value, function(temp_vec) {
+    dplyr::mutate(value = purrr::map(.data$value, function(temp_vec) {
       temp_list = list(temp_vec)
 
       names(temp_list) = partition_name
@@ -81,7 +81,7 @@ get_partition_combs = function(partitions_list,
     }))
 
   comb_df = comb_df %>%
-    rename(!!sym(partition_name) := .data$value)
+    dplyr::rename(!!sym(partition_name) := .data$value)
 
   return(comb_df)
 
