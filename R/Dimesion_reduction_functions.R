@@ -264,7 +264,7 @@ map_pca_reduction = function(multi_feature_partitions,
 #'
 #' @importFrom  pls plsr
 #'
-#' @importFrom stringr stringr::str_remove_all
+#' @importFrom stringr str_remove_all
 #'
 pls_reduction = function(df,
                          target_var_name,
