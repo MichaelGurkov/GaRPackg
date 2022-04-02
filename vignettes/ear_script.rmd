@@ -1,25 +1,53 @@
+---
+title: "Preliminary analysis"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, echo = FALSE, message = FALSE,
+  warning = FALSE, comment = "#>", fig.width = 10
+)
+```
+
+```{r load_libraries}
+
+library(GaRPackg)
+
+library(tidyverse)
+
+library(readxl)
+
+library(zoo)
+
+```
+
 
 ```{r set_params}
 
 partitions_list_ear = list(
   Inflation = c("Infl"),
-  Firm_Performance_indicatores = c("PE_Ratio", "Div_Yield",
+  Firm_Performance_indicators = c("PE_Ratio", "Div_Yield",
                                    "Price_to_Book", "de"),
-  Market_indicatores = c("US_Gov_10Y_Rate", "US_Gov_3M_Rate",
+  Market_indicators = c("US_Gov_10Y_Rate", "US_Gov_3M_Rate",
                          "Term_Spread"),
-  Risk_indicatores = c("VIX", "dfy")
-)
+  Risk_indicators = c("VIX", "dfy")
+) %>% 
+  map(tolower)
 
-target_var_name = "Eq_Premium"
+target_var_name = "eq_premium"
 
 horizon_list=c(1,4)
 
 quantile_vec= c(0.10,0.25,0.5,0.75,0.90)
 
 pca.align.list =  list(
-                       Market_indicatores=list("US_Gov_10Y_Rate",TRUE),
+                       Market_indicatores=list("us_gov_10y_rate",TRUE),
                        Firm_Performance_indicatores=list("de",TRUE),
-                       Risk_indicatores=list("VIX",TRUE)
+                       Risk_indicatores=list("vix",TRUE)
                        )
 
 
@@ -36,30 +64,20 @@ plot_names = tribble(
 
 ```
 
-```{r load_libraries}
-
-library(GaRPackg)
-
-library(tidyverse)
-
-library(readxl)
-
-library(zoo)
-
-```
 
 ```{r import_data}
 
 Raw_data <- read_excel(
-  paste0("C:\\Users\\internet",
+  paste0(Sys.getenv("USERPROFILE"),
          "\\OneDrive - Bank Of Israel\\Data\\BoI",
          "\\var_data\\Data_for_R.xlsx"),
   sheet = "Quarterly")
 
-ear_data = Raw_data %>%
-  select(Date,Eq_Premium,
+ear_data = Raw_data  %>% 
+  rename_all(tolower) %>% 
+  select(date,eq_premium,
          unlist(partitions_list_ear, use.names = FALSE)) %>%
-  mutate(date = as.yearqtr(Date)) %>%
+  mutate(date = as.yearqtr(date)) %>%
   mutate(across(-date, as.numeric)) %>%
   filter(complete.cases(.))
 
@@ -67,9 +85,88 @@ ear_data = Raw_data %>%
 
 ```
 
+# EDA
+
+The purpose of EDA is to look at features behavior (distributions,correlation), see if something stands out.
+
+```{r plot_equity_premium]}
+
+ear_data %>% 
+  ggplot(aes(date, eq_premium)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("S&P500 equity premium (percent)")
+
+
+```
+
+Equity premium seems sensible, significant drops around major financial events (LTCM, Dot Com, GFC and Covid19).
+
+```{r correlations}
+
+ear_data %>% 
+  select(-date) %>% 
+  cor(use = "pairwise.complete.obs") %>% 
+  ggcorrplot::ggcorrplot(type = "lower",
+                         show.diag = FALSE,
+                         lab = TRUE,
+                         lab_size = 3,
+                         hc.order = TRUE,
+                         title = "Correlations (hierarchly clustered)",
+                         ggtheme = theme_minimal()) + 
+  theme(panel.grid = element_blank())
+
+
+
+```
+
+* The target feature (eq_premium) seems weakly correlated with anything (except VIX)
+* US gov bond short and long are highly correlated.
+* "Fundamental" indicators (Price to Book, PE ratio, Div yield) are highly
+  correlated
+
+```{r scatter_versus_target, fig.height=8}
+
+ear_data %>% 
+  pivot_longer(-c(date, eq_premium)) %>% 
+  ggplot(aes(value, eq_premium)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Scatter plot of Target (eq premium) vs features")
+
+```
+
+Some outliers in `dfy` and `infl`, if they are "legit" can it help with
+"extreme" scenarios? Let's check them out
+
+```{r outliers}
+
+ear_data %>% 
+  select(date, dfy, infl) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(date, value)) + 
+  geom_line() + 
+  geom_point(data = . %>% filter((name == "dfy" & value > 3) | 
+                                 (name == "infl" & value < -2)),
+             color = "red") + 
+  geom_text(data = . %>% filter((name == "dfy" & value > 3) | 
+                                 (name == "infl" & value < -2)),
+            aes(x = date, y = value,label = as.character(date)),
+            nudge_x = 5, color = "red") + 
+  facet_wrap(~name, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
+
+```
+
+Both outliers are at the end of 2008, perhaps GFC?
+
+
+# VaR Analysis
+
 ```{r run_analysis}
 
-EARModel=run_GaR_analysis(
+results = run_GaR_analysis(
   partitions_list = partitions_list_ear,
   vars_df = ear_data,
   target_var_name = target_var_name,
@@ -83,11 +180,160 @@ EARModel=run_GaR_analysis(
 
 ```
 
+## Estimation results
+
+### PCA
 
 
 ```{r pca_loadings}
+
+results %>% 
+  extract_pca_loadings_from_gar_model() %>% 
+  ggplot(aes(x = coeff,
+             y = tidytext::reorder_within(rowname,coeff,partition ))) + 
+  geom_col(width = 0.5) + 
+  tidytext::scale_y_reordered() + 
+  facet_wrap(~partition, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
 
 
 
 ```
 
+* Firm Performance indicators' loadings seem ok, opposite directions 
+between "price" group (PE and Price to Book) and "yield" group (Div yield and de)
+* Market indicators seem ok too. The term spread shrinks as short gov rate rises (the correlation analysis shows stronger 3M effect relative to 10 Y)
+
+```{r pca_timeseries}
+
+results %>% 
+  extract_pca_timeseries_from_gar_model() %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(date, value)) + 
+  geom_line() + 
+  facet_wrap(~name, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
+
+```
+
+* Firm Performance indicators seem to exibit "long" (about 10 year) trends.
+Does that make sense?
+* Market indicators seem ok - big drops in major financial events. This behavior is even more pronounced in Risk indicators.
+
+
+### Quantile regression coefficients
+
+```{r plot_coeffs}
+
+results %>% 
+  extract_coeffs_from_gar_model() %>% 
+  filter(!partition == "Intercept") %>% 
+  ggplot(aes(quantile, coeff)) + 
+  geom_col(width = 0.5, aes(fill = significant)) + 
+  scale_fill_viridis_d() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_grid(rows = vars(partition), cols = vars(horizon),
+             scales = "free") + 
+  xlab(NULL) + ylab(NULL) + 
+  theme(legend.title = element_blank())
+```
+
+ * The most dominant partitions (coeff magnitude and less so significance)
+are: Firm performance and Risk indicators. 
+ * The direction (coeff signs) seem plausible - both partitions have positive association with returns in general.
+
+
+```{r plot_factor_contribution}
+
+results %>% 
+  extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>% 
+  select(-intercept) %>% 
+  pivot_longer(-c(date, horizon)) %>% 
+  ggplot(aes(date, value, fill = name)) + 
+  geom_col() + 
+  facet_wrap(~horizon, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
+
+```
+
+ * Short run performance is determined by risk, long run by firm performance ("fundamentals"?)
+
+
+### In sample prediction
+
+```{r plot_in_sample_forecast}
+
+results %>% 
+  pluck("fitted_df") %>% 
+  ggplot(aes(date, fitted_values, color = as.character(quantile))) + 
+  geom_line() + 
+  facet_wrap(~horizon, scales = "free") + 
+  xlab(NULL) + ylab(NULL) + 
+  theme(legend.title = element_blank())
+
+
+
+```
+
+ * In short term upper and lower tails seem to go in opposite direction (especially around 2008 - GFC?), in long term they seem to go in one direction
+
+## Evaluation and goodness of fit
+
+```{r out_of_sample_forecast}
+
+# set window length so that OS forecasts start at year 2000
+
+win_len = (ear_data %>% 
+  filter(lubridate::year(date) >= 2000) %>% 
+  nrow()) - max(horizon_list) + 1
+
+out_of_sample_forecast = get_gar_forecast(
+  partitions_list = partitions_list_ear,
+  vars_df = ear_data,
+  target_var_name = "eq_premium",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list = pca.align.list,
+  win_len = win_len)
+
+```
+
+```{r benchmarks_for_quantile_r2}
+
+intercept_only_benchmark = get_gar_forecast(
+  partitions_list = NULL,
+  vars_df = ear_data,
+  target_var_name = "eq_premium",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list = pca.align.list,
+  win_len = win_len)
+
+```
+
+```{r goodness_of_fit}
+
+pit_score = quantile_pit_score(
+  forecast_df = out_of_sample_forecast,
+  actual_df = select(ear_data, c(date, eq_premium)))
+
+r2_score = quantile_r2_score(
+  forecast_df = out_of_sample_forecast,
+  actual_df = select(ear_data, c(date, eq_premium)),
+  benchmark_df = intercept_only_benchmark)
+
+```
+
+```{r plot_goodness_of_fit}
+
+r2_score %>% 
+  ggplot(aes(as.character(quantile), quantile_r2)) + 
+  geom_col() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  facet_wrap(~horizon, scales = "free") + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Quantile R2 (relative to intercept only)")
+
+```
+
+ * In short EaR seem to beat the intercept in middle-right tail. In long term it's all over the place
