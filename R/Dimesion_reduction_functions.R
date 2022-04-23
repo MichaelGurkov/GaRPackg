@@ -43,12 +43,12 @@ align_pca = function(pca_obj, var_name,
   }
 
   if (length(sign_vec) == 0) {
-    message(paste0(
+    warning(paste0(
       "align_pca: ",
       "Aligning coefficient missing ",
       "for ",
-      var_name
-    ))
+      var_name,". See details in pca_reduction"
+    ),call. = FALSE)
 
     return(pca_obj)
 
@@ -111,7 +111,7 @@ pca_reduction = function(df,
   time_index_var = stringr::str_subset(names(df), "[Dd]ate")
 
   if (length(time_index_var) != 1) {
-    message("Could not identify time index")
+    warning("Could not identify time index")
   }
 
   # Extract PCA
@@ -170,6 +170,10 @@ pca_reduction = function(df,
 #' (optional) is boolean indicator alignment direction (True means
 #'  positive direction).
 #'
+#' @details
+#' * `align_pca` When pca coefficients vector doen't containt the aligining
+#' variable (perhaps because of name misspecification) a warning is issued
+#'  and no alignment is performed.
 
 map_pca_reduction = function(multi_feature_partitions,
                              vars_df,
@@ -264,7 +268,7 @@ map_pca_reduction = function(multi_feature_partitions,
 #'
 #' @importFrom  pls plsr
 #'
-#' @importFrom stringr stringr::str_remove_all
+#' @importFrom stringr str_remove_all
 #'
 pls_reduction = function(df,
                          target_var_name,

@@ -214,7 +214,7 @@ run_quant_reg = function(reg_df,
 #'
 #' @importFrom rlang .data
 #'
-#' @importFrom stringr stringr::str_remove_all
+#' @importFrom stringr str_remove_all
 #'
 #' @param gar_model model object with run_GaR_analysis result
 #'

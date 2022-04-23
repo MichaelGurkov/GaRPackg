@@ -47,7 +47,7 @@ extract_qreq_coeff_table = function(qreg_obj) {
 #'
 #' @title Extract regression coefficient from gar model object
 #'
-#' @importFrom stringr stringr::str_remove_all
+#' @importFrom stringr str_remove_all
 #'
 #' @importFrom rlang .data
 #'
@@ -93,7 +93,7 @@ extract_coeffs_from_gar_model = function(gar_model,
 #'
 #' @importFrom rlang .data
 #'
-#' @importFrom stringr stringr::str_remove_all
+#' @importFrom stringr str_remove_all
 #'
 #' @param gar_model model object with run_GaR_analysis result
 #'
@@ -215,7 +215,7 @@ calculate_skew_and_iqr = function(gar_obj,
 #'
 #' @description This function extracts PCA loadings data frame from gar model
 #'
-#' @importFrom  purrr purrr::map_dfr
+#' @importFrom  purrr map_dfr
 #'
 #' @importFrom tibble rownames_to_column
 #'
@@ -255,7 +255,7 @@ extract_pca_loadings_from_gar_model = function(gar_model) {
 #'
 #' @description This function extracts PCA timeseries data frame from gar model
 #'
-#' @importFrom  purrr purrr::map_dfr
+#' @importFrom  purrr map_dfr
 #'
 #' @importFrom tibble rownames_to_column
 #'
@@ -313,7 +313,7 @@ extract_pca_timeseries_from_gar_model = function(gar_model, n_comp = 1) {
 #' @description This function extracts PCA explained variance share data frame
 #'  from gar model
 #'
-#' @importFrom  purrr purrr::map_dfr
+#' @importFrom  purrr map_dfr
 #'
 #' @importFrom tibble rownames_to_column
 #'
