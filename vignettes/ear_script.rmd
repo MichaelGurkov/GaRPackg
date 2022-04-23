@@ -29,13 +29,9 @@ library(zoo)
 ```{r set_params}
 
 partitions_list_ear = list(
-  Inflation = c("Infl"),
-  Firm_Performance_indicators = c("PE_Ratio", "Div_Yield",
-                                   "Price_to_Book", "de"),
-  Market_indicators = c("US_Gov_10Y_Rate", "US_Gov_3M_Rate",
-                         "Term_Spread"),
-  Risk_indicators = c("VIX", "dfy")
-) %>% 
+  Macro_Conditions = c("Infl_y", "Output_Gap"),
+  Firm_Performance_indicatores = c("PE_Ratio", "Div_Yield"),
+  Financial_uncertainty_index = c("Financial_uncertainty_index")) %>% 
   map(tolower)
 
 target_var_name = "eq_premium"
@@ -44,11 +40,8 @@ horizon_list=c(1,4)
 
 quantile_vec= c(0.10,0.25,0.5,0.75,0.90)
 
-pca.align.list =  list(
-                       Market_indicatores=list("us_gov_10y_rate",TRUE),
-                       Firm_Performance_indicatores=list("de",TRUE),
-                       Risk_indicatores=list("vix",TRUE)
-                       )
+pca.align.list =  list(Macro_Conditions = list("Infl_y", FALSE),
+                       Firm_Performance_indicatores=list("Div_Yield",TRUE))
 
 
 plot_names = tribble(
@@ -85,9 +78,7 @@ ear_data = Raw_data  %>%
 
 ```
 
-# EDA
 
-The purpose of EDA is to look at features behavior (distributions,correlation), see if something stands out.
 
 ```{r plot_equity_premium]}
 
@@ -98,68 +89,6 @@ ear_data %>%
 
 
 ```
-
-Equity premium seems sensible, significant drops around major financial events (LTCM, Dot Com, GFC and Covid19).
-
-```{r correlations}
-
-ear_data %>% 
-  select(-date) %>% 
-  cor(use = "pairwise.complete.obs") %>% 
-  ggcorrplot::ggcorrplot(type = "lower",
-                         show.diag = FALSE,
-                         lab = TRUE,
-                         lab_size = 3,
-                         hc.order = TRUE,
-                         title = "Correlations (hierarchly clustered)",
-                         ggtheme = theme_minimal()) + 
-  theme(panel.grid = element_blank())
-
-
-
-```
-
-* The target feature (eq_premium) seems weakly correlated with anything (except VIX)
-* US gov bond short and long are highly correlated.
-* "Fundamental" indicators (Price to Book, PE ratio, Div yield) are highly
-  correlated
-
-```{r scatter_versus_target, fig.height=8}
-
-ear_data %>% 
-  pivot_longer(-c(date, eq_premium)) %>% 
-  ggplot(aes(value, eq_premium)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_wrap(~name, scales = "free") + 
-  xlab(NULL) + ylab(NULL) + 
-  ggtitle("Scatter plot of Target (eq premium) vs features")
-
-```
-
-Some outliers in `dfy` and `infl`, if they are "legit" can it help with
-"extreme" scenarios? Let's check them out
-
-```{r outliers}
-
-ear_data %>% 
-  select(date, dfy, infl) %>% 
-  pivot_longer(-date) %>% 
-  ggplot(aes(date, value)) + 
-  geom_line() + 
-  geom_point(data = . %>% filter((name == "dfy" & value > 3) | 
-                                 (name == "infl" & value < -2)),
-             color = "red") + 
-  geom_text(data = . %>% filter((name == "dfy" & value > 3) | 
-                                 (name == "infl" & value < -2)),
-            aes(x = date, y = value,label = as.character(date)),
-            nudge_x = 5, color = "red") + 
-  facet_wrap(~name, scales = "free") + 
-  xlab(NULL) + ylab(NULL)
-
-```
-
-Both outliers are at the end of 2008, perhaps GFC?
 
 
 # VaR Analysis
