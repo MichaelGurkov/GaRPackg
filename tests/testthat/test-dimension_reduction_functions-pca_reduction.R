@@ -17,3 +17,9 @@ test_that("pca reduction returns complete obs pca",
             object = abs(result_df$pca_obj$x[,1]),
             expected = test_df$x[c(-1,-12)]
           ))
+
+test_that("pca reduction issues warning when aligning variable is missing",
+          expect_warning(
+            object = pca_reduction(test_df,center = FALSE,
+                                   scale = FALSE,
+                                   sign_align_params = list("X", TRUE))))
