@@ -19,9 +19,13 @@ library(GaRPackg)
 
 library(tidyverse)
 
+library(lubridate)
+
 library(readxl)
 
 library(zoo)
+
+library(slider)
 
 ```
 
@@ -40,20 +44,8 @@ horizon_list=c(1,4)
 
 quantile_vec= c(0.10,0.25,0.5,0.75,0.90)
 
-pca.align.list =  list(Macro_Conditions = list("Infl_y", FALSE),
-                       Firm_Performance_indicatores=list("Div_Yield",TRUE))
-
-
-plot_names = tribble(
-  ~var_name, ~plot_name,
-  "Intercept", "Intercept",
-  "Infl", "Inflation",
-  "Firm_Performance_indicatores", "Firm Perf",
-  "Market_indicatores", "Market ind",
-  "Risk_indicatores", "Risk"
-  )
-
-
+pca.align.list =  list(Macro_Conditions = list("infl_y", FALSE),
+                       Firm_Performance_indicatores=list("div_yield",TRUE))
 
 ```
 
@@ -129,9 +121,6 @@ results %>%
 
 ```
 
-* Firm Performance indicators' loadings seem ok, opposite directions 
-between "price" group (PE and Price to Book) and "yield" group (Div yield and de)
-* Market indicators seem ok too. The term spread shrinks as short gov rate rises (the correlation analysis shows stronger 3M effect relative to 10 Y)
 
 ```{r pca_timeseries}
 
@@ -144,10 +133,6 @@ results %>%
   xlab(NULL) + ylab(NULL)
 
 ```
-
-* Firm Performance indicators seem to exibit "long" (about 10 year) trends.
-Does that make sense?
-* Market indicators seem ok - big drops in major financial events. This behavior is even more pronounced in Risk indicators.
 
 
 ### Quantile regression coefficients
@@ -167,25 +152,23 @@ results %>%
   theme(legend.title = element_blank())
 ```
 
- * The most dominant partitions (coeff magnitude and less so significance)
-are: Firm performance and Risk indicators. 
- * The direction (coeff signs) seem plausible - both partitions have positive association with returns in general.
-
 
 ```{r plot_factor_contribution}
 
 results %>% 
   extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>% 
-  select(-intercept) %>% 
-  pivot_longer(-c(date, horizon)) %>% 
-  ggplot(aes(date, value, fill = name)) + 
-  geom_col() + 
-  facet_wrap(~horizon, scales = "free") + 
+  filter(horizon == 4) %>% 
+  select(-horizon) %>% 
+  pivot_longer(-c(date)) %>% 
+  ggplot() + 
+  geom_col(aes(date, value, fill = name)) + 
+  geom_line(data = results$fitted_df %>% 
+              filter(horizon == 4) %>% 
+              filter(quantile == 0.5), aes(x = date, y = fitted_values)) + 
   xlab(NULL) + ylab(NULL)
 
 ```
 
- * Short run performance is determined by risk, long run by firm performance ("fundamentals"?)
 
 
 ### In sample prediction
@@ -194,9 +177,16 @@ results %>%
 
 results %>% 
   pluck("fitted_df") %>% 
-  ggplot(aes(date, fitted_values, color = as.character(quantile))) + 
-  geom_line() + 
-  facet_wrap(~horizon, scales = "free") + 
+  ggplot() + 
+  geom_line(data = . %>% 
+              filter(horizon == 4 & quantile == 0.5),
+            aes(date, fitted_values)) + 
+  geom_ribbon(data = . %>% 
+                filter(horizon == 4 & quantile %in% c(0.25,0.75)) %>% 
+                pivot_wider(names_from = quantile,names_prefix = "q_",
+                            values_from = "fitted_values"),
+              aes(x = date, ymin = q_0.25, ymax = q_0.75, alpha = 0.5),
+              show.legend = FALSE) + 
   xlab(NULL) + ylab(NULL) + 
   theme(legend.title = element_blank())
 
@@ -204,9 +194,9 @@ results %>%
 
 ```
 
- * In short term upper and lower tails seem to go in opposite direction (especially around 2008 - GFC?), in long term they seem to go in one direction
 
-## Evaluation and goodness of fit
+
+## Evaluation of out of sample
 
 ```{r out_of_sample_forecast}
 
@@ -227,42 +217,50 @@ out_of_sample_forecast = get_gar_forecast(
 
 ```
 
-```{r benchmarks_for_quantile_r2}
 
-intercept_only_benchmark = get_gar_forecast(
-  partitions_list = NULL,
-  vars_df = ear_data,
-  target_var_name = "eq_premium",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = pca.align.list,
-  win_len = win_len)
+```{r plot_out_of_sample_forecasts}
+
+out_of_sample_forecast %>% 
+  filter(horizon == 4) %>% 
+  ggplot(aes(date, forecast_values, color = quantile)) + 
+  geom_line()
 
 ```
 
-```{r goodness_of_fit}
+```{r make_deciles_df}
 
-pit_score = quantile_pit_score(
-  forecast_df = out_of_sample_forecast,
-  actual_df = select(ear_data, c(date, eq_premium)))
-
-r2_score = quantile_r2_score(
-  forecast_df = out_of_sample_forecast,
-  actual_df = select(ear_data, c(date, eq_premium)),
-  benchmark_df = intercept_only_benchmark)
+deciles_df = Raw_data %>% 
+  rename_all(tolower) %>% 
+  select(date, eq_premium) %>% 
+  mutate(date = ymd(date)) %>% 
+  filter(date >= as_date("1960-09-30") & date <= as_date("2021-12-31")) %>% 
+  mutate(eq_premium = as.numeric(eq_premium)) %>% 
+  mutate(q_0.25 = slide_dbl(eq_premium,.f = ~quantile(.,0.25),
+                         .before = Inf)) %>% 
+  mutate(q_0.75 = slide_dbl(eq_premium,.f = ~quantile(.,0.75),
+                         .before = Inf))
 
 ```
 
-```{r plot_goodness_of_fit}
+```{r compare_deciles_df}
 
-r2_score %>% 
-  ggplot(aes(as.character(quantile), quantile_r2)) + 
-  geom_col() + 
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  facet_wrap(~horizon, scales = "free") + 
+deciles_df %>% 
+  select(-eq_premium) %>% 
+  mutate(date = as.yearqtr(date)) %>% 
+  pivot_longer(-date,names_to = "quantile",
+               values_to = "BoI_values") %>% 
+  mutate(quantile = str_remove(quantile, "q_")) %>% 
+  inner_join(out_of_sample_forecast %>% 
+               filter(horizon == 4) %>% 
+               select(-horizon) %>% 
+               rename(EaR_values = forecast_values),
+             by = c("quantile","date")) %>% 
+  pivot_longer(-c(date, quantile)) %>% 
+  ggplot(aes(date, value, color = quantile, linetype = name)) +
+  geom_line(lwd = 1) + 
   xlab(NULL) + ylab(NULL) + 
-  ggtitle("Quantile R2 (relative to intercept only)")
+  ggtitle("Comparison between BoI (market division) and EaR forecasts") + 
+  theme(legend.title = element_blank())
 
 ```
 
- * In short EaR seem to beat the intercept in middle-right tail. In long term it's all over the place
