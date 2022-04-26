@@ -215,6 +215,15 @@ out_of_sample_forecast = get_gar_forecast(
   pca.align.list = pca.align.list,
   win_len = win_len)
 
+out_of_sample_intercept = get_gar_forecast(
+  partitions_list = NULL,
+  vars_df = ear_data,
+  target_var_name = "eq_premium",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list = pca.align.list,
+  win_len = win_len)
+
 ```
 
 
@@ -254,6 +263,11 @@ deciles_df %>%
                filter(horizon == 4) %>% 
                select(-horizon) %>% 
                rename(EaR_values = forecast_values),
+             by = c("quantile","date")) %>% 
+  inner_join(out_of_sample_intercept %>% 
+               filter(horizon == 4) %>% 
+               select(-horizon) %>% 
+               rename(EaR_intercept = forecast_values),
              by = c("quantile","date")) %>% 
   pivot_longer(-c(date, quantile)) %>% 
   ggplot(aes(date, value, color = quantile, linetype = name)) +
