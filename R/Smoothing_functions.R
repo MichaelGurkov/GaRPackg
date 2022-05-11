@@ -458,7 +458,8 @@ extract_smoothed_quantiles = function(
 #'  distribution implied by the \code{data_points_vec} and
 #'  \code{percentiles_vec} parameters
 #'
-calculate_implied_std_dev = function(data_points_vec, percentiles_vec){
+calculate_implied_std_dev = function(data_points_vec,
+                                     percentiles_vec){
 
   loss_function = function(data_points_vec_internal,
                            percentiles_vec_internal,
