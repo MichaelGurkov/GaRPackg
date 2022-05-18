@@ -1,0 +1,150 @@
+
+```{r load_libraries}
+
+library(GaRPackg)
+
+library(tidyverse)
+
+library(readxl)
+
+```
+
+```{r set_params}
+
+parameters_list = list()
+
+parameters_list$horizon_list = c(4)
+
+parameters_list$quantile_vec = c(0.1,0.25,0.5,0.75,0.9)
+```
+
+```{r import_data}
+
+Raw_data <- read_excel(
+  paste0(Sys.getenv("USERPROFILE"),
+         "\\OneDrive - Bank Of Israel\\Data\\BoI",
+         "\\var_data\\Data_for_Bootstrap.xlsx"),
+  sheet = "Quarterly")
+
+bootstrap_data = Raw_data  %>% 
+  rename_all(tolower) %>% 
+  mutate(date = as.yearqtr(date)) %>%
+  mutate(across(-date, as.numeric))
+
+
+
+```
+
+```{r get_all_combinations_test}
+
+category_params_df = list(
+  Market = list(
+    optional = 
+      c("term_spread",
+        "us_gov_10y_rate",
+        "us_gov_12m_rate",
+        "eq_premium_q")
+  ),
+  Risk = list(
+    optional = c(
+      "dfy",
+      "svar",
+      "vix",
+      "financial_uncertainty_index")
+  ),
+  Firm = list(
+    optional = 
+      c("pe_ratio",
+        "div_yield",
+        "book_to_market",
+        "de")
+  ),
+  Macro =  list(
+    optional = c(
+      "infl_y",
+      "output_gap",
+      "unemployment_gap")
+  )
+) %>%
+  enframe(name = "category", value = "params") %>%
+  mutate(part_comb_df = map2(category, params,
+                             function(temp_name, temp_part) {
+                               temp_part_df = get_partition_combs(partitions_list = temp_part,
+                                                                  partition_name = temp_name)
+                             }))
+
+
+feature_select_df = map(
+  category_params_df$category,function(temp_cat){
+    temp_df = category_params_df %>% 
+      filter(category == temp_cat) %>% 
+      select(part_comb_df) %>% 
+      unnest(cols = c(part_comb_df))
+    return(temp_df)
+                        }
+  ) %>% 
+  reduce(full_join, by = character()) %>% 
+  unite(col = name,starts_with("name"),sep = "-") %>% 
+  mutate(temp_part = pmap(list(Market,Risk,Firm,Macro),c))
+
+```
+
+```{r get_benchmark_model}
+
+intercept_forecast = get_gar_forecast(
+  partitions_list = NULL,
+  vars_df = bootstrap_data,
+  target_var_name = "eq_premium",
+  horizon_list = parameters_list$horizon_list,
+  quantile_vec = parameters_list$quantile_vec)
+
+actual_df = bootstrap_data %>% 
+  select(date, eq_premium) %>% 
+  filter(complete.cases(.)) %>% 
+  rename(actual_values = eq_premium)
+
+```
+
+```{r get_out_of_sample_fit}
+
+fit_df = feature_select_df %>% 
+  slice(1) %>% 
+  mutate(ear_forecast = map(temp_part, function(part){
+    
+    temp_forecast = get_gar_forecast(partitions_list = part,
+                     vars_df = bootstrap_data %>% 
+                       select(date, eq_premium,
+                              unlist(part,use.names = FALSE)) %>% 
+                       filter(complete.cases(.)),
+      target_var_name = "eq_premium",
+      horizon_list = parameters_list$horizon_list,
+      quantile_vec = parameters_list$quantile_vec)
+    
+    return(temp_forecast)
+    
+  }))
+
+```
+
+```{r calculate_pit_and_r2}
+
+evaluation_metrics_df = fit_df %>% 
+  select(name, temp_part, ear_forecast) %>% 
+  mutate(q2 = map(ear_forecast, function(temp_forecast){
+    
+    temp_q2 = quantile_r2_score(forecast_df = temp_forecast,
+                                actual_df = actual_df,
+                                benchmark_df = intercept_forecast)
+    return(temp_q2)
+    
+  })) %>% 
+  mutate(pit = map(ear_forecast, function(temp_forecast){
+    
+    temp_pit = quantile_pit_score(forecast_df = temp_forecast,
+                                actual_df = actual_df)
+    return(temp_pit)
+    
+  }))
+
+```
+
