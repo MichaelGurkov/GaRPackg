@@ -7,6 +7,8 @@ library(tidyverse)
 
 library(readxl)
 
+library(zoo)
+
 ```
 
 ```{r set_params}
@@ -69,8 +71,7 @@ category_params_df = list(
   enframe(name = "category", value = "params") %>%
   mutate(part_comb_df = map2(category, params,
                              function(temp_name, temp_part) {
-                               temp_part_df = get_partition_combs(partitions_list = temp_part,
-                                                                  partition_name = temp_name)
+                               temp_part_df = GaRPackg:::get_partition_combs(partitions_list = temp_part,partition_name = temp_name)
                              }))
 
 
@@ -85,7 +86,10 @@ feature_select_df = map(
   ) %>% 
   reduce(full_join, by = character()) %>% 
   unite(col = name,starts_with("name"),sep = "-") %>% 
-  mutate(temp_part = pmap(list(Market,Risk,Firm,Macro),c))
+  mutate(temp_part = pmap(list(Market,Risk,Firm,Macro),c)) %>% 
+  filter(!name == "Market-0-Risk-0-Firm-0-Macro-0")
+
+
 
 ```
 
@@ -108,17 +112,19 @@ actual_df = bootstrap_data %>%
 ```{r get_out_of_sample_fit}
 
 fit_df = feature_select_df %>% 
-  slice(1) %>% 
+  slice_sample(n = 1000) %>% 
   mutate(ear_forecast = map(temp_part, function(part){
     
-    temp_forecast = get_gar_forecast(partitions_list = part,
+    part = str_subset(unlist(part,use.names = FALSE),".+")
+    
+    temp_forecast = tryCatch(get_gar_forecast(partitions_list = part,
                      vars_df = bootstrap_data %>% 
-                       select(date, eq_premium,
-                              unlist(part,use.names = FALSE)) %>% 
+                       select(date, eq_premium,all_of(part)) %>% 
                        filter(complete.cases(.)),
       target_var_name = "eq_premium",
       horizon_list = parameters_list$horizon_list,
-      quantile_vec = parameters_list$quantile_vec)
+      quantile_vec = parameters_list$quantile_vec),
+      error = function(e){print(part)})
     
     return(temp_forecast)
     
