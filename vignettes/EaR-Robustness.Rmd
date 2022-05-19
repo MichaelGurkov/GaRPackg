@@ -33,6 +33,8 @@ bootstrap_data = Raw_data  %>%
   mutate(date = as.yearqtr(date)) %>%
   mutate(across(-date, as.numeric))
 
+bootstrap_data = bootstrap_data %>% 
+ slice(84:nrow(.))
 
 
 ```
@@ -87,7 +89,12 @@ feature_select_df = map(
   reduce(full_join, by = character()) %>% 
   unite(col = name,starts_with("name"),sep = "-") %>% 
   mutate(temp_part = pmap(list(Market,Risk,Firm,Macro),c)) %>% 
-  filter(!name == "Market-0-Risk-0-Firm-0-Macro-0")
+  filter(!name == "Market-0-Risk-0-Firm-0-Macro-0") %>% 
+  mutate(temp_part = map(temp_part, function(x){
+    
+    return(x[nchar(x) > 0])
+    
+  }))
 
 
 
@@ -114,21 +121,34 @@ actual_df = bootstrap_data %>%
 fit_df = feature_select_df %>% 
   slice_sample(n = 1000) %>% 
   mutate(ear_forecast = map(temp_part, function(part){
+
+    names_vec = unlist(part,use.names = FALSE)
     
-    part = str_subset(unlist(part,use.names = FALSE),".+")
+    temp_df = bootstrap_data %>% 
+      select(date, eq_premium, all_of(names_vec)) %>% 
+      filter(complete.cases(.))
     
-    temp_forecast = tryCatch(get_gar_forecast(partitions_list = part,
-                     vars_df = bootstrap_data %>% 
-                       select(date, eq_premium,all_of(part)) %>% 
-                       filter(complete.cases(.)),
+    temp_win_len = bootstrap_data %>% 
+      filter(date <= as.yearqtr("2000 Q1")) %>%
+      pull(date) %>% 
+      length()
+                              
+                              
+    
+    temp_forecast = get_gar_forecast(partitions_list = part,
+                     vars_df = temp_df,
+                     win_len = temp_win_len,
       target_var_name = "eq_premium",
       horizon_list = parameters_list$horizon_list,
-      quantile_vec = parameters_list$quantile_vec),
-      error = function(e){print(part)})
+      quantile_vec = parameters_list$quantile_vec)
     
     return(temp_forecast)
     
   }))
+
+# write_rds(fit_df,paste0("C:\\Users\\internet",
+#                         "\\OneDrive - Bank Of Israel\\Data\\BoI",
+#                         "\\var_data\\fit_df.rds"))
 
 ```
 
@@ -151,6 +171,60 @@ evaluation_metrics_df = fit_df %>%
     return(temp_pit)
     
   }))
+
+```
+
+```{r dist_of_quantile_r2}
+
+# evaluation_metrics_df %>% 
+#   select(temp_part,q2) %>% 
+#   unnest(q2) %>% 
+#   write_csv(paste0("C:\\Users\\internet",
+#                         "\\OneDrive - Bank Of Israel\\Data\\BoI",
+#                         "\\var_data\\quantile_r2.csv"))
+# 
+# evaluation_metrics_df %>% 
+#   select(temp_part,pit) %>% 
+#   unnest(pit) %>% 
+#   write_csv(paste0("C:\\Users\\internet",
+#                         "\\OneDrive - Bank Of Israel\\Data\\BoI",
+#                         "\\var_data\\pit.csv"))
+
+
+evaluation_metrics_df %>% 
+  select(temp_part,q2) %>% 
+  unnest(q2) %>% 
+  group_by(quantile) %>% 
+  summarise(temp_list = list(tibble(probs = c(0.1,0.5,0.9),
+                            r2 = quantile(quantile_r2,c(0.1,0.5,0.9)))),
+            .groups = "drop") %>% 
+  unnest(temp_list) %>% 
+  pivot_wider(names_from = probs, values_from = r2,
+              names_prefix = "q_") %>% 
+  ggplot(aes(x = quantile)) + 
+  geom_point(aes(y = q_0.5)) + 
+  geom_errorbar(aes(ymin = q_0.1,ymax = q_0.9)) + 
+  ylab(NULL)
+
+```
+
+```{r dist_of_pit}
+
+evaluation_metrics_df %>% 
+  select(temp_part,pit) %>% 
+  unnest(pit) %>% 
+  mutate(pit = pit - as.numeric(quantile)) %>% 
+  group_by(quantile) %>% 
+  summarise(temp_list = list(tibble(probs = c(0.1,0.5,0.9),
+                            pit = quantile(pit,c(0.1,0.5,0.9)))),
+            .groups = "drop") %>% 
+  unnest(temp_list) %>% 
+  pivot_wider(names_from = probs, values_from = pit,
+              names_prefix = "q_") %>% 
+  ggplot(aes(x = quantile)) + 
+  geom_point(aes(y = q_0.5)) + 
+  geom_errorbar(aes(ymin = q_0.1,ymax = q_0.9)) + 
+  ylab(NULL) + ggtitle("Pit distribution")
 
 ```
 
