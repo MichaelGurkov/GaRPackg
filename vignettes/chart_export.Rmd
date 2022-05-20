@@ -135,14 +135,13 @@ gar_analysis = run_GaR_analysis(
 
 ```
 
+
 ```{r out_of_sample_forecast}
 
 dsge_forecast = import_dsge_forecasts(
   paste0(
     file.path(Sys.getenv("USERPROFILE")),
-    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\DSGE forecasts.xlsx"
-  )
-) %>% 
+    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\DSGE forecasts.xlsx")) %>% 
   filter(target_var == "gdp") %>% 
   select(-target_var)
 
@@ -176,6 +175,7 @@ fit_df = read_rds(paste0(
   " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
 
 ```
+
 
 
 ```{r export_gdp_credit}
@@ -242,8 +242,6 @@ rm(temp_df, qreq_list, gdp_lines, credit_lines, plot_df)
 
 ```
 
-
-
 ```{r export_plot_pca_timeseries}
 
 
@@ -254,9 +252,10 @@ gar_analysis %>%
                    "\\OneDrive - Bank Of Israel\\research",
                    "\\gar\\pca_timeseries_plot_data.csv"))
 
+
 ```
 
-```{r fin_cycle_plot}
+```{r export_quantile_reg_coeffs}
 
 gar_analysis %>%
   extract_coeffs_from_gar_model() %>%
@@ -265,6 +264,88 @@ gar_analysis %>%
   write_csv(paste0(Sys.getenv("USERPROFILE"),
                    "\\OneDrive - Bank Of Israel\\research",
                    "\\gar\\quantile_reg_coeffs_plot_data.csv"))
+
+# gar_analysis %>%
+#   extract_coeffs_from_gar_model() %>%
+#   select(-c(low,high)) %>% 
+#   filter(!partition == "Intercept") %>% 
+#   mutate(horizon = as_factor(horizon)) %>% 
+#   mutate(horizon = fct_relevel(horizon,c("1","4","8","12"))) %>% 
+#   mutate(partition = as_factor(partition)) %>%
+#   mutate(partition = fct_relevel(partition,"dom_macro",
+#                                  "dom_fin","ext_macro","ext_fin")) %>% 
+#   ggplot(aes(quantile,coeff)) + 
+#   geom_col(aes(fill = significant)) + 
+#   scale_fill_manual(values = c("lightblue","gray")) + 
+#   facet_grid(cols = vars(horizon),rows = vars(partition), scales = "free")
+
+
+```
+
+```{r export_fifth_percentile_plot}
+
+gar_analysis$fitted_df %>%
+  filter(horizon %in% c(1, 12)) %>%
+  filter(quantile == "0.05") %>% 
+  select(-quantile) %>% 
+  pivot_wider(names_prefix = "horizon_",
+              names_from = horizon,values_from = fitted_values) %>% 
+  write_csv(paste0(Sys.getenv("USERPROFILE"),
+                   "\\OneDrive - Bank Of Israel\\research",
+                   "\\gar\\fifth_percentile_plot_data.csv"))
+ 
+
+# gar_analysis$fitted_df %>%
+#   filter(horizon %in% c(1, 12)) %>%
+#   filter(quantile == "0.05") %>% 
+#   select(-quantile) %>% 
+#   ggplot(aes(date, fitted_values,color = horizon)) + 
+#   geom_line() + 
+#   geom_point()
+
+
+
+```
+
+```{r export_factor_decomposition}
+
+gar_analysis %>%
+  extract_factor_contribution_from_gar_model() %>%
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
+  select(-intercept) %>%
+  pivot_longer(-c("date","horizon")) %>% 
+  write_csv(paste0(Sys.getenv("USERPROFILE"),
+                   "\\OneDrive - Bank Of Israel\\research",
+                   "\\gar\\factor_decomposition_plot_data.csv"))
+
+
+# gar_analysis %>%
+#   extract_factor_contribution_from_gar_model() %>%
+#   mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
+#   select(-intercept) %>% 
+#   pivot_longer(-c("date","horizon")) %>% 
+#   ggplot(aes(date,value, fill = name)) + 
+#   geom_col() + 
+#   scale_fill_viridis_d(option = "plasma") + 
+#   facet_wrap(~horizon)
+
+
+```
+
+
+```{r med_variance_figure, out.height="85%"}
+
+gar_analysis %>% 
+  calculate_skew_and_iqr() %>% 
+  select(-skew) %>% 
+  rename(dispersion = iqr) %>% 
+  inner_join(gar_analysis$fitted_df %>% 
+               filter(quantile == "0.5") %>% 
+               select(-quantile) %>% 
+               rename(median = fitted_values)) %>% 
+  write_csv(paste0(Sys.getenv("USERPROFILE"),
+                   "\\OneDrive - Bank Of Israel\\research",
+                   "\\gar\\med_variance_plot_data.csv"))
 
 ```
 
@@ -284,14 +365,6 @@ gar_analysis %>%
        caption = "Note: the dashed lines represent ± 2 standard error estimates") + 
   theme(plot.caption = element_text(hjust = 0.5))
   
-
-```
-
-
-```{r skewness_figure, out.height="85%", eval=FALSE}
-
-knitr::include_graphics("Figures/Risk_assymetry_h1.png")
-
 
 ```
 
@@ -380,32 +453,6 @@ df %>%
 ```
 
 
-
-```{r plot_factor_decomposition, eval=FALSE}
-
-
-gar_analysis %>%
-  extract_factor_contribution_from_gar_model() %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
-  select(-intercept) %>%
-  pivot_longer(-c("date","horizon")) %>%
-  mutate(name = factor(name,
-                       levels = c("dom_macro","dom_fin","ext_macro","ext_fin"),
-                       labels =  c("Dom. Macro","Dom. Fin. Cond.",
-                                   "External Macro","External Fin. Cond."))) %>%
-  ggplot(aes(x = date, y = value, fill = name)) +
-  geom_col() +
-  facet_wrap(~horizon, scales = "free") +
-  xlab(NULL) + ylab(NULL) +
-  ggtitle(paste("Factors contribution to the",
-                 "GaR forecast \n (5th percentile)")) +
-  scale_fill_viridis_d(option = "plasma")
-
-
-
-```
-
-
 ```{r factors_figure, out.height="85%"}
 
 knitr::include_graphics("Figures/GaR_factor_all.png")
@@ -429,36 +476,6 @@ gar_analysis %>%
   facet_wrap(~horizon, scales = "free") +
   theme(axis.text = element_text(size = 8))
 
-
-```
-
-
-```{r med_variance_figure, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_MedianVarCorr.png")
-
-
-```
-
-
-```{r}
-
-knitr::include_graphics("Figures/fig_bootstrap_skewness.png")
-
-```
-
-
-```{r}
-
-knitr::include_graphics("Figures/fig_bootstrap_FinCoefs.png")
-
-```
-
-
-
-```{r}
-
-knitr::include_graphics("Figures/fig_bootstrap_MedianVarCorr.png")
 
 ```
 
@@ -513,14 +530,6 @@ list(gar_pit, intercept_pit, dsge_pit) %>%
 ```
 
 
-```{r pit_figure}
-
-knitr::include_graphics("Figures/PIT.png")
-
-
-```
-
-
 ```{r plot_r2_score, eval=FALSE}
 
 gar_r2 = quantile_r2_score(
@@ -562,149 +571,6 @@ gar_r2 %>%
 ```
 
 
-```{r r2_figure, out.height="85%"}
-
-knitr::include_graphics("Figures/R2.png")
-
-
-```
-
-
-
-```{r left_tail}
-
-current_analysis = run_GaR_analysis(
-  partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2021 Q1")),
-  target_var_name = "gdp",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
-
-
-current_analysis$fitted_df %>%
-  filter(horizon %in% c(1, 4)) %>%
-  filter(quantile == "0.05") %>%
-  ggplot(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_line() + 
-  ylab(NULL) + xlab(NULL) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  ggtitle("Forecast of 5th Percentile, 1Q and 4Q Ahead")
-
-```
-
-
-```{r fan_chart_2019_4}
-
-fan_forecast_df = get_gar_forecast(
-  partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2019 Q4")),
-  target_var_name = "gdp",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
-
-fan_forecast_df %>% 
-  plot_fan_chart(actual_df = df %>% 
-                   select(date, gdp),
-                 fan_chart_date = as.yearqtr("2019 Q4")) + 
-  ggtitle("Fan chart at 2019 Q4")
-
-
-
-```
-
-
-```{r fan_chart_2020_4}
-
-fan_forecast_df = get_gar_forecast(
-  partitions_list = partitions_list,
-  vars_df = df %>% 
-  filter(date <= as.yearqtr("2020 Q4")),
-  target_var_name = "gdp",
-  horizon_list = horizon_list,
-  quantile_vec = quantile_vec,
-  pca.align.list = list(dom_macro = "private_consumption",
-                        ext_macro = "exports",
-                        dom_fin = "credit",
-                        ext_fin = "sp500"))
-
-fan_forecast_df %>% 
-  plot_fan_chart(actual_df = df %>% 
-                   select(date, gdp),
-                 fan_chart_date = as.yearqtr("2020 Q4")) + 
-  ggtitle("Fan chart at 2020 Q4")
-
-
-
-```
-
-
-```{r plot_events_plot}
-
-recessions = read.csv(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-  "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\recessions.csv")) %>%
-  mutate(across(c(Start, End), ~as.yearqtr(.)))
-
-events = read.csv(paste0(
-  file.path(Sys.getenv("USERPROFILE"),fsep="\\"),
-  "\\OneDrive - Bank Of Israel\\",
-  "Data\\BoI\\GaR_Data","\\events.csv")) %>%
-  mutate(across(c(Start, End), ~as.yearqtr(.)))
-
-
-gar_analysis$fitted_df %>%
-  filter(horizon %in% c(1, 12)) %>%
-  filter(quantile == "0.05") %>%
-  ggplot() +
-  ylim(c(-0.12, 0.08)) +
-  geom_point(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_line(aes(x = date, y = fitted_values, color = horizon)) +
-  geom_rect(data = recessions,mapping = aes(xmin = Start,xmax = End,
-                                            ymin = -Inf,ymax = Inf),
-            fill = "lightblue", alpha = 0.5) +
-  ylab(NULL) + xlab(NULL) +
-  scale_y_continuous(labels = scales::percent_format()) +
-  scale_color_manual(values = c("red","magenta")) + 
-  ggtitle("Forecast of 5th Percentile, 1Q and 12Q Ahead") +
-  geom_point(data = . %>% filter(date %in% events$Start),
-             aes(x = date, y = fitted_values),color = "blue") +
-  geom_segment(data = . %>%filter(date %in% events$Start),
-               aes(x = date,y = c(0.0745, 0.0745, -0.0745,
-                                  0.0745, +0.0745, -0.0745),
-                   xend = date,
-                   yend = fitted_values),
-               arrow = arrow(length = unit(0.1, "cm")), color = "blue") +
-  geom_text(data = events,mapping = aes(x = Start + 1,
-                                        y = c(0.08, 0.08, -0.08),
-                                        label = Event),color = "blue") +
-  labs(caption = paste0(
-    "Notes: Shaded areas depict US and Euro",
-    " recessions (NBER and CEPR recessions)")) +
-  theme(plot.caption = element_text(hjust = 0))
-
-
-```
-
-
-```{r events_figure, out.height="85%", eval=FALSE}
-
-knitr::include_graphics("Figures/events_plot.png")
-
-
-```
-
-
 ```{r dom_macro_plot, fig.height=6.5}
 
 
@@ -735,16 +601,6 @@ gar_analysis %>%
 ```
 
 
-
-
-```{r, out.height="85%"}
-
-knitr::include_graphics("Figures/fig_bootstrap_5per.png")
-
-```
-
-
-
 ```{r plot_pc_loadings}
 
 gar_analysis %>%
@@ -761,32 +617,6 @@ gar_analysis %>%
   theme(axis.text.x = element_text(size = 13)) +
   coord_flip() +
   xlab(NULL) + ylab(NULL)
-
-```
-
-
-
-```{r coeff_panel_plot, fig.height=7}
-
-gar_analysis %>%
-  extract_coeffs_from_gar_model() %>%
-  filter(!partition == "Intercept") %>%
-  mutate(partition = recode(partition,
-                            "dom_macro" = "Dom. Macro",
-                            "ext_macro" = "Ext. Macro",
-                            "dom_fin" = "Dom. Fin. Cond.",
-                            "ext_fin" = "Ext. Fin. Cond.")) %>%
-  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>%
-  ggplot(aes(x = quantile, y = coeff, fill = significant)) +
-  geom_col() +
-  scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),
-                    labels = c("Significant", "Non significant")) +
-  facet_grid(cols = vars(horizon), rows = vars(partition), scales = "free") +
-  xlab("Quantile") + ylab(NULL) + 
-  theme(plot.caption = element_text(size = 10, hjust = 0.5),
-        axis.text.x = element_text(size = 12),strip.text.y = element_text(size = 14))
-
 
 ```
 
