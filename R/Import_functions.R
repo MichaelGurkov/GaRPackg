@@ -106,9 +106,12 @@ import_from_fame_template = function(template_path,
 #' @title Import DSGE forecasts
 #'
 #' @description  This function imports DSGE forecasts and convert the data
-#' to tidy format
+#' to tidy format.
 #'
 #' @param file_path string
+#'
+#' @param quantiles numeric vector that specifies the required
+#'  quantiles for the DSGE forecast
 #'
 #' @importFrom  readxl read_xlsx
 #'
