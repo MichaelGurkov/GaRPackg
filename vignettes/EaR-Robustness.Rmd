@@ -128,7 +128,7 @@ fit_df = feature_select_df %>%
       select(date, eq_premium, all_of(names_vec)) %>% 
       filter(complete.cases(.))
     
-    temp_win_len = bootstrap_data %>% 
+    temp_win_len = temp_df %>% 
       filter(date <= as.yearqtr("2000 Q1")) %>%
       pull(date) %>% 
       length()
