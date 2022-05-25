@@ -1,5 +1,5 @@
 test_predict_df_quarterly = tibble::tribble(
-  ~date, ~horizon, ~quantile, ~predicted_values,
+  ~date, ~horizon, ~quantile, ~forecast_values,
   "1999 Q4",1,0.05,1,
   "2000 Q1",1,0.05,1,
   "2000 Q2",1,0.05,1,
@@ -9,11 +9,12 @@ test_predict_df_quarterly = tibble::tribble(
   "1998 Q1",8,0.95,1,
   "1998 Q2",8,0.95,1,
   "1998 Q3",8,0.95,1,
-)
+) %>%
+  mutate(forecast_target_date = as.yearqtr(date) + as.numeric(horizon) / 4)
 
 
 test_predict_df_monthly = tibble::tribble(
-  ~date, ~horizon, ~quantile, ~predicted_values,
+  ~date, ~horizon, ~quantile, ~forecast_values,
   "Jan 1999",1,0.05,1,
   "Feb 1999",1,0.05,1,
   "Mar 1999",1,0.05,1,
@@ -23,10 +24,11 @@ test_predict_df_monthly = tibble::tribble(
   "Jun 1999",8,0.95,1,
   "Jul 1999",8,0.95,1,
   "Aug 1999",8,0.95,1,
-)
+) %>%
+  mutate(forecast_target_date = as.yearmon(date) + as.numeric(horizon) / 12)
 
 test_benchmark_df_quarterly = tibble::tribble(
-  ~date, ~horizon, ~quantile, ~benchmark_values,
+  ~date, ~horizon, ~quantile, ~forecast_values,
   "1999 Q4",1,0.05,0,
   "2000 Q2",1,0.05,0,
   "2000 Q2",1,0.05,0,
@@ -39,10 +41,11 @@ test_benchmark_df_quarterly = tibble::tribble(
   "1998 Q2",8,0.95,3,
   "1998 Q3",8,0.95,3,
   "1998 Q4",8,0.95,3
-)
+) %>%
+  mutate(forecast_target_date = as.yearqtr(date) + as.numeric(horizon) / 4)
 
 test_benchmark_df_monthly = tibble::tribble(
-  ~date, ~horizon, ~quantile, ~benchmark_values,
+  ~date, ~horizon, ~quantile, ~forecast_values,
   "Jan 1999",1,0.05,0,
   "Feb 2000",1,0.05,0,
   "Feb 2000",1,0.05,0,
@@ -55,7 +58,8 @@ test_benchmark_df_monthly = tibble::tribble(
   "Feb 1998",8,0.95,3,
   "Mar 1998",8,0.95,3,
   "Apr 1998",8,0.95,3
-)
+) %>%
+  mutate(forecast_target_date = as.yearmon(date) + as.numeric(horizon) / 12)
 
 test_actual_df_quarterly = tibble::tribble(
   ~date,~actual_values,

@@ -1,7 +1,5 @@
-set.seed(123)
-
 test_forecast_df_quarterly = tibble::tribble(
-  ~date, ~horizon, ~quantile, ~predicted_values,
+  ~date, ~horizon, ~quantile, ~forecast_values,
   "2000 Q1",1,0.05,0,
   "2000 Q1",1,0.05,0,
   "2000 Q1",8,0.05,0,
@@ -10,11 +8,12 @@ test_forecast_df_quarterly = tibble::tribble(
   "2000 Q1",1,0.95,0,
   "2000 Q1",8,0.95,0,
   "2000 Q1",8,0.95,0
-)
+) %>%
+  mutate(forecast_target_date = as.yearqtr(date) + as.numeric(horizon) / 4)
 
 
 test_forecast_df_monthly = tibble::tribble(
-  ~date, ~horizon, ~quantile, ~predicted_values,
+  ~date, ~horizon, ~quantile, ~forecast_values,
   "Jan 2000",1,0.05,0,
   "Jan 2000",1,0.05,0,
   "Jan 2000",8,0.05,0,
@@ -23,7 +22,8 @@ test_forecast_df_monthly = tibble::tribble(
   "Jan 2000",1,0.95,0,
   "Jan 2000",8,0.95,0,
   "Jan 2000",8,0.95,0
-)
+) %>%
+  mutate(forecast_target_date = as.yearmon(date) + as.numeric(horizon) / 12)
 
 
 test_actual_df_quarterly = tibble::tribble(
@@ -51,7 +51,7 @@ test_that(paste0("quantile_pit_score survives",
               dplyr::left_join(test_actual_df_quarterly %>%
                           dplyr::mutate(date = as.yearqtr(date)), by = "date") %>%
               dplyr::mutate(pit = if_else(
-                actual_values < predicted_values,
+                actual_values < forecast_values,
                 1/2,0)) %>%
               dplyr::group_by(horizon,quantile) %>%
               dplyr::summarise(pit = sum(pit), .groups = "drop")
@@ -71,7 +71,7 @@ test_that(paste0("quantile_pit_score survives",
               dplyr::left_join(test_actual_df_monthly %>%
                           dplyr::mutate(date = as.yearmon(date)), by = "date") %>%
               dplyr::mutate(pit = if_else(
-                actual_values < predicted_values,
+                actual_values < forecast_values,
                 1/2,0)) %>%
               dplyr::group_by(horizon,quantile) %>%
               dplyr::summarise(pit = sum(pit), .groups = "drop")

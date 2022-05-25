@@ -35,7 +35,7 @@
 #' @return a data frame with out-of-sample predictions.
 #' The "date" column specifies the date of the last observation in the test set,
 #'  namely, the date of the last observation used to construct the forecast.
-#'  The "forecast_taget_date" specifies the date for which the forecast is
+#'  The "forecast_target_date" specifies the date for which the forecast is
 #'   aimed, namely, forecast_target_date = date + horizon.
 #'
 #' @export
