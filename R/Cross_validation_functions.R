@@ -33,8 +33,8 @@
 #'  (default TRUE)
 #'
 #' @return a data frame with out of sample predictions.
-#' The date column specifies the date of the test set observation,
-#' the target date is the date + horizon * 0.25 (the date units are quarters)
+#' The date column specifies the date of the test set observation
+#' (the prediction target date is the date + horizon)
 #'
 #' @export
 #'
@@ -71,6 +71,7 @@ get_gar_forecast = function(partitions_list,
     dplyr::bind_rows() %>%
     fix_quantile_crossing()
 
+
   return(prediction_df)
 
 }
@@ -81,10 +82,12 @@ get_gar_forecast = function(partitions_list,
 #' @title Run cross validation for quantile regression
 #'
 #' @description  The function performs rolling ("walk forward")
-#' quantile regression. After the estimation of the parameters on
-#' the rolling window sample an out of sample prediction is performed
-#' based on the out of sample step that is determined by the
-#'  \code{horizon} parameter.
+#' quantile regression.
+#'
+#' @details After the estimation of the parameters on
+#' the rolling window sample prediction for last observation is performed.
+#' This is and "out of sample" prediction since the last observation data was
+#' not used in the estimation of the parameters (due to unknown target feature)
 #'
 #' @param reg_df data
 #'
@@ -123,7 +126,7 @@ run_cross_validation = function(reg_df,
 roll_cv_list = reg_df %>%
   rsample::rolling_origin(
     initial = win_len,
-    assess = horizon,
+    assess = 0,
     cumulative = win_type_expanding
   )
 
@@ -132,7 +135,7 @@ predict_df = purrr::map(roll_cv_list$splits,
 
   analysis_set = analysis(temp_split)
 
-  assessment_set = assessment(temp_split) %>%
+  assessment_set = analysis(temp_split) %>%
     dplyr::slice(n())
 
   qreg_result = run_quant_reg(
@@ -145,7 +148,7 @@ predict_df = purrr::map(roll_cv_list$splits,
 
   temp_predict = purrr::map(names(qreg_result), function(temp_name){
 
-    temp_pred = qreg_result[[temp_name]] %>%
+     temp_pred = qreg_result[[temp_name]] %>%
       stats::predict(newdata = assessment_set) %>%
       as.data.frame() %>%
       dplyr::rename_all(~str_remove(.,"tau= ")) %>%

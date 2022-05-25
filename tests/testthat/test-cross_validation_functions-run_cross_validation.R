@@ -31,7 +31,7 @@ test_quant_reg_list_fixed = run_quant_reg(
   horizon_list = test_params$horizon_list)
 
 test_quant_reg_list_expanding = run_quant_reg(
-  reg_df = test_reg_df[1:(nrow(test_reg_df) - unlist(test_params$horizon_list)),],
+  reg_df = test_reg_df[1:(test_params$win_len + 1),],
   target_var_name = test_params$target_var_name,
   quantile_vec = test_params$quantile_vec,
   horizon_list = test_params$horizon_list
@@ -42,14 +42,13 @@ test_quant_reg_list_expanding = run_quant_reg(
 
 test_pred_fixed = stats::predict(
   test_quant_reg_list_fixed$`4`,
-  newdata = test_reg_df[test_params$win_len +
-                          unlist(test_params$horizon_list),]
+  newdata = test_reg_df[test_params$win_len,]
   )
 
 
 test_pred_expanding = stats::predict(
   test_quant_reg_list_expanding$`4`,
-  newdata = test_reg_df[nrow(test_reg_df),]
+  newdata = test_reg_df[test_params$win_len + 1,]
 )
 
 names(test_pred_fixed) = NULL
@@ -85,8 +84,7 @@ test_that(
 test_that(
   desc = "run_cross_validation produces correct prediction in expanding window",
   code =  expect_equal(
-    object = cross_validation_pred_expanding$forecast_values[
-      nrow(cross_validation_pred_expanding)],
+    object = cross_validation_pred_expanding$forecast_values[2],
     expected = test_pred_expanding)
 )
 
@@ -94,8 +92,7 @@ test_that(
   "run_cross_validation produces returns correct date",
   expect_equal(
     object = cross_validation_pred_fixed$date[1],
-    expected = test_reg_df$date[test_params$win_len +
-                             unlist(test_params$horizon_list)]))
+    expected = test_reg_df$date[test_params$win_len]))
 
 test_that(
   "run_cross_validation returns scalar quantile vec",
