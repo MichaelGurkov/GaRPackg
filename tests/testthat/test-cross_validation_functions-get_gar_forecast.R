@@ -35,7 +35,9 @@ test_pred_df = purrr::map(
   win_len = test_params$win_len
   ) %>%
   dplyr::bind_rows() %>%
-  arrange(date,horizon,quantile)
+  arrange(date,horizon,quantile) %>%
+  mutate(forecast_target_date = date + as.numeric(horizon) / 4) %>%
+  relocate("forecast_target_date",.after = "forecast_values")
 
 test_that("get_gar_forecast returns proper predictions",
           expect_equal(

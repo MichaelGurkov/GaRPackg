@@ -32,9 +32,11 @@
 #' @param win_type_expanding boolean should the sliding window expand
 #'  (default TRUE)
 #'
-#' @return a data frame with out of sample predictions.
-#' The date column specifies the date of the test set observation
-#' (the prediction target date is the date + horizon)
+#' @return a data frame with out-of-sample predictions.
+#' The "date" column specifies the date of the last observation in the test set,
+#'  namely, the date of the last observation used to construct the forecast.
+#'  The "forecast_taget_date" specifies the date for which the forecast is
+#'   aimed, namely, forecast_target_date = date + horizon.
 #'
 #' @export
 #'
@@ -70,6 +72,24 @@ get_gar_forecast = function(partitions_list,
                     win_type_expanding = win_type_expanding) %>%
     dplyr::bind_rows() %>%
     fix_quantile_crossing()
+
+  frequency = identify_frequency(prediction_df$date)
+
+  if(frequency == "quarterly"){
+
+    prediction_df = prediction_df %>%
+      dplyr::mutate(forecast_target_date = as.yearqtr(date) + as.numeric(horizon) / 4)
+
+  }
+
+  if (frequency == "monthly"){
+
+    prediction_df = prediction_df %>%
+      dplyr::mutate(forecast_target_date = as.yearmon(date) + as.numeric(horizon) / 12)
+  }
+
+  prediction_df = prediction_df %>%
+    dplyr::relocate("forecast_target_date",.after = "forecast_values")
 
 
   return(prediction_df)
