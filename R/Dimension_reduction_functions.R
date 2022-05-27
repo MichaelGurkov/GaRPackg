@@ -184,7 +184,9 @@ map_pca_reduction = function(multi_feature_partitions,
     names(multi_feature_partitions),
     multi_feature_partitions, function(temp_name, temp_part) {
       temp_df = vars_df %>%
-        dplyr::select(dplyr::any_of(c(unlist(temp_part, use.names = FALSE), "date")))
+        dplyr::select(dplyr::any_of(c(unlist(temp_part,
+                                             use.names = FALSE), "date"))) %>%
+        dplyr::filter(complete.cases(.))
 
       # Set alignment params
 
@@ -439,7 +441,7 @@ reduce_data_dimension = function(vars_df,
 
   if (is.null(target_var_name) & preprocess_method == "pls") {
 
-        stop(paste0("Target variable for PLS dimesion",
+        stop(paste0("Target variable for PLS dimension",
                     " reduction method is missing"),
          call. = FALSE)
 
@@ -455,22 +457,6 @@ reduce_data_dimension = function(vars_df,
 
   }
 
-  number_of_na = suppressWarnings(
-    vars_df %>%
-      dplyr::select(unlist(partition_list, use.names = FALSE)) %>%
-      dplyr::mutate(across(everything(),as.numeric)) %>%
-      is.na.data.frame() %>%
-      sum()
-    )
-
-  if(number_of_na > 0){
-
-    stop(paste0("vars df has missing values, dimesion reduction failed"),
-         call. = FALSE)
-
-
-  }
-
   return_list = list()
 
   one_feature_partitions = partition_list[sapply(partition_list, length) == 1]
@@ -482,7 +468,9 @@ reduce_data_dimension = function(vars_df,
 
   if (length(one_feature_partitions) > 0) {
     xreg_df_one = vars_df %>%
-      dplyr::select(date, dplyr::any_of(unlist(one_feature_partitions, use.names = FALSE)))
+      dplyr::select(date, dplyr::any_of(unlist(one_feature_partitions,
+                                               use.names = FALSE))) %>%
+      dplyr::filter(complete.cases(.))
 
   }
 
@@ -490,11 +478,6 @@ reduce_data_dimension = function(vars_df,
   # Reduce multi variable partitions
 
   if (length(multi_feature_partitions) > 0) {
-
-
-
-
-
 
     if (preprocess_method == "pca") {
 
