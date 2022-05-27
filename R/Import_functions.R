@@ -181,10 +181,6 @@ import_dsge_forecasts = function(file_path,
                      values_to = "forecast") %>%
         dplyr::filter(complete.cases(.))
 
-      data = data %>%
-        dplyr::mutate(date = .data$date - as.numeric(.data$horizon) * 0.25)
-
-
       return(data)
 
     }
