@@ -155,7 +155,11 @@ pca_reduction = function(df,
 
 
 
-#' This function purrr::maps pca reduction over partitions list
+#'
+#' @title Map PCA over partitions list
+#'
+#' @description Applies dimension reduction using PCA to each partition in
+#' partitions list
 #'
 #' @param multi_feature_partitions list of partitions
 #'
@@ -171,7 +175,7 @@ pca_reduction = function(df,
 #'  positive direction).
 #'
 #' @details
-#' * `align_pca` When pca coefficients vector doen't containt the aligining
+#' `align_pca` When pca coefficients vector doesn't contain the aligning
 #' variable (perhaps because of name misspecification) a warning is issued
 #'  and no alignment is performed.
 

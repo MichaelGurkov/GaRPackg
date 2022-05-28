@@ -113,10 +113,12 @@ test_that(paste0("reduce_data_dimension skips reduction",
 
 
 test_that(paste0("reduce_data_dimension returns error",
-                 " when vars df has missing values"),
+                 " when partition has only missing values"),
           expect_error(object = reduce_data_dimension(
             vars_df = gar_data %>%
               dplyr::mutate(across(unlist(mult_feature_part,
                                    use.names = FALSE),~NA)),
             partition_list = mult_feature_part))
 )
+
+
