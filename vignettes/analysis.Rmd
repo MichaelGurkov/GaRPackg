@@ -42,6 +42,11 @@ library(zoo)
 
 data("gar_data")
 
+gar_data = gar_data %>% 
+  select("date", "gdp","ind_prod_israel","credit","house_price")  %>%
+  mutate(date = as.yearqtr(date)) 
+
+
 ```
 
 
@@ -56,15 +61,21 @@ Now we define those as parameters (in order to feed them to the function). For e
 
  - Macro group that includes GDP and Industrial production index
  - Financial group that includes credit and house price features. 
-
+ 
 The forecasting will be done at one quarter and one year (four quarters) horizon with three quantiles (5%, 50%, 95%) estimated.
+
+In this setting a more appropriate approach would be to transform the variables
+(we'll you Year on Year transformation, for more details see [preprocessing vignette](preprocessing.html)). In order to reference the transformed
+variables to the analysis function we'll add "_yoy" suffix to the names of the
+variables
+
 
 
 ```{r, echo=TRUE}
 
 partitions_list = list(
-  macro = c("gdp", "ind_prod_israel"),
-  fin = c("credit", "house_price")
+  macro = c("gdp_yoy", "ind_prod_israel_yoy"),
+  fin = c("credit_yoy", "house_price_yoy")
 )
 
 horizon_list = c(1,4)
@@ -73,16 +84,12 @@ quantile_vec = c(0.05,0.5,0.95)
 
 ```
 
-In order to demonstrate data transformation we transform the features to "year on year" changes. This can also be done as a step in the workflow using %>% operator rather than as a separate step.
+Now we transform the features to "year on year" changes. This can also be done as a step in the workflow using %>% operator rather than as a separate step.
 
 ```{r preprocess_data}
 
 df = gar_data %>%
-  select(date,
-         unlist(partitions_list, use.names = FALSE)) %>%
-  mutate(date = as.yearqtr(date)) %>%
-  preprocess_df(vars_to_yoy = unlist(partitions_list,
-                                     use.names = FALSE))
+  preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel","credit","house_price"))
 
 ```
 
@@ -92,7 +99,7 @@ Now we are ready to feed the inputs to `run_GaR_analysis`
 
 result = run_GaR_analysis(partitions_list = partitions_list,
                           vars_df = df,
-                          target_var_name = "gdp",
+                          target_var_name = "gdp_yoy",
                           horizon_list = horizon_list,
                           quantile_vec = quantile_vec)
 

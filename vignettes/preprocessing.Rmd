@@ -15,9 +15,14 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+
 library(GaRPackg)
 
-library(tidyverse)
+library(dplyr)
+
+library(ggplot2)
+
+library(tidyr)
 
 ```
 
@@ -30,13 +35,14 @@ data("gar_data")
 ```
 
 In this vignette we'll look into preprocessing raw data. We'll take a subset of the data with two features:
+
  * gdp - Israel GDP values (at quarterly frequency)
  * gdp_us - USA GDP values (...)
 
 If we look at the plot of the GDP of Israel we can see relatively steady
 upward trend that reflects economic growth (that's usual for GDP)
 
-```{r plot_gdp}
+```{r plot_gdp, fig.width=6}
 
 gar_data %>% 
   ggplot(aes(date, gdp)) + 
@@ -56,7 +62,7 @@ corresponding periods ("year on year" changes). Let's perform the following tran
  * Corresponding period change, calculate the "year on year" change
  between two corresponding periods using `vars_to_yoy` option.
  
-```{r preprocessed_df}
+```{r preprocessed_df, fig.width=8}
 
 final_df = gar_data %>% 
   select(date, gdp) %>% 

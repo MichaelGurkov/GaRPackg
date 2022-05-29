@@ -15,8 +15,12 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup, }
+
 library(GaRPackg)
-library(tidyverse)
+
+library(dplyr)
+
+
 library(zoo)
 ```
 
