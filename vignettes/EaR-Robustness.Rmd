@@ -119,22 +119,20 @@ actual_df = bootstrap_data %>%
 ```{r get_out_of_sample_fit}
 
 fit_df = feature_select_df %>% 
-  slice_sample(n = 1000) %>% 
+  slice_sample(n = 2) %>% 
   mutate(ear_forecast = map(temp_part, function(part){
 
     names_vec = unlist(part,use.names = FALSE)
     
     temp_df = bootstrap_data %>% 
-      select(date, eq_premium, all_of(names_vec)) %>% 
-      filter(complete.cases(.))
+      select(date, eq_premium, all_of(names_vec))
     
-    temp_win_len = bootstrap_data %>% 
+    temp_win_len = temp_df %>% 
       filter(date <= as.yearqtr("2000 Q1")) %>%
       pull(date) %>% 
       length()
                               
-                              
-    
+   
     temp_forecast = get_gar_forecast(partitions_list = part,
                      vars_df = temp_df,
                      win_len = temp_win_len,
@@ -142,9 +140,22 @@ fit_df = feature_select_df %>%
       horizon_list = parameters_list$horizon_list,
       quantile_vec = parameters_list$quantile_vec)
     
-    return(temp_forecast)
+    temp_intercept = get_gar_forecast(partitions_list = NULL,
+                     vars_df = temp_df,
+                     win_len = temp_win_len,
+      target_var_name = "eq_premium",
+      horizon_list = parameters_list$horizon_list,
+      quantile_vec = parameters_list$quantile_vec)
     
-  }))
+    return(list(temp_forecast = temp_forecast,
+                temp_intercept = temp_intercept))
+    
+  })) %>% 
+  mutate(temp_forecast = map(ear_forecast,
+                             ~.[["temp_forecast"]])) %>% 
+  mutate(temp_intercept = map(ear_forecast,
+                              ~.[["temp_intercept"]])) %>% 
+  select(-ear_forecast)
 
 # write_rds(fit_df,paste0("C:\\Users\\internet",
 #                         "\\OneDrive - Bank Of Israel\\Data\\BoI",
@@ -155,16 +166,17 @@ fit_df = feature_select_df %>%
 ```{r calculate_pit_and_r2}
 
 evaluation_metrics_df = fit_df %>% 
-  select(name, temp_part, ear_forecast) %>% 
-  mutate(q2 = map(ear_forecast, function(temp_forecast){
+  select(name, temp_part, temp_forecast, temp_intercept) %>% 
+  mutate(q2 = map2(temp_forecast, temp_intercept,
+                   function(temp_forecast, temp_intercept){
     
     temp_q2 = quantile_r2_score(forecast_df = temp_forecast,
                                 actual_df = actual_df,
-                                benchmark_df = intercept_forecast)
+                                benchmark_df = temp_intercept)
     return(temp_q2)
     
   })) %>% 
-  mutate(pit = map(ear_forecast, function(temp_forecast){
+  mutate(pit = map(temp_forecast, function(temp_forecast){
     
     temp_pit = quantile_pit_score(forecast_df = temp_forecast,
                                 actual_df = actual_df)
