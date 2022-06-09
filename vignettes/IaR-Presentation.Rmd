@@ -268,14 +268,21 @@ Mario Draghi, ECB President, Sintra, June 2019
 ```{r plot_inf_rates}
 
 df %>%
-  select(date, cpi) %>%
-  mutate(cpi_ma = slide_dbl(cpi,mean,.before = 48,.complete = TRUE)) %>%
-  mutate(cpi_var = slide_dbl(cpi,var,.before = 48,.complete = TRUE)) %>%
+  select(date, cpi_yoy) %>%
+  mutate(cpi_ma = slide_dbl(cpi_yoy,
+                            mean,.before = 48,.complete = TRUE)) %>%
+  mutate(cpi_var = slide_dbl(cpi_yoy,
+                             var,.before = 48,.complete = TRUE)) %>%
   pivot_longer(-date) %>%
+  mutate(name = factor(name, levels = c("cpi_yoy",
+                                        "cpi_ma",
+                                        "cpi_var"))) %>% 
   ggplot(aes(x = date, y = value, color = name)) +
   geom_line() +
-  scale_color_discrete(labels = c("CPI Inflation","CPI Moving Average (48 periods)",
-                                "CPI Variance (48 periods)")) +
+  scale_color_discrete(labels = c(
+    "CPI Inflation",
+    "CPI Inflation Moving Average (48 periods)",
+    "CPI Inflation Variance (48 periods)")) +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
                  " Vegetables, and Housing \n (Monthly,2004-2019)")) + 
@@ -1206,15 +1213,13 @@ df %>%
 iar_r2 = quantile_r2_score(
   forecast_df = iar_forecast,
   actual_df = select(df, actual_values = cpi, date),
-  benchmark_df = intercept_forecast %>%
-    rename(benchmark_values = forecast_values)) %>%
+  benchmark_df = intercept_forecast) %>%
   rename(iar_r2 = quantile_r2)
 
 inflation_r2 = quantile_r2_score(
   forecast_df = inflation_forecast,
   actual_df = select(df, actual_values = cpi, date),
-  benchmark_df = intercept_forecast %>%
-    rename(benchmark_values = forecast_values)) %>%
+  benchmark_df = intercept_forecast) %>%
   rename(inflation = quantile_r2)
 
 iar_r2 %>%
