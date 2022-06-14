@@ -66,7 +66,7 @@ partitions_list = list(
 
 
 
-horizon_list=c(12)
+horizon_list=c(1,12)
 
 quantile_vec=c(0.10,0.25,0.5,0.75,0.90)
 
@@ -505,8 +505,9 @@ ggplot() +
 ```{r plot_dist_timeseries}
 
 iar_analysis$fitted_df %>%
+  filter(horizon == 12) %>% 
   group_by(date = as.yearqtr(date), quantile) %>%
-  summarise(avg_values = mean(fitted_values) * 4,
+  summarise(avg_values = mean(fitted_values),
             .groups = "drop") %>%
   pivot_wider(names_from = "quantile",
               names_prefix = "q_",
@@ -1100,6 +1101,40 @@ tibble(acf = out_gap_ar$acf[,,1], lag = out_gap_ar$lag[,,1]) %>%
 
 \hyperlink{coef_results}{\beamerbutton{coeffs}}
 
+
+## Positive (short term) Output Gap
+
+```{r plot_gap_coeffs,fig.width=13, fig.height=8}
+
+iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition == "meshulav_gap") %>%
+  filter(horizon == 1) %>% 
+  select(-horizon) %>% 
+  mutate(partition = recode(partition, "meshulav_gap" = "Output Gap")) %>% 
+  ggplot() +
+  geom_col(aes(x = quantile, y = coeff, fill = significant),
+           width = 0.3) +
+  scale_fill_manual(values = c("significant" = "lightblue",
+                               "non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
+  geom_hline(yintercept = 0, color = "black") + 
+  xlab("Quantile") + ylab(NULL) + ggtitle("Output Gap coefficients at 1 quarter ahead") +
+  labs(
+    caption = paste0(
+      "Notes: Each column shows the estimated coefficients ",
+      "from the quantile regression. ",
+      "\n  Blue bars mark coefficients that are significant at 10%",
+      "(see Koenker, 1994)"
+    )
+  ) +
+  theme(plot.caption = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 12),
+        strip.text = element_text(size = 12))
+
+```
+
+\hyperlink{coef_results}{\beamerbutton{coeffs}}
 
 ## Output Gap
 
