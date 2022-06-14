@@ -3,7 +3,8 @@
 #' @description This is a convenient function that encapsulates the GaR analysis.
 #' The stages of the analysis are :
 #' \itemize{
-#'   \item Perform PCA
+#'   \item Perform dimension reduction by aggregating features
+#'    to partitions (default method is PCA)
 #'   \item Run quantile regression
 #' }
 #'
@@ -16,14 +17,20 @@
 #'
 #' @param vars_df data frame with input variables
 #'
-#' @param target_var_name string that specifies outcome feature
+#' @param target_var_name string. that specifies outcome feature
 #'
-#' @param horizon_list list of forecast horizon
+#' @param horizon_list list of forecast horizon(s)
 #'
 #' @param quantile_vec vector of required quantiles in quantile
 #' regression (corresponds to tau argument in rq)
 #'
-#' @param preprocess_method string a method that aggregates the data to partitions
+#' @param preprocess_method string. a method that aggregates the data
+#' to partitions \cr
+#' Possible options are:
+#' \itemize{
+#'  \item {pca}{ (the default)}
+#'  \item {pls}
+#' }
 #'
 #'
 #' @param pca.align.list (Optional) A list that specifies the PCA aligning variable for
@@ -52,7 +59,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             target_var_name,
                             horizon_list,
                             quantile_vec,
-                            preprocess_method = "inner_join_pca",
+                            preprocess_method = "pca",
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
 
@@ -144,15 +151,15 @@ run_quant_reg = function(reg_df,
 
   if(reg_type == "quantile"){
 
-    qreg_result = map(horizon_list, function(temp_horizon){
+    qreg_result = purrr::map(horizon_list, function(temp_horizon){
 
       dep_var = paste(target_var_name, temp_horizon, sep = "_")
 
-      qreg_list = rq(formula = formula(paste0(dep_var,"~.")),
+      qreg_list = quantreg::rq(formula = formula(paste0(dep_var,"~.")),
                      tau = quantile_vec,
                      data = reg_df %>%
-                       select(ends_with("_xreg"),
-                              all_of(dep_var)))
+                       dplyr::select(dplyr::ends_with("_xreg"),
+                              dplyr::all_of(dep_var)))
 
       return(qreg_list)
 
@@ -163,21 +170,21 @@ run_quant_reg = function(reg_df,
 
   if(reg_type == "lasso"){
 
-    qreg_result = map(horizon_list, function(temp_horizon){
+    qreg_result = purrr::map(horizon_list, function(temp_horizon){
 
       dep_var = paste(target_var_name, temp_horizon, sep = "_")
 
       y_mat = reg_df %>%
-        select(all_of(dep_var)) %>%
-        filter(complete.cases(.))
+        dplyr::select(dplyr::all_of(dep_var)) %>%
+        dplyr::filter(complete.cases(.))
 
       x_mat = reg_df %>%
-        select(ends_with("_xreg"),
-               all_of(dep_var)) %>%
-        filter(complete.cases(.)) %>%
-        select(ends_with("_xreg"))
+        dplyr::select(dplyr::ends_with("_xreg"),
+               dplyr::all_of(dep_var)) %>%
+        dplyr::filter(complete.cases(.)) %>%
+        dplyr::select(dplyr::ends_with("_xreg"))
 
-      qreg_list = rq.fit.lasso(x = as.matrix(x_mat),
+      qreg_list = quantreg::rq.fit.lasso(x = as.matrix(x_mat),
                                y = as.matrix(y_mat),
                                tau = quantile_vec,
                                ...)
@@ -215,24 +222,23 @@ run_quant_reg = function(reg_df,
 #'
 make_prediction_df = function(gar_model, xreg_df){
 
-  prediction_df = map2_dfr(gar_model,names(gar_model),
-                           function(temp_mod, temp_name){
-
-                             temp_pred_df = xreg_df %>%
-                               select(.data$date) %>%
-                               cbind(predict(temp_mod, xreg_df)) %>%
-                               pivot_longer(-.data$date,
-                                            names_to = "quantile",
-                                            values_to = "fitted_values") %>%
-                               mutate(quantile = str_remove_all(.data$quantile,"tau= ")) %>%
-                               mutate(horizon = temp_name)
+  prediction_df = purrr::map2_dfr(gar_model, names(gar_model),
+                                  function(temp_mod, temp_name) {
+                                    temp_pred_df = xreg_df %>%
+                                      dplyr::select(.data$date) %>%
+                                      cbind(stats::predict(temp_mod, xreg_df)) %>%
+                                      tidyr::pivot_longer(-.data$date,
+                                                          names_to = "quantile",
+                                                          values_to = "fitted_values") %>%
+                                      dplyr::mutate(quantile = stringr::str_remove_all(.data$quantile, "tau= ")) %>%
+                                      dplyr::mutate(horizon = temp_name)
 
 
 
                            }) %>%
     fix_quantile_crossing() %>%
-    mutate(quantile = as.numeric(.data$quantile)) %>%
-    select(.data$date,.data$horizon,.data$quantile,.data$fitted_values)
+    dplyr::mutate(quantile = as.numeric(.data$quantile)) %>%
+    dplyr::select(.data$date,.data$horizon,.data$quantile,.data$fitted_values)
 
   return(prediction_df)
 

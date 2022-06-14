@@ -97,7 +97,7 @@ theme_set(theme_bw() +
 raw_df = import_from_fame_template(
   paste0(
     file.path(Sys.getenv("USERPROFILE")),
-    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\Working_data\\data_fame.csv"
+    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\Working_data\\data_fame_backup.csv"
   )
 )
 
@@ -231,6 +231,9 @@ Quantile Regressions of YoY GDP Growth Four Quarters Ahead
 ```{r plot_gdp_credit}
 
 temp_df = df %>%
+  filter(!is.na(date)) %>% 
+  filter(lubridate::year(date) >= 1996 & 
+           lubridate::year(date) <= 2019) %>% 
   select(all_of(c("gdp","credit"))) %>%
   add_leads_to_target_var(target_var_name = "gdp",
                           leads_vector = 4) %>%

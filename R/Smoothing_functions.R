@@ -30,21 +30,19 @@ t_skew_loss = function(estimated_df, t_skew_params) {
     nu = t_skew_params[4]
   )
 
-  skew_t_df = tibble(quantile = quantiles_vec,
+  skew_t_df = tibble::tibble(quantile = quantiles_vec,
                      skew_t_values = skew_t_values)
 
   loss = estimated_df %>%
-    left_join(skew_t_df, by = "quantile") %>%
-    mutate(error = .data$values - skew_t_values) %>%
-    summarise(loss = sqrt(mean(.data$error ^ 2))) %>%
-    pull(loss)
+    dplyr::left_join(skew_t_df, by = "quantile") %>%
+    dplyr::mutate(error = .data$values - skew_t_values) %>%
+    dplyr::summarise(loss = sqrt(mean(.data$error ^ 2))) %>%
+    dplyr::pull(loss)
 
 
   return(loss)
 
 }
-
-
 
 #' @title Run t skewed optimization
 #'
@@ -80,12 +78,12 @@ run_t_skew_optimization = function(estimated_df_x,
   }
 
   estimated_mean = estimated_df_x %>%
-    summarise(est_mean = mean(.data$values, na.rm = TRUE)) %>%
-    pull(.data$est_mean)
+    dplyr::summarise(est_mean = mean(.data$values, na.rm = TRUE)) %>%
+    dplyr::pull(.data$est_mean)
 
   estimated_sd = estimated_df_x %>%
-    summarise(est_sd = sd(.data$values, na.rm = TRUE)) %>%
-    pull(.data$est_sd)
+    dplyr::summarise(est_sd = sd(.data$values, na.rm = TRUE)) %>%
+    dplyr::pull(.data$est_sd)
 
 
   initial_params = c(
@@ -172,7 +170,7 @@ fit_t_skew = function(estimated_df,time_limit = 10,
     stop("estimated df should only have two columns : quantile and values")
   }
 
-  col_class = map_chr(estimated_df, class)
+  col_class = purrr::map_chr(estimated_df, class)
 
   non_numeric_vars = names(col_class)[!col_class == "numeric"]
 
@@ -182,7 +180,7 @@ fit_t_skew = function(estimated_df,time_limit = 10,
                   "have been converted to numeric"))
 
     estimated_df = estimated_df %>%
-      mutate(across(all_of(non_numeric_vars), as.numeric))
+      dplyr::mutate(across(dplyr::all_of(non_numeric_vars), as.numeric))
 
 
   }
@@ -273,13 +271,13 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   if ("forecast_values" %in% names(gar_df)) {
     gar_df = gar_df %>%
-      rename(values = .data$forecast_values)
+      dplyr::rename(values = .data$forecast_values)
 
   }
 
   else if ("fitted_values" %in% names(gar_df)) {
     gar_df = gar_df %>%
-      rename(values = .data$fitted_values)
+      dplyr::rename(values = .data$fitted_values)
 
   } else {
     stop(
@@ -300,18 +298,18 @@ fit_t_skew_to_gar_df = function(gar_df,
 
 
   nested_df = gar_df %>%
-    mutate(across(c(.data$quantile, .data$horizon), as.numeric)) %>%
-    group_by(.data$date, .data$horizon) %>%
-    nest(data = c(.data$quantile, .data$values)) %>%
-    ungroup() %>%
-    mutate(t_skew = future_map(.data$data, function(temp_data) {
+    dplyr::mutate(across(c(.data$quantile, .data$horizon), as.numeric)) %>%
+    dplyr::group_by(.data$date, .data$horizon) %>%
+    tidyr::nest(data = c(.data$quantile, .data$values)) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(t_skew = future_map(.data$data, function(temp_data) {
       temp_fit = fit_t_skew(temp_data,
                             bounded_optimization = bounded_optimization,
                             time_limit = time_limit,
                             lower_bounds = lower_bounds,
                             upper_bounds = upper_bounds)
 
-      fit_df = tibble(t_skew_parameter = names(temp_fit),
+      fit_df = tibble::tibble(t_skew_parameter = names(temp_fit),
                       values = temp_fit)
 
       return(fit_df)
@@ -326,8 +324,8 @@ fit_t_skew_to_gar_df = function(gar_df,
   }
 
   t_skew_fit_df = nested_df %>%
-    select(-.data$data) %>%
-    unnest(cols = "t_skew")
+    dplyr::select(-.data$data) %>%
+    tidyr::unnest(cols = "t_skew")
 
   if(return_smoothed_quantiles){
 
@@ -365,10 +363,10 @@ get_t_skew_quantiles = function(t_skew_param_df,
                                 quantiles_vec = c(0.05,0.25,0.5,0.75,0.95)){
 
   temp_dp = t_skew_param_df %>%
-    mutate(t_skew_parameter = factor(.data$t_skew_parameter,
+    dplyr::mutate(t_skew_parameter = factor(.data$t_skew_parameter,
                                      levels = c("xi", "omega", "alpha", "nu"))) %>%
     arrange(.data$t_skew_parameter) %>%
-    pull(.data$values)
+    dplyr::pull(.data$values)
 
   if(all(is.na(temp_dp)) | all(temp_dp == 0)){
 
@@ -410,28 +408,28 @@ extract_smoothed_quantiles = function(
   smoothed_quantiles_vec_x = c(0.05, 0.25, 0.5, 0.75, 0.95)) {
 
   smoothed_quantiles_df = dist_param_df %>%
-    group_by(.data$date, .data$horizon) %>%
-    nest(cols = c("t_skew_parameter", "values")) %>%
-    mutate(
-      t_skew_quantiles = map(cols, get_t_skew_quantiles,
+    dplyr::group_by(.data$date, .data$horizon) %>%
+    tidyr::nest(cols = c("t_skew_parameter", "values")) %>%
+    dplyr::mutate(
+      t_skew_quantiles = purrr::map(cols, get_t_skew_quantiles,
                              quantiles_vec = smoothed_quantiles_vec_x)
     ) %>%
-    select(-cols) %>%
-    unnest(cols = c("t_skew_quantiles")) %>%
-    ungroup() %>%
-    rename(quantile = .data$quantiles) %>%
-    mutate(horizon = as.character(.data$horizon))
+    dplyr::select(-cols) %>%
+    tidyr::unnest(cols = c("t_skew_quantiles")) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(quantile = .data$quantiles) %>%
+    dplyr::mutate(horizon = as.character(.data$horizon))
 
 
   smoothed_quantiles_df = raw_quantiles_df %>%
-    mutate(quantile = as.numeric(.data$quantile)) %>%
-    left_join(
+    dplyr::mutate(quantile = as.numeric(.data$quantile)) %>%
+    dplyr::left_join(
       smoothed_quantiles_df,
       by = c("date", "horizon", "quantile"),
       suffix = c("_raw", "_smoothed")
     ) %>%
-    mutate(value = coalesce(.data$values_smoothed, .data$values_raw)) %>%
-    select(
+    dplyr::mutate(value = dplyr::coalesce(.data$values_smoothed, .data$values_raw)) %>%
+    dplyr::select(
       .data$date,
       .data$quantile,
       .data$horizon,
@@ -443,3 +441,48 @@ extract_smoothed_quantiles = function(
   return(smoothed_quantiles_df)
 }
 
+
+
+#' @title Calculate implied standard deviation
+#'
+#' @description  This function calculates the implied standard
+#' deviation from normal distribution from one data point
+#'
+#' @param data_points_vec vector of observed data points from
+#'  (assumed) normal distribution
+#'
+#' @param percentiles_vec vector of percentiles corresponding to the
+#' data points specified in \code{data_points_vec}
+#'
+#' @return the value of standard deviation of the normal (mean 0)
+#'  distribution implied by the \code{data_points_vec} and
+#'  \code{percentiles_vec} parameters
+#'
+calculate_implied_std_dev = function(data_points_vec,
+                                     percentiles_vec){
+
+  loss_function = function(data_points_vec_internal,
+                           percentiles_vec_internal,
+                           sigma){
+
+   errors_vec = data_points_vec_internal - qnorm(p = percentiles_vec,
+                                                 mean = 0,
+                                                 sd = sigma)
+
+   loss_value = sum(abs(errors_vec))
+
+  return(loss_value)
+
+  }
+
+  optim_results = optimize(f = loss_function,
+                           interval = c(0,10),
+                           data_points_vec_internal = data_points_vec,
+                           percentiles_vec_internal = percentiles_vec)
+
+  implied_std_dev = optim_results$minimum
+
+  return(implied_std_dev)
+
+
+}

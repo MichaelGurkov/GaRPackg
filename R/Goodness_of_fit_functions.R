@@ -62,20 +62,16 @@ quantile_r2_score_calculation = function(realized_values,
 #'
 #' @importFrom zoo as.yearqtr as.yearmon
 #'
-#' @param forecast_df data frame with predicted values
-#' by horizon, quantile, date, forecast_values.The date is the forecast date,
-#' on which the forecast was made, the target date is calculated by taking the
-#' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
-#' frequency is supported.
+#' @param forecast_df data frame with forecasted values.
+#' by horizon, quantile, forecast_target_date, forecast_values.
+#' The forecast_target_date specifies the date for which the forecast is aimed
 #'
 #' @param actual_df data frame with actual values
 #' by date and actual_values
 #'
-#' @param benchmark_df data frame with predicted values
-#' by horizon, quantile, date, forecast_values.The date is the forecast date,
-#' on which the forecast was made, the target date is calculated by taking the
-#' forecast date \code{horizon} steps ahead. Currently quarterly and monthly
-#' frequency is supported.
+#' @param benchmark_df data frame with forecasted values
+#' by horizon, quantile, forecast_target_date, forecast_values.
+#' The forecast_target_date specifies the date for which the forecast is aimed
 #'
 #'
 #' @details The evaluation is based on the assumption that the date in
@@ -94,7 +90,7 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
   # Arguments Validation
 
-  var_names = c("horizon","quantile","date")
+  var_names = c("horizon","quantile","forecast_values", "forecast_target_date")
 
   if(!all(var_names %in% names(forecast_df))){
 
@@ -133,45 +129,51 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
   }
 
-  names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
+  forecast_df = forecast_df %>%
+    select(all_of(var_names)) %>%
+    dplyr::rename(predicted_values = forecast_values)
 
-  names(benchmark_df)[!names(benchmark_df) %in% var_names] = "benchmark_values"
+  benchmark_df = benchmark_df %>%
+    dplyr::select(all_of(var_names)) %>%
+    dplyr::rename(benchmark_values = forecast_values)
+
+  # names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
+  #
+  # names(benchmark_df)[!names(benchmark_df) %in% var_names] = "benchmark_values"
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
 
 
-  frequency = identify_frequency(forecast_df$date)
+  frequency = identify_frequency(forecast_df$forecast_target_date)
 
 
   if(frequency == "quarterly"){
 
     df = forecast_df %>%
-      mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4) %>%
-      inner_join(benchmark_df %>%
-                   mutate(date = as.yearqtr(date) + as.numeric(horizon) / 4),
-                 by = c("date", "horizon", "quantile")) %>%
-      inner_join(actual_df %>%
-                   mutate(date = as.yearqtr(date)), by = "date") %>%
-      mutate(quantile = as.numeric(.data$quantile))
+      dplyr::inner_join(benchmark_df,
+                 by = c("forecast_target_date", "horizon", "quantile")) %>%
+      dplyr::inner_join(actual_df %>%
+                   dplyr::mutate(forecast_target_date = as.yearqtr(date)),
+                   by = "forecast_target_date") %>%
+      dplyr::mutate(quantile = as.numeric(.data$quantile))
 
   }
 
   if (frequency == "monthly"){
 
     df = forecast_df %>%
-      mutate(date = as.yearmon(date) + as.numeric(horizon) / 12) %>%
-      inner_join(benchmark_df %>%
-                   mutate(date = as.yearmon(date) + as.numeric(horizon) / 12),
-                 by = c("date", "horizon", "quantile")) %>%
-      inner_join(actual_df %>%
-                   mutate(date = as.yearmon(date)), by = "date") %>%
-      mutate(quantile = as.numeric(.data$quantile))
+      dplyr::inner_join(benchmark_df,
+                          by = c("forecast_target_date", "horizon", "quantile")) %>%
+      dplyr::inner_join(actual_df %>%
+                          dplyr::mutate(forecast_target_date = as.yearmon(date)),
+                        by = "forecast_target_date") %>%
+      dplyr::mutate(quantile = as.numeric(.data$quantile))
   }
 
 
   score_df = df %>%
-    group_by(.data$horizon, .data$quantile) %>%
-    summarise(
+    dplyr::group_by(.data$horizon, .data$quantile) %>%
+    dplyr::summarise(
       quantile_r2 =
         quantile_r2_score_calculation(
           realized_values = .data$actual_values,
@@ -222,11 +224,11 @@ quantile_pit_score = function(forecast_df, actual_df){
 
   # Arguments Validation
 
-  var_names = c("horizon","quantile","date")
+  var_names = c("horizon","quantile","forecast_values", "forecast_target_date")
 
   if(!all(var_names %in% names(forecast_df))){
 
-    stop("The following variables are missing in forecast df :",
+    stop("The following variables are missing in predict df :",
          paste(var_names[!var_names %in% names(forecast_df)],
                collapse = ","))
 
@@ -252,28 +254,31 @@ quantile_pit_score = function(forecast_df, actual_df){
 
   }
 
-  names(forecast_df)[!names(forecast_df) %in% var_names] = "predicted_values"
-
   names(actual_df)[!names(actual_df) == "date"] = "actual_values"
 
-  frequency = identify_frequency(forecast_df$date)
+  forecast_df = forecast_df %>%
+    dplyr::select(all_of(var_names)) %>%
+    dplyr::rename(predicted_values = forecast_values)
+
+
+  frequency = identify_frequency(forecast_df$forecast_target_date)
 
 
   if(frequency == "quarterly"){
 
     prediction_df = forecast_df %>%
-      mutate(date = as.yearqtr(.data$date) + as.numeric(.data$horizon) / 4) %>%
-      left_join(actual_df %>%
-                  mutate(date = as.yearqtr(.data$date)), by = c("date"))
+       dplyr::left_join(actual_df %>%
+                  dplyr::mutate(forecast_target_date = as.yearqtr(.data$date)),
+                  by = c("forecast_target_date"))
 
   }
 
   if (frequency == "monthly"){
 
     prediction_df = forecast_df %>%
-      mutate(date = as.yearmon(.data$date) + as.numeric(.data$horizon) / 12) %>%
-      left_join(actual_df %>%
-                  mutate(date = as.yearmon(.data$date)), by = c("date"))
+      dplyr::left_join(actual_df %>%
+                  dplyr::mutate(forecast_target_date = as.yearmon(.data$date)),
+                  by = c("forecast_target_date"))
   }
 
 
@@ -288,11 +293,11 @@ quantile_pit_score = function(forecast_df, actual_df){
 
 
   pit_score_df = prediction_df %>%
-    filter(!is.na(.data$actual_values)) %>%
-    group_by(.data$horizon, .data$quantile) %>%
-    mutate(pit = if_else(.data$actual_values < .data$predicted_values,
+    dplyr::filter(!is.na(.data$actual_values)) %>%
+    dplyr::group_by(.data$horizon, .data$quantile) %>%
+    dplyr::mutate(pit = if_else(.data$actual_values < .data$predicted_values,
                          1 /length(.data$date),0)) %>%
-    summarise(pit = sum(.data$pit), .groups = "drop")
+    dplyr::summarise(pit = sum(.data$pit), .groups = "drop")
 
   return(pit_score_df)
 
@@ -346,10 +351,10 @@ quantile_prediction_score = function(forecast_dist_df, actual_df){
 
   names(actual_df)[!names(actual_df) == "date"] = "actual_value"
 
-  prediction_score = left_join(forecast_dist_df, actual_df,
+  prediction_score = dplyr::left_join(forecast_dist_df, actual_df,
                                by = "date") %>%
-    group_by(across(-c("parameter", "value"))) %>%
-    summarise(prob = dst(x = .data$actual_value[1], dp = .data$value),
+    dplyr::group_by(across(-c("parameter", "value"))) %>%
+    dplyr::summarise(prob = dst(x = .data$actual_value[1], dp = .data$value),
               .groups = "drop")
 
   return(prediction_score)
