@@ -51,26 +51,17 @@ get_gar_forecast = function(partitions_list,
                             win_len = 30,
                             win_type_expanding = TRUE){
 
-  reg_df_list = make_quant_reg_df(
+
+  prediction_df = run_cross_validation(
     partitions_list = partitions_list,
     vars_df = vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
-    pca.align.list = pca.align.list,
+    quantile_vec = quantile_vec,
     preprocess_method = preprocess_method,
-    return_objects_list = FALSE
-  )
-
-  if(nrow(reg_df_list$reg_df) == 0){stop("The regression data frame is empty")}
-
-
-  prediction_df = purrr::map(horizon_list,run_cross_validation,
-                    reg_df = reg_df_list$reg_df,
-                    target_var_name = target_var_name,
-                    quantile_vec = quantile_vec,
-                    win_len = win_len,
-                    win_type_expanding = win_type_expanding) %>%
-    dplyr::bind_rows() %>%
+    pca.align.list = pca.align.list,
+    win_len = win_len,
+    win_type_expanding = win_type_expanding) %>%
     fix_quantile_crossing()
 
   frequency = identify_frequency(prediction_df$date)
@@ -109,22 +100,26 @@ get_gar_forecast = function(partitions_list,
 #' This is and "out of sample" prediction since the last observation data was
 #' not used in the estimation of the parameters (due to unknown target feature)
 #'
-#' @param reg_df data
+#' @param partitions_list list of partition names
 #'
-#' @param target_var_name string that specifies outcome feature
+#' @param vars_df data frame with input variables
 #'
-#' @param horizon determines the out of sample step
+#' @param target_var_name string that specifies outcome variable
 #'
-#' @param quantile_vec vector of required quantiles in quantile
-#' regression (corresponds to tau argument in rq)
+#' @param horizon_list list (or vector) of forecast horizons
 #'
-#' @param win_len rolling window length
+#' @param quantile_vec vector quantiles for quantile regression
 #'
-#' @param win_type_expanding  boolean should the sliding window expand
+#' @param pca.align.list (optional) list list that contains the "aligning" variable
+#' for each partition that should be "aligned". See
+#'
+#' @param preprocess_method dimension reduction method (default PCA)
+#'
+#' @param win_len the length of sliding window (default 30)
+#'
+#' @param win_type_expanding boolean should the sliding window expand
 #'  (default TRUE)
-#'
-#' @param ... external optional arguments
-#'
+
 #'
 #'
 #' @import tidyr
@@ -134,16 +129,20 @@ get_gar_forecast = function(partitions_list,
 #' @importFrom stats predict
 #'
 #'
-run_cross_validation = function(reg_df,
+run_cross_validation = function(partitions_list,
+                                vars_df,
                                 target_var_name,
-                                horizon,
+                                horizon_list,
                                 quantile_vec,
+                                pca.align.list = NULL,
+                                preprocess_method = "pca",
                                 win_len = 30,
                                 win_type_expanding = TRUE,
                                 ...){
 
 
-roll_cv_list = reg_df %>%
+
+roll_cv_list = vars_df %>%
   rsample::rolling_origin(
     initial = win_len,
     assess = 0,
@@ -151,49 +150,59 @@ roll_cv_list = reg_df %>%
   )
 
 predict_df = purrr::map(roll_cv_list$splits,
-                 function(temp_split){
+                        function(temp_split) {
 
-  analysis_set = analysis(temp_split)
+                          analysis_set = make_quant_reg_df(
+                            partitions_list = partitions_list,
+                            vars_df = analysis(temp_split),
+                            target_var_name = target_var_name,
+                            horizon_list = horizon_list,
+                            pca.align.list = pca.align.list,
+                            preprocess_method = preprocess_method,
+                            return_objects_list = FALSE
+                          )
 
-  assessment_set = analysis(temp_split) %>%
-    dplyr::slice(n())
+                          analysis_set = analysis_set[["reg_df"]]
 
-  qreg_result = run_quant_reg(
-    reg_df = analysis_set,
-    target_var_name = target_var_name,
-    quantile_vec = quantile_vec,
-    horizon_list = list(horizon),
-    ...
-  )
+                          assessment_set = analysis_set %>%
+                            dplyr::slice(n())
 
-  temp_predict = purrr::map(names(qreg_result), function(temp_name){
-
-     temp_pred = qreg_result[[temp_name]] %>%
-      stats::predict(newdata = assessment_set) %>%
-      as.data.frame() %>%
-      dplyr::rename_all(~str_remove(.,"tau= ")) %>%
-      tidyr::pivot_longer(cols = everything(),
-                   names_to = "quantile",
-                   values_to = "forecast_values") %>%
-      dplyr::mutate(horizon = temp_name) %>%
-      dplyr::mutate(date = assessment_set$date)
-
-    if(length(quantile_vec) == 1){
-      temp_pred = temp_pred %>%
-        dplyr::mutate(quantile = quantile_vec)
-      }
-
-    return(temp_pred)
+                          qreg_result = run_quant_reg(
+                            reg_df = analysis_set,
+                            target_var_name = target_var_name,
+                            quantile_vec = quantile_vec,
+                            horizon_list = horizon_list
+                          )
 
 
 
+                          temp_predict = purrr::map(names(qreg_result), function(temp_name) {
+                            temp_pred = qreg_result[[temp_name]] %>%
+                              stats::predict(newdata = assessment_set) %>%
+                              as.data.frame() %>%
+                              dplyr::rename_all( ~ str_remove(., "tau= ")) %>%
+                              tidyr::pivot_longer(cols = everything(),
+                                                  names_to = "quantile",
+                                                  values_to = "forecast_values") %>%
+                              dplyr::mutate(horizon = temp_name) %>%
+                              dplyr::mutate(date = assessment_set$date)
 
-  }) %>%
-    dplyr::bind_rows()
+                            if (length(quantile_vec) == 1) {
+                              temp_pred = temp_pred %>%
+                                dplyr::mutate(quantile = quantile_vec)
+                            }
+
+                            return(temp_pred)
 
 
 
-}) %>%
+
+                          }) %>%
+                            dplyr::bind_rows()
+
+
+
+                        }) %>%
   dplyr::bind_rows()
 
 return(predict_df)
