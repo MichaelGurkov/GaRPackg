@@ -27,7 +27,8 @@
 #'
 #' @param preprocess_method dimension reduction method (default PCA)
 #'
-#' @param win_len the length of sliding window (default 30)
+#' @param win_len the length of sliding window (default 30).
+#'  Can be supplied as start date of the analysis (test) set
 #'
 #' @param win_type_expanding boolean should the sliding window expand
 #'  (default TRUE)
@@ -115,7 +116,8 @@ get_gar_forecast = function(partitions_list,
 #'
 #' @param preprocess_method dimension reduction method (default PCA)
 #'
-#' @param win_len the length of sliding window (default 30)
+#' @param win_len the length of sliding window (default 30).
+#'  Can be supplied as start date of the analysis (test) set
 #'
 #' @param win_type_expanding boolean should the sliding window expand
 #'  (default TRUE)
@@ -139,8 +141,12 @@ run_cross_validation = function(partitions_list,
                                 win_len = 30,
                                 win_type_expanding = TRUE,
                                 ...){
+if(!is.numeric(win_len)){
 
+  win_len = calculate_win_len_from_date(start_date = win_len,
+                                        data_df = vars_df)
 
+}
 
 roll_cv_list = vars_df %>%
   rsample::rolling_origin(

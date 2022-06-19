@@ -113,3 +113,18 @@ test_that(
       cross_validation_pred_fixed_30$horizon == 4]),
     expected = test_params$quantile_vec))
 
+
+test_that(
+  "run_cross_validation accepts date in win_len",
+  expect_equal(
+    object = run_cross_validation(
+      partitions_list = test_params$partitions_list,
+      vars_df = slice(gar_data,1:30),
+      target_var_name = test_params$target_var_name,
+      horizon = unlist(test_params$horizon_list),
+      quantile_vec = test_params$quantile_vec,
+      win_len = gar_data$date[30],
+      win_type_expanding = FALSE),
+    expected = cross_validation_pred_fixed_30))
+
+
