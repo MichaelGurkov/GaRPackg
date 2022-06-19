@@ -199,7 +199,10 @@ iqr_df = iar_analysis %>%
 
 ```{r out_of_sample_forecast}
 
-win_len = 109
+win_len = df %>% 
+  select(date, unlist(partitions_list, use.names = FALSE)) %>% 
+  filter(year(date) <= 2015) %>% 
+  nrow()
 
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
@@ -617,7 +620,7 @@ factors_cont_df = iar_analysis %>%
   extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>%
   mutate(quantile = 0.5)) %>%
   filter(horizon == 12) %>% 
-  filter(date >= as.yearmon("Jan 2007")) %>% 
+  # filter(date >= as.yearmon("Jan 2007")) %>% 
   pivot_longer(-c(date, quantile, horizon))
 
 
@@ -634,7 +637,8 @@ skew_plot_df = factors_cont_df %>%
   mutate(skew = skew - means_vec$skew) %>%
   select(-c(intercept,beir5y5y)) %>% 
   pivot_longer(-c(date,skew)) %>% 
-  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
+  mutate(name = factor(name,levels = labels_df$level,
+                       labels = labels_df$label))
 
 
 disp_plot_df = factors_cont_df %>% 
@@ -650,7 +654,8 @@ disp_plot_df = factors_cont_df %>%
   mutate(iqr = iqr - means_vec$iqr) %>% 
   select(-c("intercept","beir5y5y")) %>% 
   pivot_longer(-c(date,iqr)) %>% 
-  mutate(name = factor(name,levels = labels_df$level, labels = labels_df$label))
+  mutate(name = factor(name,levels = labels_df$level,
+                       labels = labels_df$label))
 
 
 
