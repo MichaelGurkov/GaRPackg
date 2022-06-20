@@ -161,7 +161,7 @@ predict_df = purrr::map(roll_cv_list$splits,
 
                           analysis_set = make_quant_reg_df(
                             partitions_list = partitions_list,
-                            vars_df = analysis(temp_split),
+                            vars_df = rsample::analysis(temp_split),
                             target_var_name = target_var_name,
                             horizon_list = horizon_list,
                             pca.align.list = pca.align.list,
@@ -174,12 +174,23 @@ predict_df = purrr::map(roll_cv_list$splits,
                           assessment_set = analysis_set %>%
                             dplyr::slice(n())
 
-                          forecast_date = analysis(temp_split)[nrow(analysis(temp_split)),"date"]
+                          forecast_date = rsample::analysis(temp_split) %>%
+                            dplyr::slice(n()) %>%
+                            dplyr::pull(date)
 
                           if(is.na(forecast_date)){return(NULL)}
 
+                          if(!identical(forecast_date, assessment_set$date)){
 
-                          if(forecast_date == assessment_set$date){
+                              temp_pred = tibble(horizon = as.numeric(unlist(horizon_list)),
+                                                 quantile = as.numeric(quantile_vec)) %>%
+                                expand(horizon, quantile) %>%
+                                mutate(forecast_values = NA) %>%
+                                mutate(date = forecast_date)
+
+                              return(temp_pred)
+
+                            }
 
                             qreg_result = run_quant_reg(
                               reg_df = analysis_set,
@@ -189,20 +200,35 @@ predict_df = purrr::map(roll_cv_list$splits,
                             )
 
 
+                            if(any(purrr::map_lgl(qreg_result,is.null))){
+
+                              temp_pred = tibble(horizon = as.numeric(unlist(horizon_list)),
+                                                 quantile = as.numeric(quantile_vec)) %>%
+                                expand(horizon, quantile) %>%
+                                mutate(forecast_values = NA) %>%
+                                mutate(date = forecast_date)
+
+                              return(temp_pred)
+
+                            }
+
+
                             temp_predict = purrr::map(names(qreg_result), function(temp_name) {
-                              temp_pred = qreg_result[[temp_name]] %>%
+
+                              temp_pred = suppressWarnings(qreg_result[[temp_name]] %>%
                                 stats::predict(newdata = assessment_set) %>%
                                 as.data.frame() %>%
                                 dplyr::rename_all( ~ str_remove(., "tau= ")) %>%
                                 tidyr::pivot_longer(cols = everything(),
                                                     names_to = "quantile",
                                                     values_to = "forecast_values") %>%
-                                dplyr::mutate(horizon = temp_name) %>%
-                                dplyr::mutate(date = assessment_set$date)
+                                dplyr::mutate(horizon = as.numeric(temp_name)) %>%
+                                dplyr::mutate(quantile = as.numeric(quantile)) %>%
+                                dplyr::mutate(date = assessment_set$date))
 
                               if (length(quantile_vec) == 1) {
                                 temp_pred = temp_pred %>%
-                                  dplyr::mutate(quantile = quantile_vec)
+                                  dplyr::mutate(quantile = as.numeric(quantile_vec))
                               }
 
                               return(temp_pred)
@@ -211,23 +237,7 @@ predict_df = purrr::map(roll_cv_list$splits,
                               dplyr::bind_rows()
 
 
-
-
-                          }
-
-                          else {
-
-                            temp_pred = tibble(quantile = as.numeric(unlist(horizon_list)),
-                            forecast_values = NA,
-                            date = forecast_date)
-
-
-                          }
-
-
-
-
-                        })
+                          })
 
 predict_df = predict_df %>%
   dplyr::bind_rows()

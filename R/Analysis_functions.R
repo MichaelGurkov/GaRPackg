@@ -155,11 +155,14 @@ run_quant_reg = function(reg_df,
 
       dep_var = paste(target_var_name, temp_horizon, sep = "_")
 
-      qreg_list = quantreg::rq(formula = formula(paste0(dep_var,"~.")),
-                     tau = quantile_vec,
-                     data = reg_df %>%
-                       dplyr::select(dplyr::ends_with("_xreg"),
-                              dplyr::all_of(dep_var)))
+      temp_df = reg_df %>%
+        dplyr::select(dplyr::ends_with("_xreg"),
+                      dplyr::all_of(dep_var))
+
+      qreg_list = tryCatch(quantreg::rq(formula = formula(paste0(dep_var,"~.")),
+                                        tau = quantile_vec,
+                                        data = temp_df),
+                           error = function(e){return(NULL)})
 
       return(qreg_list)
 

@@ -416,11 +416,14 @@ fill_na_average = function(data_vec, k = 4){
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
+    filter(complete.cases(.)) %>%
     dplyr::group_by(.data$horizon,.data$date) %>%
     dplyr::arrange(.data$quantile) %>%
     dplyr::mutate(dplyr::across(tidyselect::matches("^(fitted|forecast)_values$"),
                          ~sort(.))) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    rbind(prediction_df %>%
+            filter(!complete.cases(.)))
 
 
   return(prediction_df)

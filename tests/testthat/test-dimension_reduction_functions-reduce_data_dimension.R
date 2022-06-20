@@ -112,13 +112,17 @@ test_that(paste0("reduce_data_dimension skips reduction",
 )
 
 
-test_that(paste0("reduce_data_dimension returns error",
+test_that(paste0("reduce_data_dimension returns NA tibble",
                  " when partition has only missing values"),
-          expect_error(object = reduce_data_dimension(
+          expect_equal(object = reduce_data_dimension(
             vars_df = gar_data %>%
               dplyr::mutate(across(unlist(mult_feature_part,
                                    use.names = FALSE),~NA)),
-            partition_list = mult_feature_part))
+            partition_list = mult_feature_part)[[1]],
+            gar_data %>%
+              select(date) %>%
+              mutate(dom_macro = NA) %>%
+              mutate(fin_cycle = NA))
 )
 
 
