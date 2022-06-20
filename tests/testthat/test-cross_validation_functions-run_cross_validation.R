@@ -82,6 +82,21 @@ cross_validation_pred_expanding_30_31 = run_cross_validation(
   win_type_expanding = TRUE)
 
 
+error_df = gar_data[1:31,]
+
+error_df[31,!names(error_df) == "date"] = NA
+
+cross_validation_pred_na = run_cross_validation(
+  partitions_list = test_params$partitions_list,
+  vars_df = error_df,
+  target_var_name = test_params$target_var_name,
+  horizon = unlist(test_params$horizon_list),
+  quantile_vec = test_params$quantile_vec,
+  win_len = test_params$win_len,
+  win_type_expanding = TRUE)
+
+
+
 test_that(
   "run_cross_validation produces correct prediction in fixed window",
   expect_equal(
@@ -128,3 +143,7 @@ test_that(
     expected = cross_validation_pred_fixed_30))
 
 
+test_that(
+  "run_cross_validation returns NA with missing predictors data",
+  expect_true(
+    object = all(is.na(cross_validation_pred_na$forecast_values[3:4]))))

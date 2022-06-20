@@ -182,9 +182,6 @@ chain_index = function(df, preprocess_method = "pca", ...){
       pca_reduction(...) %>%
       dplyr::mutate(PCA = scale(.data$PCA))
 
-    # debugging
-    # if(sum(is.na(temp_agg_series$PCA)) > 0){browser()}
-
 
     temp_diff_series = temp_agg_series %>%
       dplyr::mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
