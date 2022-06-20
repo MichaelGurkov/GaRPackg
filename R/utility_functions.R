@@ -167,7 +167,7 @@ calculate_win_len_from_date = function(start_date,data_df){
 
   date_vec = data_df$date
 
-  win_len = max(which(start_date <= date_vec))
+  win_len = max(which(start_date >= date_vec))
 
   if(length(win_len) > 0){
 

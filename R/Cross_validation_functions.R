@@ -143,6 +143,7 @@ run_cross_validation = function(partitions_list,
                                 ...){
 if(!is.numeric(win_len)){
 
+
   win_len = calculate_win_len_from_date(start_date = win_len,
                                         data_df = vars_df)
 

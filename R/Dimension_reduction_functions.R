@@ -187,6 +187,7 @@ map_pca_reduction = function(multi_feature_partitions,
   reduction_objects_list = purrr::map2(
     names(multi_feature_partitions),
     multi_feature_partitions, function(temp_name, temp_part) {
+
       temp_df = vars_df %>%
         dplyr::select(dplyr::any_of(c(unlist(temp_part,
                                              use.names = FALSE), "date"))) %>%
