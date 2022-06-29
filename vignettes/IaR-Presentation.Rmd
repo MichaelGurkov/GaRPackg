@@ -834,7 +834,7 @@ ggplot() +
   geom_ribbon(
     data = iar_forecast %>%
       filter(horizon == 12) %>%
-      filter(quantile %in% c("0.10", "0.90")) %>%
+      filter(quantile %in% c("0.1", "0.9")) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
       pivot_wider(
         names_from = "quantile",
@@ -843,8 +843,8 @@ ggplot() +
       ),
     aes(
       x = date,
-      ymin = q_0.10,
-      ymax = q_0.90,
+      ymin = q_0.1,
+      ymax = q_0.9,
       fill = "80% of Distribution"
     ),
     alpha = 0.5) +
@@ -867,7 +867,7 @@ ggplot() +
     alpha = 0.8) +
     geom_line(
     data = iar_forecast %>%
-      filter(quantile == "0.50") %>%
+      filter(quantile == "0.5") %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12),
     aes(x = date, y = forecast_values,
