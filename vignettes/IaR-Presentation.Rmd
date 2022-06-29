@@ -204,6 +204,8 @@ win_len = df %>%
   filter(year(date) <= 2015) %>% 
   nrow()
 
+# win_len = 133
+
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
                                 target_var_name = "cpi_yoy",
@@ -1184,3 +1186,140 @@ iar_r2 %>%
   facet_wrap(~horizon, scales = "free")
 
 ```
+
+
+## Out of sample inflation only
+
+
+```{r out_of_sample_inflation_only_forecast_plot}
+
+ggplot() +
+  geom_ribbon(
+    data = inflation_forecast %>%
+      filter(horizon == 12) %>%
+      filter(quantile %in% c("0.1", "0.9")) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.1,
+      ymax = q_0.9,
+      fill = "80% of Distribution"
+    ),
+    alpha = 0.5) +
+    geom_ribbon(
+    data = inflation_forecast %>%
+      filter(quantile %in% c(0.25, 0.75)) %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.25,
+      ymax = q_0.75,
+      fill = "50% of Distribution"
+    ),
+    alpha = 0.8) +
+    geom_line(
+    data = inflation_forecast %>%
+      filter(quantile == "0.5") %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12),
+    aes(x = date, y = forecast_values,
+        color = "Forecasted Median 12 Month Earlier")
+  ) +
+  geom_line(
+    data = df %>%
+      filter(
+        date >= inflation_forecast %>%
+          filter(horizon == 12) %>%
+          pull(date) %>% min() + 1
+      ),
+    aes(x = date, y = cpi_yoy, color = "Realized Inflation")
+  ) + 
+  ylab("Percent") + xlab(NULL) +
+  ggtitle("Quantiles of inflation") + 
+  scale_fill_manual(values = c("grey","lightblue")) + 
+  scale_color_manual(values = c("black","red")) + 
+  theme(legend.text = element_text(size = 12))
+
+
+
+```
+
+
+## Out of sample intercept only
+
+
+```{r out_of_sample_intercept_only_forecast_plot}
+
+ggplot() +
+  geom_ribbon(
+    data = intercept_forecast %>%
+      filter(horizon == 12) %>%
+      filter(quantile %in% c("0.1", "0.9")) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.1,
+      ymax = q_0.9,
+      fill = "80% of Distribution"
+    ),
+    alpha = 0.5) +
+    geom_ribbon(
+    data = intercept_forecast %>%
+      filter(quantile %in% c(0.25, 0.75)) %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12) %>%
+      pivot_wider(
+        names_from = "quantile",
+        names_prefix = "q_",
+        values_from = "forecast_values"
+      ),
+    aes(
+      x = date,
+      ymin = q_0.25,
+      ymax = q_0.75,
+      fill = "50% of Distribution"
+    ),
+    alpha = 0.8) +
+    geom_line(
+    data = intercept_forecast %>%
+      filter(quantile == "0.5") %>%
+      filter(horizon == 12) %>%
+      mutate(date = date + as.numeric(horizon)  / 12),
+    aes(x = date, y = forecast_values,
+        color = "Forecasted Median 12 Month Earlier")
+  ) +
+  geom_line(
+    data = df %>%
+      filter(
+        date >= intercept_forecast %>%
+          filter(horizon == 12) %>%
+          pull(date) %>% min() + 1
+      ),
+    aes(x = date, y = cpi_yoy, color = "Realized Inflation")
+  ) + 
+  ylab("Percent") + xlab(NULL) +
+  ggtitle("Quantiles of inflation") + 
+  scale_fill_manual(values = c("grey","lightblue")) + 
+  scale_color_manual(values = c("black","red")) + 
+  theme(legend.text = element_text(size = 12))
+
+
+
+```
+
