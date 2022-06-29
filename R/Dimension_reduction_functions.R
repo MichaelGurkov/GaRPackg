@@ -123,6 +123,7 @@ pca_reduction = function(df,
     return(list(pca_obj = NULL, time_index = df[, time_index_var]))
   }
 
+
   temp_pca = df %>%
     dplyr::select(-dplyr::all_of(time_index_var)) %>%
     prcomp(center = center, scale. = scale)
@@ -187,10 +188,24 @@ map_pca_reduction = function(multi_feature_partitions,
   reduction_objects_list = purrr::map2(
     names(multi_feature_partitions),
     multi_feature_partitions, function(temp_name, temp_part) {
+
+
       temp_df = vars_df %>%
         dplyr::select(dplyr::any_of(c(unlist(temp_part,
                                              use.names = FALSE), "date"))) %>%
         dplyr::filter(complete.cases(.))
+
+      if(nrow(temp_df) <= 1){
+
+        empty_res = list()
+
+        empty_res$time_index = vars_df$date
+
+        empty_res$pca_obj$x = NULL
+
+        return(empty_res)
+
+      }
 
       # Set alignment params
 

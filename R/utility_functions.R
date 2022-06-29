@@ -152,3 +152,32 @@ identify_frequency = function(date_col){
 
 }
 
+
+#' @description This function determines the required \code{win_len}
+#'  for the analysis set so that the evaluation set will starts at
+#'  the specified date
+#'
+#' @title Calculate window length for start date
+#'
+#'  @param start_date
+#'
+#'  @param data_df
+#'
+calculate_win_len_from_date = function(start_date,data_df){
+
+  date_vec = data_df$date
+
+  win_len = max(which(start_date >= date_vec))
+
+  if(length(win_len) > 0){
+
+    return(win_len)
+
+  }
+
+  else {stop(paste0("window length could not be set.",
+                    " Perhaps start date is out of data",
+                    " date range"))}
+
+
+}

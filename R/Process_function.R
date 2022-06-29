@@ -182,9 +182,6 @@ chain_index = function(df, preprocess_method = "pca", ...){
       pca_reduction(...) %>%
       dplyr::mutate(PCA = scale(.data$PCA))
 
-    # debugging
-    # if(sum(is.na(temp_agg_series$PCA)) > 0){browser()}
-
 
     temp_diff_series = temp_agg_series %>%
       dplyr::mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
@@ -419,11 +416,14 @@ fill_na_average = function(data_vec, k = 4){
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
+    filter(complete.cases(.)) %>%
     dplyr::group_by(.data$horizon,.data$date) %>%
     dplyr::arrange(.data$quantile) %>%
     dplyr::mutate(dplyr::across(tidyselect::matches("^(fitted|forecast)_values$"),
                          ~sort(.))) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    rbind(prediction_df %>%
+            filter(!complete.cases(.)))
 
 
   return(prediction_df)
