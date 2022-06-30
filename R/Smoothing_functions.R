@@ -44,8 +44,6 @@ t_skew_loss = function(estimated_df, t_skew_params) {
 
 }
 
-
-
 #' @title Run t skewed optimization
 #'
 #' @importFrom rlang .data
@@ -443,3 +441,48 @@ extract_smoothed_quantiles = function(
   return(smoothed_quantiles_df)
 }
 
+
+
+#' @title Calculate implied standard deviation
+#'
+#' @description  This function calculates the implied standard
+#' deviation from normal distribution from one data point
+#'
+#' @param data_points_vec vector of observed data points from
+#'  (assumed) normal distribution
+#'
+#' @param percentiles_vec vector of percentiles corresponding to the
+#' data points specified in \code{data_points_vec}
+#'
+#' @return the value of standard deviation of the normal (mean 0)
+#'  distribution implied by the \code{data_points_vec} and
+#'  \code{percentiles_vec} parameters
+#'
+calculate_implied_std_dev = function(data_points_vec,
+                                     percentiles_vec){
+
+  loss_function = function(data_points_vec_internal,
+                           percentiles_vec_internal,
+                           sigma){
+
+   errors_vec = data_points_vec_internal - qnorm(p = percentiles_vec,
+                                                 mean = 0,
+                                                 sd = sigma)
+
+   loss_value = sum(abs(errors_vec))
+
+  return(loss_value)
+
+  }
+
+  optim_results = optimize(f = loss_function,
+                           interval = c(0,10),
+                           data_points_vec_internal = data_points_vec,
+                           percentiles_vec_internal = percentiles_vec)
+
+  implied_std_dev = optim_results$minimum
+
+  return(implied_std_dev)
+
+
+}

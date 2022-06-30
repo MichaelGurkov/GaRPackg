@@ -8,7 +8,7 @@
 #' @export
 plot_fan_chart = function(forecast_df, actual_df, fan_chart_date = NULL){
 
-  horizon = q_0.05 = q_0.25 =  q_0.5 = q_0.75 = q_0.95 = gdp = NULL
+  horizon = q_0.05 = q_0.25 =  q_0.5 = q_0.75 = q_0.95 = NULL
 
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package \"ggplot2\" needed for this function to work. Please install it.",
@@ -57,7 +57,7 @@ plot_fan_chart = function(forecast_df, actual_df, fan_chart_date = NULL){
 
   fan_chart_forecast_df = tibble::tibble(horizon = 0,
                                  date = fan_chart_date,
-                                 q_0.05 = fan_chart_actual_df$gdp[1]) %>%
+                                 q_0.05 = fan_chart_actual_df$actual_values[1]) %>%
     dplyr::mutate(q_0.25 = q_0.05) %>%
     dplyr::mutate(q_0.5 = q_0.05) %>%
     dplyr::mutate(q_0.75 = q_0.05) %>%
@@ -82,9 +82,11 @@ plot_fan_chart = function(forecast_df, actual_df, fan_chart_date = NULL){
                        ggplot2::aes(x = horizon, y = q_0.5), color =
                 "skyblue4") +
     ggplot2::geom_line(data = fan_chart_actual_df,
-                       ggplot2::aes(x = horizon, y = gdp, color = "Realized GDP")) +
+                       ggplot2::aes(x = horizon, y = actual_values,
+                                    color = "Realized values")) +
     ggplot2::geom_point(data = fan_chart_actual_df,
-                        ggplot2::aes(x = horizon, y = gdp, color = "Realized GDP")) +
+                        ggplot2::aes(x = horizon, y = actual_values,
+                                     color = "Realized values")) +
     ggplot2::scale_y_continuous(labels = scales::percent_format()) +
     ggplot2::scale_x_continuous(breaks = fan_chart_actual_df$horizon) +
     ggplot2::xlab("Horizon (quarters)") + ggplot2::ylab(NULL) +

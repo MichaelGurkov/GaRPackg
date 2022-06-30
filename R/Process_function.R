@@ -406,21 +406,22 @@ fill_na_average = function(data_vec, k = 4){
 
 #' @title Fixes quantile regression crossing
 #'
-#' This function fixes the crossing issue in quantile regression
+#' @description  This function fixes the crossing issue in quantile
+#'  regression by reordering the values according to quantiles order
 #'
 #' @import tidyr
 #'
 #' @importFrom rlang .data
 #'
 #' @param prediction_df data frame with prediction values. The structure is
-#' date, horizon, quantile, gar
+#' date, horizon, quantile, forecast_values or fitted_values
 #'
 fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
     dplyr::group_by(.data$horizon,.data$date) %>%
-    arrange(.data$quantile) %>%
-    dplyr::mutate(across(matches("^(fitted|forecast)_values$"),
+    dplyr::arrange(.data$quantile) %>%
+    dplyr::mutate(dplyr::across(tidyselect::matches("^(fitted|forecast)_values$"),
                          ~sort(.))) %>%
     dplyr::ungroup()
 

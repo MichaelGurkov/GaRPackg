@@ -106,9 +106,12 @@ import_from_fame_template = function(template_path,
 #' @title Import DSGE forecasts
 #'
 #' @description  This function imports DSGE forecasts and convert the data
-#' to tidy format
+#' to tidy format.
 #'
 #' @param file_path string
+#'
+#' @param quantiles numeric vector that specifies the required
+#'  quantiles for the DSGE forecast
 #'
 #' @importFrom  readxl read_xlsx
 #'
@@ -122,7 +125,8 @@ import_from_fame_template = function(template_path,
 #'
 #' @export
 #'
-import_dsge_forecasts = function(file_path){
+import_dsge_forecasts = function(file_path,
+                                 quantiles = c(0.05,0.25,0.5,0.75,0.95)){
 
   . = NULL
 
@@ -133,9 +137,6 @@ import_dsge_forecasts = function(file_path){
     "4",-3.25,-1.3,
     "8",-3.5,-1.45,
     "12",-3.75,-1.5) %>%
-    dplyr::mutate(`0.5` = 0) %>%
-    dplyr::mutate(`0.75` = abs(.data$`0.25`)) %>%
-    dplyr::mutate(`0.95` = abs(.data$`0.05`)) %>%
     dplyr::mutate(across(-.data$horizon, ~./100))
 
 
@@ -145,10 +146,18 @@ import_dsge_forecasts = function(file_path){
     "4",-3.95,-1.6,
     "8",-4.6,-1.8,
     "12",-4.9,-2) %>%
-    dplyr::mutate(`0.5` = 0) %>%
-    dplyr::mutate(`0.75` = abs(.data$`0.25`)) %>%
-    dplyr::mutate(`0.95` = abs(.data$`0.05`)) %>%
     dplyr::mutate(across(-.data$horizon, ~./100))
+
+  sigma_df = cpi_table %>%
+    tidyr::pivot_longer(-horizon,names_to = "quantile") %>%
+    dplyr::mutate(target_var = "cpi") %>%
+    dplyr::bind_rows(gdp_table %>%
+                pivot_longer(-horizon,names_to = "quantile") %>%
+                  dplyr::mutate(target_var = "gdp")) %>%
+    dplyr::mutate(quantile = as.numeric(quantile)) %>%
+    dplyr::group_by(horizon, target_var) %>%
+    dplyr::summarise(sigma = calculate_implied_std_dev(value, quantile),
+              .groups = "drop")
 
 
 
@@ -160,7 +169,8 @@ import_dsge_forecasts = function(file_path){
     sheet_names_list,
     .id = "target_var",
     .f = function(temp_sheet) {
-      raw_data = readxl::read_xlsx(file_path, sheet = temp_sheet, skip = 1)
+      raw_data = readxl::read_xlsx(file_path, sheet = temp_sheet,
+                                   skip = 1)
 
       data = raw_data %>%
         dplyr::rename(date = .data$OBS) %>%
@@ -171,33 +181,34 @@ import_dsge_forecasts = function(file_path){
                      values_to = "forecast") %>%
         dplyr::filter(complete.cases(.))
 
-      data = data %>%
-        dplyr::mutate(date = .data$date - as.numeric(.data$horizon) * 0.25)
-
-
       return(data)
 
     }
   )
 
 
-  result_df = forecast_df %>%
-    dplyr::filter(.data$target_var == "gdp") %>%
-    dplyr::left_join(gdp_table, by = "horizon") %>%
-    dplyr::filter(complete.cases(.)) %>%
-    dplyr::bind_rows(forecast_df %>%
-            dplyr::filter(.data$target_var == "cpi") %>%
-            dplyr::left_join(cpi_table, by = "horizon") %>%
-            dplyr::filter(complete.cases(.))) %>%
+
+
+
+  result_df = sigma_df %>%
+    mutate(temp_df = purrr::map(sigma, function(temp_sigma){
+
+      temp_tibble = tibble::tibble(quantiles = quantiles) %>%
+        dplyr::mutate(shift = qnorm(.data$quantiles,sd = temp_sigma))
+
+
+    })) %>%
+    dplyr::select(-.data$sigma) %>%
+    tidyr::unnest(temp_df) %>%
+    tidyr::pivot_wider(names_from = "quantiles",values_from = "shift") %>%
+    dplyr::inner_join(forecast_df,by = c("horizon", "target_var")) %>%
     dplyr::mutate(across(matches("[0-9]"), ~ . + .data$forecast)) %>%
     dplyr::select(-.data$forecast) %>%
     tidyr::pivot_longer(-c("target_var","date", "horizon"),
-                 names_to = "quantile",
-                 values_to = "forecast")
-
-  result_df = result_df %>%
+                        names_to = "quantile",
+                        values_to = "forecast") %>%
     dplyr::mutate(quantile = as.character(.data$quantile)) %>%
-    dplyr::mutate(quantile = recode(.data$quantile, "0.5" = "0.50"))
+    dplyr::mutate(quantile = dplyr::recode(.data$quantile, "0.5" = "0.50"))
 
   return(result_df)
 
