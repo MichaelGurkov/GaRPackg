@@ -199,12 +199,12 @@ iqr_df = iar_analysis %>%
 
 ```{r out_of_sample_forecast}
 
-win_len = df %>% 
-  select(date, unlist(partitions_list, use.names = FALSE)) %>% 
-  filter(year(date) <= 2015) %>% 
-  nrow()
+# win_len = df %>% 
+#   select(date, unlist(partitions_list, use.names = FALSE)) %>% 
+#   filter(year(date) <= 2015) %>% 
+#   nrow()
 
-# win_len = 133
+win_len = 133
 
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
@@ -943,6 +943,20 @@ For each quantile $\tau$ we compute  the percentage of observations that fall be
 
 ```{r pit_score}
 
+# Confidence bands (Rossi et al 2019)
+
+# size of OS sample for tests
+OS_size=iar_forecast %>% 
+  filter(horizon == 12) %>% 
+  inner_join(select(df, date, cpi_yoy), by = c("forecast_target_date" = "date")) %>% 
+  filter(!is.na(cpi_yoy)) %>%
+  count(quantile) %>% 
+  pull(n) %>% 
+  unique() 
+
+kappa_alpha= 1.34  #( p=0.01, kappa=1.61; p=0.05, kappa=1.34; p=0.10, kappa=1.21)
+
+
 iar_pit = quantile_pit_score(
   forecast_df = iar_forecast %>%
     filter(horizon == 12),
@@ -972,15 +986,22 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
                                   "Inflation at risk",
                                   "Intercept"))) %>%
   ggplot(aes(x = quantile,y = value,color = name,group = name)) +
-  geom_line() +
+  geom_line(size = 0.75) +
   geom_abline(
     slope = 1,
     intercept = 0,
     color = "black",
+    linetype = "solid"
+  ) +
+  geom_abline(
+    slope = 1,
+    intercept = c(kappa_alpha / OS_size ^ 0.5,-1 * (kappa_alpha / OS_size ^ 0.5)),
+    color = "black",
     linetype = "dashed"
   ) +
   xlim(0,1) + ylim(0,1) +
-  xlab("Quantile") + ylab(NULL)
+  xlab("Quantile") + ylab(NULL) + 
+  labs(caption = "Dashed lines are confidence bands (Rossi et al 2019) at p = 0.1 ")
 
 
 
@@ -1165,23 +1186,28 @@ df %>%
 
 iar_r2 = quantile_r2_score(
   forecast_df = iar_forecast,
-  actual_df = select(df, actual_values = cpi, date),
+  actual_df = select(df, actual_values = cpi_yoy, date),
   benchmark_df = intercept_forecast) %>%
-  rename(iar_r2 = quantile_r2)
+  rename(iar = quantile_r2)
 
 inflation_r2 = quantile_r2_score(
   forecast_df = inflation_forecast,
-  actual_df = select(df, actual_values = cpi, date),
+  actual_df = select(df, actual_values = cpi_yoy, date),
   benchmark_df = intercept_forecast) %>%
-  rename(inflation = quantile_r2)
+  rename(inflation_only = quantile_r2)
 
 iar_r2 %>%
   inner_join(inflation_r2,by = c("horizon", "quantile")) %>%
   pivot_longer(-c(horizon, quantile)) %>%
+  filter(horizon == 12) %>% 
   mutate(quantile = factor(quantile, levels = quantile_vec)) %>%
+  mutate(name = factor(name,
+                       labels = c("Inflation at Risk",
+                                  "CPI only"))) %>% 
+  mutate(name = fct_relevel(name, "CPI only")) %>% 
   ggplot(aes(x = quantile, y = value, fill = name)) +
   geom_col(position = "dodge") +
-  scale_fill_discrete(labels = c("IaR","Inflation only")) +
+  # scale_fill_discrete(labels = c("IaR","Inflation only")) +
   xlab("Quantile") + ylab(NULL) + 
   facet_wrap(~horizon, scales = "free")
 
@@ -1320,6 +1346,38 @@ ggplot() +
   theme(legend.text = element_text(size = 12))
 
 
+
+```
+
+
+## Factor decomposition
+
+```{r eval=FALSE}
+
+factor_contributions = map_dfr(list("0.25" = 0.25, "0.5" = 0.5, "0.75" = 0.75),
+                               extract_factor_contribution_from_gar_model,
+                               gar_model = iar_analysis,.id = "quantile") %>% 
+  pivot_longer(-c("date","horizon", "quantile"),names_to = "factor",
+               values_to = "factor_contribution") %>% 
+  pivot_wider(id_cols = c("date","horizon","factor"),names_from = "quantile",
+              values_from = "factor_contribution",names_prefix = "q_")
+
+factor_contributions = factor_contributions %>% 
+  inner_join(calculate_skew_and_iqr(iar_analysis), by=c("date", "horizon")) %>% 
+  filter(horizon == 12) %>% 
+  mutate(contribution_U = q_0.75 - q_0.5,
+         contribution_D = q_0.5 - q_0.25,
+         contribution_iqr = q_0.75 - q_0.25,
+         contribution_skewness=(contribution_U - contribution_D) / iqr) %>%
+  group_by(quarter = as.yearqtr(date),factor, horizon) %>%
+  summarise(across(everything(), mean, na.rm = TRUE), .groups = "drop")
+
+```
+
+```{r eval=FALSE}
+
+factor_contributions %>% 
+  select(quarter, date, iqr, contribution_iqr)
 
 ```
 
