@@ -81,22 +81,95 @@ theme_set(theme_bw() +
                 legend.title = element_blank(),
                 legend.text = element_text(size = 15)))
 
-# plot_names = tribble(
-#   ~var_name, ~plot_name,
-#   "Intercept", "Intercept",
-#   "cpi", "Inflation",
-#   "cpi_lag", "Inflation",
-#   "spf1y","Expectations",
-#   "beir5y5y","LT Expect.",
-#   "nis_usd", "Exchange Rate",
-#   "rel_tradables", "Tradables",
-#   "brent_usd", "Oil Prices",
-#   "meshulav_gap","Output Gap"
-# )
+labels_df = tibble(level = c("cpi_yoy","nis_usd_percent_change",
+                             "brent_usd_percent_change",
+                             "meshulav_gap","beir5y5y", "intercept"),
+                   label = c("Inflation","Exchange Rate",
+                             "Oil prices","Output Gap",
+                             "Expectations","Intercept"))
 
 
 
 ```
+
+```{r auxilary_functions}
+
+calculate_disp_and_skew_contributons = function(iar_model){
+  
+  factor_contributions = map_dfr(
+    list(
+      "0.25" = 0.25,
+      "0.5" = 0.5,
+      "0.75" = 0.75
+    ),
+    extract_factor_contribution_from_gar_model,
+    gar_model = iar_model,
+    .id = "quantile"
+  ) %>%
+    pivot_longer(-c("date", "horizon", "quantile"),
+                 names_to = "category",
+                 values_to = "factor_contribution") %>%
+    pivot_wider(
+      id_cols = c("date", "horizon", "category"),
+      names_from = "quantile",
+      values_from = "factor_contribution",
+      names_prefix = "q_"
+    )
+  
+  factor_contributions = factor_contributions %>%
+    inner_join(calculate_skew_and_iqr(iar_model),
+               by = c("date", "horizon")) %>%
+    filter(horizon == 12) %>%
+    mutate(
+      contribution_U = q_0.75 - q_0.5,
+      contribution_D = q_0.5 - q_0.25,
+      contribution_iqr = q_0.75 - q_0.25,
+      contribution_skew = (contribution_U - contribution_D) / iqr
+    ) %>%
+    select(-c(contribution_U, contribution_D, starts_with("q_")))
+  
+  
+  return(factor_contributions)
+  
+  
+}
+
+make_plot_df = function(factor_contributions, labels_df){
+  
+
+plot_df = factor_contributions %>%
+  select(-c(skew, iqr)) %>%
+  pivot_longer(
+    cols = c(starts_with("contribution")),
+    names_to = "facet",
+    values_to = "contribution_value",
+    names_prefix = "contribution_"
+  ) %>%
+  inner_join(
+    factor_contributions %>%
+      select(-starts_with("contribution")) %>%
+      pivot_longer(
+        cols = c(skew, iqr),
+        names_to = "facet",
+        values_to = "total_value"
+      ),
+    by = c("date", "category", "horizon", "facet")
+  ) %>%
+  group_by(category, facet, horizon) %>%
+  mutate(across(contains("value"),
+                ~ scale(., scale = FALSE)[, 1])) %>%
+  ungroup() %>%
+  mutate(category = factor(category, levels = labels_df$level,
+                           labels = labels_df$label))
+
+  return(plot_df)
+  
+  
+}
+
+```
+
+
 
 ```{r load_data}
 
@@ -143,6 +216,12 @@ filter_obj =  hpfilter(df$madad_meshulav,freq = 1600)
 
 df = df %>% 
   mutate(meshulav_gap = filter_obj$cycle / filter_obj$trend[,1] * 100)
+
+df = df %>% 
+  mutate(intercept_elb = if_else(date >= as.yearmon("Sep 2014") &
+                         year(date) <= 2019,1,0)) %>% 
+  mutate(across(unlist(partitions_list, use.names = FALSE),
+                ~. * intercept_elb, .names = "{col}_elb"))
 
 
 ```
@@ -193,6 +272,28 @@ ols_coeffs = iar_analysis$reg_df %>%
 
 iqr_df = iar_analysis %>% 
   calculate_skew_and_iqr()
+
+```
+
+
+```{r run_robustness_elb}
+
+partitions_list_elb = map(partitions_list, ~paste0(.,"elb"))
+
+names(partitions_list_elb) = paste0(names(partitions_list), "elb")
+
+iar_analysis_elb = run_GaR_analysis(
+  partitions_list = c(partitions_list,partitions_list_elb,
+                      "intercept_elb" = "intercept_elb"),
+  vars_df = df,
+  target_var_name = "cpi_yoy_elb",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list = list(
+    output_gap = list("output_gap_elb", TRUE),
+    expectation = list("beir5y5y_elb", TRUE)
+  )
+)
 
 ```
 
@@ -592,151 +693,29 @@ $Dispersion_{t} \equiv Q^{75}_{t} - Q^{25}_{t} \quad Skeweness_{t} \equiv \frac{
 \label{FactorPlot}
 
 
-```{r factor_decomposition_deviations}
-
-means_vec = iqr_df %>% 
-  filter(horizon == 12) %>% 
-  select(skew,iqr) %>% 
-  summarise(across(everything(), mean))
+```{r plot_skew_contributions, fig.height=7.5}
 
 
-median_mean = iar_analysis$fitted_df %>% 
-  filter(quantile == "0.5") %>% 
-  pull(fitted_values) %>% 
-  mean()
+factor_contributions = calculate_disp_and_skew_contributons(iar_analysis) %>%
+    group_by(date = as.yearqtr(date), category, horizon) %>%
+    summarise(across(everything(), mean, na.rm = TRUE),
+              .groups = "drop")
 
-labels_df = tibble(level = c("cpi_yoy","nis_usd_percent_change",
-                             "brent_usd_percent_change",
-                             "meshulav_gap","exp_int"),
-                   label = c("Inflation","Exchange Rate",
-                             "Oil prices","Output Gap",
-                             "Exp. and Intercept"))
-
-factors_cont_df = iar_analysis %>%
-  extract_factor_contribution_from_gar_model(target_quantile = "0.25") %>%
-  mutate(quantile = 0.25) %>%
-  bind_rows(iar_analysis %>%
-  extract_factor_contribution_from_gar_model(target_quantile = "0.75") %>%
-  mutate(quantile = 0.75)) %>%
-  bind_rows(iar_analysis %>%
-  extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>%
-  mutate(quantile = 0.5)) %>%
-  filter(horizon == 12) %>% 
-  # filter(date >= as.yearmon("Jan 2007")) %>% 
-  pivot_longer(-c(date, quantile, horizon))
+plot_df = make_plot_df(factor_contributions,labels_df)
 
 
-skew_plot_df = factors_cont_df %>% 
-  pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
-              names_prefix = "q_") %>% 
-  left_join(iqr_df, by = c("date", "horizon")) %>% 
-  mutate(skew_cont = (q_0.75 + q_0.25 - 2 * q_0.5) / iqr) %>% 
-  select(-starts_with("q_"),-horizon,-iqr) %>% 
-  group_by(date = as.yearqtr(date), name) %>% 
-  summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
-  pivot_wider(names_from = name, values_from = skew_cont) %>% 
-  mutate(exp_int = intercept + beir5y5y - means_vec$skew) %>% 
-  mutate(skew = skew - means_vec$skew) %>%
-  select(-c(intercept,beir5y5y)) %>% 
-  pivot_longer(-c(date,skew)) %>% 
-  mutate(name = factor(name,levels = labels_df$level,
-                       labels = labels_df$label))
+plot_df %>% 
+  mutate(facet = factor(facet, levels = c("iqr", "skew"),
+                        labels = c("Dispersion", "Skewness"))) %>% 
+  ggplot() + 
+  geom_col(aes(date, contribution_value, fill = category)) + 
+  geom_line(aes(date, total_value), size = 1) + 
+  # scale_fill_viridis_d() + 
+  facet_wrap(~facet, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
 
 
-disp_plot_df = factors_cont_df %>% 
-  pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
-              names_prefix = "q_") %>% 
-  left_join(iqr_df, by = c("date", "horizon")) %>% 
-  mutate(iqr_cont = q_0.75 - q_0.25) %>%
-  select(-starts_with("q_"),-horizon,-skew) %>% 
-  group_by(date = as.yearqtr(date), name) %>% 
-  summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
-  pivot_wider(names_from = name, values_from = iqr_cont) %>% 
-  mutate(exp_int = intercept + beir5y5y - means_vec$iqr) %>% 
-  mutate(iqr = iqr - means_vec$iqr) %>% 
-  select(-c("intercept","beir5y5y")) %>% 
-  pivot_longer(-c(date,iqr)) %>% 
-  mutate(name = factor(name,levels = labels_df$level,
-                       labels = labels_df$label))
-
-
-
-median_plot_df = factors_cont_df %>% 
-  pivot_wider(id_cols = c(date,name, horizon), names_from = quantile,
-              names_prefix = "q_") %>% 
-  mutate(med_cont = q_0.5) %>%
-  select(-starts_with("q_"),-horizon) %>% 
-  group_by(date = as.yearqtr(date), name) %>% 
-  summarise(across(everything(),mean, na.rm = TRUE), .groups = "drop")  %>% 
-  pivot_wider(names_from = name, values_from = med_cont) %>% 
-  mutate(exp_int = intercept + beir5y5y - median_mean) %>% 
-  select(-c("intercept","beir5y5y")) %>% 
-  pivot_longer(-c(date)) %>% 
-  mutate(name = factor(name,levels = labels_df$level,
-                       labels = labels_df$label))
-
-
-
-```
-
-
-```{r plot_factor_decomposition, fig.height=7.5}
-
-skew_plot = ggplot() + 
-  geom_col(aes(x = date, y = value, fill = name),
-           data = skew_plot_df) + 
-  geom_line(aes(x = date, y = skew),
-            data = skew_plot_df, size = 1) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("Skewness")
-
-
-disp_plot =  ggplot() + 
-  geom_col(aes(x = date, y = value, fill = name),
-           data = disp_plot_df) + 
-  geom_line(aes(x = date, y = iqr),
-            data = disp_plot_df, size = 1) + 
-  xlab(NULL) + ylab(NULL) + ggtitle("Dispersion")
-
-med_plot =  ggplot() + 
-  geom_col(aes(x = date, y = value, fill = name),
-           data = median_plot_df) + 
-  geom_line(aes(x = date, y = value),
-            data = median_plot_df %>% 
-              group_by(date) %>% 
-              summarise(value = sum(value), .groups = "drop"),
-            size = 1) +
-  xlab(NULL) + ylab(NULL) + ggtitle("Median") + 
-  labs(caption = "Deviations from the mean (quarterly average)")
-
-
-plot_legend = get_legend(disp_plot)
-
-plots_row = plot_grid(disp_plot +
-            theme(legend.position = "none"),
-          skew_plot +
-            theme(legend.position = "none"),
-          med_plot +
-            theme(legend.position = "none",
-                  plot.caption = element_text(hjust = 0)))
-
-plot_grid(plots_row, plot_legend,nrow = 2,rel_heights = c(4,1))
-
-
-
-```
-
-
-```{r eval=FALSE}
-
-iar_analysis %>% 
-  extract_factor_contribution_from_gar_model(target_quantile = "0.5") %>% 
-  filter(horizon == 12) %>% 
-  select(-horizon) %>% 
-  pivot_longer(-date) %>% 
-  ggplot(aes(x = date, y = value, fill = name)) + 
-  geom_col()
-
-
+rm(factor_contributions, plot_df)
 
 ```
 
@@ -746,10 +725,6 @@ iar_analysis %>%
 \begin{flushright}
 \hyperlink{OutGap}{\beamerbutton{Output gap}}
 \end{flushright}
-
-<!-- \scriptsize -->
-
-<!-- $E(Disp_{t + 12}|X_{t}) = (\beta^{75} - \beta^{25})X_{t} \quad E(Skew_{t + 12}|X_{t}) = \frac{(\beta^{75}_{t}+\beta^{25}_{t}-2\beta^{50}_{t})X_{t}}{Disp_{t+12}}$ -->
 
 
 ## Realized inflation increases upside risks and uncertainty one year ahead
@@ -825,6 +800,66 @@ iqr_df %>%
   xlab("Oil price") + ylab(NULL)
 
 ```
+
+
+
+# Effective Lower Bound
+## Inflation environment is still the dominant risk factor
+
+\label{FactorPlotELB}
+
+
+```{r eval=FALSE}
+
+factor_contributions_elb = calculate_disp_and_skew_contributons(iar_analysis_elb)
+
+temp = factor_contributions_elb %>% 
+  mutate(indicator = if_else(str_detect(category,"_elb$"), "base","elb")) %>% 
+  pivot_longer(-c(date, horizon, category, indicator)) %>% 
+  pivot_wider(names_from = indicator) %>% 
+  filter(horizon == 12) %>% 
+  filter(date == as.yearmon("Jan 2015"))
+  
+
+
+```
+
+
+
+```{r plot_skew_contributions_elb, fig.height=7.5}
+
+
+factor_contributions_elb = calculate_disp_and_skew_contributons(iar_analysis_elb)
+
+plot_df_elb = make_plot_df(factor_contributions_elb,
+                           labels_df %>% 
+                             bind_rows(labels_df %>% 
+                                         mutate(across(everything(), ~paste0(.,"_elb"))) %>% 
+                                         mutate(level = recode(level, intercept_elb = "elb"))))
+
+
+plot_df_elb %>% 
+  mutate(facet = factor(facet, levels = c("iqr", "skew"),
+                        labels = c("Dispersion", "Skewness"))) %>% 
+  ggplot() + 
+  geom_col(aes(date, contribution_value, fill = category)) + 
+  geom_line(aes(date, total_value), size = 1) + 
+  # scale_fill_viridis_d() + 
+  facet_wrap(~facet, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
+
+
+rm(factor_contributions, plot_df, labels_df)
+
+```
+
+\vspace{-2em}
+
+
+\begin{flushright}
+\hyperlink{OutGap}{\beamerbutton{Output gap}}
+\end{flushright}
+
 
 
 # Out-of-Sample Forecast Performance
@@ -1354,9 +1389,11 @@ ggplot() +
 
 ```{r eval=FALSE}
 
-factor_contributions = map_dfr(list("0.25" = 0.25, "0.5" = 0.5, "0.75" = 0.75),
-                               extract_factor_contribution_from_gar_model,
-                               gar_model = iar_analysis,.id = "quantile") %>% 
+factor_contributions = map_dfr(list("0.25" = 0.25,
+                                    "0.5" = 0.5,
+                                    "0.75" = 0.75),                              extract_factor_contribution_from_gar_model,
+                               gar_model = iar_analysis,
+                               .id = "quantile") %>% 
   pivot_longer(-c("date","horizon", "quantile"),names_to = "factor",
                values_to = "factor_contribution") %>% 
   pivot_wider(id_cols = c("date","horizon","factor"),names_from = "quantile",
@@ -1376,8 +1413,23 @@ factor_contributions = factor_contributions %>%
 
 ```{r eval=FALSE}
 
-factor_contributions %>% 
-  select(quarter, date, iqr, contribution_iqr)
+data_iqr = factor_contributions %>% 
+  select(factor, quarter, date, iqr, contribution_iqr) %>% 
+  group_by(factor) %>% 
+  mutate(contribution_iqr = scale(contribution_iqr,scale = FALSE)[,1]) %>% 
+  ungroup() %>% 
+  mutate(iqr = scale(iqr, scale = FALSE)[,1]) %>% 
+  mutate(factor = factor(factor, labels = c()))
+
+ggplot() + 
+  geom_col(data = data_iqr,
+           aes(x = date, y = contribution_iqr, fill = factor)) + 
+  geom_line(data = data_iqr,
+            aes(x = date, y = iqr)) + 
+  xlab(NULL) + ylab(NULL)
+
+
+rm(data_iqr)
 
 ```
 
