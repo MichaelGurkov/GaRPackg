@@ -52,8 +52,6 @@ setwd(paste0(
 
 ```
 
-
-
 ```{r set_params}
 
 partitions_list = list(
@@ -169,8 +167,6 @@ plot_df = factor_contributions %>%
 
 ```
 
-
-
 ```{r load_data}
 
 raw_df = import_from_fame_template(
@@ -278,15 +274,15 @@ iqr_df = iar_analysis %>%
 
 ```{r run_robustness_elb}
 
-partitions_list_elb = map(partitions_list, ~paste0(.,"elb"))
+partitions_list_elb = map(partitions_list, ~paste0(.,"_elb"))
 
-names(partitions_list_elb) = paste0(names(partitions_list), "elb")
+names(partitions_list_elb) = paste0(names(partitions_list), "_elb")
 
 iar_analysis_elb = run_GaR_analysis(
   partitions_list = c(partitions_list,partitions_list_elb,
                       "intercept_elb" = "intercept_elb"),
   vars_df = df,
-  target_var_name = "cpi_yoy_elb",
+  target_var_name = "cpi_yoy",
   horizon_list = horizon_list,
   quantile_vec = quantile_vec,
   pca.align.list = list(
@@ -709,8 +705,8 @@ plot_df %>%
                         labels = c("Dispersion", "Skewness"))) %>% 
   ggplot() + 
   geom_col(aes(date, contribution_value, fill = category)) + 
-  geom_line(aes(date, total_value), size = 1) + 
-  # scale_fill_viridis_d() + 
+  geom_line(aes(date, total_value), size = 1, color = "blue") + 
+  scale_fill_viridis_d(option = "inferno") + 
   facet_wrap(~facet, scales = "free") + 
   xlab(NULL) + ylab(NULL)
 
@@ -804,38 +800,39 @@ iqr_df %>%
 
 
 # Effective Lower Bound
-## Inflation environment is still the dominant risk factor
+## Accounting for Effective Lower Bound - Inflation environment is still important
 
 \label{FactorPlotELB}
 
 
-```{r eval=FALSE}
+```{r plot_skew_contributions_elb,fig.height=7.5}
 
 factor_contributions_elb = calculate_disp_and_skew_contributons(iar_analysis_elb)
 
-temp = factor_contributions_elb %>% 
+factor_contributions_elb = list("contribution_iqr" = factor_contributions_elb %>% 
+  select(date, horizon, category, contribution_iqr) %>% 
   mutate(indicator = if_else(str_detect(category,"_elb$"), "base","elb")) %>% 
-  pivot_longer(-c(date, horizon, category, indicator)) %>% 
-  pivot_wider(names_from = indicator) %>% 
-  filter(horizon == 12) %>% 
-  filter(date == as.yearmon("Jan 2015"))
-  
+  mutate(category = str_remove_all(category,"_elb")) %>% 
+  pivot_wider(names_from = indicator,values_from = contribution_iqr) %>% 
+  mutate(contribution_iqr = base + elb) %>% 
+  select(-c("base","elb")),
+  "contribution_skew" = factor_contributions_elb %>% 
+  select(date, horizon, category, contribution_skew) %>% 
+  mutate(indicator = if_else(str_detect(category,"_elb$"), "base","elb")) %>% 
+  mutate(category = str_remove_all(category,"_elb")) %>% 
+  pivot_wider(names_from = indicator,values_from = contribution_skew) %>% 
+  mutate(contribution_skew = base + elb) %>% 
+  select(-c("base","elb")),
+  "skew_iqr" = factor_contributions_elb %>% 
+    select(date,horizon,category,skew,iqr)) %>% 
+  reduce(inner_join, by = c("date","horizon","category"))
 
+factor_contributions_elb = factor_contributions_elb %>%
+    group_by(date = as.yearqtr(date), category, horizon) %>%
+    summarise(across(everything(), mean, na.rm = TRUE),
+              .groups = "drop")
 
-```
-
-
-
-```{r plot_skew_contributions_elb, fig.height=7.5}
-
-
-factor_contributions_elb = calculate_disp_and_skew_contributons(iar_analysis_elb)
-
-plot_df_elb = make_plot_df(factor_contributions_elb,
-                           labels_df %>% 
-                             bind_rows(labels_df %>% 
-                                         mutate(across(everything(), ~paste0(.,"_elb"))) %>% 
-                                         mutate(level = recode(level, intercept_elb = "elb"))))
+plot_df_elb = make_plot_df(factor_contributions_elb,labels_df)
 
 
 plot_df_elb %>% 
@@ -843,15 +840,19 @@ plot_df_elb %>%
                         labels = c("Dispersion", "Skewness"))) %>% 
   ggplot() + 
   geom_col(aes(date, contribution_value, fill = category)) + 
-  geom_line(aes(date, total_value), size = 1) + 
-  # scale_fill_viridis_d() + 
+  geom_line(aes(date, total_value), size = 1, color = "blue") + 
+  scale_fill_viridis_d(option = "inferno") + 
   facet_wrap(~facet, scales = "free") + 
   xlab(NULL) + ylab(NULL)
 
 
-rm(factor_contributions, plot_df, labels_df)
+rm(factor_contributions_elb, plot_df) 
+  
+
 
 ```
+
+
 
 \vspace{-2em}
 
@@ -1045,176 +1046,6 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
 
-# Summary
-
-\begin{itemize}
-\setlength\itemsep{3em}
-  \item
-  The decline in inflation since 2014 was associated with a decline in uncertainty
-  and a relative rise in downside risks to inflation.
-  \item
-  The decline in long-term expectations and oil prices played a prominent role
-  in these developments.
-  \item
-  The model can also be used to assess inflation risks regularly. 
-  
-\end{itemize}
-
-# Appendix {.unlisted .unnumbered}
-## Output gap depresses inflation while increasing upside risks one year ahead
-
-
-```{r output_gap_iqr}
-
-iqr_df %>%
-  filter(horizon == 12) %>%
-  left_join(select(df, c(date, x = meshulav_gap)), by = "date") %>%
-  left_join(iar_analysis$fitted_df %>%
-              filter(quantile == 0.5) %>%
-              select(date, horizon, median = fitted_values)) %>%
-  pivot_longer(cols = c(skew,iqr,median)) %>%
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>%
-  ggplot(aes(x = x, y = value)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  facet_wrap(~name, scales = "free") +
-  xlab("Output gap") + ylab(NULL)
-
-```
-
-
-## Exchange rate increases downside risks and lowers uncertainty one year ahead
-
-
-```{r fx_rate_iqr}
-
-iqr_df %>%
-  filter(horizon == 12) %>%
-  left_join(select(df, c(date, x = nis_usd))) %>%
-  left_join(iar_analysis$fitted_df %>%
-              filter(quantile == 0.5) %>%
-              select(date, horizon, median = fitted_values)) %>%
-  pivot_longer(cols = c(skew,iqr,median)) %>%
-  mutate(name = factor(name, levels = c("median", "iqr","skew"),
-                       labels = c("Median","Dispersion","Skewness"))) %>%
-  ggplot(aes(x = x, y = value)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  facet_wrap(~name, scales = "free") +
-  scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
-  xlab("Exchange rate") + ylab(NULL) + 
-  theme(axis.text.x = element_text(hjust = 0.25))
-```
-
-
-
-
-## Quantile Regression
-
-\label{QuantileReg}
-
-Model: for quantile $\tau$ and horizon $h$,
-$$
-Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{h,t}
-$$
-
-$\beta^{\tau}$ is  estimated by solving the minimization problem
-
-$$
-\min_{\beta^{\tau}}
-\sum_{t=1}^T
-\max \bigg\{
-\tau \big( y_{t+h}- \beta^{\tau}X_t \big)
-\, ,\,
-(\tau-1) \big( y_{t+h}- \beta^{\tau}X_t \big)
-\bigg\}
-$$
-
-Note: "Quantile crossing" handled using the method of Chernozhukov et al. (2010).
-
-\begin{flushleft}
-\hyperlink{methodology}{\beamergotobutton{Methodology}}
-\end{flushleft}
-
-
-
-
-## Autoregression in Output Gap
-
-\label{OutACf}
-
-```{r output_gap_ar}
-
-
-out_gap_ar = df %>%
-  pull(meshulav_gap) %>%
-  acf(plot = FALSE)
-
-tibble(acf = out_gap_ar$acf[,,1], lag = out_gap_ar$lag[,,1]) %>%
-  ggplot(aes(x = lag, y = acf, fill = (lag == 12))) +
-  geom_col(width = 0.5) +
-  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed") +
-  scale_fill_manual(values = c("grey","lightblue")) +
-  theme(legend.position = "none") +
-  xlab("Lag") + ylab(NULL) + ggtitle("Autocorrelation function of Output Gap")
-
-```
-
-
-\hyperlink{coef_results}{\beamerbutton{coeffs}}
-
-
-## Positive (short term) Output Gap
-
-```{r plot_gap_coeffs,fig.width=13, fig.height=8}
-
-iar_analysis %>%
-  extract_coeffs_from_gar_model() %>%
-  filter(partition == "meshulav_gap") %>%
-  filter(horizon == 1) %>% 
-  select(-horizon) %>% 
-  mutate(partition = recode(partition, "meshulav_gap" = "Output Gap")) %>% 
-  ggplot() +
-  geom_col(aes(x = quantile, y = coeff, fill = significant),
-           width = 0.3) +
-  scale_fill_manual(values = c("significant" = "lightblue",
-                               "non_significant" = "gray"),
-                    labels = c("Significant", "Non significant")) +
-  geom_hline(yintercept = 0, color = "black") + 
-  xlab("Quantile") + ylab(NULL) + ggtitle("Output Gap coefficients at 1 quarter ahead") +
-  labs(
-    caption = paste0(
-      "Notes: Each column shows the estimated coefficients ",
-      "from the quantile regression. ",
-      "\n  Blue bars mark coefficients that are significant at 10%",
-      "(see Koenker, 1994)"
-    )
-  ) +
-  theme(plot.caption = element_text(size = 10, hjust = 0.5),
-        axis.text.x = element_text(size = 12),
-        strip.text = element_text(size = 12))
-
-```
-
-\hyperlink{coef_results}{\beamerbutton{coeffs}}
-
-## Output Gap
-
-\label{OutGap}
-
-```{r output_gap}
-
-df %>% 
-  ggplot(aes(x = date, y = meshulav_gap)) + 
-  geom_line() + 
-  geom_hline(yintercept = 0, linetype = "dashed") + 
-  xlab(NULL) + ylab(NULL) + ggtitle("Output gap")
-
-```
-
-\hyperlink{FactorPlot}{\beamerbutton{Factor decomposition}}
-
 ## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
 
 ```{r plot_r2_score}
@@ -1249,7 +1080,177 @@ iar_r2 %>%
 ```
 
 
-## Out of sample inflation only
+# Summary
+
+\begin{itemize}
+\setlength\itemsep{3em}
+  \item
+  The decline in inflation since 2014 was associated with a decline in uncertainty
+  and a relative rise in downside risks to inflation.
+  \item
+  The decline in long-term expectations and oil prices played a prominent role
+  in these developments.
+  \item
+  The model can also be used to assess inflation risks regularly. 
+  
+\end{itemize}
+
+# Appendix {.unlisted .unnumbered}
+## Output gap depresses inflation while increasing upside risks one year ahead{.unlisted .unnumbered}
+
+
+```{r output_gap_iqr}
+
+iqr_df %>%
+  filter(horizon == 12) %>%
+  left_join(select(df, c(date, x = meshulav_gap)), by = "date") %>%
+  left_join(iar_analysis$fitted_df %>%
+              filter(quantile == 0.5) %>%
+              select(date, horizon, median = fitted_values)) %>%
+  pivot_longer(cols = c(skew,iqr,median)) %>%
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>%
+  ggplot(aes(x = x, y = value)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~name, scales = "free") +
+  xlab("Output gap") + ylab(NULL)
+
+```
+
+
+## Exchange rate increases downside risks and lowers uncertainty one year ahead{.unlisted .unnumbered}
+
+
+```{r fx_rate_iqr}
+
+iqr_df %>%
+  filter(horizon == 12) %>%
+  left_join(select(df, c(date, x = nis_usd))) %>%
+  left_join(iar_analysis$fitted_df %>%
+              filter(quantile == 0.5) %>%
+              select(date, horizon, median = fitted_values)) %>%
+  pivot_longer(cols = c(skew,iqr,median)) %>%
+  mutate(name = factor(name, levels = c("median", "iqr","skew"),
+                       labels = c("Median","Dispersion","Skewness"))) %>%
+  ggplot(aes(x = x, y = value)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~name, scales = "free") +
+  scale_x_continuous(labels = scales::percent_format(scale = 1,accuracy = 1)) +
+  xlab("Exchange rate") + ylab(NULL) + 
+  theme(axis.text.x = element_text(hjust = 0.25))
+```
+
+
+
+
+## Quantile Regression{.unlisted .unnumbered}
+
+\label{QuantileReg}
+
+Model: for quantile $\tau$ and horizon $h$,
+$$
+Q^{\tau}_{t,h}=\beta^{\tau}_hX_t+\epsilon^{\tau}_{h,t}
+$$
+
+$\beta^{\tau}$ is  estimated by solving the minimization problem
+
+$$
+\min_{\beta^{\tau}}
+\sum_{t=1}^T
+\max \bigg\{
+\tau \big( y_{t+h}- \beta^{\tau}X_t \big)
+\, ,\,
+(\tau-1) \big( y_{t+h}- \beta^{\tau}X_t \big)
+\bigg\}
+$$
+
+Note: "Quantile crossing" handled using the method of Chernozhukov et al. (2010).
+
+\begin{flushleft}
+\hyperlink{methodology}{\beamergotobutton{Methodology}}
+\end{flushleft}
+
+
+
+
+## Autoregression in Output Gap{.unlisted .unnumbered}
+
+\label{OutACf}
+
+```{r output_gap_ar}
+
+
+out_gap_ar = df %>%
+  pull(meshulav_gap) %>%
+  acf(plot = FALSE)
+
+tibble(acf = out_gap_ar$acf[,,1], lag = out_gap_ar$lag[,,1]) %>%
+  ggplot(aes(x = lag, y = acf, fill = (lag == 12))) +
+  geom_col(width = 0.5) +
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed") +
+  scale_fill_manual(values = c("grey","lightblue")) +
+  theme(legend.position = "none") +
+  xlab("Lag") + ylab(NULL) + ggtitle("Autocorrelation function of Output Gap")
+
+```
+
+
+\hyperlink{coef_results}{\beamerbutton{coeffs}}
+
+
+## Positive (short term) Output Gap{.unlisted .unnumbered}
+
+```{r plot_gap_coeffs,fig.width=13, fig.height=8}
+
+iar_analysis %>%
+  extract_coeffs_from_gar_model() %>%
+  filter(partition == "meshulav_gap") %>%
+  filter(horizon == 1) %>% 
+  select(-horizon) %>% 
+  mutate(partition = recode(partition, "meshulav_gap" = "Output Gap")) %>% 
+  ggplot() +
+  geom_col(aes(x = quantile, y = coeff, fill = significant),
+           width = 0.3) +
+  scale_fill_manual(values = c("significant" = "lightblue",
+                               "non_significant" = "gray"),
+                    labels = c("Significant", "Non significant")) +
+  geom_hline(yintercept = 0, color = "black") + 
+  xlab("Quantile") + ylab(NULL) + ggtitle("Output Gap coefficients at 1 quarter ahead") +
+  labs(
+    caption = paste0(
+      "Notes: Each column shows the estimated coefficients ",
+      "from the quantile regression. ",
+      "\n  Blue bars mark coefficients that are significant at 10%",
+      "(see Koenker, 1994)"
+    )
+  ) +
+  theme(plot.caption = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 12),
+        strip.text = element_text(size = 12))
+
+```
+
+\hyperlink{coef_results}{\beamerbutton{coeffs}}
+
+## Output Gap{.unlisted .unnumbered}
+
+\label{OutGap}
+
+```{r output_gap}
+
+df %>% 
+  ggplot(aes(x = date, y = meshulav_gap)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Output gap")
+
+```
+
+\hyperlink{FactorPlot}{\beamerbutton{Factor decomposition}}
+
+## Out of sample inflation only{.unlisted .unnumbered}
 
 
 ```{r out_of_sample_inflation_only_forecast_plot}
@@ -1317,7 +1318,7 @@ ggplot() +
 ```
 
 
-## Out of sample intercept only
+## Out of sample intercept only{.unlisted .unnumbered}
 
 
 ```{r out_of_sample_intercept_only_forecast_plot}
@@ -1385,7 +1386,7 @@ ggplot() +
 ```
 
 
-## Factor decomposition
+## Factor decomposition{.unlisted .unnumbered}
 
 ```{r eval=FALSE}
 
@@ -1430,6 +1431,21 @@ ggplot() +
 
 
 rm(data_iqr)
+
+```
+
+
+## BoI rate{.unlisted .unnumbered}
+
+
+```{r eval=FALSE}
+
+monetary_df = MiscImport::import_boi_monetary_df()
+
+monetary_df %>% 
+  ggplot(aes(date, boi_interest_nominal)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Bank of Israel policy rate")
 
 ```
 
