@@ -396,7 +396,7 @@ df %>%
     "CPI Inflation Variance (48 periods)")) +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
-                 " Vegetables, and Housing \n (Monthly,2004-2019)")) + 
+                 " Vegetables, and Housing \n (Monthly, 2004-2019)")) + 
   theme(plot.title = element_text(size = 17))
 
 
@@ -459,7 +459,7 @@ ggplot() +
 
 \vspace{1em}
 
-* Based on Banerjee et al. (2020)
+* Based on Banerjee et al. (2020), Lopez-Salido, J. D. and F. Loria (2020)
 
 \vspace{1em}
 
@@ -468,20 +468,20 @@ Gurkov and Zohar 2021)
 
 
 
-## Literature Review
+<!-- ## Literature Review -->
 
-\begin{itemize}
-  \setlength\itemsep{1em}
-  \item
-  Banerjee et al. (2020) - Quantile regression on a panel of advanced and emerging
-  markets sample.
-  \item
-  Lopez-Salido and Loria (2019) - United States (and Euro area) predictive inflation
-  distribution using quantile regression.  Conditional mean of inflation does not convey
-  an adequate representation of the overall pattern of inflation dynamics.
-  \item
-  Busetti et al (2015) - Euro area inflation using Philips curve and quantile regression.
-\end{itemize}
+<!-- \begin{itemize} -->
+<!--   \setlength\itemsep{1em} -->
+<!--   \item -->
+<!--   Banerjee et al. (2020) - Quantile regression on a panel of advanced and emerging -->
+<!--   markets sample. -->
+<!--   \item -->
+<!--   Lopez-Salido and Loria (2019) - United States (and Euro area) predictive inflation -->
+<!--   distribution using quantile regression.  Conditional mean of inflation does not convey -->
+<!--   an adequate representation of the overall pattern of inflation dynamics. -->
+<!--   \item -->
+<!--   Busetti et al (2015) - Euro area inflation using Philips curve and quantile regression. -->
+<!-- \end{itemize} -->
 
 
 
@@ -497,12 +497,11 @@ In-sample properties of the distribution of expected inflation:
 	Relatively balanced risks and stable uncertainty before 2014, decrease in uncertainty
 	and (relative) increase in downside risks after 2014.
 	\item
-	Realized inflation and long-term expectations are the predominant factors explaining
-	the changes in the features of the forecast distribution.	
+	Realized inflation and long-term expectations are the predominant
+	factors explaining	these changes
 	\item
-	Oil prices contribute to
-	the	evolution of forecast uncertainty, declining inflation environment explains
-	variation	in skewness.
+	Oil prices contribute to forecast uncertainty,
+	declining inflation environment explains variation	in skewness.
   \end{enumerate}
 
 
@@ -519,7 +518,7 @@ In-sample properties of the distribution of expected inflation:
 \label{methodology}
 
 \textbf{Quantile regressions --} estimate an equation for each quantile
-$\tau$	and horizon 12 months ahead. The sample period is 2004-2019 at monthly frequency.
+$\tau$ 12 months ahead (sample: 2004-2019, monthly frequency).
 
 $Q^{\tau}_{t + 12}=\beta^{\tau}X_t+\epsilon^{\tau}_{t}$
 
@@ -674,7 +673,8 @@ skew_df%>%
                                    "dashed" = "dashed")) + 
   labs(x = "", y = "",
        caption = paste0("Note: the dashed lines represent",
-                        " ± 2 standard error estimates")) +
+                        " ± 2 standard error estimates.",
+                        " Blue lines are sample averages.")) +
   theme(plot.caption = element_text(hjust = 0.5))
 
 
@@ -705,8 +705,9 @@ plot_df %>%
                         labels = c("Dispersion", "Skewness"))) %>% 
   ggplot() + 
   geom_col(aes(date, contribution_value, fill = category)) + 
-  geom_line(aes(date, total_value), size = 1, color = "blue") + 
-  scale_fill_viridis_d(option = "inferno") + 
+  geom_line(aes(date, total_value), size = 1) + 
+  scale_fill_brewer(palette = "Dark2") + 
+  # scale_fill_viridis_d(option = "inferno") + 
   facet_wrap(~facet, scales = "free") + 
   xlab(NULL) + ylab(NULL)
 
@@ -774,7 +775,7 @@ iqr_df %>%
 ```
 
 
-## Oil prices stimulate inflation and decreases uncertainty and skeweness one year ahead
+## Oil prices stimulate inflation and increase uncertainty and skeweness one year ahead
 
 
 ```{r oil_gap_iqr}
@@ -800,12 +801,32 @@ iqr_df %>%
 
 
 # Effective Lower Bound
-## Accounting for Effective Lower Bound - Inflation environment is still important
+## Policy rate and the ELB period
+
+```{r plot_boi_rate}
+
+df %>% 
+  select(date, boi_rate) %>% 
+  filter(complete.cases(.)) %>% 
+  filter(lubridate::year(date) >= 2004) %>% 
+  ggplot(aes(date, boi_rate)) + 
+  geom_line() + 
+  annotate("rect", xmin = as.yearmon("Sep 2014"),
+           xmax = as.yearmon("Jan 2019"),
+           ymin=0, ymax=Inf,
+           alpha = 0.5, fill="lightblue") + 
+  geom_text(aes(x = as.yearmon("Sep 2016"), y = 4.5),
+            label = "Effective Lower \n Bound period") + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Bank of Israel policy rate")
+
+```
+
+## The Effective Lower Bound may have played a role
 
 \label{FactorPlotELB}
 
 
-```{r plot_skew_contributions_elb,fig.height=7.5}
+```{r plot_skew_contributions_elb,fig.height=7}
 
 factor_contributions_elb = calculate_disp_and_skew_contributons(iar_analysis_elb)
 
@@ -840,8 +861,9 @@ plot_df_elb %>%
                         labels = c("Dispersion", "Skewness"))) %>% 
   ggplot() + 
   geom_col(aes(date, contribution_value, fill = category)) + 
-  geom_line(aes(date, total_value), size = 1, color = "blue") + 
-  scale_fill_viridis_d(option = "inferno") + 
+  geom_line(aes(date, total_value), size = 1) + 
+  scale_fill_brewer(palette = "Dark2") + 
+  # scale_fill_viridis_d(option = "inferno") + 
   facet_wrap(~facet, scales = "free") + 
   xlab(NULL) + ylab(NULL)
 
@@ -860,6 +882,7 @@ rm(factor_contributions_elb, plot_df)
 \begin{flushright}
 \hyperlink{OutGap}{\beamerbutton{Output gap}}
 \end{flushright}
+
 
 
 
@@ -957,7 +980,7 @@ ggplot() +
 
 For each quantile $\tau$ we compute  the percentage of observations that fall below the forecast quantile $\hat{Q}^{\tau}_{t}$:
 	$$
-	\varphi_{\tau} \equiv \frac{1}{T} \sum_{t=1}^{T} \mathbb{I}_{ \left\{ y_{t} <  \hat{Q}^{\tau}_{t} \right\} }.
+	\varphi_{\tau} \equiv \frac{1}{T} \sum_{t=1}^{T} \mathbb{I}_{ \left\{ \pi_{t} <  \hat{Q}^{\tau}_{t} \right\} }.
 	$$
 \begin{itemize}
 \setlength\itemsep{1em}
@@ -1037,7 +1060,7 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
   ) +
   xlim(0,1) + ylim(0,1) +
   xlab("Quantile") + ylab(NULL) + 
-  labs(caption = "Dashed lines are confidence bands (Rossi et al 2019) at p = 0.1 ")
+  labs(caption = "Dashed lines are confidence bands (Rossi et al 2019) at p = 0.05 ")
 
 
 
@@ -1089,7 +1112,7 @@ iar_r2 %>%
   and a relative rise in downside risks to inflation.
   \item
   The decline in long-term expectations and oil prices played a prominent role
-  in these developments.
+  in these developments. The ELB might have also played an important role.
   \item
   The model can also be used to assess inflation risks regularly. 
   
@@ -1217,7 +1240,7 @@ iar_analysis %>%
                                "non_significant" = "gray"),
                     labels = c("Significant", "Non significant")) +
   geom_hline(yintercept = 0, color = "black") + 
-  xlab("Quantile") + ylab(NULL) + ggtitle("Output Gap coefficients at 1 quarter ahead") +
+  xlab("Quantile") + ylab(NULL) + ggtitle("Output Gap coefficients at 1 month ahead") +
   labs(
     caption = paste0(
       "Notes: Each column shows the estimated coefficients ",
@@ -1435,17 +1458,5 @@ rm(data_iqr)
 ```
 
 
-## BoI rate{.unlisted .unnumbered}
 
-
-```{r eval=FALSE}
-
-monetary_df = MiscImport::import_boi_monetary_df()
-
-monetary_df %>% 
-  ggplot(aes(date, boi_interest_nominal)) + 
-  geom_line() + 
-  xlab(NULL) + ylab(NULL) + ggtitle("Bank of Israel policy rate")
-
-```
 
