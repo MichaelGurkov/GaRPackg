@@ -1074,6 +1074,30 @@ list(iar_pit, intercept_pit, inflation_pit) %>%
 
 \hyperlink{PIT}{\beamergotobutton{PIT}}
 
+## Goodness of fit --Quantile R-Squared
+Quantile R-sq. Giglio et al. (2016) compares forecast performance to a
+intercept only quantile benchmark:
+
+$$
+R^2_{\tau,h} \equiv 1- \frac{\sum_{t} \left( y_{t+h} - \hat{Q}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }{ \sum_{t} \left(y_{t+h} - \hat{c}^{\tau}_{t,h} \right) \left(\tau - \mathbb{I}_{ \left\{ y_{t+h} - \hat{Q}^{\tau}_{t,h}>0 \right\} } \right) }
+$$
+
+$\hat{Q}^{\tau}_{t,h}$  -- model's forecasts for quantile
+$\tau$ at horizon $h$
+
+$\hat{c}^{\tau}_{t,h}$ -- intercept only forecast
+
+
+\begin{itemize}
+	\item
+	higher values -- better forecast
+	\item
+	negative values -- model inferior to the intercept only benchmark
+\end{itemize}
+
+
+
+
 ## Goodness of fit --Quantile R-Squared \newline (the higher the better, negative means worse than intercept only)
 
 ```{r plot_r2_score}
