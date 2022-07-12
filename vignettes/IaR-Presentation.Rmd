@@ -2,7 +2,7 @@
 title: "Inflation Risks in Israel"
 author: "Michael Gurkov and Osnat Zohar"
 institute: "Bank of Israel \\newline Research Department \\newline \\newline Any views expressed in the Discussion Paper are those of the authors and do not necessarily reflect those of the Bank of Israel"
-date: "27 July, 2021"
+date: "29 Aug, 2022"
 classoption: t
 output:
   beamer_presentation:
@@ -296,12 +296,13 @@ iar_analysis_elb = run_GaR_analysis(
 
 ```{r out_of_sample_forecast}
 
-# win_len = df %>% 
-#   select(date, unlist(partitions_list, use.names = FALSE)) %>% 
-#   filter(year(date) <= 2015) %>% 
-#   nrow()
+win_len = df %>%
+  select(date, unlist(partitions_list, use.names = FALSE)) %>%
+  filter(complete.cases(.)) %>% 
+  filter(year(date) <= 2014) %>%
+  nrow()
 
-win_len = 133
+# win_len = 133
 
 iar_forecast = get_gar_forecast(partitions_list = partitions_list,
                                 vars_df = df,
@@ -396,7 +397,7 @@ df %>%
     "CPI Inflation Variance (48 periods)")) +
   xlab(NULL) + ylab(NULL) +
   ggtitle(paste0("Year-on-Year CPI Inflation Excluding Fruits,",
-                 " Vegetables, and Housing \n (Monthly, 2004-2019)")) + 
+                 " Vegetables, and Housing \n (2004-2019, monthly frequency)")) + 
   theme(plot.title = element_text(size = 17))
 
 
@@ -724,7 +725,7 @@ rm(factor_contributions, plot_df)
 \end{flushright}
 
 
-## Realized inflation increases upside risks and uncertainty one year ahead
+## Realized inflation increases upside risks and uncertainty
 
 
 ```{r inflation_iqr}
@@ -749,7 +750,7 @@ iqr_df %>%
 ```
 
 
-## Inflation expectations increase upside risks and lowers uncertainty one year ahead
+## Inflation expectations increase upside risks and lower uncertainty
 
 
 ```{r expectation_iqr}
@@ -775,7 +776,7 @@ iqr_df %>%
 ```
 
 
-## Oil prices stimulate inflation and increase uncertainty and skeweness one year ahead
+## Oil prices stimulate inflation and increase uncertainty and skeweness
 
 
 ```{r oil_gap_iqr}
@@ -812,11 +813,12 @@ df %>%
   ggplot(aes(date, boi_rate)) + 
   geom_line() + 
   annotate("rect", xmin = as.yearmon("Sep 2014"),
-           xmax = as.yearmon("Jan 2019"),
+           xmax = as.yearmon("Dec 2019"),
            ymin=0, ymax=Inf,
            alpha = 0.5, fill="lightblue") + 
-  geom_text(aes(x = as.yearmon("Sep 2016"), y = 4.5),
-            label = "Effective Lower \n Bound period") + 
+  geom_text(aes(x = as.yearmon("Jul 2017"), y = 4.5),
+            label = "Effective Lower Bound \n period",
+            family = "mono", size = 6) + 
   xlab(NULL) + ylab(NULL) + ggtitle("Bank of Israel policy rate")
 
 ```
@@ -894,6 +896,7 @@ rm(factor_contributions_elb, plot_df)
 ggplot() +
   geom_ribbon(
     data = iar_forecast %>%
+      filter(year(forecast_target_date ) <= 2019) %>% 
       filter(horizon == 12) %>%
       filter(quantile %in% c("0.1", "0.9")) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
@@ -911,6 +914,7 @@ ggplot() +
     alpha = 0.5) +
     geom_ribbon(
     data = iar_forecast %>%
+      filter(year(forecast_target_date ) <= 2019) %>% 
       filter(quantile %in% c(0.25, 0.75)) %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
@@ -928,6 +932,7 @@ ggplot() +
     alpha = 0.8) +
     geom_line(
     data = iar_forecast %>%
+      filter(year(forecast_target_date ) <= 2019) %>% 
       filter(quantile == "0.5") %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12),
@@ -1281,6 +1286,7 @@ df %>%
 ggplot() +
   geom_ribbon(
     data = inflation_forecast %>%
+      filter(year(forecast_target_date) <= 2019) %>% 
       filter(horizon == 12) %>%
       filter(quantile %in% c("0.1", "0.9")) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
@@ -1298,6 +1304,7 @@ ggplot() +
     alpha = 0.5) +
     geom_ribbon(
     data = inflation_forecast %>%
+      filter(year(forecast_target_date) <= 2019) %>% 
       filter(quantile %in% c(0.25, 0.75)) %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
@@ -1315,6 +1322,7 @@ ggplot() +
     alpha = 0.8) +
     geom_line(
     data = inflation_forecast %>%
+      filter(year(forecast_target_date) <= 2019) %>% 
       filter(quantile == "0.5") %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12),
@@ -1349,6 +1357,7 @@ ggplot() +
 ggplot() +
   geom_ribbon(
     data = intercept_forecast %>%
+      filter(year(forecast_target_date) <= 2019) %>% 
       filter(horizon == 12) %>%
       filter(quantile %in% c("0.1", "0.9")) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
@@ -1366,6 +1375,7 @@ ggplot() +
     alpha = 0.5) +
     geom_ribbon(
     data = intercept_forecast %>%
+      filter(year(forecast_target_date) <= 2019) %>% 
       filter(quantile %in% c(0.25, 0.75)) %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12) %>%
@@ -1383,6 +1393,7 @@ ggplot() +
     alpha = 0.8) +
     geom_line(
     data = intercept_forecast %>%
+      filter(year(forecast_target_date) <= 2019) %>% 
       filter(quantile == "0.5") %>%
       filter(horizon == 12) %>%
       mutate(date = date + as.numeric(horizon)  / 12),
@@ -1407,56 +1418,5 @@ ggplot() +
 
 
 ```
-
-
-## Factor decomposition{.unlisted .unnumbered}
-
-```{r eval=FALSE}
-
-factor_contributions = map_dfr(list("0.25" = 0.25,
-                                    "0.5" = 0.5,
-                                    "0.75" = 0.75),                              extract_factor_contribution_from_gar_model,
-                               gar_model = iar_analysis,
-                               .id = "quantile") %>% 
-  pivot_longer(-c("date","horizon", "quantile"),names_to = "factor",
-               values_to = "factor_contribution") %>% 
-  pivot_wider(id_cols = c("date","horizon","factor"),names_from = "quantile",
-              values_from = "factor_contribution",names_prefix = "q_")
-
-factor_contributions = factor_contributions %>% 
-  inner_join(calculate_skew_and_iqr(iar_analysis), by=c("date", "horizon")) %>% 
-  filter(horizon == 12) %>% 
-  mutate(contribution_U = q_0.75 - q_0.5,
-         contribution_D = q_0.5 - q_0.25,
-         contribution_iqr = q_0.75 - q_0.25,
-         contribution_skewness=(contribution_U - contribution_D) / iqr) %>%
-  group_by(quarter = as.yearqtr(date),factor, horizon) %>%
-  summarise(across(everything(), mean, na.rm = TRUE), .groups = "drop")
-
-```
-
-```{r eval=FALSE}
-
-data_iqr = factor_contributions %>% 
-  select(factor, quarter, date, iqr, contribution_iqr) %>% 
-  group_by(factor) %>% 
-  mutate(contribution_iqr = scale(contribution_iqr,scale = FALSE)[,1]) %>% 
-  ungroup() %>% 
-  mutate(iqr = scale(iqr, scale = FALSE)[,1]) %>% 
-  mutate(factor = factor(factor, labels = c()))
-
-ggplot() + 
-  geom_col(data = data_iqr,
-           aes(x = date, y = contribution_iqr, fill = factor)) + 
-  geom_line(data = data_iqr,
-            aes(x = date, y = iqr)) + 
-  xlab(NULL) + ylab(NULL)
-
-
-rm(data_iqr)
-
-```
-
-
 
 
