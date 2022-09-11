@@ -14,7 +14,7 @@ test_required_object = get_partition_combs(partitions_list = part_list[1],
 
 expected_required_object = part_list[1] %>%
   enframe() %>%
-  mutate(value = map(value, function(temp_vec){
+  dplyr::mutate(value = purrr::map(value, function(temp_vec){
 
     temp_list = list(temp_vec)
 
@@ -24,8 +24,8 @@ expected_required_object = part_list[1] %>%
 
 
   })) %>%
-  rename(!!sym(part_name) := value) %>%
-  mutate(name = paste(part_name,1,sep = "-"))
+  dplyr::rename(!!sym(part_name) := value) %>%
+  dplyr::mutate(name = paste(part_name,1,sep = "-"))
 
 
 test_that("get_partition_combs handles required only list",
@@ -42,8 +42,8 @@ expected_optional_object = list(
   dom_fci = c("sovereigh_spread","term_spread"),
   dom_fci = "") %>%
   enframe() %>%
-  mutate(name = paste(name, c(1,1,2,0), sep = "-")) %>%
-  mutate(value = map(value, function(temp_vec){
+  dplyr::mutate(name = paste(name, c(1,1,2,0), sep = "-")) %>%
+  dplyr::mutate(value = purrr::map(value, function(temp_vec){
 
     temp_list = list(temp_vec)
 
@@ -53,7 +53,7 @@ expected_optional_object = list(
 
 
   })) %>%
-  rename(!!sym(part_name) := value)
+  dplyr::rename(!!sym(part_name) := value)
 
 
 test_that("get_partition_combs handles optional only list",

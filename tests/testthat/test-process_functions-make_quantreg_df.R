@@ -19,7 +19,7 @@ result_df = make_quant_reg_df(
   horizon_list = list(1,4))
 
 plain_df = gar_data %>%
-  select(gdp, ind_prod_israel, boi_rate) %>%
+  dplyr::select(gdp, ind_prod_israel, house_price) %>%
   add_leads_to_target_var(target_var_name = "gdp",
                           leads_vector = c(1,2))
 
@@ -39,13 +39,13 @@ test_that(
   'make_quant_reg_df contains data under reg_df name',
   expect_equal(
     object = gar_data %>%
-      select(date,gdp, ind_prod_israel, boi_rate) %>%
+      dplyr::select(date,gdp, ind_prod_israel, house_price) %>%
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
                         preprocess_method = "asis") %>%
       pluck("reg_df"),
     expected = gar_data %>%
-      select(date,gdp, ind_prod_israel, boi_rate) %>%
+      dplyr::select(date,gdp, ind_prod_israel, house_price) %>%
       add_leads_to_target_var(target_var_name = "gdp",
                               leads_vector = c(1, 2)) %>%
       rename_at(vars(-c("date","gdp")), ~paste0(.,"_xreg"))
@@ -54,10 +54,10 @@ test_that(
 
 
 test_that(
-  'make_quant_reg_df issues a warning on missing vars',
-  expect_warning(
+  'make_quant_reg_df throws an error on missing vars',
+  expect_error(
     object = gar_data %>%
-      select(date,gdp, ind_prod_israel, boi_rate) %>%
+      dplyr::select(date,gdp, ind_prod_israel) %>%
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
                         partitions_list = linear_part))

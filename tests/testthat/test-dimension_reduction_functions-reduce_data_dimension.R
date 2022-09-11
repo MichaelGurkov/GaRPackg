@@ -32,7 +32,7 @@ mult_feature_part = list(
 
 
 test_mix_pca = gar_data %>%
-  select(date, unlist(mix_feature_part$dom_macro)) %>%
+  dplyr::select(date, unlist(mix_feature_part$dom_macro)) %>%
   pca_reduction()
 
 
@@ -41,12 +41,12 @@ test_mix_df = data.frame(
   date = test_mix_pca$time_index,
   dom_macro = test_mix_pca$pca_obj$x[,1]
   ) %>%
-  inner_join(
+  dplyr::inner_join(
     gar_data %>%
-      select(date,credit),
+      dplyr::select(date,credit),
     by = "date"
   ) %>%
-  select(date, credit, dom_macro)
+  dplyr::select(date, credit, dom_macro)
 
 
 
@@ -60,7 +60,8 @@ test_that("reduce_data_dimension returns one feature data",
             vars_df = gar_data,
             partition_list = one_feature_part)[[1]],
             expected = gar_data %>%
-              select(date,unlist(one_feature_part, use.names = FALSE))
+              dplyr::select(date,unlist(one_feature_part,
+                                        use.names = FALSE))
             )
           )
 
@@ -83,11 +84,20 @@ test_that("reduce_data_dimension returns multi feature data",
           )
 
 
-test_that(paste0("reduce_data_dimension issues warning",
+test_that(paste0("reduce_data_dimension returns error",
                  " when partition_list is NULL"),
-          expect_warning(object = reduce_data_dimension(
+          expect_error(object = reduce_data_dimension(
             vars_df = gar_data,
             partition_list = NULL))
+)
+
+
+test_that(paste0("reduce_data_dimension returns error",
+                 " when preprocess_method is incorrect"),
+          expect_error(object = reduce_data_dimension(
+            vars_df = gar_data,
+            partition_list = mult_feature_part,
+            preprocess_method = "inner_join_pca"))
 )
 
 
@@ -98,6 +108,21 @@ test_that(paste0("reduce_data_dimension skips reduction",
             partition_list = one_feature_part,
             return_objects_list = TRUE)[[1]],
             expected = gar_data %>%
-              select(date,unlist(one_feature_part, use.names = FALSE)))
+              dplyr::select(date,unlist(one_feature_part, use.names = FALSE)))
 )
+
+
+test_that(paste0("reduce_data_dimension returns NA tibble",
+                 " when partition has only missing values"),
+          expect_equal(object = reduce_data_dimension(
+            vars_df = gar_data %>%
+              dplyr::mutate(across(unlist(mult_feature_part,
+                                   use.names = FALSE),~NA)),
+            partition_list = mult_feature_part)[[1]],
+            gar_data %>%
+              select(date) %>%
+              mutate(dom_macro = NA) %>%
+              mutate(fin_cycle = NA))
+)
+
 

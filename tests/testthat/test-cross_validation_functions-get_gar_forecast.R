@@ -1,66 +1,42 @@
 data("gar_data")
 
-gar_data = gar_data %>%
-  slice(1:35)
+gar_data = gar_data %>% dplyr::slice(1:31)
 
 test_params = list()
 
-test_params$partition = list(
-  macro = c("gdp","ind_prod_israel"),
-  fin_cycle = c("credit","house_price")
-  )
+test_params$target_var_name = "gdp"
 
 test_params$horizon_list = list(1,4)
 
-test_params$quantile_vec = c(0.05,0.5)
-
-test_params$target_var = "gdp"
+test_params$quantile_vec = c(0.5)
 
 test_params$win_len = 30
 
-reg_df = make_quant_reg_df(
-  partitions_list = test_params$partition,
+test_params$win_type_expanding = TRUE
+
+test_pred_df = suppressWarnings(run_cross_validation(
+  partitions_list = test_params$partitions_list,
   vars_df = gar_data,
-  target_var_name = test_params$target_var,
-  horizon_list = test_params$horizon_list,
-  )[[1]]
-
-
-test_pred_df = map(
-  test_params$horizon_list,
-  run_cross_validation,
-  reg_df = reg_df,
-  target_var_name = test_params$target_var,
+  target_var_name = test_params$target_var_name,
+  horizon = unlist(test_params$horizon_list),
   quantile_vec = test_params$quantile_vec,
-  win_len = test_params$win_len
-  ) %>%
-  bind_rows() %>%
-  arrange(date,horizon,quantile)
+  win_len = test_params$win_len,
+  win_type_expanding = test_params$win_type_expanding) %>%
+    arrange(date,horizon,quantile) %>%
+    mutate(forecast_target_date = date + as.numeric(horizon) / 4) %>%
+    relocate("forecast_target_date",.after = "forecast_values"))
+
+
 
 test_that("get_gar_forecast returns proper predictions",
           expect_equal(
-            object = get_gar_forecast(
+            object = suppressWarnings(get_gar_forecast(
               partitions_list = test_params$partition,
               vars_df = gar_data,
               target_var_name = test_params$target_var,
               horizon_list = test_params$horizon_list,
               quantile_vec = test_params$quantile_vec,
               win_len = test_params$win_len) %>%
-              arrange(date,horizon,quantile),
+                arrange(date,horizon,quantile)),
             expected = test_pred_df))
 
-test_that("returns an error on empty data (issues a warning on missing vars)",
-          {
-            get_gar_forecast(
-              partitions_list = list(
-                dom_macro = c("private_consumption", "public_consumption"),
-                dom_fin = c("boi_rate", "ta_35_impl_vol")
-              ),
-              vars_df = gar_data,
-              target_var_name = "gdp",
-              horizon_list = c(1, 2),
-              quantile_vec = c(0.05, 0.5)
-            ) %>%
-              expect_error() %>%
-              expect_warning()
-          })

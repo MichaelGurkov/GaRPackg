@@ -16,7 +16,7 @@ test_obj = run_GaR_analysis(
 
 
 test_data_mat = test_obj$reg_df %>%
-  select(ends_with("_xreg")) %>%
+  dplyr::select(dplyr::ends_with("_xreg")) %>%
   as.matrix()
 
 test_data_mat = cbind(rep(1, nrow(test_data_mat)), test_data_mat)
@@ -24,16 +24,16 @@ test_data_mat = cbind(rep(1, nrow(test_data_mat)), test_data_mat)
 
 coeffs_df = test_obj %>%
   extract_coeffs_from_gar_model() %>%
-  filter(.data$quantile == "0.5") %>%
-  select(.data$coeff,.data$horizon, .data$partition)
+  dplyr::filter(.data$quantile == "0.5") %>%
+  dplyr::select(.data$coeff,.data$horizon, .data$partition)
 
 
-test_factors_df = map_dfr(
+test_factors_df = purrr::map_dfr(
   unique(coeffs_df$horizon),function(temp_horizon){
 
     coef_vec = coeffs_df %>%
-      filter(.data$horizon == temp_horizon) %>%
-      select(.data$coeff) %>%
+      dplyr::filter(.data$horizon == temp_horizon) %>%
+      dplyr::select(.data$coeff) %>%
       unlist(use.names = FALSE)
 
     test_factors_df =  t(t(test_data_mat) * coef_vec)
@@ -41,13 +41,13 @@ test_factors_df = map_dfr(
     test_factors_df = test_factors_df %>%
       as.data.frame() %>%
       cbind(date = test_obj$reg_df$date) %>%
-      mutate(horizon = temp_horizon)
+      dplyr::mutate(horizon = temp_horizon)
 
     return(test_factors_df)
 
   })%>%
-  rename_all(~str_remove_all(.,"_xreg")) %>%
-  rename(intercept = V1)
+  dplyr::rename_all(~stringr::str_remove_all(.,"_xreg")) %>%
+  dplyr::rename(intercept = V1)
 
 test_that("returns a tibble with factors for median quantile",
           {
@@ -57,3 +57,8 @@ test_that("returns a tibble with factors for median quantile",
               expected = test_factors_df
             )
           })
+
+
+test_that("produces error if missing quantile is asked",
+          expect_error(extract_factor_contribution_from_gar_model(test_obj,
+                                                                  target_quantile = "0.08")))
