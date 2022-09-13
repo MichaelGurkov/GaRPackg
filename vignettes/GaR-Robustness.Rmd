@@ -1,51 +1,91 @@
 
-```{r import_data, child="GaR-ImportAndProcessData.Rmd"}
+```{r load_libraries}
+
+devtools::load_all()
+
+```
+
+
+```{r Import_data}
+
+raw_df = import_from_fame_template(
+  paste0("C:\\Users\\U095",
+         "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data",
+         "\\robustness\\data_GaR_20220904.csv")) %>% 
+  rename_all(tolower)
+
+
+
+
 
 ```
 
 
 ```{r get_all_combinations_test,eval=FALSE}
 
-category_params_df = list(
-  Dom_Macro = list(
-    optional = c("state_of_economy_ind", "ue_gap"),
-    required = c("GDP")
-  ),
-  Global = list(
+categories_list = list(
+  dom_macro = list(
     optional = c(
-      "rate_us",
-      "rate_euro",
-      "US_term_spread",
-      "SP500",
-      "eurostoxx600",
-      "VIX",
-      "oecd_imp",
-      "oil_p",
-      "non_energy_p"
-    ),
-    required = c("gdp_us", "gdp_euro")
-  ),
-  FinCycle = list(
-    optional = c("TA125_Close", "House_Price"),
-    required = c("Credit")
-  ),
-  Dom_FCI =  list(
-    required = c(
-      "Spread_CPI_corp",
-      "BOI_rate"
-    ),
+      "gdp_yoy",
+      "private_consumption_yoy",
+      "public_consumption_yoy",
+      "investment_yoy",
+      "unemployment",
+      "unemployment_diff",
+      "unemployment_hpgap",
+      "cpi_israel_yoy",
+      "infl_israel_gdp_4_ma"
+    )),
+  dom_fin = list(
     optional = c(
-      "Sovereigh_spread",
-      "Term_spread",
-      "ILS_USD_impl_vol",
-      "TA_35_impl_vol"
+      "boi_rate_diff",
+      "boi_rate",
+      "spread_cpi_corp",
+      "ils_usd_spread_pct",
+      "interbank_spread",
+      "sovereigh_spread",
+      "term_spread",
+      "ils_usd_impl_vol",
+      "ta_35_impl_vol",
+      "credit_yoy",
+      "house_price_yoy",
+      "ta125_close_yoy"
+    )),
+  ext_macro = list(
+      optional = c(
+        "imports_yoy",
+        "exports_yoy",
+        "cpi_us_yoy",
+        "infl_euro_4_ma",
+        "ind_prod_us_yoy",
+        "ind_prod_euro_yoy",
+        "gdp_us_yoy",
+        "gdp_euro_yoy",
+        "oecd_imp"
+      )),
+  ext_fin = list(
+      optional = c(
+        "rate_euro_diff",
+        "rate_us_diff",
+        "rate_euro",
+        "rate_us",
+        "vix",
+        "eurostoxx600",
+        "sp500",
+        "us_term_spread",
+        "dxy_yoy",
+        "oil_p_yoy",
+        "non_energy_p_yoy"
+      )
     )
-  )
-) %>%
+)
+ 
+
+category_params_df =  categories_list%>%
   enframe(name = "category", value = "params") %>%
   mutate(part_comb_df = map2(category, params,
                              function(temp_name, temp_part) {
-                               temp_part_df = get_partition_combs(partition_list = temp_part,
+                               temp_part_df = get_partition_combs(partitions_list = temp_part,
                                                                   partition_name = temp_name)
                              }))
 
