@@ -326,6 +326,14 @@ make_quant_reg_df = function(vars_df,
 
   }
 
+  if(is.null(names(partitions_list))){
+
+    stop(paste("Can't make quant reg df.",
+               "Partition list must have names (to be assigned to partitions)"),
+         call. = FALSE)
+
+
+  }
 
 
     preproc_df_list = reduce_data_dimension(

@@ -12,6 +12,11 @@ linear_part = list(
   )
 )
 
+no_names_linear_part = linear_part
+
+names(no_names_linear_part) = NULL
+
+
 result_df = make_quant_reg_df(
   partitions_list = linear_part,
   vars_df = gar_data,
@@ -61,6 +66,17 @@ test_that(
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
                         partitions_list = linear_part))
+)
+
+
+
+test_that(
+  'make_quant_reg_df throws an error on missing partition names',
+  expect_error(
+    object = gar_data %>%
+      make_quant_reg_df(target_var_name = "gdp",
+                        horizon_list = c(1, 2),
+                        partitions_list = no_names_linear_part))
 )
 
 
