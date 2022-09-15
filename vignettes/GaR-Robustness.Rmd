@@ -3,6 +3,8 @@
 
 devtools::load_all()
 
+library(furrr)
+
 ```
 
 
@@ -14,62 +16,58 @@ raw_df = import_from_fame_template(
          "\\robustness\\data_GaR_20220904.csv")) %>% 
   rename_all(tolower)
 
+raw_df = raw_df %>% 
+  select(-starts_with("staff"), -starts_with("dsge"))
 
-
-
+raw_df = raw_df %>% 
+  filter(date >= as.yearqtr("2000 Q1") & date <= as.yearqtr("2022 Q2"))
 
 ```
 
 
-```{r get_all_combinations_test,eval=FALSE}
+```{r get_all_combinations_test}
 
 categories_list = list(
   dom_macro = list(
+    required = c("gdp_yoy"),
     optional = c(
-      "gdp_yoy",
-      "private_consumption_yoy",
-      "public_consumption_yoy",
-      "investment_yoy",
-      "unemployment",
       "unemployment_diff",
-      "unemployment_hpgap",
-      "cpi_israel_yoy",
-      "infl_israel_gdp_4_ma"
+      "cpi_israel_yoy"
     )),
   dom_fin = list(
+    required = c(
+      "credit_yoy",
+      "house_price_yoy",
+      "ta125_close_yoy",
+      "boi_rate_diff"
+      ),
     optional = c(
-      "boi_rate_diff",
-      "boi_rate",
       "spread_cpi_corp",
       "ils_usd_spread_pct",
       "interbank_spread",
       "sovereigh_spread",
       "term_spread",
       "ils_usd_impl_vol",
-      "ta_35_impl_vol",
-      "credit_yoy",
-      "house_price_yoy",
-      "ta125_close_yoy"
+      "ta_35_impl_vol"
     )),
   ext_macro = list(
+    required = c(
+      "gdp_us_yoy",
+      "gdp_euro_yoy"
+      ), 
       optional = c(
-        "imports_yoy",
-        "exports_yoy",
         "cpi_us_yoy",
         "infl_euro_4_ma",
         "ind_prod_us_yoy",
         "ind_prod_euro_yoy",
-        "gdp_us_yoy",
-        "gdp_euro_yoy",
         "oecd_imp"
       )),
   ext_fin = list(
+    required = c(
+      "rate_euro_diff",
+      "rate_us_diff"
+      ),
       optional = c(
-        "rate_euro_diff",
-        "rate_us_diff",
-        "rate_euro",
-        "rate_us",
-        "vix",
         "eurostoxx600",
         "sp500",
         "us_term_spread",
@@ -101,183 +99,108 @@ feature_select_df = map(
   ) %>% 
   reduce(full_join, by = character()) %>% 
   unite(col = name,starts_with("name"),sep = "-") %>% 
-  mutate(temp_part = pmap(list(Dom_Macro,Global,FinCycle,Dom_FCI),c))
+  mutate(partition = pmap(list(dom_macro,dom_fin,ext_macro,ext_fin),c))
 
 ```
 
 
+```{r run_forecast}
 
-```{r get_in_sample_fit,eval=FALSE}
+tictoc::tic()
 
-fit_df = feature_select_df %>% 
-  mutate(gar_model = map(temp_part, run_GaR_analysis,
-      vars_df = df,
-      target_var_name = "GDP",
-      horizon_list = parameters_list$horizon_list,
-      quantile_vec = parameters_list$quantile_vec,
-      pca.align.list = list(
-                     Dom_FCI = list(
-                       var_name = "Spread_CPI_corp",
-                       positive_direction = FALSE),
-                     Dom_Macro = list(var_name = "GDP"),
-                     Global = list(var_name = "rate_euro"),
-                     FinCycle = list(var_name = "Credit"))))
-
-```
-
-
-```{r import_data,eval=FALSE}
-
-fit_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of",
-  " Israel\\Data\\BoI\\GaR_Data\\fit_df.RDS"))
-
-
-```
-
-
-```{r get_coeffs}
-
-fit_df = fit_df %>% 
-  mutate(coeff_df = map(gar_model,
-                             extract_coeffs_from_gar_model,
-                             partition_names = "FinCycle_xreg"))
-
-
-
-```
-
-
-```{r plot_coeffs}
-
-fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname, coeff_df) %>% 
-  unnest(coeff_df) %>% 
-  select(rowname, Coeff, Horizon, Tau) %>% 
-  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
-  ggplot(aes(x = Coeff, fill = Tau)) + 
-  geom_histogram() + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
-  facet_wrap(~Horizon, scales = "free") + 
-  theme(legend.position = "bottom")
-
-
-fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname, coeff_df) %>% 
-  unnest(coeff_df) %>% 
-  select(rowname, Coeff, Horizon, Tau) %>% 
-  mutate(Horizon = factor(Horizon,c(1,4,8,12))) %>% 
-  filter(Tau %in% c(0.05,0.95)) %>%  
-  ggplot(aes(x = Coeff, fill = Tau)) + 
-  geom_histogram() + 
-  # gghighlight(Tau == 0.05,calculate_per_facet = TRUE) + 
-  geom_vline(xintercept = 0, linetype = "dashed") + 
-  ylab(NULL) + xlab(NULL) +  ggtitle("Coefficients") + 
-  facet_wrap(~Horizon, scales = "free") + 
-  theme(legend.position = "bottom")
-
-
-```
-
-
-```{r get_skew}
-
-fit_df = fit_df %>% 
-  mutate(skew_df = map(gar_model,calculate_skew_and_iqr))
-
-
-```
-
-
-```{r plot_skew}
-
-skew_plot = fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname,skew_df) %>% 
-  unnest(cols = skew_df) %>%
-  ggplot(aes(x = Date, y = Skew, group = rowname)) +
-  geom_line() +
-  xlab(NULL) + ylab(NULL) + 
-  ggtitle("The skewness measure for each partition") + 
-  facet_wrap(~Horizon, scales = "free") +
-  gghighlight(rowname == 4599,
-              use_group_by = FALSE,
-              use_direct_label = FALSE,
-              unhighlighted_params = list(alpha = 0.1),
-              calculate_per_facet = TRUE) + 
-  geom_hline(yintercept = c(-0.5,0.5),
-             linetype = "dashed", color = "blue") +
-
-  theme_bw()
-
-
-write_rds(skew_plot, paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI",
-  "\\GaR_Data\\skew_plot.rds"))
-
-
-
-
-
-```
-
-
-```{r get_gar}
-
-fit_df =  fit_df %>% 
-  mutate(pred_df = map(gar_model,function(temp_mod){
-    make_prediction_df(temp_mod$qreg_result, xreg_df = temp_mod$reg_df)
+forecast_results = feature_select_df %>% 
+  select(partition) %>% 
+  slice(1:100) %>% 
+  mutate(gar_forecast = future_map(partition, function(temp_part){
+  
+  vars_to_yoy = temp_part %>% 
+    unlist() %>% 
+    str_subset(pattern = "_yoy") %>% 
+    str_remove_all(pattern = "_yoy")
+  
+  
+  vars_to_diff = temp_part %>% 
+    unlist() %>% 
+    str_subset(pattern = "_diff") %>% 
+    str_remove_all(pattern = "_diff")
+  
+  vars_to_ma = temp_part %>% 
+    unlist() %>% 
+    str_subset(pattern = "_4_ma") %>% 
+    str_remove_all(pattern = "_4_ma")
+  
+  
+  processed_df = raw_df %>% 
+    preprocess_df(vars_to_yoy = vars_to_yoy,
+                  vars_to_diff = vars_to_diff,
+                  vars_to_4_ma = vars_to_ma) %>% 
+    select("date","gdp_yoy",all_of(unlist(temp_part,use.names = FALSE))) %>% 
+    filter(complete.cases(.))
+  
+  
+  temp_res = get_gar_forecast(partitions_list = temp_part,
+                                  vars_df = processed_df,
+                                  target_var_name = "gdp_yoy",
+                                  horizon_list = c(12),
+                                  quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
+  
+  return(temp_res)
+ 
+  
+  
   }))
 
-```
+tictoc::toc()
 
 
-```{r plot_gar}
 
-gar_plot = fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname, pred_df) %>% 
-  unnest(cols = pred_df) %>% 
-  filter(Quantile == "0.05") %>% 
-  ggplot(aes(x = Date, y = GaR_fitted, group = rowname)) + 
-  geom_line() +
-  xlab(NULL) + ylab(NULL) + 
-  ggtitle("5th percentile of predictive distribution") + 
-  facet_wrap(~Horizon, scales = "free") + 
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
-  gghighlight(rowname == 4599,
-              use_group_by = FALSE,
-              use_direct_label = FALSE,
-              unhighlighted_params = list(alpha = 0.1),
-              calculate_per_facet = TRUE) +
-  theme_bw()
+tictoc::tic()
+
+forecast_results_1 = feature_select_df %>% 
+  select(partition) %>% 
+  slice(1:100) %>% 
+  mutate(gar_forecast = map(partition, function(temp_part){
+  
+  vars_to_yoy = temp_part %>% 
+    unlist() %>% 
+    str_subset(pattern = "_yoy") %>% 
+    str_remove_all(pattern = "_yoy")
+  
+  
+  vars_to_diff = temp_part %>% 
+    unlist() %>% 
+    str_subset(pattern = "_diff") %>% 
+    str_remove_all(pattern = "_diff")
+  
+  vars_to_ma = temp_part %>% 
+    unlist() %>% 
+    str_subset(pattern = "_4_ma") %>% 
+    str_remove_all(pattern = "_4_ma")
+  
+  
+  processed_df = raw_df %>% 
+    preprocess_df(vars_to_yoy = vars_to_yoy,
+                  vars_to_diff = vars_to_diff,
+                  vars_to_4_ma = vars_to_ma) %>% 
+    select("date","gdp_yoy",all_of(unlist(temp_part,use.names = FALSE))) %>% 
+    filter(complete.cases(.))
+  
+  
+  temp_res = get_gar_forecast(partitions_list = temp_part,
+                                  vars_df = processed_df,
+                                  target_var_name = "gdp_yoy",
+                                  horizon_list = c(12),
+                                  quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
+  
+  return(temp_res)
+ 
+  
+  
+  }))
+
+tictoc::toc()
 
 
-```
-
-
-```{r median_iqr}
-
-fit_df %>% 
-  rownames_to_column() %>% 
-  select(rowname, skew_df) %>% 
-  unnest(cols = skew_df) %>% 
-  group_by(rowname, Horizon) %>% 
-  summarise(med_vol_cor = cor(IQR,q0.50), .groups = "drop") %>% 
-  mutate(Horizon = factor(Horizon, c(1,4,8,12))) %>%  
-  ggplot(aes(x = med_vol_cor)) + 
-  geom_histogram() + 
-  xlab(NULL) + ylab(NULL) + 
-  ggtitle(paste0("Correlaltion between the median",
-                 " and IQR of the predictive distribution")) + 
-  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + 
-  facet_wrap(~Horizon, scales = "free") + 
-  theme_bw()
 
 ```
 
