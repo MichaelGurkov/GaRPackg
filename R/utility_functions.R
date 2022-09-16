@@ -69,6 +69,19 @@ get_partition_combs = function(partitions_list,
       dplyr::mutate(value = purrr::map(.data$value, ~ c(., partitions_list$required)))
   }
 
+  # Remove empty strings
+
+  comb_df = comb_df %>%
+    mutate(value = purrr::map(.data$value, function(temp_part){
+
+      temp_part = temp_part[nchar(temp_part) > 0]
+
+      return(temp_part)
+
+    })) %>%
+    filter(!map_lgl(value, ~length(.)==0))
+
+  # Add partition name
 
   comb_df = comb_df %>%
     dplyr::mutate(value = purrr::map(.data$value, function(temp_vec) {
