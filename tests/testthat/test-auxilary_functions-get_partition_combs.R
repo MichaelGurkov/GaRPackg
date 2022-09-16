@@ -39,10 +39,9 @@ test_optional_object = get_partition_combs(partitions_list = part_list[2],
 expected_optional_object = list(
   dom_fci = "sovereigh_spread",
   dom_fci = "term_spread",
-  dom_fci = c("sovereigh_spread","term_spread"),
-  dom_fci = "") %>%
+  dom_fci = c("sovereigh_spread","term_spread")) %>%
   enframe() %>%
-  dplyr::mutate(name = paste(name, c(1,1,2,0), sep = "-")) %>%
+  dplyr::mutate(name = paste(name, c(1,1,2), sep = "-")) %>%
   dplyr::mutate(value = purrr::map(value, function(temp_vec){
 
     temp_list = list(temp_vec)
@@ -59,3 +58,14 @@ expected_optional_object = list(
 test_that("get_partition_combs handles optional only list",
           expect_equal(object = test_optional_object,
                        expected = expected_optional_object))
+
+
+test_empty_string = get_partition_combs(part_list, part_name)[4,2]
+
+test_empty_string = unlist(test_empty_string$dom_fci,
+                           use.names = FALSE)
+
+test_that("get_partition_combs removes empty strings in partitions",
+          expect_equal(object = test_empty_string,
+                       expected = c("spread_cpi_corp","boi_rate")))
+
