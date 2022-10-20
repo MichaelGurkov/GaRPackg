@@ -27,6 +27,10 @@ knitr::opts_chunk$set(
 
 devtools::load_all()
 
+# library(GaRPackg)
+# 
+# library(zoo)
+
 library(ggcorrplot)
 
 library(mFilter)
@@ -343,11 +347,11 @@ rm(win_len)
 
 \small
 
-"Monetary policy responded first in the summer of 2012 by acting to defuse the sovereign debt crisis, which had evolved from a \textbf{tail risk for inflation} into a material threat to price stability."
+"the Committee members assessed that at the current time, there are \textbf{risks of inflation} remaining around the upper part of the target for a longer time."
 
 \vspace{1em}
 
-Mario Draghi, ECB President, Sintra, June 2019
+Report of BoI monetary policy discussions, Feb 2022
 
 \end{quote}
 
