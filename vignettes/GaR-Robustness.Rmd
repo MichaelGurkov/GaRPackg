@@ -11,7 +11,7 @@ library(furrr)
 ```{r Import_data}
 
 raw_df = import_from_fame_template(
-  paste0("C:\\Users\\U095",
+  paste0(Sys.getenv("USERPROFILE"),
          "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data",
          "\\robustness\\data_GaR_20220904.csv")) %>% 
   rename_all(tolower)
@@ -108,7 +108,7 @@ set.seed(132)
 
 sample_vec = sample(1:nrow(feature_select_df),size = 100000)
 
-dir_path = paste0("C:\\Users\\U095",
+dir_path = paste0(Sys.getenv("USERPROFILE"),
                   "\\OneDrive - Bank Of Israel\\Data",
                   "\\BoI\\GaR_Data\\robustness\\")
 
@@ -168,6 +168,83 @@ for (i in 0:100){
   
   
 }
+
+
+```
+
+```{r analyze_robustness_results}
+
+global_actual_df = raw_df %>% 
+  preprocess_df(vars_to_yoy = "gdp") %>% 
+  select(date, gdp_yoy) %>% 
+  filter(complete.cases(.))
+
+
+global_benchmark_df = get_gar_forecast(partitions_list = NULL,
+                                  vars_df = raw_df %>% 
+                                  preprocess_df(vars_to_yoy = "gdp"),
+                                  target_var_name = "gdp_yoy",
+                                  horizon_list = c(12),
+                                  quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
+
+list_of_file_paths = list.files(paste0(Sys.getenv("USERPROFILE"),
+                                       "\\OneDrive - Bank Of Israel\\Data\\BoI",
+                                       "\\GaR_Data\\robustness"),
+                                pattern = ".rds",full.names = TRUE)
+
+
+extract_scores_from_df = function(temp_file_path){
+  
+  temp_df = read_rds(temp_file_path)
+  
+  temp_scores_df = temp_df %>% 
+    mutate(id = map_chr(partition,function(temp_str){
+    
+    return(paste0(unlist(temp_str), collapse = "-"))
+    
+  })) %>% 
+    mutate(r2_score = map(gar_forecast, function(temp_forecast_df){
+
+    r2_score = quantile_r2_score(forecast_df = temp_forecast_df,
+                                 actual_df = global_actual_df,
+                                 benchmark_df = global_benchmark_df)
+    
+    return(r2_score)
+    
+    
+  })) %>% 
+    mutate(pit_score = map(gar_forecast, function(temp_forecast_df){
+
+    pit_score = quantile_pit_score(forecast_df = temp_forecast_df,
+                                   actual_df = global_actual_df)
+    
+    return(pit_score)
+    
+    
+  })) %>% 
+    select(partition, id, r2_score, pit_score) 
+  
+  temp_scores_df = full_join(temp_scores_df %>% 
+                                 unnest(cols = r2_score),
+                               temp_scores_df %>% 
+                                 unnest(cols = pit_score),
+                               by = c("partition", "id", "horizon", "quantile")) %>% 
+    select(-c("pit_score","r2_score"))
+  
+
+  rm(temp_df)
+
+return(temp_scores_df)
+
+  
+}
+
+
+scores_df = map_dfr(list_of_file_paths[1:2], extract_scores_from_df)
+
+write_csv(scores_df, paste0(Sys.getenv("USERPROFILE"),
+                            "\\OneDrive - Bank Of Israel\\Data\\BoI",
+                            "\\GaR_Data\\robustness\\scores.csv"))
 
 
 ```
