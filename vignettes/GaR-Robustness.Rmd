@@ -313,7 +313,12 @@ scores_df = read_csv(paste0(Sys.getenv("USERPROFILE"),
                             "\\OneDrive - Bank Of Israel\\Data\\BoI",
                             "\\GaR_Data\\robustness\\scores_a.csv"),
                      show_col_types = FALSE) %>% 
-  select(-partition)
+  select(-partition) %>% 
+  bind_rows(read_csv(paste0(Sys.getenv("USERPROFILE"),
+                            "\\OneDrive - Bank Of Israel\\Data\\BoI",
+                            "\\GaR_Data\\robustness\\scores_b.csv"),
+                     show_col_types = FALSE) %>% 
+              select(-partition))
 
 
 best_models = scores_df %>% 
@@ -326,9 +331,28 @@ best_models = scores_df %>%
   filter(best_model_total == 5)
 
 best_models %>% 
+  write_csv(., paste0(Sys.getenv("USERPROFILE"),
+                            "\\OneDrive - Bank Of Israel\\Data\\BoI",
+                            "\\GaR_Data\\robustness\\best_models.csv"))
+
+features_count = best_models %>% 
   select(id) %>% 
-  mutate(len_id = nchar(id)) %>% 
-  count(len_id)
+  mutate(temp_str = str_split(id,pattern = "-")) %>% 
+  select(temp_str) %>% 
+  rowid_to_column() %>% 
+  unnest(temp_str)
+
+
+```
+
+```{r plot_features_counts}
+
+features_count %>% 
+  count(temp_str, sort = TRUE) %>% 
+  ggplot(aes(x = n,y = reorder(temp_str,n))) + 
+  geom_col(aes(fill = as.character(n)), show.legend = FALSE) + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Count of features frequency in best models")
 
 ```
 
