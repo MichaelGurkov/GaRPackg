@@ -103,7 +103,6 @@ feature_select_df = map(
 
 ```
 
-
 ```{r run_forecast}
 
 set.seed(132)
@@ -311,19 +310,14 @@ rm(list = ls(pattern = "temp"), benchmark_r2, ind_vec)
 
 scores_df = read_csv(paste0(Sys.getenv("USERPROFILE"),
                             "\\OneDrive - Bank Of Israel\\Data\\BoI",
-                            "\\GaR_Data\\robustness\\scores_a.csv"),
+                            "\\GaR_Data\\robustness\\scores.csv"),
                      show_col_types = FALSE) %>% 
-  select(-partition) %>% 
-  bind_rows(read_csv(paste0(Sys.getenv("USERPROFILE"),
-                            "\\OneDrive - Bank Of Israel\\Data\\BoI",
-                            "\\GaR_Data\\robustness\\scores_b.csv"),
-                     show_col_types = FALSE) %>% 
-              select(-partition))
+  select(-partition)
 
 
 best_models = scores_df %>% 
   group_by(quantile) %>% 
-  mutate(best_model_ind = if_else(quantile_r2 >= quantile(quantile_r2,0.95),
+  mutate(best_model_ind = if_else(quantile_r2 >= quantile(quantile_r2,0.97),
                                   1,0)) %>% 
   ungroup() %>% 
   group_by(id) %>% 
