@@ -317,7 +317,7 @@ scores_df = read_csv(paste0(Sys.getenv("USERPROFILE"),
 
 best_models = scores_df %>% 
   group_by(quantile) %>% 
-  mutate(best_model_ind = if_else(quantile_r2 >= quantile(quantile_r2,0.97),
+  mutate(best_model_ind = if_else(quantile_r2 >= quantile(quantile_r2,0.965),
                                   1,0)) %>% 
   ungroup() %>% 
   group_by(id) %>% 
@@ -347,6 +347,48 @@ features_count %>%
   geom_col(aes(fill = as.character(n)), show.legend = FALSE) + 
   xlab(NULL) + ylab(NULL) + 
   ggtitle("Count of features frequency in best models")
+
+```
+
+```{r extract_best_model}
+
+temp_id = best_models %>% 
+  slice(1) %>% 
+  pull(id) %>% 
+  str_split(pattern = "-")
+
+
+get_vars = function(str_vec, id_str){
+  
+   map_chr(str_vec, ~function(temp_str){
+     
+    browser()
+
+     
+     if(str_detect(id_str,temp_str)){
+       
+       return(temp_str)
+     }
+     
+     
+   })
+  
+  
+}
+
+
+map(categories_list, function(temp_part){
+  
+  temp_part = unlist(temp_part, use.names = FALSE)
+  
+  return(get_vars(temp_part,id_str = temp_id))
+  
+})
+
+map_lgl(categories_list$dom_macro, ~ str_detect(pattern = .,
+                                               string = temp_id))
+
+unlist(categories_list$dom_macro, use.names = FALSE)
 
 ```
 
