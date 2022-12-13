@@ -579,6 +579,42 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 }
 
 
+
+#'@title Extract preprocess arguments
+#'
+#'@description This is an auxilary function for preprocess_df
+#'
+#'@param partition_list
+#'
+#'
+extract_preprocess_arguments = function(partition_list){
+
+
+
+  vars_to_yoy = partition_list %>%
+    unlist() %>%
+    str_subset(pattern = "_yoy") %>%
+    str_remove_all(pattern = "_yoy")
+
+
+  vars_to_diff = partition_list %>%
+    unlist() %>%
+    str_subset(pattern = "_diff") %>%
+    str_remove_all(pattern = "_diff")
+
+  vars_to_ma = partition_list %>%
+    unlist() %>%
+    str_subset(pattern = "_4_ma") %>%
+    str_remove_all(pattern = "_4_ma")
+
+
+  return(list(vars_to_yoy = vars_to_yoy,
+              vars_to_diff = vars_to_diff,
+              vars_to_ma = vars_to_ma))
+
+}
+
+
 #' @title Preprocess raw data
 #'
 #' @description This function performs preprocessing variable transformation
