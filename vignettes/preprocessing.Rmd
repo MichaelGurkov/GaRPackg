@@ -67,7 +67,7 @@ corresponding periods ("year on year" changes). Let's perform the following tran
 final_df = gar_data %>% 
   select(date, gdp) %>% 
   preprocess_df(vars_to_yoy = "gdp",
-                vars_to_percent_changes = "gdp",
+                vars_to_percent_change = "gdp",
                 vars_to_diff = "gdp")
 
 final_df %>% 

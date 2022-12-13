@@ -155,7 +155,7 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
       dplyr::inner_join(actual_df %>%
                    dplyr::mutate(forecast_target_date = as.yearqtr(date)),
                    by = "forecast_target_date") %>%
-      dplyr::mutate(quantile = as.numeric(.data$quantile))
+      dplyr::mutate(quantile = as.numeric(quantile))
 
   }
 
@@ -167,19 +167,19 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
       dplyr::inner_join(actual_df %>%
                           dplyr::mutate(forecast_target_date = as.yearmon(date)),
                         by = "forecast_target_date") %>%
-      dplyr::mutate(quantile = as.numeric(.data$quantile))
+      dplyr::mutate(quantile = as.numeric(quantile))
   }
 
 
   score_df = df %>%
-    dplyr::group_by(.data$horizon, .data$quantile) %>%
+    dplyr::group_by(horizon, quantile) %>%
     dplyr::summarise(
       quantile_r2 =
         quantile_r2_score_calculation(
-          realized_values = .data$actual_values,
-          forecast_values = .data$predicted_values,
-          quantile = .data$quantile[1],
-          benchmark_values = .data$benchmark_values
+          realized_values = actual_values,
+          forecast_values = predicted_values,
+          quantile = quantile[1],
+          benchmark_values = benchmark_values
         ),.groups = "drop"
     )
 
@@ -196,7 +196,6 @@ quantile_r2_score = function(forecast_df, actual_df, benchmark_df){
 
 
 #' @title Calculate PIT score
-#'
 #'
 #' @details This function calculates the Probability Integral
 #' Transformation to evaluate goodness of fit.
@@ -268,7 +267,7 @@ quantile_pit_score = function(forecast_df, actual_df){
 
     prediction_df = forecast_df %>%
        dplyr::left_join(actual_df %>%
-                  dplyr::mutate(forecast_target_date = as.yearqtr(.data$date)),
+                  dplyr::mutate(forecast_target_date = as.yearqtr(date)),
                   by = c("forecast_target_date"))
 
   }
@@ -277,7 +276,7 @@ quantile_pit_score = function(forecast_df, actual_df){
 
     prediction_df = forecast_df %>%
       dplyr::left_join(actual_df %>%
-                  dplyr::mutate(forecast_target_date = as.yearmon(.data$date)),
+                  dplyr::mutate(forecast_target_date = as.yearmon(date)),
                   by = c("forecast_target_date"))
   }
 
@@ -293,11 +292,11 @@ quantile_pit_score = function(forecast_df, actual_df){
 
 
   pit_score_df = prediction_df %>%
-    dplyr::filter(!is.na(.data$actual_values)) %>%
-    dplyr::group_by(.data$horizon, .data$quantile) %>%
-    dplyr::mutate(pit = if_else(.data$actual_values < .data$predicted_values,
-                         1 /length(.data$date),0)) %>%
-    dplyr::summarise(pit = sum(.data$pit), .groups = "drop")
+    dplyr::filter(!is.na(actual_values)) %>%
+    dplyr::group_by(horizon, quantile) %>%
+    dplyr::mutate(pit = if_else(actual_values < predicted_values,
+                         1 /length(date),0)) %>%
+    dplyr::summarise(pit = sum(pit), .groups = "drop")
 
   return(pit_score_df)
 
@@ -306,7 +305,6 @@ quantile_pit_score = function(forecast_df, actual_df){
 
 
 #' @title Calculate prediction score
-#'
 #'
 #' @details This function calculates the prediction score which is the
 #' probability to get the observed (actual) value from the fitted t skew
@@ -354,7 +352,7 @@ quantile_prediction_score = function(forecast_dist_df, actual_df){
   prediction_score = dplyr::left_join(forecast_dist_df, actual_df,
                                by = "date") %>%
     dplyr::group_by(across(-c("parameter", "value"))) %>%
-    dplyr::summarise(prob = dst(x = .data$actual_value[1], dp = .data$value),
+    dplyr::summarise(prob = dst(x = actual_value[1], dp = value),
               .groups = "drop")
 
   return(prediction_score)

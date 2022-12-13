@@ -35,8 +35,8 @@ t_skew_loss = function(estimated_df, t_skew_params) {
 
   loss = estimated_df %>%
     dplyr::left_join(skew_t_df, by = "quantile") %>%
-    dplyr::mutate(error = .data$values - skew_t_values) %>%
-    dplyr::summarise(loss = sqrt(mean(.data$error ^ 2))) %>%
+    dplyr::mutate(error = values - skew_t_values) %>%
+    dplyr::summarise(loss = sqrt(mean(error ^ 2))) %>%
     dplyr::pull(loss)
 
 
@@ -78,12 +78,12 @@ run_t_skew_optimization = function(estimated_df_x,
   }
 
   estimated_mean = estimated_df_x %>%
-    dplyr::summarise(est_mean = mean(.data$values, na.rm = TRUE)) %>%
-    dplyr::pull(.data$est_mean)
+    dplyr::summarise(est_mean = mean(values, na.rm = TRUE)) %>%
+    dplyr::pull(est_mean)
 
   estimated_sd = estimated_df_x %>%
-    dplyr::summarise(est_sd = sd(.data$values, na.rm = TRUE)) %>%
-    dplyr::pull(.data$est_sd)
+    dplyr::summarise(est_sd = sd(values, na.rm = TRUE)) %>%
+    dplyr::pull(est_sd)
 
 
   initial_params = c(
@@ -271,13 +271,13 @@ fit_t_skew_to_gar_df = function(gar_df,
 
   if ("forecast_values" %in% names(gar_df)) {
     gar_df = gar_df %>%
-      dplyr::rename(values = .data$forecast_values)
+      dplyr::rename(values = forecast_values)
 
   }
 
   else if ("fitted_values" %in% names(gar_df)) {
     gar_df = gar_df %>%
-      dplyr::rename(values = .data$fitted_values)
+      dplyr::rename(values = fitted_values)
 
   } else {
     stop(
@@ -298,11 +298,11 @@ fit_t_skew_to_gar_df = function(gar_df,
 
 
   nested_df = gar_df %>%
-    dplyr::mutate(across(c(.data$quantile, .data$horizon), as.numeric)) %>%
-    dplyr::group_by(.data$date, .data$horizon) %>%
-    tidyr::nest(data = c(.data$quantile, .data$values)) %>%
+    dplyr::mutate(across(c(quantile, horizon), as.numeric)) %>%
+    dplyr::group_by(date, horizon) %>%
+    tidyr::nest(data = c(quantile, values)) %>%
     dplyr::ungroup() %>%
-    dplyr::mutate(t_skew = future_map(.data$data, function(temp_data) {
+    dplyr::mutate(t_skew = future_map(data, function(temp_data) {
       temp_fit = fit_t_skew(temp_data,
                             bounded_optimization = bounded_optimization,
                             time_limit = time_limit,
@@ -324,7 +324,7 @@ fit_t_skew_to_gar_df = function(gar_df,
   }
 
   t_skew_fit_df = nested_df %>%
-    dplyr::select(-.data$data) %>%
+    dplyr::select(-data) %>%
     tidyr::unnest(cols = "t_skew")
 
   if(return_smoothed_quantiles){
@@ -363,10 +363,10 @@ get_t_skew_quantiles = function(t_skew_param_df,
                                 quantiles_vec = c(0.05,0.25,0.5,0.75,0.95)){
 
   temp_dp = t_skew_param_df %>%
-    dplyr::mutate(t_skew_parameter = factor(.data$t_skew_parameter,
+    dplyr::mutate(t_skew_parameter = factor(t_skew_parameter,
                                      levels = c("xi", "omega", "alpha", "nu"))) %>%
-    arrange(.data$t_skew_parameter) %>%
-    dplyr::pull(.data$values)
+    arrange(t_skew_parameter) %>%
+    dplyr::pull(values)
 
   if(all(is.na(temp_dp)) | all(temp_dp == 0)){
 
@@ -408,7 +408,7 @@ extract_smoothed_quantiles = function(
   smoothed_quantiles_vec_x = c(0.05, 0.25, 0.5, 0.75, 0.95)) {
 
   smoothed_quantiles_df = dist_param_df %>%
-    dplyr::group_by(.data$date, .data$horizon) %>%
+    dplyr::group_by(date, horizon) %>%
     tidyr::nest(cols = c("t_skew_parameter", "values")) %>%
     dplyr::mutate(
       t_skew_quantiles = purrr::map(cols, get_t_skew_quantiles,
@@ -417,25 +417,25 @@ extract_smoothed_quantiles = function(
     dplyr::select(-cols) %>%
     tidyr::unnest(cols = c("t_skew_quantiles")) %>%
     dplyr::ungroup() %>%
-    dplyr::rename(quantile = .data$quantiles) %>%
-    dplyr::mutate(horizon = as.character(.data$horizon))
+    dplyr::rename(quantile = quantiles) %>%
+    dplyr::mutate(horizon = as.character(horizon))
 
 
   smoothed_quantiles_df = raw_quantiles_df %>%
-    dplyr::mutate(quantile = as.numeric(.data$quantile)) %>%
+    dplyr::mutate(quantile = as.numeric(quantile)) %>%
     dplyr::left_join(
       smoothed_quantiles_df,
       by = c("date", "horizon", "quantile"),
       suffix = c("_raw", "_smoothed")
     ) %>%
-    dplyr::mutate(value = dplyr::coalesce(.data$values_smoothed, .data$values_raw)) %>%
+    dplyr::mutate(value = dplyr::coalesce(values_smoothed, values_raw)) %>%
     dplyr::select(
-      .data$date,
-      .data$quantile,
-      .data$horizon,
-      .data$values_smoothed,
-      .data$values_raw,
-      .data$value
+      date,
+      quantile,
+      horizon,
+      values_smoothed,
+      values_raw,
+      value
     )
 
   return(smoothed_quantiles_df)

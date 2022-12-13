@@ -25,15 +25,15 @@ extract_qreq_coeff_table = function(qreg_obj) {
                       }) %>%
     dplyr::bind_rows() %>%
     dplyr::rename(
-      coeff = .data$coefficients,
-      low = .data$`lower bd`,
-      high = .data$`upper bd`,
-      quantile = .data$tau
+      coeff = coefficients,
+      low = `lower bd`,
+      high = `upper bd`,
+      quantile = tau
     ) %>%
-    dplyr::mutate(quantile = as.character(.data$quantile)) %>%
-    dplyr::mutate(partition = gsub("(Intercept)", "Intercept", .data$partition, fixed = TRUE)) %>%
+    dplyr::mutate(quantile = as.character(quantile)) %>%
+    dplyr::mutate(partition = gsub("(Intercept)", "Intercept", partition, fixed = TRUE)) %>%
     dplyr::mutate(significant = factor(
-      ifelse(.data$high <= 0 | .data$low >= 0, "significant",
+      ifelse(high <= 0 | low >= 0, "significant",
              "non_significant"),
       levels = c("significant", "non_significant")
     ))
@@ -65,13 +65,13 @@ extract_coeffs_from_gar_model = function(gar_model,
 
   coeffs_df = gar_model[["qreg_result"]] %>%
     purrr::map_dfr(extract_qreq_coeff_table,.id = "horizon") %>%
-    dplyr::relocate(.data$partition, .data$horizon, .data$quantile,
-             .data$coeff, .data$low, .data$high, .data$significant) %>%
-    dplyr::mutate(partition = stringr::str_remove_all(.data$partition,"_xreg$"))
+    dplyr::relocate(partition, horizon, quantile,
+             coeff, low, high, significant) %>%
+    dplyr::mutate(partition = stringr::str_remove_all(partition,"_xreg$"))
 
   if (!is.null(partition_names)) {
     coeffs_df = coeffs_df %>%
-      dplyr::filter(.data$partition %in% partition_names)
+      dplyr::filter(partition %in% partition_names)
 
 
   }
@@ -122,8 +122,8 @@ extract_factor_contribution_from_gar_model = function(
 
   coeffs_df = gar_model %>%
     extract_coeffs_from_gar_model() %>%
-    dplyr::filter(.data$quantile == target_quantile) %>%
-    dplyr::select(.data$coeff,.data$horizon, .data$partition)
+    dplyr::filter(quantile == target_quantile) %>%
+    dplyr::select(coeff,horizon, partition)
 
 
 
@@ -131,8 +131,8 @@ extract_factor_contribution_from_gar_model = function(
     unique(coeffs_df$horizon),function(temp_horizon){
 
       coef_vec = coeffs_df %>%
-        dplyr::filter(.data$horizon == temp_horizon) %>%
-        dplyr::select(.data$coeff) %>%
+        dplyr::filter(horizon == temp_horizon) %>%
+        dplyr::select(coeff) %>%
         unlist(use.names = FALSE)
 
       factors_df =  t(t(data_mat) * coef_vec)
@@ -148,7 +148,7 @@ extract_factor_contribution_from_gar_model = function(
 
   factors_df = factors_df %>%
     dplyr::rename_all(~stringr::str_remove_all(.,"_xreg")) %>%
-    dplyr::rename(intercept = .data$V1)
+    dplyr::rename(intercept = V1)
 
   return(factors_df)
 
@@ -196,13 +196,13 @@ calculate_skew_and_iqr = function(gar_obj,
     dplyr::inner_join(rename_table, by = "quantile") %>%
     dplyr::select(-quantile) %>%
     tidyr::pivot_wider(
-      names_from = .data$names,
-      values_from = .data$fitted_values
+      names_from = names,
+      values_from = fitted_values
     ) %>%
-    dplyr::mutate(skew = (0.5 * .data$high + 0.5 * .data$low - .data$mid) /
-             (0.5 * .data$high - 0.5 * .data$low)) %>%
-    dplyr::mutate(iqr = .data$high - .data$low) %>%
-    dplyr::select(.data$date,.data$horizon,.data$skew,.data$iqr)
+    dplyr::mutate(skew = (0.5 * high + 0.5 * low - mid) /
+             (0.5 * high - 0.5 * low)) %>%
+    dplyr::mutate(iqr = high - low) %>%
+    dplyr::select(date,horizon,skew,iqr)
 
   return(skew_df)
 
