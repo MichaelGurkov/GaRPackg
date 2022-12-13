@@ -180,11 +180,11 @@ chain_index = function(df, preprocess_method = "pca", ...){
 
     temp_agg_series = temp_df %>%
       pca_reduction(...) %>%
-      dplyr::mutate(PCA = scale(.data$PCA))
+      dplyr::mutate(PCA = scale(PCA))
 
 
     temp_diff_series = temp_agg_series %>%
-      dplyr::mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
+      dplyr::mutate(PCA = PCA - lead(PCA)) %>%
       dplyr::slice(-nrow(.))
 
     return(list(agg_series = temp_diff_series,
@@ -230,7 +230,7 @@ chain_index = function(df, preprocess_method = "pca", ...){
 
   chain_df = diff_df %>%
     arrange(desc(date)) %>%
-    dplyr::mutate(PCA = cumsum(.data$PCA)) %>%
+    dplyr::mutate(PCA = cumsum(PCA)) %>%
     arrange(date)
 
   return(chain_df)
@@ -425,8 +425,8 @@ fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
     filter(complete.cases(.)) %>%
-    dplyr::group_by(.data$horizon,.data$date) %>%
-    dplyr::arrange(.data$quantile) %>%
+    dplyr::group_by(horizon,date) %>%
+    dplyr::arrange(quantile) %>%
     dplyr::mutate(dplyr::across(tidyselect::matches("^(fitted|forecast)_values$"),
                          ~sort(.))) %>%
     dplyr::ungroup() %>%
@@ -582,19 +582,23 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 
 #'@title Extract preprocess arguments
 #'
-#'@description This is an auxilary function for preprocess_df
+#'@description This is an auxiliary function for preprocess_df
 #'
-#'@param partition_list
+#' @param partitions_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #'
 extract_preprocess_arguments = function(partition_list){
-
-
 
   vars_to_yoy = partition_list %>%
     unlist() %>%
     str_subset(pattern = "_yoy") %>%
     str_remove_all(pattern = "_yoy")
+
+  vars_to_percent_change = partition_list %>%
+    unlist() %>%
+    str_subset(pattern = "_percent_change") %>%
+    str_remove_all(pattern = "_percent_change")
 
 
   vars_to_diff = partition_list %>%
@@ -602,15 +606,34 @@ extract_preprocess_arguments = function(partition_list){
     str_subset(pattern = "_diff") %>%
     str_remove_all(pattern = "_diff")
 
-  vars_to_ma = partition_list %>%
+  vars_to_4_ma = partition_list %>%
     unlist() %>%
     str_subset(pattern = "_4_ma") %>%
     str_remove_all(pattern = "_4_ma")
 
 
-  return(list(vars_to_yoy = vars_to_yoy,
-              vars_to_diff = vars_to_diff,
-              vars_to_ma = vars_to_ma))
+  result_list = list(vars_to_yoy = vars_to_yoy,
+                     vars_to_percent_change = vars_to_percent_change,
+                     vars_to_diff = vars_to_diff,
+                     vars_to_4_ma = vars_to_4_ma)
+
+  result_list = map(result_list,function(temp_part){
+
+    if(length(temp_part) > 0){
+
+      return(temp_part)
+
+    } else {
+
+      return(NULL)
+
+    }
+
+
+  })
+
+
+  return(result_list)
 
 }
 
@@ -632,11 +655,16 @@ extract_preprocess_arguments = function(partition_list){
 #'
 #' @param df raw data frame
 #'
+#' @param partitions_list a list of partitions for dimension reduction.
+#' This is a "default" way of specifying the variables set
+#' for transformation. The set is extracted based on the suffixes of
+#' the partition variables
+#'
 #' @param vars_to_yoy (optional) vector of variable names
 #' for "Year on Year" transformation. Computes the percent change
 #' between parallel periods in  two different years.
 #'
-#' @param vars_to_percent_changes (optional) vector of variable names
+#' @param vars_to_percent_change (optional) vector of variable names
 #' Computes the percent change between two sequential  periods.
 #'
 #' @param vars_to_diff (optional) vector of variable names for differencing transformation
@@ -648,9 +676,9 @@ extract_preprocess_arguments = function(partition_list){
 #' variables be converted to percent units (multiply by 100).
 #'
 #' @export
-preprocess_df = function(df,
+preprocess_df = function(df,partitions_list = NULL,
                          vars_to_yoy = NULL,
-                         vars_to_percent_changes = NULL,
+                         vars_to_percent_change = NULL,
                          vars_to_diff = NULL,
                          vars_to_4_ma = NULL,
                          convert_to_percent_units = FALSE) {
@@ -673,6 +701,38 @@ preprocess_df = function(df,
 
   }
 
+  if(!is.null(partitions_list)){
+
+    args_list = extract_preprocess_arguments(partition_list)
+
+    if(!is.null(args_list[["vars_to_yoy"]])){
+
+      vars_to_yoy = args_list[["vars_to_yoy"]]
+
+    }
+
+    if(!is.null(args_list[["vars_to_percent_change"]])){
+
+      vars_to_percent_change = args_list[["vars_to_percent_change"]]
+
+    }
+
+    if(!is.null(args_list[["vars_to_diff"]])){
+
+      vars_to_diff = args_list[["vars_to_diff"]]
+
+    }
+
+    if(!is.null(args_list[["vars_to_4_ma"]])){
+
+      vars_to_4_ma = args_list[["vars_to_4_ma"]]
+
+    }
+
+
+
+
+  }
 
   if(!is_null(vars_to_yoy)){
 
@@ -700,13 +760,13 @@ preprocess_df = function(df,
 
   }
 
-  if(!is_null(vars_to_percent_changes)){
+  if(!is_null(vars_to_percent_change)){
 
-    if(!length(setdiff(vars_to_percent_changes,
+    if(!length(setdiff(vars_to_percent_change,
                        names(df))) == 0){
 
       warning(paste("The following variables are missing :",
-                    paste0(setdiff(vars_to_percent_changes,
+                    paste0(setdiff(vars_to_percent_change,
                                    names(df)), collapse = ",")))
 
 
@@ -714,7 +774,7 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      dplyr::mutate(across(dplyr::any_of(vars_to_percent_changes),
+      dplyr::mutate(across(dplyr::any_of(vars_to_percent_change),
                     list(percent_change = ~ . / lag(., 1) - 1)))
 
   }
@@ -764,7 +824,7 @@ preprocess_df = function(df,
   if(convert_to_percent_units){
 
     target_vars = c(paste0(vars_to_yoy,"_yoy"),
-                    paste0(vars_to_percent_changes,"_percent_change"),
+                    paste0(vars_to_percent_change,"_percent_change"),
                     paste0(vars_to_4_ma,"_4_ma"))
 
     df = df %>%

@@ -43,17 +43,17 @@ import_from_fame_template = function(template_path,
   fame_df = read.csv(template_path, stringsAsFactors = FALSE) %>%
     dplyr::slice(-(1:10)) %>%
     dplyr::rename(date = 1) %>%
-    dplyr::mutate(date = parse_date_time(.data$date,orders = c("dmy","mdy")))
+    dplyr::mutate(date = parse_date_time(date,orders = c("dmy","mdy")))
 
   if (data_frequency == "quarterly") {
 
     fame_df = fame_df %>%
-      dplyr::mutate(date = as.yearqtr(.data$date))
+      dplyr::mutate(date = as.yearqtr(date))
 
   }  else if (data_frequency == "monthly") {
 
     fame_df = fame_df %>%
-      dplyr::mutate(date = as.yearmon(.data$date))
+      dplyr::mutate(date = as.yearmon(date))
 
   }
 
@@ -137,7 +137,7 @@ import_dsge_forecasts = function(file_path,
     "4",-3.25,-1.3,
     "8",-3.5,-1.45,
     "12",-3.75,-1.5) %>%
-    dplyr::mutate(across(-.data$horizon, ~./100))
+    dplyr::mutate(across(-horizon, ~./100))
 
 
   gdp_table = tibble::tribble(
@@ -146,7 +146,7 @@ import_dsge_forecasts = function(file_path,
     "4",-3.95,-1.6,
     "8",-4.6,-1.8,
     "12",-4.9,-2) %>%
-    dplyr::mutate(across(-.data$horizon, ~./100))
+    dplyr::mutate(across(-horizon, ~./100))
 
   sigma_df = cpi_table %>%
     tidyr::pivot_longer(-horizon,names_to = "quantile") %>%
@@ -173,9 +173,9 @@ import_dsge_forecasts = function(file_path,
                                    skip = 1)
 
       data = raw_data %>%
-        dplyr::rename(date = .data$OBS) %>%
+        dplyr::rename(date = OBS) %>%
         dplyr::select(matches("date|[0-9]")) %>%
-        dplyr::mutate(date = as.yearqtr(.data$date)) %>%
+        dplyr::mutate(date = as.yearqtr(date)) %>%
         tidyr::pivot_longer(-"date",
                      names_to = "horizon",
                      values_to = "forecast") %>%
@@ -194,21 +194,21 @@ import_dsge_forecasts = function(file_path,
     mutate(temp_df = purrr::map(sigma, function(temp_sigma){
 
       temp_tibble = tibble::tibble(quantiles = quantiles) %>%
-        dplyr::mutate(shift = qnorm(.data$quantiles,sd = temp_sigma))
+        dplyr::mutate(shift = qnorm(quantiles,sd = temp_sigma))
 
 
     })) %>%
-    dplyr::select(-.data$sigma) %>%
+    dplyr::select(-sigma) %>%
     tidyr::unnest(temp_df) %>%
     tidyr::pivot_wider(names_from = "quantiles",values_from = "shift") %>%
     dplyr::inner_join(forecast_df,by = c("horizon", "target_var")) %>%
-    dplyr::mutate(across(matches("[0-9]"), ~ . + .data$forecast)) %>%
-    dplyr::select(-.data$forecast) %>%
+    dplyr::mutate(across(matches("[0-9]"), ~ . + forecast)) %>%
+    dplyr::select(-forecast) %>%
     tidyr::pivot_longer(-c("target_var","date", "horizon"),
                         names_to = "quantile",
                         values_to = "forecast") %>%
-    dplyr::mutate(quantile = as.character(.data$quantile)) %>%
-    dplyr::mutate(quantile = dplyr::recode(.data$quantile, "0.5" = "0.50"))
+    dplyr::mutate(quantile = as.character(quantile)) %>%
+    dplyr::mutate(quantile = dplyr::recode(quantile, "0.5" = "0.50"))
 
   return(result_df)
 

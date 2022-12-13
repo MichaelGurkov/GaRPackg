@@ -12,7 +12,8 @@
 #' @import purrr
 #'
 #'
-#' @param partitions_list list of partition names
+#' @param partitions_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param vars_df data frame with input variables
 #'

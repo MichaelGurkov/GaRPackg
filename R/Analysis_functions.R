@@ -228,20 +228,20 @@ make_prediction_df = function(gar_model, xreg_df){
   prediction_df = purrr::map2_dfr(gar_model, names(gar_model),
                                   function(temp_mod, temp_name) {
                                     temp_pred_df = xreg_df %>%
-                                      dplyr::select(.data$date) %>%
+                                      dplyr::select(date) %>%
                                       cbind(stats::predict(temp_mod, xreg_df)) %>%
-                                      tidyr::pivot_longer(-.data$date,
+                                      tidyr::pivot_longer(-date,
                                                           names_to = "quantile",
                                                           values_to = "fitted_values") %>%
-                                      dplyr::mutate(quantile = stringr::str_remove_all(.data$quantile, "tau= ")) %>%
+                                      dplyr::mutate(quantile = stringr::str_remove_all(quantile, "tau= ")) %>%
                                       dplyr::mutate(horizon = temp_name)
 
 
 
                            }) %>%
     fix_quantile_crossing() %>%
-    dplyr::mutate(quantile = as.numeric(.data$quantile)) %>%
-    dplyr::select(.data$date,.data$horizon,.data$quantile,.data$fitted_values)
+    dplyr::mutate(quantile = as.numeric(quantile)) %>%
+    dplyr::select(date,horizon,quantile,fitted_values)
 
   return(prediction_df)
 
