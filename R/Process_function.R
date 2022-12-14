@@ -286,7 +286,8 @@ make_quant_reg_df = function(vars_df,
     reg_df = vars_df %>%
        add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list)) %>%
-      rename_at(vars(-c(target_var_name, "date")), ~paste0(.,"_xreg"))
+      rename_with(.fn = ~paste0(.,"_xreg"),
+                  .cols = -all_of(c(target_var_name, "date")))
 
     return_list$reg_df = reg_df
 
@@ -299,7 +300,7 @@ make_quant_reg_df = function(vars_df,
   if(is.null(partitions_list)){
 
     reg_df = vars_df %>%
-      dplyr::select(date, dplyr::all_of(target_var_name)) %>%
+      dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
       dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
@@ -347,10 +348,10 @@ make_quant_reg_df = function(vars_df,
     # Add lead values of target var
 
     reg_df = vars_df %>%
-      dplyr::select(date, dplyr::all_of(target_var_name)) %>%
+      dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
       dplyr::inner_join(
         preproc_df_list$xreg_df %>%
-          rename_at(vars(-date),~paste0(.,"_xreg")),
+          rename_with(.fn = ~paste0(.,"_xreg"),.cols = -all_of("date")),
                  by = c("date" = "date")) %>%
       dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
@@ -556,21 +557,24 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
   if(forward){
 
     ret_df = df %>%
-      dplyr::mutate_at(vars(-date_varname),
-                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
+      dplyr::mutate(across(-all_of(date_varname),
+                           ~(dplyr::lead(., horizon) / .)
+                           ^ (1/horizon) - 1))
 
   } else{
 
     ret_df = df %>%
-      dplyr::mutate_at(vars(-date_varname),
-                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
+      dplyr::mutate(across(-all_of(date_varname),
+                           ~(dplyr::lag(., horizon) / .)
+                           ^ (1/horizon) - 1))
 
 
   }
 
 
   ret_df = ret_df %>%
-    dplyr::mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+    dplyr::mutate(across(-all_of(date_varname),
+                         ~(( 1 + .) ^ freq) - 1))
 
   return(ret_df)
 
