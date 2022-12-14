@@ -22,6 +22,7 @@ test_params$target_var_name = "gdp"
 xreg_df = make_quant_reg_df(
   partitions_list = test_params$linear_part,
   vars_df = gar_data,
+  transform_vars_df = FALSE,
   target_var_name = test_params$target_var_name,
   horizon_list = test_params$horizon_list)[[1]]
 

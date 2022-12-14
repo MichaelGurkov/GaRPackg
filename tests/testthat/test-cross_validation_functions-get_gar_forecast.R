@@ -20,6 +20,7 @@ test_pred_df = suppressWarnings(run_cross_validation(
   target_var_name = test_params$target_var_name,
   horizon = unlist(test_params$horizon_list),
   quantile_vec = test_params$quantile_vec,
+  transform_vars_df = FALSE,
   win_len = test_params$win_len,
   win_type_expanding = test_params$win_type_expanding) %>%
     arrange(date,horizon,quantile) %>%
@@ -36,6 +37,7 @@ test_that("get_gar_forecast returns proper predictions",
               target_var_name = test_params$target_var,
               horizon_list = test_params$horizon_list,
               quantile_vec = test_params$quantile_vec,
+              transform_vars_df = FALSE,
               win_len = test_params$win_len) %>%
                 arrange(date,horizon,quantile)),
             expected = test_pred_df))

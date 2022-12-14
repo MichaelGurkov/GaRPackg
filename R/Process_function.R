@@ -262,6 +262,17 @@ chain_index = function(df, preprocess_method = "pca", ...){
 #'
 #' @param preprocess_method string a method that aggregates the data to partitions
 #'
+#' @param transform_vars_df boolean indicator that approves
+#' the transformation of variables in \code{vars_df}.
+#'
+#' If TRUE then
+#' a transformation of variables (percent changes, difference, etc.) is
+#' performed according to the variables suffixes supplied in \code{partitions_list}.
+#'
+#'
+#' If FALSE \code{vars_df} is not transformed.
+#'
+#'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
 #' @return regression data frame
@@ -271,6 +282,7 @@ make_quant_reg_df = function(vars_df,
                              target_var_name,
                              horizon_list,
                              preprocess_method = "pca",
+                             transform_vars_df,
                              partitions_list = NULL,
                              pca.align.list = NULL,
                              return_objects_list = FALSE
@@ -279,11 +291,25 @@ make_quant_reg_df = function(vars_df,
   return_list = list()
 
 
+
+  if(transform_vars_df){
+
+    transformed_df = preprocess_df(df = vars_df,
+                                   partitions_list = partitions_list)
+  } else {
+
+    transformed_df = vars_df
+
+
+  }
+
+
   if(preprocess_method == "asis"){
 
-    vars_names = setdiff(names(vars_df), c(target_var_name, "date"))
+    vars_names = setdiff(names(transformed_df),
+                         c(target_var_name, "date"))
 
-    reg_df = vars_df %>%
+    reg_df = transformed_df %>%
        add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list)) %>%
       rename_with(.fn = ~paste0(.,"_xreg"),
@@ -299,7 +325,7 @@ make_quant_reg_df = function(vars_df,
 
   if(is.null(partitions_list)){
 
-    reg_df = vars_df %>%
+    reg_df = transformed_df %>%
       dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
       dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
@@ -314,11 +340,11 @@ make_quant_reg_df = function(vars_df,
 
 
   if(!length(setdiff(unlist(partitions_list, use.names = FALSE),
-                    names(vars_df))) == 0){
+                    names(transformed_df))) == 0){
 
     stop(paste("Can't make quant reg df. The following variables are missing :",
                   paste0(setdiff(unlist(partitions_list, use.names = FALSE),
-                                 names(vars_df)), collapse = ",")),
+                                 names(transformed_df)), collapse = ",")),
          call. = FALSE)
 
 
@@ -336,7 +362,7 @@ make_quant_reg_df = function(vars_df,
 
 
     preproc_df_list = reduce_data_dimension(
-      vars_df = vars_df,
+      vars_df = transformed_df,
       pca_align_list = pca.align.list,
       partition_list = partitions_list,
       preprocess_method = preprocess_method,
@@ -347,7 +373,7 @@ make_quant_reg_df = function(vars_df,
 
     # Add lead values of target var
 
-    reg_df = vars_df %>%
+    reg_df = transformed_df %>%
       dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
       dplyr::inner_join(
         preproc_df_list$xreg_df %>%

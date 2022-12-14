@@ -80,24 +80,25 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             return_objects_list = TRUE){
 
 
-  if(transform_vars_df){
-
-    transformed_df = preprocess_df(df = vars_df,
-                                   partitions_list = partitions_list)
-  } else {
-
-    transformed_df = vars_df
-
-
-  }
+  # if(transform_vars_df){
+  #
+  #   transformed_df = preprocess_df(df = vars_df,
+  #                                  partitions_list = partitions_list)
+  # } else {
+  #
+  #   transformed_df = vars_df
+  #
+  #
+  # }
 
 
   reg_df_list = make_quant_reg_df(
     partitions_list = partitions_list,
-    vars_df = transformed_df,
+    vars_df = vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
     pca.align.list = pca.align.list,
+    transform_vars_df = transform_vars_df,
     preprocess_method = preprocess_method,
     return_objects_list = return_objects_list
   )

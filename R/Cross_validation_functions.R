@@ -28,6 +28,16 @@
 #'
 #' @param preprocess_method dimension reduction method (default PCA)
 #'
+#' @param transform_vars_df boolean indicator that approves
+#' the transformation of variables in \code{vars_df}.
+#'
+#' If TRUE (the default) then
+#' a transformation of variables (percent changes, difference, etc.) is
+#' performed according to the variables suffixes supplied in \code{partitions_list}.
+#'
+#'
+#' If FALSE \code{vars_df} is not transformed.
+#'
 #' @param win_len the length of sliding window (default 30).
 #'  Can be supplied as start date of the analysis (test) set
 #'
@@ -50,6 +60,7 @@ get_gar_forecast = function(partitions_list,
                             quantile_vec,
                             pca.align.list = NULL,
                             preprocess_method = "pca",
+                            transform_vars_df = TRUE,
                             win_len = 30,
                             win_type_expanding = TRUE){
 
@@ -61,6 +72,7 @@ get_gar_forecast = function(partitions_list,
     horizon_list = horizon_list,
     quantile_vec = quantile_vec,
     preprocess_method = preprocess_method,
+    transform_vars_df = transform_vars_df,
     pca.align.list = pca.align.list,
     win_len = win_len,
     win_type_expanding = win_type_expanding) %>%
@@ -139,6 +151,7 @@ run_cross_validation = function(partitions_list,
                                 quantile_vec,
                                 pca.align.list = NULL,
                                 preprocess_method = "pca",
+                                transform_vars_df,
                                 win_len = 30,
                                 win_type_expanding = TRUE,
                                 ...){
@@ -165,6 +178,7 @@ predict_df = purrr::map(roll_cv_list$splits,
                             vars_df = rsample::analysis(temp_split),
                             target_var_name = target_var_name,
                             horizon_list = horizon_list,
+                            transform_vars_df = transform_vars_df,
                             pca.align.list = pca.align.list,
                             preprocess_method = preprocess_method,
                             return_objects_list = FALSE

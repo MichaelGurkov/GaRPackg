@@ -48,11 +48,11 @@ test_obj_transformed = run_GaR_analysis(
 
 test_reg_df = test_obj_transformed$reg_df
 
-expected_reg_df = preprocess_df(df = gar_data,
-                               partitions_list = transform_part) %>%
-  make_quant_reg_df(target_var_name = "gdp_yoy",
-                    horizon_list = test_params$horizon_list,
-                    partitions_list = transform_part) %>%
+expected_reg_df = make_quant_reg_df(vars_df = gar_data,
+                                    target_var_name = "gdp_yoy",
+                                    transform_vars_df = TRUE,
+                                    horizon_list = test_params$horizon_list,
+                                    partitions_list = transform_part) %>%
   pluck("reg_df")
 
 test_that(desc = "run_GaR_analysis transformes df",
