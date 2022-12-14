@@ -30,7 +30,7 @@ test_that("all preprocess transformations work", {
 
 
 
-partition_list = list(first = c("gdp_yoy", "ind_prod_israel_yoy"),
+partitions_list = list(first = c("gdp_yoy", "ind_prod_israel_yoy"),
                       second = c("gdp_percent_change",
                                  "ind_prod_israel_percent_change"),
                       third = c("gdp_diff", "ind_prod_israel_diff"),
@@ -40,7 +40,7 @@ partition_list = list(first = c("gdp_yoy", "ind_prod_israel_yoy"),
 test_that("all preprocess transformations work with partition list", {
   expect_equal(
     object = gar_data %>%
-      preprocess_df(partitions_list = partition_list,
+      preprocess_df(partitions_list = partitions_list,
         convert_to_percent_units = TRUE
       ),
     expected = gar_data %>%

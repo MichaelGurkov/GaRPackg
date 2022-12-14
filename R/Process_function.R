@@ -276,8 +276,6 @@ make_quant_reg_df = function(vars_df,
                              return_objects_list = FALSE
                              ){
 
-  . = NULL
-
   return_list = list()
 
 
@@ -703,7 +701,7 @@ preprocess_df = function(df,partitions_list = NULL,
 
   if(!is.null(partitions_list)){
 
-    args_list = extract_preprocess_arguments(partition_list)
+    args_list = extract_preprocess_arguments(partitions_list)
 
     if(!is.null(args_list[["vars_to_yoy"]])){
 
