@@ -295,7 +295,8 @@ make_quant_reg_df = function(vars_df,
   if(transform_vars_df){
 
     transformed_df = preprocess_df(df = vars_df,
-                                   partitions_list = partitions_list)
+                                   partitions_list = partitions_list,
+                                   target_var_name = target_var_name)
   } else {
 
     transformed_df = vars_df
@@ -364,7 +365,7 @@ make_quant_reg_df = function(vars_df,
     preproc_df_list = reduce_data_dimension(
       vars_df = transformed_df,
       pca_align_list = pca.align.list,
-      partition_list = partitions_list,
+      partitions_list = partitions_list,
       preprocess_method = preprocess_method,
       target_var_name = target_var_name,
       return_objects_list = return_objects_list
@@ -616,26 +617,26 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #'
-extract_preprocess_arguments = function(partition_list){
+extract_preprocess_arguments = function(partitions_list,
+                                        target_var_name = NULL){
 
-  vars_to_yoy = partition_list %>%
-    unlist() %>%
+  partitions_list = union(unlist(partitions_list, use.names = FALSE),
+                          target_var_name)
+
+  vars_to_yoy = partitions_list %>%
     str_subset(pattern = "_yoy") %>%
     str_remove_all(pattern = "_yoy")
 
-  vars_to_percent_change = partition_list %>%
-    unlist() %>%
+  vars_to_percent_change = partitions_list %>%
     str_subset(pattern = "_percent_change") %>%
     str_remove_all(pattern = "_percent_change")
 
 
-  vars_to_diff = partition_list %>%
-    unlist() %>%
+  vars_to_diff = partitions_list %>%
     str_subset(pattern = "_diff") %>%
     str_remove_all(pattern = "_diff")
 
-  vars_to_4_ma = partition_list %>%
-    unlist() %>%
+  vars_to_4_ma = partitions_list %>%
     str_subset(pattern = "_4_ma") %>%
     str_remove_all(pattern = "_4_ma")
 
@@ -705,6 +706,7 @@ extract_preprocess_arguments = function(partition_list){
 #'
 #' @export
 preprocess_df = function(df,partitions_list = NULL,
+                         target_var_name = NULL,
                          vars_to_yoy = NULL,
                          vars_to_percent_change = NULL,
                          vars_to_diff = NULL,
@@ -729,9 +731,11 @@ preprocess_df = function(df,partitions_list = NULL,
 
   }
 
-  if(!is.null(partitions_list)){
+  if(all(is.null(vars_to_yoy),is.null(vars_to_percent_change),
+         is.null(vars_to_diff),is.null(vars_to_4_ma))){
 
-    args_list = extract_preprocess_arguments(partitions_list)
+    args_list = extract_preprocess_arguments(partitions_list,
+                                             target_var_name)
 
     if(!is.null(args_list[["vars_to_yoy"]])){
 

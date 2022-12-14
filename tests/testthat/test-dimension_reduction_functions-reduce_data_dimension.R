@@ -58,7 +58,7 @@ test_multi_df = map_pca_reduction(
 test_that("reduce_data_dimension returns one feature data",
           expect_equal(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition_list = one_feature_part)[[1]],
+            partitions_list = one_feature_part)[[1]],
             expected = gar_data %>%
               dplyr::select(date,unlist(one_feature_part,
                                         use.names = FALSE))
@@ -71,7 +71,7 @@ test_that(paste0("reduce_data_dimension handles mix",
           expect_equal(
             object = reduce_data_dimension(
             vars_df = gar_data,
-            partition_list = mix_feature_part)[[1]],
+            partitions_list = mix_feature_part)[[1]],
             expected = test_mix_df)
           )
 
@@ -79,16 +79,16 @@ test_that(paste0("reduce_data_dimension handles mix",
 test_that("reduce_data_dimension returns multi feature data",
           expect_equal(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition_list = mult_feature_part)[[1]],
+            partitions_list = mult_feature_part)[[1]],
             expected = test_multi_df$xreg_df_multi)
           )
 
 
 test_that(paste0("reduce_data_dimension returns error",
-                 " when partition_list is NULL"),
+                 " when partitions_list is NULL"),
           expect_error(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition_list = NULL))
+            partitions_list = NULL))
 )
 
 
@@ -96,7 +96,7 @@ test_that(paste0("reduce_data_dimension returns error",
                  " when preprocess_method is incorrect"),
           expect_error(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition_list = mult_feature_part,
+            partitions_list = mult_feature_part,
             preprocess_method = "inner_join_pca"))
 )
 
@@ -105,7 +105,7 @@ test_that(paste0("reduce_data_dimension skips reduction",
                  " object list with one feature part"),
           expect_equal(object = reduce_data_dimension(
             vars_df = gar_data,
-            partition_list = one_feature_part,
+            partitions_list = one_feature_part,
             return_objects_list = TRUE)[[1]],
             expected = gar_data %>%
               dplyr::select(date,unlist(one_feature_part, use.names = FALSE)))
@@ -118,7 +118,7 @@ test_that(paste0("reduce_data_dimension returns NA tibble",
             vars_df = gar_data %>%
               dplyr::mutate(across(unlist(mult_feature_part,
                                    use.names = FALSE),~NA)),
-            partition_list = mult_feature_part)[[1]],
+            partitions_list = mult_feature_part)[[1]],
             gar_data %>%
               select(date) %>%
               mutate(dom_macro = NA) %>%

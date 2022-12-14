@@ -422,7 +422,7 @@ map_pls_reduction = function(multi_feature_partitions,
 #'
 #' @param target_var_name string that specifies outcome feature
 #'
-#' @param partition_list a list of partitions for dimension reduction.
+#' @param partitions_list a list of partitions for dimension reduction.
 #' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param n_components number of components that should be returned
@@ -444,7 +444,7 @@ map_pls_reduction = function(multi_feature_partitions,
 #' (optional) element is the pca obj list
 
 reduce_data_dimension = function(vars_df,
-                                 partition_list,
+                                 partitions_list,
                                  target_var_name = NULL,
                                  n_components = 1,
                                  pca_align_list = NULL,
@@ -452,9 +452,9 @@ reduce_data_dimension = function(vars_df,
                                  return_objects_list = FALSE) {
   # Validation
 
-  if (is.null(partition_list)) {
+  if (is.null(partitions_list)) {
 
-    stop("The partition_list is NULL",call. = FALSE)
+    stop("The partitions_list is NULL",call. = FALSE)
 
   }
 
@@ -478,9 +478,9 @@ reduce_data_dimension = function(vars_df,
 
   return_list = list()
 
-  one_feature_partitions = partition_list[sapply(partition_list, length) == 1]
+  one_feature_partitions = partitions_list[sapply(partitions_list, length) == 1]
 
-  multi_feature_partitions = partition_list[sapply(partition_list, length) > 1]
+  multi_feature_partitions = partitions_list[sapply(partitions_list, length) > 1]
 
 
   # Check for one variable partitions

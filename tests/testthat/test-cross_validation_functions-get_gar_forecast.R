@@ -43,16 +43,31 @@ test_that("get_gar_forecast returns proper predictions",
             expected = test_pred_df))
 
 
+test_pred_df_null = suppressWarnings(run_cross_validation(
+  partitions_list = NULL,
+  vars_df = gar_data,
+  target_var_name = "gdp_yoy",
+  horizon = unlist(test_params$horizon_list),
+  quantile_vec = test_params$quantile_vec,
+  transform_vars_df = TRUE,
+  win_len = test_params$win_len,
+  win_type_expanding = test_params$win_type_expanding) %>%
+    arrange(date,horizon,quantile) %>%
+    mutate(forecast_target_date = date + as.numeric(horizon) / 4) %>%
+    relocate("forecast_target_date",.after = "forecast_values"))
+
+
+
+
 test_that("get_gar_forecast returns baseline predictions with NULL partition",
           expect_equal(
             object = suppressWarnings(get_gar_forecast(
               partitions_list = NULL,
               vars_df = gar_data,
-              target_var_name = test_params$target_var,
+              target_var_name = "gdp_yoy",
               horizon_list = test_params$horizon_list,
               quantile_vec = test_params$quantile_vec,
-              transform_vars_df = FALSE,
-              win_len = test_params$win_len) %>%
-                arrange(date,horizon,quantile)),
-            expected = test_pred_df))
+              transform_vars_df = TRUE,
+              win_len = test_params$win_len)),
+            expected = test_pred_df_null))
 
