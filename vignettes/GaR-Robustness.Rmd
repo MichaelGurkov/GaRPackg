@@ -101,6 +101,8 @@ feature_select_df = map(
   unite(col = name,starts_with("name"),sep = "-") %>% 
   mutate(partition = pmap(list(dom_macro,dom_fin,ext_macro,ext_fin),c))
 
+rm(category_params_df)
+
 ```
 
 ```{r run_forecast}
@@ -126,7 +128,7 @@ for (i in 0:100){
   forecast_results = feature_select_df %>% 
   select(partition) %>% 
   slice(sample_ind) %>% 
-  mutate(gar_forecast = map(partition, function(temp_part){
+  mutate(gar_forecast = map(partition, function(temp_part){s
   vars_to_yoy = temp_part %>% 
     unlist() %>% 
     str_subset(pattern = "_yoy") %>% 
@@ -315,19 +317,25 @@ scores_df = read_csv(paste0(Sys.getenv("USERPROFILE"),
   select(-partition)
 
 
-best_models = scores_df %>% 
-  group_by(quantile) %>% 
-  mutate(best_model_ind = if_else(quantile_r2 >= quantile(quantile_r2,0.965),
-                                  1,0)) %>% 
-  ungroup() %>% 
-  group_by(id) %>% 
-  summarise(best_model_total = sum(best_model_ind)) %>% 
-  filter(best_model_total == 5)
+best_models = read_csv(paste0(Sys.getenv("USERPROFILE"),
+                              "\\OneDrive - Bank Of Israel\\Data\\BoI",
+                              "\\GaR_Data\\robustness\\best_models.csv"))
 
-best_models %>% 
-  write_csv(., paste0(Sys.getenv("USERPROFILE"),
-                            "\\OneDrive - Bank Of Israel\\Data\\BoI",
-                            "\\GaR_Data\\robustness\\best_models.csv"))
+
+# best_models = scores_df %>% 
+#   group_by(quantile) %>% 
+#   mutate(best_model_ind = if_else(quantile_r2 >= quantile(quantile_r2,0.965),
+#                                   1,0)) %>% 
+#   ungroup() %>% 
+#   group_by(id) %>% 
+#   summarise(best_model_total = sum(best_model_ind)) %>% 
+#   filter(best_model_total == 5)
+# 
+# best_models %>% 
+#   write_csv(., paste0(Sys.getenv("USERPROFILE"),
+#                             "\\OneDrive - Bank Of Israel\\Data\\BoI",
+#                             "\\GaR_Data\\robustness\\best_models.csv"))
+
 
 features_count = best_models %>% 
   select(id) %>% 
@@ -350,45 +358,71 @@ features_count %>%
 
 ```
 
-```{r extract_best_model}
+```{r extract_best_models_partition}
 
-temp_id = best_models %>% 
-  slice(1) %>% 
-  pull(id) %>% 
-  str_split(pattern = "-")
-
-
-get_vars = function(str_vec, id_str){
+match_partition_from_id = function(temp_id, categories_list){
   
-   map_chr(str_vec, ~function(temp_str){
-     
-    browser()
+  id_str = unlist(str_split(temp_id, pattern = "-"))
+  
+  get_vars_from_category = function(category_string, id_str){
+  
+   temp_res = unlist(map(category_string, function(temp_str){
 
+     return(intersect(temp_str, id_str)) 
      
-     if(str_detect(id_str,temp_str)){
-       
-       return(temp_str)
-     }
-     
-     
-   })
+   }),
+   use.names = FALSE)
+   
+   return(temp_res)
+
+  
+  }
+  
+  temp_part = map(categories_list,get_vars_from_category,
+                  id_str = id_str)
+  
+  return(temp_part)
+
+
+  
+  
   
   
 }
 
+temp_benchmark = get_gar_forecast(partitions_list = NULL,
+                                 vars_df = raw_df,
+                                 target_var_name = "gdp_yoy",
+                                 horizon_list = c(12),
+                                 quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
 
-map(categories_list, function(temp_part){
-  
-  temp_part = unlist(temp_part, use.names = FALSE)
-  
-  return(get_vars(temp_part,id_str = temp_id))
-  
-})
+temp_actual_df = raw_df %>% 
+  preprocess_df(vars_to_yoy = "gdp") %>% 
+  select(date, gdp_yoy)
 
-map_lgl(categories_list$dom_macro, ~ str_detect(pattern = .,
-                                               string = temp_id))
 
-unlist(categories_list$dom_macro, use.names = FALSE)
+match_partition_from_id(temp_id = best_models$id[1],categories_list = categories_list)
+
+
+temp_q_2 = best_models %>% 
+  select(id) %>% 
+  mutate(partition = map(id,
+                         ~match_partition_from_id(temp_id = .,
+                                                  categories_list = categories_list))) %>% 
+  mutate(forecast = map(partition,
+                        ~get_gar_forecast(partitions_list = .,
+                                          vars_df = raw_df,
+                                          target_var_name = "gdp_yoy",
+                                          horizon_list = c(12),
+                                          quantile_vec = c(0.1,0.25,0.5,0.75,0.95)))) %>% 
+  mutate(quantile_r2 = map(forecast, ~quantile_r2_score(forecast_df = .,
+                                                        actual_df = temp_actual_df,
+                                                        benchmark_df = temp_benchmark)))
+
+
+
+scores_df %>% 
+  filter(id == best_models$id[1])
 
 ```
 

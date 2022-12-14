@@ -33,7 +33,7 @@ get_partition_combs = function(partitions_list,
 
     temp_comb_df = partitions_list %>%
       tibble::enframe() %>%
-      dplyr::mutate(value = purrr::map(.data$value, function(temp_vec) {
+      dplyr::mutate(value = purrr::map(value, function(temp_vec) {
         temp_list = list(temp_vec)
 
         names(temp_list) = partition_name
@@ -41,7 +41,7 @@ get_partition_combs = function(partitions_list,
         return(temp_list)
 
       })) %>%
-      dplyr::rename(!!sym(partition_name) := .data$value) %>%
+      dplyr::rename(!!sym(partition_name) := value) %>%
       dplyr::mutate(name = paste(partition_name, 1, sep = "-"))
 
 
@@ -66,13 +66,13 @@ get_partition_combs = function(partitions_list,
 
   if ("required" %in% names(partitions_list)) {
     comb_df = comb_df %>%
-      dplyr::mutate(value = purrr::map(.data$value, ~ c(., partitions_list$required)))
+      dplyr::mutate(value = purrr::map(value, ~ c(., partitions_list$required)))
   }
 
   # Remove empty strings
 
   comb_df = comb_df %>%
-    mutate(value = purrr::map(.data$value, function(temp_part){
+    mutate(value = purrr::map(value, function(temp_part){
 
       temp_part = temp_part[nchar(temp_part) > 0]
 
@@ -84,7 +84,7 @@ get_partition_combs = function(partitions_list,
   # Add partition name
 
   comb_df = comb_df %>%
-    dplyr::mutate(value = purrr::map(.data$value, function(temp_vec) {
+    dplyr::mutate(value = purrr::map(value, function(temp_vec) {
       temp_list = list(temp_vec)
 
       names(temp_list) = partition_name
@@ -94,7 +94,7 @@ get_partition_combs = function(partitions_list,
     }))
 
   comb_df = comb_df %>%
-    dplyr::rename(!!sym(partition_name) := .data$value)
+    dplyr::rename(!!sym(partition_name) := value)
 
   return(comb_df)
 
@@ -172,9 +172,9 @@ identify_frequency = function(date_col){
 #'
 #' @title Calculate window length for start date
 #'
-#'  @param start_date
+#' @param start_date
 #'
-#'  @param data_df
+#' @param data_df
 #'
 calculate_win_len_from_date = function(start_date,data_df){
 

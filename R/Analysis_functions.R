@@ -33,13 +33,28 @@
 #' }
 #'
 #'
+#' @param transform_vars_df boolean indicator that approves
+#' the transformation of variables in \code{vars_df}.
+#'
+#' If TRUE (the default) then
+#' a transformation of variables (percent changes, difference, etc.) is
+#' performed according to the variables suffixes supplied in \code{partitions_list}.
+#'
+#'
+#' If FALSE \code{vars_df} is not transformed.
+#'
+#'
 #' @param pca.align.list (Optional) A list that specifies the PCA aligning variable for
 #' each partition and alignment direction (default is positive direction).
+#'
+#'
 #' The first element in the list is the aligning (axis) variable, the
 #' value is either character (variable's name) or numeric
 #' (variable's position index). The second element if(supplied)
 #' is a boolean indicator of alignment direction
 #' (True means positive direction).
+#'
+#'
 #' If no list is supplied then no alignment takes place
 #'
 #' @param return_objects_list boolean indicator that returns PCA objects.
@@ -60,8 +75,21 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             horizon_list,
                             quantile_vec,
                             preprocess_method = "pca",
+                            transform_vars_df = TRUE,
                             pca.align.list = NULL,
                             return_objects_list = TRUE){
+
+
+  # if(transform_vars_df){
+  #
+  #   transformed_df = preprocess_df(df = vars_df,
+  #                                  partitions_list = partitions_list)
+  # } else {
+  #
+  #   transformed_df = vars_df
+  #
+  #
+  # }
 
 
   reg_df_list = make_quant_reg_df(
@@ -70,6 +98,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
     target_var_name = target_var_name,
     horizon_list = horizon_list,
     pca.align.list = pca.align.list,
+    transform_vars_df = transform_vars_df,
     preprocess_method = preprocess_method,
     return_objects_list = return_objects_list
   )
@@ -228,20 +257,20 @@ make_prediction_df = function(gar_model, xreg_df){
   prediction_df = purrr::map2_dfr(gar_model, names(gar_model),
                                   function(temp_mod, temp_name) {
                                     temp_pred_df = xreg_df %>%
-                                      dplyr::select(.data$date) %>%
+                                      dplyr::select(date) %>%
                                       cbind(stats::predict(temp_mod, xreg_df)) %>%
-                                      tidyr::pivot_longer(-.data$date,
+                                      tidyr::pivot_longer(-date,
                                                           names_to = "quantile",
                                                           values_to = "fitted_values") %>%
-                                      dplyr::mutate(quantile = stringr::str_remove_all(.data$quantile, "tau= ")) %>%
+                                      dplyr::mutate(quantile = stringr::str_remove_all(quantile, "tau= ")) %>%
                                       dplyr::mutate(horizon = temp_name)
 
 
 
                            }) %>%
     fix_quantile_crossing() %>%
-    dplyr::mutate(quantile = as.numeric(.data$quantile)) %>%
-    dplyr::select(.data$date,.data$horizon,.data$quantile,.data$fitted_values)
+    dplyr::mutate(quantile = as.numeric(quantile)) %>%
+    dplyr::select(date,horizon,quantile,fitted_values)
 
   return(prediction_df)
 

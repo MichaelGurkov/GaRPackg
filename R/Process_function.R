@@ -180,11 +180,11 @@ chain_index = function(df, preprocess_method = "pca", ...){
 
     temp_agg_series = temp_df %>%
       pca_reduction(...) %>%
-      dplyr::mutate(PCA = scale(.data$PCA))
+      dplyr::mutate(PCA = scale(PCA))
 
 
     temp_diff_series = temp_agg_series %>%
-      dplyr::mutate(PCA = .data$PCA - lead(.data$PCA)) %>%
+      dplyr::mutate(PCA = PCA - lead(PCA)) %>%
       dplyr::slice(-nrow(.))
 
     return(list(agg_series = temp_diff_series,
@@ -230,7 +230,7 @@ chain_index = function(df, preprocess_method = "pca", ...){
 
   chain_df = diff_df %>%
     arrange(desc(date)) %>%
-    dplyr::mutate(PCA = cumsum(.data$PCA)) %>%
+    dplyr::mutate(PCA = cumsum(PCA)) %>%
     arrange(date)
 
   return(chain_df)
@@ -262,6 +262,17 @@ chain_index = function(df, preprocess_method = "pca", ...){
 #'
 #' @param preprocess_method string a method that aggregates the data to partitions
 #'
+#' @param transform_vars_df boolean indicator that approves
+#' the transformation of variables in \code{vars_df}.
+#'
+#' If TRUE then
+#' a transformation of variables (percent changes, difference, etc.) is
+#' performed according to the variables suffixes supplied in \code{partitions_list}.
+#'
+#'
+#' If FALSE \code{vars_df} is not transformed.
+#'
+#'
 #' @param return_objects_list boolean indicator that returns PCA objects.
 #'
 #' @return regression data frame
@@ -271,24 +282,39 @@ make_quant_reg_df = function(vars_df,
                              target_var_name,
                              horizon_list,
                              preprocess_method = "pca",
+                             transform_vars_df,
                              partitions_list = NULL,
                              pca.align.list = NULL,
                              return_objects_list = FALSE
                              ){
 
-  . = NULL
-
   return_list = list()
+
+
+
+  if(transform_vars_df){
+
+    transformed_df = preprocess_df(df = vars_df,
+                                   partitions_list = partitions_list,
+                                   target_var_name = target_var_name)
+  } else {
+
+    transformed_df = vars_df
+
+
+  }
 
 
   if(preprocess_method == "asis"){
 
-    vars_names = setdiff(names(vars_df), c(target_var_name, "date"))
+    vars_names = setdiff(names(transformed_df),
+                         c(target_var_name, "date"))
 
-    reg_df = vars_df %>%
+    reg_df = transformed_df %>%
        add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list)) %>%
-      rename_at(vars(-c(target_var_name, "date")), ~paste0(.,"_xreg"))
+      rename_with(.fn = ~paste0(.,"_xreg"),
+                  .cols = -all_of(c(target_var_name, "date")))
 
     return_list$reg_df = reg_df
 
@@ -300,8 +326,8 @@ make_quant_reg_df = function(vars_df,
 
   if(is.null(partitions_list)){
 
-    reg_df = vars_df %>%
-      dplyr::select(date, dplyr::all_of(target_var_name)) %>%
+    reg_df = transformed_df %>%
+      dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
       dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
                               leads_vector = unlist(horizon_list))
@@ -315,11 +341,11 @@ make_quant_reg_df = function(vars_df,
 
 
   if(!length(setdiff(unlist(partitions_list, use.names = FALSE),
-                    names(vars_df))) == 0){
+                    names(transformed_df))) == 0){
 
     stop(paste("Can't make quant reg df. The following variables are missing :",
                   paste0(setdiff(unlist(partitions_list, use.names = FALSE),
-                                 names(vars_df)), collapse = ",")),
+                                 names(transformed_df)), collapse = ",")),
          call. = FALSE)
 
 
@@ -337,9 +363,9 @@ make_quant_reg_df = function(vars_df,
 
 
     preproc_df_list = reduce_data_dimension(
-      vars_df = vars_df,
+      vars_df = transformed_df,
       pca_align_list = pca.align.list,
-      partition_list = partitions_list,
+      partitions_list = partitions_list,
       preprocess_method = preprocess_method,
       target_var_name = target_var_name,
       return_objects_list = return_objects_list
@@ -348,11 +374,11 @@ make_quant_reg_df = function(vars_df,
 
     # Add lead values of target var
 
-    reg_df = vars_df %>%
-      dplyr::select(date, dplyr::all_of(target_var_name)) %>%
+    reg_df = transformed_df %>%
+      dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
       dplyr::inner_join(
         preproc_df_list$xreg_df %>%
-          rename_at(vars(-date),~paste0(.,"_xreg")),
+          rename_with(.fn = ~paste0(.,"_xreg"),.cols = -all_of("date")),
                  by = c("date" = "date")) %>%
       dplyr::filter(complete.cases(.)) %>%
       add_leads_to_target_var(target_var_name = target_var_name,
@@ -425,8 +451,8 @@ fix_quantile_crossing = function(prediction_df){
 
   prediction_df = prediction_df %>%
     filter(complete.cases(.)) %>%
-    dplyr::group_by(.data$horizon,.data$date) %>%
-    dplyr::arrange(.data$quantile) %>%
+    dplyr::group_by(horizon,date) %>%
+    dplyr::arrange(quantile) %>%
     dplyr::mutate(dplyr::across(tidyselect::matches("^(fitted|forecast)_values$"),
                          ~sort(.))) %>%
     dplyr::ungroup() %>%
@@ -558,23 +584,85 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
   if(forward){
 
     ret_df = df %>%
-      dplyr::mutate_at(vars(-date_varname),
-                .funs = list(~(dplyr::lead(., horizon) / .) ^ (1/horizon) - 1))
+      dplyr::mutate(across(-all_of(date_varname),
+                           ~(dplyr::lead(., horizon) / .)
+                           ^ (1/horizon) - 1))
 
   } else{
 
     ret_df = df %>%
-      dplyr::mutate_at(vars(-date_varname),
-                .funs = list(~(. / dplyr::lag(., horizon)) ^ (1/horizon) - 1))
+      dplyr::mutate(across(-all_of(date_varname),
+                           ~(dplyr::lag(., horizon) / .)
+                           ^ (1/horizon) - 1))
 
 
   }
 
 
   ret_df = ret_df %>%
-    dplyr::mutate_at(vars(-date_varname), .funs = list(~(( 1 + .) ^ freq) - 1))
+    dplyr::mutate(across(-all_of(date_varname),
+                         ~(( 1 + .) ^ freq) - 1))
 
   return(ret_df)
+
+}
+
+
+
+#'@title Extract preprocess arguments
+#'
+#'@description This is an auxiliary function for preprocess_df
+#'
+#' @param partitions_list a list of partitions for dimension reduction.
+#' For elements in partition that contain only one variable the variable returns "as is".
+#'
+#'
+extract_preprocess_arguments = function(partitions_list,
+                                        target_var_name = NULL){
+
+  partitions_list = union(unlist(partitions_list, use.names = FALSE),
+                          target_var_name)
+
+  vars_to_yoy = partitions_list %>%
+    str_subset(pattern = "_yoy") %>%
+    str_remove_all(pattern = "_yoy")
+
+  vars_to_percent_change = partitions_list %>%
+    str_subset(pattern = "_percent_change") %>%
+    str_remove_all(pattern = "_percent_change")
+
+
+  vars_to_diff = partitions_list %>%
+    str_subset(pattern = "_diff") %>%
+    str_remove_all(pattern = "_diff")
+
+  vars_to_4_ma = partitions_list %>%
+    str_subset(pattern = "_4_ma") %>%
+    str_remove_all(pattern = "_4_ma")
+
+
+  result_list = list(vars_to_yoy = vars_to_yoy,
+                     vars_to_percent_change = vars_to_percent_change,
+                     vars_to_diff = vars_to_diff,
+                     vars_to_4_ma = vars_to_4_ma)
+
+  result_list = map(result_list,function(temp_part){
+
+    if(length(temp_part) > 0){
+
+      return(temp_part)
+
+    } else {
+
+      return(NULL)
+
+    }
+
+
+  })
+
+
+  return(result_list)
 
 }
 
@@ -596,11 +684,16 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #'
 #' @param df raw data frame
 #'
+#' @param partitions_list a list of partitions for dimension reduction.
+#' This is a "default" way of specifying the variables set
+#' for transformation. The set is extracted based on the suffixes of
+#' the partition variables
+#'
 #' @param vars_to_yoy (optional) vector of variable names
 #' for "Year on Year" transformation. Computes the percent change
 #' between parallel periods in  two different years.
 #'
-#' @param vars_to_percent_changes (optional) vector of variable names
+#' @param vars_to_percent_change (optional) vector of variable names
 #' Computes the percent change between two sequential  periods.
 #'
 #' @param vars_to_diff (optional) vector of variable names for differencing transformation
@@ -612,9 +705,10 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #' variables be converted to percent units (multiply by 100).
 #'
 #' @export
-preprocess_df = function(df,
+preprocess_df = function(df,partitions_list = NULL,
+                         target_var_name = NULL,
                          vars_to_yoy = NULL,
-                         vars_to_percent_changes = NULL,
+                         vars_to_percent_change = NULL,
                          vars_to_diff = NULL,
                          vars_to_4_ma = NULL,
                          convert_to_percent_units = FALSE) {
@@ -637,6 +731,40 @@ preprocess_df = function(df,
 
   }
 
+  if(all(is.null(vars_to_yoy),is.null(vars_to_percent_change),
+         is.null(vars_to_diff),is.null(vars_to_4_ma))){
+
+    args_list = extract_preprocess_arguments(partitions_list,
+                                             target_var_name)
+
+    if(!is.null(args_list[["vars_to_yoy"]])){
+
+      vars_to_yoy = args_list[["vars_to_yoy"]]
+
+    }
+
+    if(!is.null(args_list[["vars_to_percent_change"]])){
+
+      vars_to_percent_change = args_list[["vars_to_percent_change"]]
+
+    }
+
+    if(!is.null(args_list[["vars_to_diff"]])){
+
+      vars_to_diff = args_list[["vars_to_diff"]]
+
+    }
+
+    if(!is.null(args_list[["vars_to_4_ma"]])){
+
+      vars_to_4_ma = args_list[["vars_to_4_ma"]]
+
+    }
+
+
+
+
+  }
 
   if(!is_null(vars_to_yoy)){
 
@@ -664,13 +792,13 @@ preprocess_df = function(df,
 
   }
 
-  if(!is_null(vars_to_percent_changes)){
+  if(!is_null(vars_to_percent_change)){
 
-    if(!length(setdiff(vars_to_percent_changes,
+    if(!length(setdiff(vars_to_percent_change,
                        names(df))) == 0){
 
       warning(paste("The following variables are missing :",
-                    paste0(setdiff(vars_to_percent_changes,
+                    paste0(setdiff(vars_to_percent_change,
                                    names(df)), collapse = ",")))
 
 
@@ -678,7 +806,7 @@ preprocess_df = function(df,
     }
 
     df = df %>%
-      dplyr::mutate(across(dplyr::any_of(vars_to_percent_changes),
+      dplyr::mutate(across(dplyr::any_of(vars_to_percent_change),
                     list(percent_change = ~ . / lag(., 1) - 1)))
 
   }
@@ -728,7 +856,7 @@ preprocess_df = function(df,
   if(convert_to_percent_units){
 
     target_vars = c(paste0(vars_to_yoy,"_yoy"),
-                    paste0(vars_to_percent_changes,"_percent_change"),
+                    paste0(vars_to_percent_change,"_percent_change"),
                     paste0(vars_to_4_ma,"_4_ma"))
 
     df = df %>%
