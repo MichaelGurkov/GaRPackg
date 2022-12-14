@@ -42,3 +42,17 @@ test_that("get_gar_forecast returns proper predictions",
                 arrange(date,horizon,quantile)),
             expected = test_pred_df))
 
+
+test_that("get_gar_forecast returns baseline predictions with NULL partition",
+          expect_equal(
+            object = suppressWarnings(get_gar_forecast(
+              partitions_list = NULL,
+              vars_df = gar_data,
+              target_var_name = test_params$target_var,
+              horizon_list = test_params$horizon_list,
+              quantile_vec = test_params$quantile_vec,
+              transform_vars_df = FALSE,
+              win_len = test_params$win_len) %>%
+                arrange(date,horizon,quantile)),
+            expected = test_pred_df))
+
