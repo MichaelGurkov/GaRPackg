@@ -558,6 +558,41 @@ calculate_four_quarters_ma = function(variable_vec){
 
 }
 
+
+
+#' This helper function calculates difference
+#'
+#' @param variable_vec data series
+#'
+#'
+calculate_diff = function(variable_vec){
+
+  diff_vec = c(NA, diff(variable_vec))
+
+  return(diff_vec)
+
+}
+
+
+#' This helper function calculates percent_changes
+#'
+#' @param variable_vec data series
+#'
+#'
+
+calculate_percent_change = function(variable_vec){
+
+  nominator = variable_vec
+
+  denominator = c(NA,variable_vec[-length(variable_vec)])
+
+  percent_change_vec = nominator / denominator - 1
+
+  return(percent_change_vec)
+
+}
+
+
 #' This function calculates the compound annualized growth rate
 #'
 #' @param df dataframe  - time indexed variable
@@ -701,8 +736,6 @@ extract_preprocess_arguments = function(partitions_list,
 #' @param vars_to_4_ma (optional) vector of variable names for "Annual moving average"
 #' transformation
 #'
-#' @param convert_to_percent_units logical default is FALSE should the relative change
-#' variables be converted to percent units (multiply by 100).
 #'
 #' @export
 preprocess_df = function(df,partitions_list = NULL,
@@ -710,8 +743,7 @@ preprocess_df = function(df,partitions_list = NULL,
                          vars_to_yoy = NULL,
                          vars_to_percent_change = NULL,
                          vars_to_diff = NULL,
-                         vars_to_4_ma = NULL,
-                         convert_to_percent_units = FALSE) {
+                         vars_to_4_ma = NULL) {
 
   if(!"date" %in% names(df)){
 
@@ -731,141 +763,90 @@ preprocess_df = function(df,partitions_list = NULL,
 
   }
 
+
+
   if(all(is.null(vars_to_yoy),is.null(vars_to_percent_change),
          is.null(vars_to_diff),is.null(vars_to_4_ma))){
+
 
     args_list = extract_preprocess_arguments(partitions_list,
                                              target_var_name)
 
-    if(!is.null(args_list[["vars_to_yoy"]])){
+    if(is.null(unlist(args_list, use.names = FALSE))){return(df)}
 
-      vars_to_yoy = args_list[["vars_to_yoy"]]
+  } else {
 
-    }
+    args_list = list()
 
-    if(!is.null(args_list[["vars_to_percent_change"]])){
+    args_list$vars_to_yoy = vars_to_yoy
 
-      vars_to_percent_change = args_list[["vars_to_percent_change"]]
+    args_list$vars_to_percent_change = vars_to_percent_change
 
-    }
+    args_list$vars_to_diff = vars_to_diff
 
-    if(!is.null(args_list[["vars_to_diff"]])){
-
-      vars_to_diff = args_list[["vars_to_diff"]]
-
-    }
-
-    if(!is.null(args_list[["vars_to_4_ma"]])){
-
-      vars_to_4_ma = args_list[["vars_to_4_ma"]]
-
-    }
-
-
+    args_list$vars_to_4_ma = vars_to_4_ma
 
 
   }
 
-  if(!is_null(vars_to_yoy)){
 
-    if(!length(setdiff(vars_to_yoy,
+  function_names_table = tribble(~arg_name,~function_name,
+                         "vars_to_yoy",
+                         "calculate_yoy_changes",
+                         "vars_to_percent_change",
+                         "calculate_percent_change",
+                         "vars_to_diff",
+                         "calculate_diff",
+                         "vars_to_4_ma",
+                         "calculate_four_quarters_ma")
+
+
+  transformed_df = map(names(args_list),function(temp_arg_name){
+
+  if(!is.null(args_list[[temp_arg_name]])){
+
+    if(!length(setdiff(args_list[[temp_arg_name]],
                        names(df))) == 0){
 
       warning(paste("The following variables are missing :",
-                    paste0(setdiff(vars_to_yoy,
+                    paste0(setdiff(args_list[[temp_arg_name]],
                                    names(df)), collapse = ",")))
 
 
 
     }
 
+    temp_function_name = function_names_table$function_name[
+      function_names_table$arg_name == temp_arg_name]
+
+    temp_function = match.fun(temp_function_name)
+
+    temp_var_name = str_remove(temp_arg_name,"vars_to_")
+
+
+    temp_df = df %>%
+       dplyr::mutate(across(dplyr::any_of(args_list[[temp_arg_name]]),
+                           .fns = temp_function,
+                           .names = "{.col}_{temp_var_name}")) %>%
+      dplyr::select(any_of("date"),contains(temp_var_name)) %>%
+
+    return(temp_df)
 
 
 
-    df = df %>%
-      dplyr::mutate(across(
-        dplyr::any_of(vars_to_yoy),
-        list(yoy = ~calculate_yoy_changes(.,
-                                          data_frequency = data_frequency))))
-
-
-
-  }
-
-  if(!is_null(vars_to_percent_change)){
-
-    if(!length(setdiff(vars_to_percent_change,
-                       names(df))) == 0){
-
-      warning(paste("The following variables are missing :",
-                    paste0(setdiff(vars_to_percent_change,
-                                   names(df)), collapse = ",")))
-
-
-
-    }
-
-    df = df %>%
-      dplyr::mutate(across(dplyr::any_of(vars_to_percent_change),
-                    list(percent_change = ~ . / lag(., 1) - 1)))
-
-  }
-
-  if(!is_null(vars_to_diff)){
-
-    if(!length(setdiff(vars_to_diff,
-                       names(df))) == 0){
-
-      warning(paste("The following difference variables are missing :",
-                    paste0(setdiff(vars_to_diff,
-                                   names(df)), collapse = ",")))
-
-
-
-    }
-
-    df = df %>%
-      dplyr::mutate(across(dplyr::any_of(vars_to_diff),
-                    list(diff = ~c(NA, diff(.)))))
 
 
 
   }
 
-  if(!is_null(vars_to_4_ma)){
-
-    if(!length(setdiff(vars_to_4_ma,
-                       names(df))) == 0){
-
-      warning(paste("The following moving average variables are missing :",
-                    paste0(setdiff(vars_to_4_ma,
-                                   names(df)), collapse = ",")))
 
 
-
-    }
-
-    df = df %>%
-      dplyr::mutate(across(dplyr::any_of(vars_to_4_ma),
-                    list(`4_ma` = ~calculate_four_quarters_ma(.))))
+}) %>%
+    purrr::reduce(dplyr::full_join, by = "date") %>%
+    dplyr::filter(stats::complete.cases(.))
 
 
-
-  }
-
-  if(convert_to_percent_units){
-
-    target_vars = c(paste0(vars_to_yoy,"_yoy"),
-                    paste0(vars_to_percent_change,"_percent_change"),
-                    paste0(vars_to_4_ma,"_4_ma"))
-
-    df = df %>%
-      dplyr::mutate(across(dplyr::any_of(target_vars), ~ . * 100))
-
-  }
-
-
-  return(df)
+  return(transformed_df)
 
 
 }
