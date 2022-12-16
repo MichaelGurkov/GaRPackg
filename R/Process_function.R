@@ -800,7 +800,6 @@ preprocess_df = function(df,partitions_list = NULL,
                          "vars_to_4_ma",
                          "calculate_four_quarters_ma")
 
-
   transformed_df = map(names(args_list),function(temp_arg_name){
 
   if(!is.null(args_list[[temp_arg_name]])){
@@ -841,7 +840,11 @@ preprocess_df = function(df,partitions_list = NULL,
 
 
 
-}) %>%
+})
+
+  transformed_df = transformed_df[!map_lgl(transformed_df, is.null)]
+
+  transformed_df = transformed_df  %>%
     purrr::reduce(dplyr::full_join, by = "date") %>%
     dplyr::filter(stats::complete.cases(.))
 

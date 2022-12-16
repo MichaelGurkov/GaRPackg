@@ -11,11 +11,7 @@ gar_analisys = run_GaR_analysis(
     dom_macro = c("gdp", "ind_prod_israel"),
     fin_cycle = c("credit", "house_price")
   ),
-  vars_df = gar_data %>%
-    dplyr::mutate(date = as.yearqtr(date)) %>%
-    preprocess_df(
-      vars_to_yoy = c("gdp", "ind_prod_israel", "credit", "house_price")
-    ),
+  vars_df = gar_data,
   target_var_name = "gdp",
   horizon_list = test_params$horizon_list,
   quantile_vec = test_params$quantile_vec
