@@ -65,7 +65,18 @@ test_that("preprocess returns raw df in case of no transformations",{
     object = gar_data %>%
       preprocess_df(partitions_list =
                       list(dom_macro = c("gdp","ind_prod_israel"))),
-    expected = gar_data)})
+    expected = gar_data %>%
+      select(c("date","gdp","ind_prod_israel")))})
+
+
+test_that("preprocess returns mixed df in case of some vars transformations",{
+  expect_equal(
+    object = gar_data %>%
+      preprocess_df(partitions_list =
+                      list(dom_macro = c("gdp","ind_prod_israel_yoy"))),
+    expected = gar_data %>%
+      preprocess_df(vars_to_yoy = "ind_prod_israel") %>%
+      inner_join(select(gar_data, c(date, gdp)), by = "date"))})
 
 
 expect_error(gar_data %>%

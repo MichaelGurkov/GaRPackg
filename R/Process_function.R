@@ -651,6 +651,9 @@ calculate_CAGR = function(df, horizon, freq = 4, forward = TRUE){
 #' @param partitions_list a list of partitions for dimension reduction.
 #' For elements in partition that contain only one variable the variable returns "as is".
 #'
+#'  The function also returns unchanged variables names (storing them under
+#'  the \code{asis_vars} name in transformations list that
+#'  is passed to \code{preprocessed_df})
 #'
 extract_preprocess_arguments = function(partitions_list,
                                         target_var_name = NULL){
@@ -681,6 +684,16 @@ extract_preprocess_arguments = function(partitions_list,
                      vars_to_diff = vars_to_diff,
                      vars_to_4_ma = vars_to_4_ma)
 
+  partition_names = unlist(partitions_list,
+                           use.names = FALSE) %>%
+    str_remove_all(pattern = "_yoy|_percent_change|_diff|_4_ma")
+
+
+  asis_vars = setdiff(partition_names,
+                      unlist(result_list, use.names = FALSE))
+
+  result_list$asis_vars = asis_vars
+
   result_list = map(result_list,function(temp_part){
 
     if(length(temp_part) > 0){
@@ -695,6 +708,7 @@ extract_preprocess_arguments = function(partitions_list,
 
 
   })
+
 
 
   return(result_list)
@@ -716,6 +730,8 @@ extract_preprocess_arguments = function(partitions_list,
 #' In case of Year on Year percent change the function identifies the time
 #' frequency (by checking date class, either yearqtr or yearmon) and calculates
 #' the percent change appropriately
+#'
+#' The function also returns unchanged variables adding them to tranformed df
 #'
 #' @param df raw data frame
 #'
@@ -798,7 +814,9 @@ preprocess_df = function(df,partitions_list = NULL,
                          "vars_to_diff",
                          "calculate_diff",
                          "vars_to_4_ma",
-                         "calculate_four_quarters_ma")
+                         "calculate_four_quarters_ma",
+                         "asis_vars",
+                         "identity")
 
   transformed_df = map(names(args_list),function(temp_arg_name){
 
@@ -820,14 +838,14 @@ preprocess_df = function(df,partitions_list = NULL,
 
     temp_function = match.fun(temp_function_name)
 
-    temp_var_name = str_remove(temp_arg_name,"vars_to_")
+    temp_var_name = str_remove(temp_arg_name,"vars_to")
 
 
     temp_df = df %>%
        dplyr::mutate(across(dplyr::any_of(args_list[[temp_arg_name]]),
                            .fns = temp_function,
-                           .names = "{.col}_{temp_var_name}")) %>%
-      dplyr::select(any_of("date"),contains(temp_var_name)) %>%
+                           .names = "{.col}{temp_var_name}")) %>%
+      dplyr::select(any_of("date"),contains(temp_var_name))
 
     return(temp_df)
 
@@ -846,7 +864,8 @@ preprocess_df = function(df,partitions_list = NULL,
 
   transformed_df = transformed_df  %>%
     purrr::reduce(dplyr::full_join, by = "date") %>%
-    dplyr::filter(stats::complete.cases(.))
+    dplyr::filter(stats::complete.cases(.)) %>%
+    dplyr::rename_with(~stringr::str_remove_all(.,pattern = "asis_vars"))
 
 
   return(transformed_df)

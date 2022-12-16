@@ -7,7 +7,8 @@ expected_arguments_list = list(vars_to_yoy = c("gdp","cpi_israel",
                                                "credit"),
                                vars_to_percent_change = NULL,
                                vars_to_diff = c("rate_euro","rate_us"),
-                               vars_to_4_ma = NULL)
+                               vars_to_4_ma = NULL,
+                               asis_vars = NULL)
 
 test_that("extract_preprocess_arguments works", {
   expect_equal(expected_arguments_list,

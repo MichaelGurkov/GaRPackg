@@ -84,21 +84,11 @@ quantile_vec = c(0.05,0.5,0.95)
 
 ```
 
-Now we transform the features to "year on year" changes. This can also be done as a step in the workflow using %>% operator rather than as a separate step.
-
-```{r preprocess_data}
-
-df = gar_data %>%
-  preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel","credit","house_price"))
-
-```
-
-Now we are ready to feed the inputs to `run_GaR_analysis`
 
 ```{r run_analysis}
 
 result = run_GaR_analysis(partitions_list = partitions_list,
-                          vars_df = df,
+                          vars_df = gar_data,
                           target_var_name = "gdp_yoy",
                           horizon_list = horizon_list,
                           quantile_vec = quantile_vec)
