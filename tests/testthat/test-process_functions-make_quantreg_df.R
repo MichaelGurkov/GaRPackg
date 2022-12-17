@@ -1,10 +1,10 @@
 data("gar_data")
 
 linear_part = list(
-  gdp = list(
+  dom_macro = list(
     "gdp"
   ),
-  credit = list(
+  list(
     "credit"
   ),
   house_price = list(
@@ -33,7 +33,7 @@ plain_df = gar_data %>%
 test_that(paste("make_quant_reg_df return proper names"),
           expect_equal(
             object = names(result_df$reg_df),
-            expected = c("date","gdp","gdp_xreg",
+            expected = c("date","gdp","dom_macro_xreg",
                          "credit_xreg","house_price_xreg",
                          "gdp_1","gdp_4"))
 )

@@ -58,3 +58,5 @@ expected_reg_df = make_quant_reg_df(vars_df = gar_data,
 test_that(desc = "run_GaR_analysis transformes df",
           expect_equal(expected_reg_df, test_reg_df)
 )
+
+

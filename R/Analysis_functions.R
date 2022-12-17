@@ -68,6 +68,14 @@
 #'
 #' @return pca_obj (optional) PCA object
 #'
+#' @details
+#'
+#' \code{reg_df} naming: During dimension reduction the partitions
+#' are named according to the names of the \code{partitions_list}
+#' components. Partitions that consist of one variable only, are named
+#' according to \code{partitions_list} component name if the component
+#' is named, and according to variable name otherwise.
+#'
 #' @export
 #'
 run_GaR_analysis = function(partitions_list, vars_df,

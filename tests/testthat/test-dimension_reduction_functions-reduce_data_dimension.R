@@ -43,10 +43,10 @@ test_mix_df = data.frame(
   ) %>%
   dplyr::inner_join(
     gar_data %>%
-      dplyr::select(date,credit),
+      dplyr::select(date,fin_cycle = credit),
     by = "date"
   ) %>%
-  dplyr::select(date, credit, dom_macro)
+  dplyr::select(date, fin_cycle, dom_macro)
 
 
 
@@ -60,8 +60,7 @@ test_that("reduce_data_dimension returns one feature data",
             vars_df = gar_data,
             partitions_list = one_feature_part)[[1]],
             expected = gar_data %>%
-              dplyr::select(date,unlist(one_feature_part,
-                                        use.names = FALSE))
+              dplyr::select(date,unlist(one_feature_part))
             )
           )
 
@@ -108,7 +107,7 @@ test_that(paste0("reduce_data_dimension skips reduction",
             partitions_list = one_feature_part,
             return_objects_list = TRUE)[[1]],
             expected = gar_data %>%
-              dplyr::select(date,unlist(one_feature_part, use.names = FALSE)))
+              dplyr::select(date,unlist(one_feature_part)))
 )
 
 
