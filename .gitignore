@@ -1,3 +1,7 @@
-*.html
-*.R
 .Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+man/*.Rd
+*.tex
+inst/doc

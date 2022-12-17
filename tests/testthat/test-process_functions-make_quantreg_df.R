@@ -21,6 +21,7 @@ result_df = make_quant_reg_df(
   partitions_list = linear_part,
   vars_df = gar_data,
   target_var_name = "gdp",
+  transform_vars_df = FALSE,
   horizon_list = list(1,4))
 
 plain_df = gar_data %>%
@@ -47,6 +48,7 @@ test_that(
       dplyr::select(date,gdp, ind_prod_israel, house_price) %>%
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
+                        transform_vars_df = FALSE,
                         preprocess_method = "asis") %>%
       pluck("reg_df"),
     expected = gar_data %>%
@@ -65,6 +67,7 @@ test_that(
       dplyr::select(date,gdp, ind_prod_israel) %>%
       make_quant_reg_df(target_var_name = "gdp",
                         horizon_list = c(1, 2),
+                        transform_vars_df = FALSE,
                         partitions_list = linear_part))
 )
 

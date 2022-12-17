@@ -34,3 +34,27 @@ test_that(desc = "run_GaR_analysis returns fitted values",
               dplyr::select(horizon, quantile, fitted_values) %>%
               arrange(quantile)))
 
+
+
+transform_part = list(dom_macro = c("gdp_yoy","ind_prod_israel_yoy"),
+                      fin_cycle = c("credit_yoy","house_price_yoy"))
+
+test_obj_transformed = run_GaR_analysis(
+  partitions_list = transform_part,
+  vars_df = gar_data,
+  target_var_name = "gdp_yoy",
+  horizon_list = test_params$horizon_list,
+  quantile_vec = test_params$quantile_vec)
+
+test_reg_df = test_obj_transformed$reg_df
+
+expected_reg_df = make_quant_reg_df(vars_df = gar_data,
+                                    target_var_name = "gdp_yoy",
+                                    transform_vars_df = TRUE,
+                                    horizon_list = test_params$horizon_list,
+                                    partitions_list = transform_part) %>%
+  pluck("reg_df")
+
+test_that(desc = "run_GaR_analysis transformes df",
+          expect_equal(expected_reg_df, test_reg_df)
+)

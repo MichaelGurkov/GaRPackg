@@ -24,16 +24,16 @@ test_data_mat = cbind(rep(1, nrow(test_data_mat)), test_data_mat)
 
 coeffs_df = test_obj %>%
   extract_coeffs_from_gar_model() %>%
-  dplyr::filter(.data$quantile == "0.5") %>%
-  dplyr::select(.data$coeff,.data$horizon, .data$partition)
+  dplyr::filter(quantile == "0.5") %>%
+  dplyr::select(coeff,horizon, partition)
 
 
 test_factors_df = purrr::map_dfr(
   unique(coeffs_df$horizon),function(temp_horizon){
 
     coef_vec = coeffs_df %>%
-      dplyr::filter(.data$horizon == temp_horizon) %>%
-      dplyr::select(.data$coeff) %>%
+      dplyr::filter(horizon == temp_horizon) %>%
+      dplyr::select(coeff) %>%
       unlist(use.names = FALSE)
 
     test_factors_df =  t(t(test_data_mat) * coef_vec)

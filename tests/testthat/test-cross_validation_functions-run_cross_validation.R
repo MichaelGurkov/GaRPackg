@@ -22,6 +22,7 @@ test_reg_df_30 = make_quant_reg_df(
   partitions_list = test_params$partitions_list,
   vars_df =  slice(gar_data,1:30),
   target_var_name = "gdp",
+  transform_vars_df = FALSE,
   horizon_list = test_params$horizon_list)[["reg_df"]]
 
 
@@ -29,6 +30,7 @@ test_reg_df_31 = make_quant_reg_df(
   partitions_list = test_params$partitions_list,
   vars_df =  slice(gar_data,1:31),
   target_var_name = "gdp",
+  transform_vars_df = FALSE,
   horizon_list = test_params$horizon_list)[["reg_df"]]
 
 
@@ -69,6 +71,7 @@ cross_validation_pred_fixed_30 = run_cross_validation(
   target_var_name = test_params$target_var_name,
   horizon = unlist(test_params$horizon_list),
   quantile_vec = test_params$quantile_vec,
+  transform_vars_df = FALSE,
   win_len = test_params$win_len,
   win_type_expanding = FALSE)
 
@@ -78,6 +81,7 @@ cross_validation_pred_expanding_30_31 = run_cross_validation(
   target_var_name = test_params$target_var_name,
   horizon = unlist(test_params$horizon_list),
   quantile_vec = test_params$quantile_vec,
+  transform_vars_df = FALSE,
   win_len = test_params$win_len,
   win_type_expanding = TRUE)
 
@@ -92,6 +96,7 @@ cross_validation_pred_na = run_cross_validation(
   target_var_name = test_params$target_var_name,
   horizon = unlist(test_params$horizon_list),
   quantile_vec = test_params$quantile_vec,
+  transform_vars_df = FALSE,
   win_len = test_params$win_len,
   win_type_expanding = TRUE)
 
@@ -138,6 +143,7 @@ test_that(
       target_var_name = test_params$target_var_name,
       horizon = unlist(test_params$horizon_list),
       quantile_vec = test_params$quantile_vec,
+      transform_vars_df = FALSE,
       win_len = gar_data$date[30],
       win_type_expanding = FALSE),
     expected = cross_validation_pred_fixed_30))

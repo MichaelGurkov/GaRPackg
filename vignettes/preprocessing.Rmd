@@ -1,0 +1,85 @@
+---
+title: "Preprocessing"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Preprocessing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+
+library(GaRPackg)
+
+library(dplyr)
+
+library(ggplot2)
+
+library(tidyr)
+
+```
+
+
+```{r load_data}
+
+data("gar_data")
+
+
+```
+
+In this vignette we'll look into preprocessing raw data. We'll take a subset of the data with two features:
+
+ * gdp - Israel GDP values (at quarterly frequency)
+ * gdp_us - USA GDP values (...)
+
+If we look at the plot of the GDP of Israel we can see relatively steady
+upward trend that reflects economic growth (that's usual for GDP)
+
+```{r plot_gdp, fig.width=6}
+
+gar_data %>% 
+  ggplot(aes(date, gdp)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("Israel GDP (billions ILS)")
+
+```
+
+For GDP data several transformation make sense:  we can look at changes
+relative to previous periods (both absolute and relative), also in order to neutralize seasonal fluctuations we can look at the changes between
+corresponding periods ("year on year" changes). Let's perform the following transformations on the GDP feature:
+
+ * Absolute change, calculate the difference between two subsequent periods
+ using `vars_to_diff` option.
+ * Relative change, calculate the percentage change between two subsequent
+ periods using `vars_to_percent_changes` option.
+ * Corresponding period change, calculate the "year on year" change
+ between two corresponding periods using `vars_to_yoy` option.
+ 
+```{r preprocessed_df, fig.width=8}
+
+final_df = gar_data %>% 
+  select(date, gdp) %>% 
+  preprocess_df(vars_to_yoy = "gdp",
+                vars_to_percent_change = "gdp",
+                vars_to_diff = "gdp")
+
+final_df %>% 
+  select(date, starts_with("gdp_")) %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(date, value)) + 
+  geom_line() + 
+  facet_wrap(~name, scales = "free") + 
+  xlab(NULL) + ylab(NULL)
+
+
+
+```
+
+Looking at transformed plot 
