@@ -836,7 +836,7 @@ preprocess_df = function(df,partitions_list = NULL,
     temp_function_name = function_names_table$function_name[
       function_names_table$arg_name == temp_arg_name]
 
-    temp_function = match.fun(temp_function_name)
+    temp_function = get(temp_function_name,envir = environment(run_GaR_analysis))
 
     temp_var_name = str_remove(temp_arg_name,"vars_to")
 

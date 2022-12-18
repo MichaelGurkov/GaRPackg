@@ -23,18 +23,14 @@ knitr::opts_chunk$set(
 ```
 
 This vignette demonstrates the use of the "workhorse" function of the package  - `run_GaR_analysis`.
-This function takes the (transformed) data, performs dimension reduction (if required), runs quantile regression and returns several objects
+This function takes the data, tranformes the variables (if required), performs dimension reduction (if required) and then runs quantile regression and returns several objects
 
-First we'll load necessary variables and import our dataset
+First we'll load the package and import our dataset
 
 
 ```{r setup}
 
 library(GaRPackg)
-
-library(dplyr)
-
-library(zoo)
 
 ```
 
@@ -42,32 +38,27 @@ library(zoo)
 
 data("gar_data")
 
-gar_data = gar_data %>% 
-  select("date", "gdp","ind_prod_israel","credit","house_price")  %>%
-  mutate(date = as.yearqtr(date)) 
-
 
 ```
 
 
 The required arguments for `run_GaR_analysis` are:
 
- - A list of groups of features in order to perform dimension
- reduction (the default method is PCA)
+ - A list of groups of variables in order to perform dimension
+ reduction (the default method is PCA).
  - A list of forecast horizons
  - A list of distribution quantiles.
 
-Now we define those as parameters (in order to feed them to the function). For educational purposes two groups (each including two features) are defined: 
+Now we define those as parameters (in order to feed them to the function). For educational purposes two groups (each including two variables) are defined: 
 
  - Macro group that includes GDP and Industrial production index
- - Financial group that includes credit and house price features. 
+ - Financial group that includes credit and house price variables. 
  
 The forecasting will be done at one quarter and one year (four quarters) horizon with three quantiles (5%, 50%, 95%) estimated.
 
 In this setting a more appropriate approach would be to transform the variables
 (we'll you Year on Year transformation, for more details see [preprocessing vignette](preprocessing.html)). In order to reference the transformed
-variables to the analysis function we'll add "_yoy" suffix to the names of the
-variables
+variables to the analysis function we'll add "_yoy" suffix to the names of the variables
 
 
 
