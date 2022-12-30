@@ -1,0 +1,165 @@
+
+```{r load_libraries}
+
+devtools::load_all()
+
+library(tidyverse)
+
+```
+
+```{r import_data}
+
+df = import_from_fame_template(paste0(Sys.getenv("USERPROFILE"),
+                                      "\\OneDrive - Bank Of Israel\\Data",
+                                      "\\BoI\\GaR_Data",
+                                      "\\Working_data\\data_fame_backup.csv"))
+
+df = df %>% 
+  filter(date <= as.yearqtr("2019 Q4"))
+  
+
+```
+
+```{r run_gar_model}
+
+partitions_list = list(
+  dom_macro = c(
+    "private_consumption_yoy",
+    "public_consumption_yoy",
+    "investment_yoy",
+    "unemployment_diff"),
+  ext_macro = c(
+    "oecd_imp_yoy",
+    "exports_yoy",
+    "imports_yoy"
+  ),
+  dom_fin = c(
+    "credit_yoy",
+    "house_price_yoy",
+    "ta125_close_yoy",
+    "boi_rate_diff"
+  ),
+  ext_fin = c(
+    "rate_euro_diff",
+    "rate_us_diff",
+    "sp500_yoy",
+    "eurostoxx600_yoy",
+    "oil_p_yoy",
+    "non_energy_p_yoy"
+  )
+)
+
+
+gar_model = run_GaR_analysis(
+  partitions_list,
+  vars_df = df,
+  target_var_name = "gdp_yoy",
+  horizon_list = c(1, 4, 8, 12),
+  quantile_vec = c(0.05, 0.25, 0.5, 0.75, 0.95),
+  pca.align.list =  list(
+    dom_macro = "private_consumption_yoy",
+    ext_macro = "exports_yoy",
+    dom_fin = "credit_yoy",
+    ext_fin = "sp500_yoy"
+  )
+)
+
+
+```
+
+
+```{r figure_1}
+
+gdp_temp = run_GaR_analysis(partitions_list = list(dom_macro = "gdp_yoy"),
+                       vars_df = df,
+                       target_var_name = "gdp_yoy",
+                       horizon_list = c(4),
+                       quantile_vec = c(0.05,0.5,0.95))
+
+
+gdp_temp %>%
+  pluck("reg_df") %>%
+  ggplot(aes(gdp_yoy, gdp_yoy_4)) +
+  geom_point() +
+  scale_x_continuous(labels = scales::percent_format(),
+                     limits = c(-0.02, 0.1)) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  geom_abline(
+    slope = gdp_temp %>%
+      extract_coeffs_from_gar_model() %>%
+      filter(partition == "dom_macro") %>%
+      pull(coeff),
+    intercept = gdp_temp %>%
+      extract_coeffs_from_gar_model() %>%
+      filter(partition == "Intercept") %>%
+      pull(coeff),
+  ) +
+  xlab(NULL) + ylab(NULL)
+
+
+
+
+```
+
+```{r figure_2}
+
+gar_model %>% 
+  extract_coeffs_from_gar_model() %>% 
+  filter(!partition == "Intercept") %>% 
+  mutate(partition = factor(partition,
+                            levels = c("dom_macro","dom_fin",
+                                       "ext_macro","ext_fin"))) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(x = quantile, y = coeff, fill = significant)) + 
+  geom_col(width = 0.5) + 
+  scale_fill_manual(values = c("lightblue","lightgray")) + 
+  facet_grid(cols = vars(horizon),rows = vars(partition),
+             scales = "free") + 
+  xlab("Quantile") + ylab(NULL)
+
+```
+
+```{r figure_3}
+
+gar_model %>% 
+  pluck("fitted_df") %>% 
+  filter(quantile == 0.05) %>% 
+  filter(horizon %in% c(1,12)) %>% 
+  ggplot(aes(date, fitted_values, color = horizon)) + 
+  geom_line() + 
+  geom_point()
+
+```
+
+```{r figure_4}
+
+gar_model %>% 
+  extract_factor_contribution_from_gar_model() %>% 
+  select(-intercept) %>% 
+  pivot_longer(-c(date, horizon)) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(date, value, fill = name)) + 
+  geom_col() + 
+  scale_fill_viridis_d(option = "plasma") + 
+  facet_wrap(~horizon, scales = "free")
+  head()
+
+```
+
+```{r figure_5}
+
+gar_model %>% 
+  extract_fitted_values_from_gar_model() %>% 
+  filter(quantile == 0.5) %>% 
+  select(-quantile) %>% 
+  inner_join(gar_model %>% 
+               calculate_skew_and_iqr(), by = c("date","horizon")) %>% 
+  mutate(horizon = factor(horizon, levels = c(1,4,8,12))) %>% 
+  ggplot(aes(fitted_values,iqr)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~horizon) + 
+  xlab("Dispersion") + ylab("Median")
+
+```
+

@@ -43,12 +43,12 @@ align_pca = function(pca_obj, var_name,
   }
 
   if (length(sign_vec) == 0) {
-    message(paste0(
+    warning(paste0(
       "align_pca: ",
       "Aligning coefficient missing ",
       "for ",
-      var_name
-    ))
+      var_name,". See details in pca_reduction"
+    ),call. = FALSE)
 
     return(pca_obj)
 
@@ -108,23 +108,24 @@ pca_reduction = function(df,
 
   # Identify time index
 
-  time_index_var = str_subset(names(df), "[Dd]ate")
+  time_index_var = stringr::str_subset(names(df), "[Dd]ate")
 
   if (length(time_index_var) != 1) {
-    message("Could not identify time index")
+    warning("Could not identify time index")
   }
 
   # Extract PCA
 
   df = df %>%
-    filter(complete.cases(.))
+    dplyr::filter(complete.cases(.))
 
   if (ncol(df) == 1) {
     return(list(pca_obj = NULL, time_index = df[, time_index_var]))
   }
 
+
   temp_pca = df %>%
-    select(-all_of(time_index_var)) %>%
+    dplyr::select(-dplyr::all_of(time_index_var)) %>%
     prcomp(center = center, scale. = scale)
 
 
@@ -155,7 +156,11 @@ pca_reduction = function(df,
 
 
 
-#' This function maps pca reduction over partitions list
+#'
+#' @title Map PCA over partitions list
+#'
+#' @description Applies dimension reduction using PCA to each partition in
+#' partitions list
 #'
 #' @param multi_feature_partitions list of partitions
 #'
@@ -170,17 +175,37 @@ pca_reduction = function(df,
 #' (optional) is boolean indicator alignment direction (True means
 #'  positive direction).
 #'
+#' @details
+#' `align_pca` When pca coefficients vector doesn't contain the aligning
+#' variable (perhaps because of name misspecification) a warning is issued
+#'  and no alignment is performed.
 
 map_pca_reduction = function(multi_feature_partitions,
                              vars_df,
                              n_components = 1,
                              pca_align_list = NULL) {
 
-  reduction_objects_list = map2(
+  reduction_objects_list = purrr::map2(
     names(multi_feature_partitions),
     multi_feature_partitions, function(temp_name, temp_part) {
+
+
       temp_df = vars_df %>%
-        select(any_of(c(unlist(temp_part, use.names = FALSE), "date")))
+        dplyr::select(dplyr::any_of(c(unlist(temp_part,
+                                             use.names = FALSE), "date"))) %>%
+        dplyr::filter(complete.cases(.))
+
+      if(nrow(temp_df) <= 1){
+
+        empty_res = list()
+
+        empty_res$time_index = vars_df$date
+
+        empty_res$pca_obj$x = NULL
+
+        return(empty_res)
+
+      }
 
       # Set alignment params
 
@@ -202,7 +227,7 @@ map_pca_reduction = function(multi_feature_partitions,
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
-  xreg_df_multi = map(names(reduction_objects_list),function(temp_name) {
+  xreg_df_multi = purrr::map(names(reduction_objects_list),function(temp_name) {
     date_vec = reduction_objects_list[[temp_name]]$time_index
 
     data_df = reduction_objects_list[[temp_name]]$pca_obj$x[, 1:n_components]
@@ -230,7 +255,7 @@ map_pca_reduction = function(multi_feature_partitions,
     return(temp_df)
 
                       }) %>%
-    reduce(full_join, by = "date")
+    purrr::reduce(dplyr::full_join, by = "date")
 
   return_list = list()
 
@@ -274,7 +299,7 @@ pls_reduction = function(df,
 
   # Identify time index
 
-  time_index_var = str_subset(names(df), "[Dd]ate")
+  time_index_var = stringr::str_subset(names(df), "[Dd]ate")
 
   if (length(time_index_var) != 1) {
     message("Could not identify time index")
@@ -283,8 +308,8 @@ pls_reduction = function(df,
   # Identify predictors names
 
   xvars_names = names(df) %>%
-    str_remove_all(target_var_name) %>%
-    str_remove_all(time_index_var)
+    stringr::str_remove_all(target_var_name) %>%
+    stringr::str_remove_all(time_index_var)
 
   xvars_names = xvars_names[sapply(xvars_names,
                                    function(temp) {
@@ -294,14 +319,14 @@ pls_reduction = function(df,
   # Extract PLS
 
   df = df %>%
-    filter(complete.cases(.))
+    dplyr::filter(complete.cases(.))
 
   pls_form = formula(paste(target_var_name, "~",
                            paste(xvars_names, collapse = "+")))
 
   temp_pls = df %>%
-    select(-all_of(time_index_var)) %>%
-    plsr(
+    dplyr::select(-dplyr::all_of(time_index_var)) %>%
+    pls::plsr(
       formula = pls_form,
       validation = "none",
       scale = scale,
@@ -334,11 +359,11 @@ map_pls_reduction = function(multi_feature_partitions,
     stop("The partitions must be a named list")
   }
 
-  reduction_objects_list = map2(names(multi_feature_partitions),
+  reduction_objects_list = purrr::map2(names(multi_feature_partitions),
                                 multi_feature_partitions,
                                 function(temp_name, temp_part) {
                                   temp_df = vars_df %>%
-                                    select(any_of(c(
+                                    dplyr::select(dplyr::any_of(c(
                                       unlist(temp_part), "date", target_var_name
                                     )))
                                   temp_pls = pls_reduction(df = temp_df,
@@ -349,7 +374,7 @@ map_pls_reduction = function(multi_feature_partitions,
 
   names(reduction_objects_list) = names(multi_feature_partitions)
 
-  xreg_df_multi = map(names(reduction_objects_list),
+  xreg_df_multi = purrr::map(names(reduction_objects_list),
                       function(temp_name) {
                         date_vec = reduction_objects_list[[temp_name]]$time_index
 
@@ -372,7 +397,7 @@ map_pls_reduction = function(multi_feature_partitions,
                         return(temp_df)
 
                       }) %>%
-    reduce(full_join, by = "date")
+    purrr::reduce(dplyr::full_join, by = "date")
 
   return_list = list()
 
@@ -397,13 +422,13 @@ map_pls_reduction = function(multi_feature_partitions,
 #'
 #' @param target_var_name string that specifies outcome feature
 #'
-#' @param partition_list a list of partitions for dimension reduction.
+#' @param partitions_list a list of partitions for dimension reduction.
 #' For elements in partition that contain only one variable the variable returns "as is".
 #'
 #' @param n_components number of components that should be returned
 #'
 #' @param preprocess_method (optional) string that specifies preprocess method
-#' (default is PCA)
+#' (default is pca)
 #'
 #' @param pca_align_list (optional) a named list of alignment parameters.
 #' The name is the name of the targeted partition. The first element in
@@ -419,51 +444,61 @@ map_pls_reduction = function(multi_feature_partitions,
 #' (optional) element is the pca obj list
 
 reduce_data_dimension = function(vars_df,
-                                 partition_list,
+                                 partitions_list,
                                  target_var_name = NULL,
                                  n_components = 1,
                                  pca_align_list = NULL,
-                                 preprocess_method = "inner_join_pca",
+                                 preprocess_method = "pca",
                                  return_objects_list = FALSE) {
   # Validation
 
-  if (is.null(partition_list)) {
-    warning("The partition_list is NULL")
+  if (is.null(partitions_list)) {
 
-    return(NULL)
+    stop("The partitions_list is NULL",call. = FALSE)
 
   }
 
   if (is.null(target_var_name) & preprocess_method == "pls") {
-    message("Target variable is NULL")
 
-    return(NULL)
+        stop(paste0("Target variable for PLS dimension",
+                    " reduction method is missing"),
+         call. = FALSE)
 
+
+
+  }
+
+  if(!preprocess_method %in% c("pca", "pls")){
+
+  stop("preprocess_method must be one of \"pca\" or \"pls\" ",
+       call. = FALSE)
 
 
   }
 
   return_list = list()
 
-  one_feature_partitions = partition_list[sapply(partition_list, length) == 1]
+  one_feature_partitions = partitions_list[sapply(partitions_list, length) == 1]
 
-  multi_feature_partitions = partition_list[sapply(partition_list, length) > 1]
+  multi_feature_partitions = partitions_list[sapply(partitions_list, length) > 1]
 
 
   # Check for one variable partitions
 
   if (length(one_feature_partitions) > 0) {
     xreg_df_one = vars_df %>%
-      select(date, any_of(unlist(one_feature_partitions, use.names = FALSE)))
+      dplyr::select(date, dplyr::any_of(unlist(one_feature_partitions))) %>%
+      dplyr::filter(complete.cases(.))
 
   }
 
 
   # Reduce multi variable partitions
 
-
   if (length(multi_feature_partitions) > 0) {
-    if (preprocess_method == "inner_join_pca") {
+
+    if (preprocess_method == "pca") {
+
       multi_part_return_list = map_pca_reduction(
         multi_feature_partitions = multi_feature_partitions,
         vars_df = vars_df,
@@ -501,7 +536,7 @@ reduce_data_dimension = function(vars_df,
 
   if (length(one_feature_partitions) > 0 &
       length(multi_feature_partitions) > 0) {
-    return_list$xreg_df = inner_join(xreg_df_one,
+    return_list$xreg_df = dplyr::inner_join(xreg_df_one,
                                      multi_part_return_list$xreg_df_multi,
                                      by = "date")
 
