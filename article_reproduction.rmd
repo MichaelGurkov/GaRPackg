@@ -163,3 +163,16 @@ gar_model %>%
 
 ```
 
+```{r figure_6}
+
+gar_model %>% 
+  calculate_skew_and_iqr() %>% 
+  filter(horizon == 1) %>% 
+  ggplot(aes(date, skew)) + 
+  geom_line() + 
+  geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed", color = "blue") + 
+  geom_hline(yintercept = 0) + 
+  xlab(NULL) + ylab(NULL)
+
+```
+
