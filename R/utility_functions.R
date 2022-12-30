@@ -194,3 +194,31 @@ calculate_win_len_from_date = function(start_date,data_df){
 
 
 }
+
+
+#' @description This function compares target variable name to partitions list
+#' vars and issues a warning in case of unprocessed target var and
+#' processed explanatory var
+#'
+warn_about_target_var_suffix = function(target_var_name, partitions_list) {
+
+  x_var = str_subset(unlist(partitions_list, use.names = FALSE),
+                     target_var_name)
+
+
+  if (length(x_var) == 0) {
+
+    return(FALSE)
+  }
+
+  if (x_var == target_var_name) {
+
+    return(FALSE)
+
+  } else {
+
+      return(TRUE)
+
+  }
+
+}

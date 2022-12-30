@@ -88,16 +88,17 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             return_objects_list = TRUE){
 
 
-  # if(transform_vars_df){
-  #
-  #   transformed_df = preprocess_df(df = vars_df,
-  #                                  partitions_list = partitions_list)
-  # } else {
-  #
-  #   transformed_df = vars_df
-  #
-  #
-  # }
+  if(warn_about_target_var_suffix(target_var_name,partitions_list)){
+
+    warning(paste("Target variable and corresponding",
+                   "partition variable suffix don't match.",
+                  "Did you miss preprocessing suffix?"))
+
+  }
+
+
+
+
 
 
   reg_df_list = make_quant_reg_df(

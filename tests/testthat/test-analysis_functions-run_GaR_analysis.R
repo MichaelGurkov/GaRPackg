@@ -60,3 +60,18 @@ test_that(desc = "run_GaR_analysis transformes df",
 )
 
 
+test_that(
+  desc = paste0(
+    "run_GaR_analysis warns about raw target variable",
+    "on same transformed x var"
+  ),
+  expect_warning(
+      run_GaR_analysis(
+        partitions_list = list(dom_macro = "gdp_yoy"),
+        vars_df = gar_data,
+        target_var_name = "gdp",
+        horizon_list = c(4, 8),
+        quantile_vec = c(0.05, 0.5, 0.95)
+      ) )
+)
+
