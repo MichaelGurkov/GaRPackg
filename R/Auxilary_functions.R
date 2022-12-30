@@ -3,8 +3,6 @@
 #'
 #' @title Extract coefficients from quantile reg
 #'
-#' @importFrom rlang .data
-#'
 #'
 #' @param qreg_obj quantile regression object
 #'
@@ -180,7 +178,7 @@ calculate_skew_and_iqr = function(gar_obj,
                         names = quantile_names)
 
 
-  prediction_df = make_prediction_df(gar_model = gar_obj$qreg_result,
+  prediction_df = make_prediction_df(qreq_results_list = gar_obj$qreg_result,
                                      xreg_df = gar_obj$reg_df)
 
   missing_quantiles = setdiff(quantile_values,unique(prediction_df$quantile))
@@ -359,3 +357,28 @@ extract_pca_exlained_variance_from_gar_model = function(gar_model, n_comp = 1) {
 }
 
 
+#' @title Extract fitted values data frame
+#'
+#' @description This function extracts Pfitted values data frame
+#'  from gar model
+#'
+#' @importFrom  purrr map_dfr
+#'
+#' @importFrom tibble rownames_to_column
+#'
+#' @importFrom stats setNames
+#'
+#' @importFrom magrittr %>%
+#'
+#' @param gar_model model object with run_GaR_analysis result
+#'
+#' @return data frame with columns date,horizon,quantile,fitted_values
+#'
+#' @export
+
+extract_fitted_values_from_gar_model = function(gar_model) {
+
+  return(gar_model$fitted_df)
+
+
+}
