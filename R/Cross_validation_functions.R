@@ -94,7 +94,7 @@ get_gar_forecast = function(partitions_list,
   }
 
   prediction_df = prediction_df %>%
-    dplyr::relocate("forecast_target_date",.after = "forecast_values")
+    dplyr::select(date,horizon,quantile,forecast_target_date,forecast_values)
 
 
   return(prediction_df)
@@ -155,13 +155,17 @@ run_cross_validation = function(partitions_list,
                                 win_len = 30,
                                 win_type_expanding = TRUE,
                                 ...){
-if(!is.numeric(win_len)){
+
+  if(!is.numeric(win_len)){
 
 
   win_len = calculate_win_len_from_date(start_date = win_len,
                                         data_df = vars_df)
 
-}
+  }
+
+  if(win_len > nrow(vars_df)){stop("win_len exceeeds data time span (number of rows)")}
+
 
 roll_cv_list = vars_df %>%
   rsample::rolling_origin(
@@ -195,11 +199,11 @@ predict_df = purrr::map(roll_cv_list$splits,
 
                           if(is.na(forecast_date)){return(NULL)}
 
-                          if(!identical(forecast_date, assessment_set$date)){
+                          if(!identical(forecast_date, assessment_set$date) |
+                             win_len > nrow(analysis_set)){
 
-                              temp_pred = tibble(horizon = as.numeric(unlist(horizon_list)),
-                                                 quantile = as.numeric(quantile_vec)) %>%
-                                expand(horizon, quantile) %>%
+                              temp_pred = crossing(horizon = as.numeric(unlist(horizon_list)),
+                                                   quantile = as.numeric(quantile_vec)) %>%
                                 mutate(forecast_values = NA) %>%
                                 mutate(date = forecast_date)
 
@@ -255,7 +259,8 @@ predict_df = purrr::map(roll_cv_list$splits,
                           })
 
 predict_df = predict_df %>%
-  dplyr::bind_rows()
+  dplyr::bind_rows() %>%
+  filter(!is.na(forecast_values))
 
 return(predict_df)
 

@@ -78,11 +78,13 @@ quantile_vec = c(0.05,0.5,0.95)
 
 ```{r run_analysis}
 
-result = run_GaR_analysis(partitions_list = partitions_list,
-                          vars_df = gar_data,
-                          target_var_name = "gdp_yoy",
-                          horizon_list = horizon_list,
-                          quantile_vec = quantile_vec)
+result = run_GaR_analysis(
+  partitions_list = partitions_list,
+  vars_df = gar_data,
+  target_var_name = "gdp_yoy",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec
+)
 
 ```
 
@@ -98,5 +100,31 @@ to evaluate and investigate results. The returned objects are:
 
 ```{r print_results}
 names(result)
+```
+
+## Internal vs explicit preprocessing
+
+The preprocessing is performed by default by \code{run_GaR_analysis} based on partition list variable names suffixes. However in case we want to perform the
+preprocessing explicitly (for instance in order to take a look at preprocessed variables) we can do that and then pass the preprocessed data to \code{run_GaR_analysis}. Let's demonstrate both ways and make sure that they give the same result
+
+The internal (implicit) preprocessing was already performed in the previous example' the results are stored in \code{result} object. Now, let's perform an explicit preprocessing
+and compare the result. Note that we need to set the \code{transform_vars_df} flag in \code{run_GaR_analysis} to \code{FALSE} since we have already transformed the data
+
+```{r preprocess_data}
+
+preprocess_data = preprocess_df(df = gar_data,
+                                partitions_list = partitions_list)
+
+explicit_preprocessing_result = run_GaR_analysis(
+  partitions_list = partitions_list,
+  vars_df = preprocess_data,
+  target_var_name = "gdp_yoy",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  transform_vars_df = FALSE
+)
+
+all.equal(result, explicit_preprocessing_result)
+
 ```
 

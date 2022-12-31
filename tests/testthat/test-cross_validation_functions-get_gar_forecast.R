@@ -25,7 +25,7 @@ test_pred_df = suppressWarnings(run_cross_validation(
   win_type_expanding = test_params$win_type_expanding) %>%
     arrange(date,horizon,quantile) %>%
     mutate(forecast_target_date = date + as.numeric(horizon) / 4) %>%
-    relocate("forecast_target_date",.after = "forecast_values"))
+    select(date, horizon, quantile, forecast_target_date, forecast_values))
 
 
 
@@ -54,7 +54,7 @@ test_pred_df_null = suppressWarnings(run_cross_validation(
   win_type_expanding = test_params$win_type_expanding) %>%
     arrange(date,horizon,quantile) %>%
     mutate(forecast_target_date = date + as.numeric(horizon) / 4) %>%
-    relocate("forecast_target_date",.after = "forecast_values"))
+    select(date, horizon, quantile, forecast_target_date, forecast_values))
 
 
 

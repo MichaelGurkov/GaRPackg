@@ -20,8 +20,6 @@ library(GaRPackg)
 
 library(dplyr)
 
-
-library(zoo)
 ```
 
 In this vignette we'll look an the out of sample forecasting functions.
@@ -34,18 +32,10 @@ We start by defining minimal setup for forecasting
 
 data("gar_data")
 
-gar_data = gar_data %>% 
-  select("date", "gdp","ind_prod_israel","credit","house_price")  %>%
-  mutate(date = as.yearqtr(date)) 
-
 partitions_list = list(
   macro = c("gdp_yoy", "ind_prod_israel_yoy"),
   fin = c("credit_yoy", "house_price_yoy")
 )
-
-df = gar_data %>%
-  preprocess_df(vars_to_yoy = c("gdp","ind_prod_israel","credit","house_price"))
-
 
 
 ```
@@ -54,7 +44,7 @@ df = gar_data %>%
 ```{r run_forecast}
 
 forecast_df = get_gar_forecast(partitions_list = partitions_list,
-                               vars_df = df,
+                               vars_df = gar_data,
                                target_var_name = "gdp_yoy",
                                horizon_list = c(1,12),
                                quantile_vec = c(0.05,0.25,0.5,0.75,0.95))
@@ -64,11 +54,40 @@ forecast_df = get_gar_forecast(partitions_list = partitions_list,
 
 ```{r plot_fan_chart, fig.width=6}
 
+actual_df = gar_data %>% 
+  select(date, gdp) %>% 
+  mutate(actual_values = gdp/lag(gdp,4) - 1)
+
 plot_fan_chart(forecast_df = forecast_df,
-               actual_df = df %>% 
-                 select(date, gdp_yoy) %>% 
-                 rename(actual_values = gdp_yoy),
-               fan_chart_date = max(df$date))
+               actual_df = actual_df,
+               fan_chart_date = max(actual_df$date))
+
+```
+
+
+## Internal vs explicit preprocessing
+
+The preprocessing is performed by default by \code{get_gar_forecast} based on partition list variable names suffixes. However in case we want to perform the
+preprocessing explicitly (for instance in order to take a look at preprocessed variables) we can do that and then pass the preprocessed data to \code{get_gar_forecast}. Let's demonstrate both ways and make sure that they give the same result
+
+The internal (implicit) preprocessing was already performed in the previous example' the results are stored in \code{result} object. Now, let's perform an explicit preprocessing
+and compare the result. Note that we need to set the \code{transform_vars_df} flag in \code{run_GaR_analysis} to \code{FALSE} since we have already transformed the data
+
+```{r preprocess_data}
+
+preprocess_data = preprocess_df(df = gar_data,
+                                partitions_list = partitions_list)
+
+explicit_preprocessing_result = get_gar_forecast(
+  partitions_list = partitions_list,
+  vars_df = preprocess_data,
+  target_var_name = "gdp_yoy",
+  horizon_list = c(1,12),
+  quantile_vec = c(0.05,0.25,0.5,0.75,0.95),
+  transform_vars_df = FALSE
+)
+
+all.equal(forecast_df, explicit_preprocessing_result)
 
 ```
 

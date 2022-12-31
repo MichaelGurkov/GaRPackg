@@ -196,6 +196,9 @@ calculate_win_len_from_date = function(start_date,data_df){
 }
 
 
+#' @title Validate compatability between target and processed variables
+#'
+#'
 #' @description This function compares target variable name to partitions list
 #' vars and issues a warning in case of unprocessed target var and
 #' processed explanatory var
