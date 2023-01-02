@@ -1,3 +1,16 @@
+---
+output: rmarkdown::pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,echo = FALSE,
+  message = FALSE,warning = FALSE,
+  comment = "#>"
+)
+```
+
+
 
 ```{r load_libraries}
 
@@ -20,7 +33,7 @@ df = df %>%
 
 ```
 
-```{r run_gar_model}
+```{r set_params}
 
 partitions_list = list(
   dom_macro = c(
@@ -49,13 +62,23 @@ partitions_list = list(
   )
 )
 
+horizon_list =  c(1, 4, 8, 12)
+
+quantile_vec = c(0.05, 0.25, 0.5, 0.75, 0.95)
+
+```
+
+
+```{r run_gar_model}
+
+
 
 gar_model = run_GaR_analysis(
   partitions_list,
   vars_df = df,
   target_var_name = "gdp_yoy",
-  horizon_list = c(1, 4, 8, 12),
-  quantile_vec = c(0.05, 0.25, 0.5, 0.75, 0.95),
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
   pca.align.list =  list(
     dom_macro = "private_consumption_yoy",
     ext_macro = "exports_yoy",
@@ -68,7 +91,29 @@ gar_model = run_GaR_analysis(
 ```
 
 
-```{r figure_1}
+```{r run_forecasts}
+
+gar_forecast = get_gar_forecast(
+  partitions_list,
+  vars_df = df,
+  target_var_name = "gdp_yoy",
+  horizon_list = horizon_list,
+  quantile_vec = quantile_vec,
+  pca.align.list =  list(
+    dom_macro = "private_consumption_yoy",
+    ext_macro = "exports_yoy",
+    dom_fin = "credit_yoy",
+    ext_fin = "sp500_yoy"
+  ),
+  win_len = 40
+)
+
+
+
+```
+
+
+```{r figure_1, eval=FALSE}
 
 gdp_temp = run_GaR_analysis(partitions_list = list(dom_macro = "gdp_yoy"),
                        vars_df = df,
@@ -94,7 +139,7 @@ gdp_temp %>%
       filter(partition == "Intercept") %>%
       pull(coeff),
   ) +
-  xlab(NULL) + ylab(NULL)
+  xlab(NULL) + ylab(NULL) + ggtitle("Figure 1")
 
 
 
@@ -115,7 +160,7 @@ gar_model %>%
   scale_fill_manual(values = c("lightblue","lightgray")) + 
   facet_grid(cols = vars(horizon),rows = vars(partition),
              scales = "free") + 
-  xlab("Quantile") + ylab(NULL)
+  xlab("Quantile") + ylab(NULL) + ggtitle("Figure 2")
 
 ```
 
@@ -127,7 +172,7 @@ gar_model %>%
   filter(horizon %in% c(1,12)) %>% 
   ggplot(aes(date, fitted_values, color = horizon)) + 
   geom_line() + 
-  geom_point()
+  geom_point() + ggtitle("Figure 3")
 
 ```
 
@@ -141,8 +186,7 @@ gar_model %>%
   ggplot(aes(date, value, fill = name)) + 
   geom_col() + 
   scale_fill_viridis_d(option = "plasma") + 
-  facet_wrap(~horizon, scales = "free")
-  head()
+  facet_wrap(~horizon, scales = "free") + ggtitle("Figure 4")
 
 ```
 
@@ -159,7 +203,7 @@ gar_model %>%
   geom_point() + 
   geom_smooth(method = "lm") + 
   facet_wrap(~horizon) + 
-  xlab("Dispersion") + ylab("Median")
+  xlab("Dispersion") + ylab("Median") + ggtitle("Figure 5")
 
 ```
 
@@ -172,7 +216,18 @@ gar_model %>%
   geom_line() + 
   geom_hline(yintercept = c(-0.5,0.5), linetype = "dashed", color = "blue") + 
   geom_hline(yintercept = 0) + 
-  xlab(NULL) + ylab(NULL)
+  xlab(NULL) + ylab(NULL) + ggtitle("Figure 6")
+
+```
+
+```{r figure_8}
+
+actual_df = df %>% 
+  preprocess_df(vars_to_yoy = "gdp") %>% 
+  select(date, gdp_yoy) %>% 
+  filter(comple)
+
+gar_forecast
 
 ```
 

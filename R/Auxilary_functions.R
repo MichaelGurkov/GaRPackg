@@ -3,7 +3,6 @@
 #'
 #' @title Extract coefficients from quantile reg
 #'
-#'
 #' @param qreg_obj quantile regression object
 #'
 #'
