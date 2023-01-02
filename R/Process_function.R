@@ -305,10 +305,8 @@ make_quant_reg_df = function(vars_df,
   }
 
 
-  if(preprocess_method == "asis"){
 
-    vars_names = setdiff(names(transformed_df),
-                         c(target_var_name, "date"))
+  if(preprocess_method == "asis"){
 
     reg_df = transformed_df %>%
        add_leads_to_target_var(target_var_name = target_var_name,
@@ -374,8 +372,21 @@ make_quant_reg_df = function(vars_df,
 
     # Add lead values of target var
 
-    reg_df = transformed_df %>%
-      dplyr::select(dplyr::all_of(c("date",target_var_name))) %>%
+
+    if(target_var_name %in% names(transformed_df)){
+
+      reg_df = transformed_df %>%
+        dplyr::select(dplyr::all_of(c("date",target_var_name)))
+
+    } else {
+
+      reg_df = vars_df %>%
+        dplyr::select(dplyr::all_of(c("date",target_var_name)))
+
+
+    }
+
+    reg_df = reg_df %>%
       dplyr::inner_join(
         preproc_df_list$xreg_df %>%
           rename_with(.fn = ~paste0(.,"_xreg"),.cols = -all_of("date")),
@@ -781,6 +792,8 @@ preprocess_df = function(df,partitions_list = NULL,
 
 
 
+
+
   if(all(is.null(vars_to_yoy),is.null(vars_to_percent_change),
          is.null(vars_to_diff),is.null(vars_to_4_ma))){
 
@@ -836,7 +849,7 @@ preprocess_df = function(df,partitions_list = NULL,
     temp_function_name = function_names_table$function_name[
       function_names_table$arg_name == temp_arg_name]
 
-    temp_function = match.fun(temp_function_name)
+    temp_function = get(temp_function_name,envir = environment(run_GaR_analysis))
 
     temp_var_name = str_remove(temp_arg_name,"vars_to")
 

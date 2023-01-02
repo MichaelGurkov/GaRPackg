@@ -88,16 +88,17 @@ run_GaR_analysis = function(partitions_list, vars_df,
                             return_objects_list = TRUE){
 
 
-  # if(transform_vars_df){
-  #
-  #   transformed_df = preprocess_df(df = vars_df,
-  #                                  partitions_list = partitions_list)
-  # } else {
-  #
-  #   transformed_df = vars_df
-  #
-  #
-  # }
+  if(warn_about_target_var_suffix(target_var_name,partitions_list)){
+
+    warning(paste("Target variable and corresponding",
+                   "partition variable suffix don't match.",
+                  "Did you miss preprocessing suffix?"))
+
+  }
+
+
+
+
 
 
   reg_df_list = make_quant_reg_df(
@@ -127,7 +128,7 @@ run_GaR_analysis = function(partitions_list, vars_df,
   )
 
 
-  fitted_df = make_prediction_df(gar_model = qreg_result,
+  fitted_df = make_prediction_df(qreq_results_list = qreg_result,
                                  xreg_df = reg_df_list$reg_df) %>%
     fix_quantile_crossing()
 
@@ -252,25 +253,24 @@ run_quant_reg = function(reg_df,
 #' @details The default is in sample prediction (fitted values),
 #' otherwise predict according to supplied xreg data
 #'
-#' @importFrom rlang .data
-#'
-#' @importFrom stringr str_remove_all
-#'
-#' @param gar_model model object with run_GaR_analysis result
+#' @param qreq_results_list model object with run_GaR_analysis result
 #'
 #' @param xreg_df xreg data
 #'
-make_prediction_df = function(gar_model, xreg_df){
+make_prediction_df = function(qreq_results_list, xreg_df){
 
-  prediction_df = purrr::map2_dfr(gar_model, names(gar_model),
+  quantile_names_vec = qreq_results_list[[1]][["tau"]]
+
+
+  prediction_df = purrr::map2_dfr(qreq_results_list, names(qreq_results_list),
                                   function(temp_mod, temp_name) {
                                     temp_pred_df = xreg_df %>%
                                       dplyr::select(date) %>%
                                       cbind(stats::predict(temp_mod, xreg_df)) %>%
+                                      set_names(c("date", quantile_names_vec)) %>%
                                       tidyr::pivot_longer(-date,
                                                           names_to = "quantile",
                                                           values_to = "fitted_values") %>%
-                                      dplyr::mutate(quantile = stringr::str_remove_all(quantile, "tau= ")) %>%
                                       dplyr::mutate(horizon = temp_name)
 
 
