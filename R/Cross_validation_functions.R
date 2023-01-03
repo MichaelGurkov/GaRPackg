@@ -190,6 +190,20 @@ predict_df = purrr::map(roll_cv_list$splits,
 
                           analysis_set = analysis_set[["reg_df"]]
 
+                          if(temp_split$id[[1]] == "Slice01"){
+
+                            file_name = if_else(transform_vars_df,
+                                                "internal","external")
+
+                            analysis_set %>%
+                              write_csv(paste0("C:\\Users\\U095\\Desktop",
+                                               "\\",file_name,"_analysis.csv"))
+
+
+                          }
+
+
+
                           assessment_set = analysis_set %>%
                             dplyr::slice(n())
 

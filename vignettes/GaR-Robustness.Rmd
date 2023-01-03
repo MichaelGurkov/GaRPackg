@@ -3,7 +3,11 @@
 
 library(tidyverse)
 
-devtools::load_all()
+library(GaRPackg)
+
+library(zoo)
+
+library(doParallel)
 
 ```
 
@@ -86,7 +90,7 @@ category_params_df =  categories_list%>%
   enframe(name = "category", value = "params") %>%
   mutate(part_comb_df = map2(category, params,
                              function(temp_name, temp_part) {
-                               temp_part_df = get_partition_combs(partitions_list = temp_part,
+                               temp_part_df = GaRPackg:::get_partition_combs(partitions_list = temp_part,
                                                                   partition_name = temp_name)
                              }))
 
@@ -108,34 +112,118 @@ rm(category_params_df)
 
 ```
 
-```{r run_forecast}
 
-tictoc::tic()
+```{r preprocess_df}
 
-numCores = parallel::detectCores() - 1 
+args_list = GaRPackg:::extract_preprocess_arguments(categories_list)
 
-cl = parallel::makeCluster(numCores)
+transformed_df = raw_df %>% 
+  mutate(across(args_list$vars_to_yoy, GaRPackg:::calculate_yoy_changes,
+                .names = "{.col}_yoy")) %>% 
+  mutate(across(args_list$vars_to_diff, GaRPackg:::calculate_diff,
+                .names = "{.col}_diff")) %>% 
+  mutate(across(args_list$vars_to_4_ma, GaRPackg:::calculate_four_quarters_ma,
+                .names = "{.col}_4_ma"))
 
-doParallel::registerDoParallel(cl)
+```
+
+```{r compare_forecast, eval=FALSE}
+
+temp_part = feature_select_df$partition[[1]]
+
+temp_names = c("date",unlist(temp_part, use.names = FALSE))
+  
+temp_df = dplyr::select(transformed_df,all_of(temp_names))
+  
+temp_df = temp_df[stats::complete.cases(temp_df),]
+  
+explicit_preprocess = GaRPackg::get_gar_forecast(partitions_list = temp_part,
+                                vars_df = temp_df,
+                                transform_vars_df = FALSE,
+                                target_var_name = "gdp_yoy",
+                                horizon_list = c(1,4,8,12),
+                                quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
 
 
-forecast_results = feature_select_df %>% 
-select(partition) %>% 
-slice(1) %>% 
-mutate(gar_forecast = map(partition, function(temp_part){
-
-
-temp_res = get_gar_forecast(partitions_list = temp_part,
+implicit_preprocess = get_gar_forecast(partitions_list = temp_part,
                                 vars_df = raw_df,
                                 target_var_name = "gdp_yoy",
                                 horizon_list = c(1,4,8,12),
                                 quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
 
-return(temp_res)
+all.equal(explicit_preprocess, implicit_preprocess)
+
+rm(list = str_subset(ls(),"temp"))
+
+```
 
 
+```{r run_forecast}
 
-}))
+num_runs = 1000
+
+tictoc::tic()
+
+numCores = parallel::detectCores() - 1
+
+cl = parallel::makeCluster(numCores)
+
+doParallel::registerDoParallel(cl)
+
+forecast_results = foreach(i = 1:num_runs,
+                           .packages = c("zoo")) %dopar% {
+  
+  temp_part = feature_select_df$partition[[i]]
+  
+  temp_names = c("date",unlist(temp_part, use.names = FALSE))
+  
+  temp_df = dplyr::select(transformed_df,all_of(temp_names))
+  
+  temp_df = temp_df[stats::complete.cases(temp_df),]
+  
+  temp_forecast = GaRPackg::get_gar_forecast(partitions_list = temp_part,
+                                vars_df = temp_df,
+                                transform_vars_df = FALSE,
+                                target_var_name = "gdp_yoy",
+                                horizon_list = c(1,4,8,12),
+                                quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
+  
+  
+
+  
+}
+
+parallel::stopCluster(cl)
 
 tictoc::toc()
+
 ```
+
+
+```{r combine_forecast_and_save}
+
+
+names(forecast_results) = as.character(1:num_runs)
+
+
+write_rds(forecast_results, paste0(Sys.getenv("USERPROFILE"),
+                                   "\\OneDrive - Bank Of Israel\\Data",
+                                   "\\BoI\\GaR_Data\\robustness",
+                                   "\\forecast_results.rds"))
+
+# temp = forecast_results %>% 
+#   bind_rows(.id = "row") %>% 
+#   inner_join(feature_select_df %>% 
+#                slice(1:30) %>% 
+#                select(partition) %>% 
+#                rownames_to_column(var = "row"))
+# 
+# 
+# write_rds(temp, paste0(Sys.getenv("USERPROFILE"),
+#                                    "\\OneDrive - Bank Of Israel\\Data",
+#                                    "\\BoI\\GaR_Data\\robustness",
+#                                    "\\temp.rds"))
+
+
+```
+
