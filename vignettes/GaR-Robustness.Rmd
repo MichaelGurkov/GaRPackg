@@ -32,46 +32,23 @@ raw_df = raw_df %>%
 
 categories_list = list(
   dom_macro = list(
-    required = c("gdp_yoy"),
-    optional = c(
-      "unemployment_diff",
-      "cpi_israel_yoy"
-    )),
+    optional = c("gdp_yoy")),
   dom_fin = list(
-    required = c(
+    optional = c(
       "credit_yoy",
       "house_price_yoy",
       "ta125_close_yoy",
       "boi_rate_diff"
-      ),
-    optional = c(
-      "sovereigh_spread",
-      "term_spread",
-      "ils_usd_impl_vol",
-      "ta_35_impl_vol"
-    )),
+      )),
   ext_macro = list(
-    required = c(
+    optional = c(
       "gdp_us_yoy",
       "gdp_euro_yoy"
-      ), 
-      optional = c(
-        "ind_prod_us_yoy",
-        "ind_prod_euro_yoy",
-        "oecd_imp"
       )),
   ext_fin = list(
-    required = c(
+    optional = c(
       "rate_euro_diff",
       "rate_us_diff"
-      ),
-      optional = c(
-        "eurostoxx600",
-        "sp500",
-        "us_term_spread",
-        "dxy_yoy",
-        "oil_p_yoy",
-        "non_energy_p_yoy"
       )
     )
 )
@@ -178,11 +155,11 @@ rm(list = str_subset(ls(),"temp"))
 ```
 
 
-```{r run_and_save_forecast}
+```{r run_forecast}
 
-# start_ind = 10001
-# 
-# end_ind = 32768
+start_ind = 1
+
+end_ind = 511
 
 numCores = parallel::detectCores() - 1
 
@@ -195,7 +172,7 @@ forecast_results = foreach(i = start_ind:end_ind,
   
   temp_part = feature_select_df$partition[[i]]
   
-  temp_names = c("date",unlist(temp_part, use.names = FALSE))
+  temp_names = c("date","gdp_yoy",unlist(temp_part, use.names = FALSE))
   
   temp_df = dplyr::select(transformed_df,all_of(temp_names))
   
@@ -217,12 +194,6 @@ parallel::stopCluster(cl)
 
 names(forecast_results) = as.character(start_ind:end_ind)
 
-
-write_rds(forecast_results, paste0(Sys.getenv("USERPROFILE"),
-                                   "\\OneDrive - Bank Of Israel\\Data",
-                                   "\\BoI\\GaR_Data\\robustness",
-                                   "\\forecast_results","_",
-                                   start_ind,"_", end_ind,".rds"))
 
 ```
 
@@ -256,11 +227,6 @@ benchmark_df = get_gar_forecast(partitions_list = NULL,
 actual_df = transformed_df %>% 
   select(date, gdp_yoy)
 
-forecast_results = read_rds(paste0("C:\\Users\\U095",
-                                   "\\OneDrive - Bank Of Israel\\Data",
-                                   "\\BoI\\GaR_Data",
-                                   "\\robustness\\forecast_results.rds"))
-
 
 scores_df = map_dfr(forecast_results, function(temp_forecast_df){
   
@@ -274,50 +240,11 @@ scores_df = map_dfr(forecast_results, function(temp_forecast_df){
 },
 .id = "row")
 
-# write_rds(scores_df, paste0(Sys.getenv("USERPROFILE"),
-#                                    "\\OneDrive - Bank Of Israel\\Data",
-#                                    "\\BoI\\GaR_Data\\robustness",
-#                                    "\\scores_df.rds"))
-
-
-```
-
-```{r import_scores}
-
-scores_df = read_rds(paste0(Sys.getenv("USERPROFILE"),
-                                   "\\OneDrive - Bank Of Israel\\Data",
-                                   "\\BoI\\GaR_Data\\robustness",
-                                   "\\scores_df.rds"))
 
 ```
 
 
-
-```{r check_r2, eval=FALSE}
-
-target_part = feature_select_df$partition[[32768]]
-
-target_forecast = get_gar_forecast(partitions_list = target_part,
-                                vars_df = raw_df,
-                                target_var_name = "gdp_yoy",
-                                horizon_list = c(1,4,8,12),
-                                quantile_vec = c(0.1,0.25,0.5,0.75,0.95))
-
-target_r2 = quantile_r2_score(forecast_df = target_forecast,
-                              actual_df = actual_df,
-                              benchmark_df = benchmark_df)
-
-all.equal(scores_df %>% 
-  filter(row == 32768) %>% 
-  select(-row),target_r2)
-
-
-```
-
-## Import scores and find best models
-
-
-```{r}
+```{r plot_scores}
 
 scores_df %>% 
   ggplot(aes(x = quantile_r2)) + 
@@ -328,44 +255,40 @@ scores_df %>%
 ```
 
 
-```{r find_best_models}
-
-scores_df = read_rds(paste0("C:\\Users\\U095",
-                   "\\OneDrive - Bank Of Israel\\Data\\BoI",
-                   "\\GaR_Data\\robustness\\scores_df.rds"))
-
-best_thresholds = scores_df %>% 
-  group_by(horizon, quantile) %>% 
-  summarise(threshold_r2 = quantile(quantile_r2, 0.70), .groups = "drop")
+```{r select_best_models}
 
 
-best_models = scores_df %>% 
-  left_join(best_thresholds, by = c("horizon","quantile")) %>% 
-  filter(quantile_r2 >= threshold_r2) %>% 
-  group_by(row) %>% 
-  mutate(obs = length(quantile_r2)) %>% 
-  ungroup() %>% 
+best_thresholds = scores_df %>%
+  group_by(horizon, quantile) %>%
+  summarise(threshold_r2 = quantile(quantile_r2, 0.55), .groups = "drop")
+
+
+best_models = scores_df %>%
+  left_join(best_thresholds, by = c("horizon","quantile")) %>%
+  filter(quantile_r2 >= threshold_r2) %>%
+  group_by(row) %>%
+  mutate(obs = length(quantile_r2)) %>%
+  ungroup() %>%
   filter(obs == 20)
 
 
+best_partitions = feature_select_df %>% 
+  select(partition) %>% 
+  slice(best_models %>% 
+          select(row) %>% 
+          distinct() %>% 
+          pull() %>% 
+          as.numeric())
+
+map(best_partitions$partition, ~unlist(.,use.names = FALSE))
 
 ```
 
-
-
-```{r plot_best_partitions}
+```{r plot_best_models} 
 
 best_models %>% 
-  select(row) %>% 
-  distinct()
-
-feature_select_df$partition[[32370]]
-
-
-scores_df %>% 
-  filter(row == 32370) %>% 
-  ggplot(aes(as.character(quantile), quantile_r2)) + 
-  geom_col() + 
+  ggplot(aes(quantile, quantile_r2)) + 
+  geom_col(aes(fill = row),position = "dodge", show.legend = FALSE) + 
   facet_wrap(~horizon, scales = "free")
 
 ```

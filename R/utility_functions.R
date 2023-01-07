@@ -71,15 +71,15 @@ get_partition_combs = function(partitions_list,
 
   # Remove empty strings
 
-  comb_df = comb_df %>%
-    mutate(value = purrr::map(value, function(temp_part){
-
-      temp_part = temp_part[nchar(temp_part) > 0]
-
-      return(temp_part)
-
-    })) %>%
-    filter(!map_lgl(value, ~length(.)==0))
+  # comb_df = comb_df %>%
+  #   mutate(value = purrr::map(value, function(temp_part){
+  #
+  #     temp_part = temp_part[nchar(temp_part) > 0]
+  #
+  #     return(temp_part)
+  #
+  #   })) %>%
+  #   filter(!map_lgl(value, ~length(.)==0))
 
   # Add partition name
 
