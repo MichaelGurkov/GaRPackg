@@ -282,12 +282,20 @@ scores_df = map_dfr(forecast_results, function(temp_forecast_df){
 
 ```
 
+```{r import_scores}
+
+scores_df = read_rds(paste0(Sys.getenv("USERPROFILE"),
+                                   "\\OneDrive - Bank Of Israel\\Data",
+                                   "\\BoI\\GaR_Data\\robustness",
+                                   "\\scores_df.rds"))
+
+```
+
+
 
 ```{r check_r2, eval=FALSE}
 
-par_ind = as.numeric(names(forecast_results)[1])
-
-target_part = feature_select_df$partition[[par_ind]]
+target_part = feature_select_df$partition[[32768]]
 
 target_forecast = get_gar_forecast(partitions_list = target_part,
                                 vars_df = raw_df,
@@ -300,7 +308,7 @@ target_r2 = quantile_r2_score(forecast_df = target_forecast,
                               benchmark_df = benchmark_df)
 
 all.equal(scores_df %>% 
-  filter(row == par_ind) %>% 
+  filter(row == 32768) %>% 
   select(-row),target_r2)
 
 
