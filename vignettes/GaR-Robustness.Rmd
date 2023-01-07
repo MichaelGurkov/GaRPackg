@@ -147,7 +147,6 @@ date_range %>%
 ```
 
 
-
 ```{r compare_explicit_and_implicit_forecast, eval=FALSE}
 
 temp_part = feature_select_df$partition[[1]]
@@ -275,10 +274,10 @@ scores_df = map_dfr(forecast_results, function(temp_forecast_df){
 },
 .id = "row")
 
-write_rds(scores_df, paste0(Sys.getenv("USERPROFILE"),
-                                   "\\OneDrive - Bank Of Israel\\Data",
-                                   "\\BoI\\GaR_Data\\robustness",
-                                   "\\scores_df.rds"))
+# write_rds(scores_df, paste0(Sys.getenv("USERPROFILE"),
+#                                    "\\OneDrive - Bank Of Israel\\Data",
+#                                    "\\BoI\\GaR_Data\\robustness",
+#                                    "\\scores_df.rds"))
 
 
 ```
@@ -306,3 +305,60 @@ all.equal(scores_df %>%
 
 
 ```
+
+## Import scores and find best models
+
+
+```{r}
+
+scores_df %>% 
+  ggplot(aes(x = quantile_r2)) + 
+  geom_histogram() + 
+  geom_vline(xintercept = 0, color = "blue", linetype = "dashed") + 
+  facet_grid(vars(horizon), vars(quantile), scales = "free")
+
+```
+
+
+```{r find_best_models}
+
+scores_df = read_rds(paste0("C:\\Users\\U095",
+                   "\\OneDrive - Bank Of Israel\\Data\\BoI",
+                   "\\GaR_Data\\robustness\\scores_df.rds"))
+
+best_thresholds = scores_df %>% 
+  group_by(horizon, quantile) %>% 
+  summarise(threshold_r2 = quantile(quantile_r2, 0.70), .groups = "drop")
+
+
+best_models = scores_df %>% 
+  left_join(best_thresholds, by = c("horizon","quantile")) %>% 
+  filter(quantile_r2 >= threshold_r2) %>% 
+  group_by(row) %>% 
+  mutate(obs = length(quantile_r2)) %>% 
+  ungroup() %>% 
+  filter(obs == 20)
+
+
+
+```
+
+
+
+```{r plot_best_partitions}
+
+best_models %>% 
+  select(row) %>% 
+  distinct()
+
+feature_select_df$partition[[32370]]
+
+
+scores_df %>% 
+  filter(row == 32370) %>% 
+  ggplot(aes(as.character(quantile), quantile_r2)) + 
+  geom_col() + 
+  facet_wrap(~horizon, scales = "free")
+
+```
+
