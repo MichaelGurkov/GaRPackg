@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Out of sample forecasting</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Out of sample forecasting</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(GaRPackg)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;dplyr&#39;</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:stats&#39;:</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt;     filter, lag</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt; The following objects are masked from &#39;package:base&#39;:</span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span></code></pre></div>
+<p>In this vignette we’ll look an the out of sample forecasting
+functions. The forecasting is performed by rolling window method with
+expanding window by default.</p>
+<p>We start by defining minimal setup for forecasting</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;gar_data&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>partitions_list <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">macro =</span> <span class="fu">c</span>(<span class="st">&quot;gdp_yoy&quot;</span>, <span class="st">&quot;ind_prod_israel_yoy&quot;</span>),</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">fin =</span> <span class="fu">c</span>(<span class="st">&quot;credit_yoy&quot;</span>, <span class="st">&quot;house_price_yoy&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>forecast_df <span class="ot">=</span> <span class="fu">get_gar_forecast</span>(<span class="at">partitions_list =</span> partitions_list,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>                               <span class="at">vars_df =</span> gar_data,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>                               <span class="at">target_var_name =</span> <span class="st">&quot;gdp_yoy&quot;</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>                               <span class="at">horizon_list =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">12</span>),</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>                               <span class="at">quantile_vec =</span> <span class="fu">c</span>(<span class="fl">0.05</span>,<span class="fl">0.25</span>,<span class="fl">0.5</span>,<span class="fl">0.75</span>,<span class="fl">0.95</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>actual_df <span class="ot">=</span> gar_data <span class="sc">%&gt;%</span> </span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="fu">select</span>(date, gdp) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">actual_values =</span> gdp<span class="sc">/</span><span class="fu">lag</span>(gdp,<span class="dv">4</span>) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="fu">plot_fan_chart</span>(<span class="at">forecast_df =</span> forecast_df,</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>               <span class="at">actual_df =</span> actual_df,</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>               <span class="at">fan_chart_date =</span> <span class="fu">max</span>(actual_df<span class="sc">$</span>date))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div id="internal-vs-explicit-preprocessing" class="section level2">
+<h2>Internal vs explicit preprocessing</h2>
+<p>The preprocessing is performed by default by based on partition list
+variable names suffixes. However in case we want to perform the
+preprocessing explicitly (for instance in order to take a look at
+preprocessed variables) we can do that and then pass the preprocessed
+data to . Let’s demonstrate both ways and make sure that they give the
+same result</p>
+<p>The internal (implicit) preprocessing was already performed in the
+previous example’ the results are stored in object. Now, let’s perform
+an explicit preprocessing and compare the result. Note that we need to
+set the flag in to since we have already transformed the data</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>preprocess_data <span class="ot">=</span> <span class="fu">preprocess_df</span>(<span class="at">df =</span> gar_data,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>                                <span class="at">partitions_list =</span> partitions_list)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>explicit_preprocessing_result <span class="ot">=</span> <span class="fu">get_gar_forecast</span>(</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">partitions_list =</span> partitions_list,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">vars_df =</span> preprocess_data,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">target_var_name =</span> <span class="st">&quot;gdp_yoy&quot;</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">horizon_list =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">12</span>),</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">quantile_vec =</span> <span class="fu">c</span>(<span class="fl">0.05</span>,<span class="fl">0.25</span>,<span class="fl">0.5</span>,<span class="fl">0.75</span>,<span class="fl">0.95</span>),</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">transform_vars_df =</span> <span class="cn">FALSE</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>)</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="fu">all.equal</span>(forecast_df, explicit_preprocessing_result)</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

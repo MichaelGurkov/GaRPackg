@@ -139,7 +139,6 @@ quantile_r2_score = function(predict_df, actual_df, benchmark_df){
 
 #' @title Calculate PIT score
 #'
-#'
 #' @details This function calculates the Probability Integral
 #' Transformation to evaluate goodness of fit.
 #' The value represents the relative frequency of the
@@ -213,7 +212,6 @@ quantile_pit_score = function(forecast_df, actual_df){
 
 
 #' @title Calculate prediction score
-#'
 #'
 #' @details This function calculates the prediction score which is the
 #' probability to get the observed (actual) value from the fitted t skew

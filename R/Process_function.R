@@ -405,7 +405,7 @@ fill_na_average = function(data_vec, k = 4){
 
 #' @title Fixes quantile regression crossing
 #'
-#' This function fixes the crossing issue in quantile regression
+#' @description This function fixes the crossing issue in quantile regression
 #'
 #' @import tidyr
 #'
