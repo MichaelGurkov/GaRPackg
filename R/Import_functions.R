@@ -63,7 +63,7 @@ import_from_fame_template = function(template_path,
   # Substitute empty strings with NA
 
   fame_df = fame_df %>%
-    dplyr::mutate(across(everything(),~ na_if(., ""))) %>%
+    # dplyr::mutate(across(everything(),~ na_if(., ""))) %>%
     dplyr::mutate(across(where(is.character),~stringr::str_remove_all(.,","))) %>%
     dplyr::mutate(across(where(is.character), as.numeric))
 

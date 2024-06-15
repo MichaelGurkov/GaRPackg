@@ -95,11 +95,9 @@ theme_set(theme_bw() +
 ```{r load_data}
 
 raw_df = import_from_fame_template(
-  paste0(
-    file.path(Sys.getenv("USERPROFILE")),
-    "\\OneDrive - Bank Of Israel\\Data\\BoI\\GaR_Data\\Working_data\\data_fame_backup.csv"
-  )
-)
+  paste0(Sys.getenv("USERPROFILE"),
+    "\\OneDrive - Bank Of Israel\\",
+    "Data\\BoI\\GaR_Data\\Working_data\\data_fame_backup.csv"))
 
 df = raw_df %>%
   select(date, starts_with("gdp"),
